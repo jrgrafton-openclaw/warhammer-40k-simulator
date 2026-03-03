@@ -27,7 +27,6 @@ export interface ValidationResult {
   reason?: string;
 }
 
-export interface ActionResult {
-  success: boolean;
-  error?: string;
-}
+export type ActionResult =
+  | { success: true }
+  | { success: false; error: string };

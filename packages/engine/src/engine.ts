@@ -53,7 +53,7 @@ export class GameEngine {
     // Validate
     const validation = this.validateAction(action);
     if (!validation.valid) {
-      return { success: false, error: validation.reason };
+      return { success: false, error: validation.reason ?? 'Action rejected' };
     }
 
     // Record action in transcript
@@ -79,16 +79,16 @@ export class GameEngine {
         return { valid: true };
 
       case 'END_TURN':
-        return {
-          valid: this.state.phase === 'END',
-          reason: this.state.phase !== 'END' ? `Cannot end turn in ${this.state.phase} phase` : undefined,
-        };
+        if (this.state.phase !== 'END') {
+          return { valid: false, reason: `Cannot end turn in ${this.state.phase} phase` };
+        }
+        return { valid: true };
 
       case 'CONCEDE':
-        return {
-          valid: action.playerId === this.state.activePlayer,
-          reason: action.playerId !== this.state.activePlayer ? 'Only active player can concede' : undefined,
-        };
+        if (action.playerId !== this.state.activePlayer) {
+          return { valid: false, reason: 'Only active player can concede' };
+        }
+        return { valid: true };
 
       case 'DEPLOY_UNIT': {
         const unit = this.state.units.find((u) => u.id === action.unitId);
