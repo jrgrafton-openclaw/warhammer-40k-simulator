@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "."
+  },
+  "references": [
+    { "path": "./packages/engine" },
+    { "path": "./packages/content" },
+    { "path": "./packages/ai" },
+    { "path": "./packages/ui" }
+  ],
+  "exclude": ["node_modules", "dist", "docs"]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "warhammer-40k-simulator",
+  "version": "0.0.0",
+  "private": true,
+  "description": "WH40K 10th edition simulator — TypeScript engine + PixiJS UI + AI",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "build": "pnpm -r build",
+    "build:ui": "pnpm --filter ui build",
+    "lint": "eslint packages --ext .ts,.tsx",
+    "format": "prettier --write packages scripts",
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "@fast-check/vitest": "^0.2.4",
+    "@types/node": "^22.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "eslint": "^9.0.0",
+    "fast-check": "^3.23.2",
+    "prettier": "^3.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

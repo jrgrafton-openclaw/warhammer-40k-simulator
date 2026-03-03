@@ -1,0 +1,46 @@
+# AGENTS.md — OpenClaw Workspace Guide
+
+## Identity
+This repo is the **WH40K 10th Edition Simulator** — a TypeScript monorepo.
+
+## Before Every Session
+1. Read `CLAUDE.md` — architecture contracts + extension guide
+2. Read `rules_coverage.md` — what's implemented, what's stubbed, what's next
+3. Read `CHANGELOG.md` — what phase we're on
+4. Check `plan.md` if you need to understand which phase is next
+
+## Repository Structure
+```
+packages/engine/    # Headless rules engine — NO external deps
+packages/ui/        # Vite + PixiJS game board
+packages/ai/        # AI player + evaluator
+packages/content/   # Schemas, importers, army data, scenarios
+scripts/            # CLI tools (importer, scenario builder)
+docs/               # GitHub Pages output (built by CI)
+```
+
+## Local Development
+```bash
+pnpm install          # Install all dependencies
+pnpm test             # Run all tests (Vitest)
+pnpm test:watch       # Watch mode
+pnpm --filter @wh40k/ui dev    # Start UI dev server at localhost:5173
+GITHUB_PAGES=true pnpm --filter @wh40k/ui build  # Build for Pages
+```
+
+## Git Workflow
+- Work on feature branches: `feat/phase-2-content`, `fix/...`
+- Each phase ends with a tagged commit: `v0.0`, `v0.1`, ..., `v0.9`
+- Run `pnpm test` before committing
+- Update `rules_coverage.md` + `CHANGELOG.md` at end of each phase
+- Push tags: `git push --tags`
+
+## Safety
+- Never use `Math.random()` in `engine`, `content`, or `ai` packages
+- Never mutate state returned by `engine.getState()`
+- Always add tests when adding new rules/resolvers
+- Keep `rules_coverage.md` honest — don't mark ✅ until tests pass
+
+## Current Status
+See `CHANGELOG.md` for latest phase completion.
+See `rules_coverage.md` for implementation status of each rule.
