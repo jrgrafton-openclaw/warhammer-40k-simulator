@@ -1,11 +1,18 @@
 /**
- * WH40K Simulator — Phase 3 Interactive Board
+ * WH40K Simulator — Interactive Board
  *
- * Controls:
+ * Movement (MOVEMENT phase):
+ *   Drag gold unit   → move it (snaps back if out of range)
+ *   A key / ADV btn  → switch to Advance mode, then drag
+ *   M key / MOVE btn → switch back to Move mode
+ *
+ * Shooting (SHOOTING phase):
  *   Click gold unit  → select it
- *   M key / MOVE btn → enter move mode, click destination
- *   A key / ADV btn  → enter advance mode, click destination
- *   Esc              → deselect / cancel mode
+ *   Click red unit   → shoot with selected unit (auto-picks first ranged weapon)
+ *   S key            → toggle shoot mode
+ *
+ * General:
+ *   Esc              → deselect / cancel
  *   Enter / Space    → end phase
  */
 import {
@@ -388,7 +395,11 @@ async function init(): Promise<void> {
   // State
   let sel: string | null = null;
   let mode: Mode = 'select';
-  let log = 'Select a Custodes (gold) unit to move.';
+  let log = 'Drag a gold unit to move it. Hold A for Advance.';
+
+  // Drag state — tracks an in-progress unit drag
+  interface DragState { unitId: string; downScreen: Point; ghostBP: Point }
+  let drag: DragState | null = null;
 
   // Render
   function render(): void {
@@ -396,80 +407,160 @@ async function init(): Promise<void> {
     const vp = makeViewport(app.screen.width, app.screen.height, hud.height);
 
     boardLayer.clear(); boardLayer.removeChildren(); renderBoard(boardLayer, vp);
-    unitLayer.clear();  unitLayer.removeChildren();  renderUnits(unitLayer, state.units, vp, sel);
+
+    // Render units — hide the dragging unit from its original position
+    const visibleUnits = drag ? state.units.filter(u => u.id !== drag!.unitId) : state.units;
+    unitLayer.clear(); unitLayer.removeChildren(); renderUnits(unitLayer, visibleUnits, vp, sel);
+
     overlayLayer.clear(); overlayLayer.removeChildren();
     const selUnit = sel ? (state.units.find(u => u.id === sel) ?? null) : null;
     renderOverlay(overlayLayer, selUnit, vp, mode, state.phase);
 
+    // Drag ghost — semi-transparent unit at cursor
+    if (drag) {
+      const draggingUnit = state.units.find(u => u.id === drag!.unitId);
+      if (draggingUnit) {
+        const ghostUnit: BlobUnit = { ...draggingUnit, center: drag.ghostBP };
+        const sc = boardToScreen(vp, drag.ghostBP);
+        const sr = draggingUnit.radius * vp.scale;
+        const col = P1_COLOR;
+        // Check if in range
+        const dist = Math.hypot(drag.ghostBP.x - draggingUnit.center.x, drag.ghostBP.y - draggingUnit.center.y);
+        const maxDist = mode === 'advance' ? draggingUnit.movementInches + 6 : draggingUnit.remainingMove;
+        const inRange = dist <= maxDist + 0.001;
+        overlayLayer.circle(sc.x + 2, sc.y + 2, sr).fill({ color: 0x000000, alpha: 0.15 });
+        overlayLayer.circle(sc.x, sc.y, sr).fill({ color: col, alpha: inRange ? 0.7 : 0.3 });
+        overlayLayer.setStrokeStyle({ width: 3, color: inRange ? SEL_COLOR : 0xff4444 });
+        overlayLayer.circle(sc.x, sc.y, sr + 4).stroke();
+        // Range indicator label
+        const rs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 12, fontWeight: 'bold',
+          fill: inRange ? SEL_COLOR : 0xff4444 });
+        const rt = new Text({ text: `${dist.toFixed(1)}" / ${maxDist}"`, style: rs });
+        rt.anchor.set(0.5, 1); rt.x = sc.x; rt.y = sc.y - sr - 6;
+        overlayLayer.addChild(rt);
+        void ghostUnit; // suppress unused warning
+      }
+    }
+
     hud.update(state, log, sel, mode);
   }
 
-  // Input
+  // ---------------------------------------------------------------------------
+  // Shoot helper (shared between tap and shoot mode)
+  // ---------------------------------------------------------------------------
+  function doShoot(attackerId: string, targetId: string): void {
+    const state = engine.getState();
+    const attacker = state.units.find((u) => u.id === attackerId);
+    const weaponIdx = attacker?.weapons.findIndex((w) => w.type === 'ranged') ?? -1;
+    if (weaponIdx < 0) { log = '⚠ No ranged weapons on selected unit'; render(); return; }
+    const res = engine.dispatch({ type: 'SHOOT', attackerId, targetId, weaponIndex: weaponIdx });
+    if (res.success) {
+      const tr = engine.getTranscript();
+      const hits = tr.getByType('HIT_ROLL').filter((r) => r.success).length;
+      const wounds = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
+      const saves = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
+      const dmg = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
+      const target = state.units.find(u => u.id === targetId);
+      const destroyed = !engine.getState().units.find(u => u.id === targetId);
+      const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${(target?.wounds ?? 0) - dmg}/${target?.maxWounds ?? 0}W`;
+      log = `${attacker?.name ?? ''} ⟶ ${target?.name ?? ''}: ${hits}h ${wounds}w ${saves}sv ${dmg}dmg${suffix}`;
+    } else { log = `⚠ ${res.error}`; }
+    render();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Input — drag for movement, tap for selection/shooting
+  // ---------------------------------------------------------------------------
   app.stage.interactive = true;
   app.stage.hitArea = app.screen;
+  app.stage.eventMode = 'static';
 
-  app.stage.on('pointertap', (e: FederatedPointerEvent) => {
+  app.stage.on('pointerdown', (e: FederatedPointerEvent) => {
     const state = engine.getState();
     const vp = makeViewport(app.screen.width, app.screen.height, hud.height);
     const bp = screenToBoard(vp, { x: e.global.x, y: e.global.y });
     if (bp.x < 0 || bp.x > BOARD_W || bp.y < 0 || bp.y > BOARD_H) return;
 
-    if (mode === 'select') {
-      const hit = hitUnit(state.units, bp);
+    const hit = hitUnit(state.units, bp);
+
+    // Start drag if: MOVEMENT phase + hit a friendly unit that hasn't moved
+    if (state.phase === 'MOVEMENT' && hit && hit.playerId === state.activePlayer && !hit.movedThisPhase) {
+      sel = hit.id;
+      drag = { unitId: hit.id, downScreen: { x: e.global.x, y: e.global.y }, ghostBP: { ...hit.center } };
+      log = mode === 'advance' ? `Dragging ${hit.name} — ADVANCE mode` : `Dragging ${hit.name} — drop to move`;
+      render();
+    }
+  });
+
+  app.stage.on('pointermove', (e: FederatedPointerEvent) => {
+    if (!drag) return;
+    const vp = makeViewport(app.screen.width, app.screen.height, hud.height);
+    const bp = screenToBoard(vp, { x: e.global.x, y: e.global.y });
+    // Clamp to board
+    drag.ghostBP = {
+      x: Math.max(0, Math.min(BOARD_W, bp.x)),
+      y: Math.max(0, Math.min(BOARD_H, bp.y)),
+    };
+    render();
+  });
+
+  app.stage.on('pointerup', (e: FederatedPointerEvent) => {
+    const vp = makeViewport(app.screen.width, app.screen.height, hud.height);
+    const upScreen = { x: e.global.x, y: e.global.y };
+    const bp = screenToBoard(vp, upScreen);
+
+    if (drag) {
+      // Determine if this was a real drag (> 6px screen movement) or just a tap
+      const screenDist = Math.hypot(upScreen.x - drag.downScreen.x, upScreen.y - drag.downScreen.y);
+      const unitId = drag.unitId;
+      drag = null;
+
+      if (screenDist > 6) {
+        // Commit drag as move action
+        const dest = { x: Math.max(0, Math.min(BOARD_W, bp.x)), y: Math.max(0, Math.min(BOARD_H, bp.y)) };
+        const action = mode === 'advance'
+          ? ({ type: 'ADVANCE_UNIT' as const, unitId, destination: dest })
+          : ({ type: 'MOVE_UNIT'    as const, unitId, destination: dest });
+        const res = engine.dispatch(action);
+        if (res.success) {
+          const moved = engine.getState().units.find(u => u.id === unitId);
+          log = `${moved?.name ?? ''} ${mode === 'advance' ? 'ADVANCED' : 'moved'} → (${dest.x.toFixed(1)}", ${dest.y.toFixed(1)}")`;
+        } else {
+          log = `⚠ ${res.error}`;
+        }
+      }
+      // (tap on friendly = already selected via pointerdown; no extra action needed)
+      render();
+      return;
+    }
+
+    // No drag in progress — handle as tap (selection / shooting)
+    if (bp.x < 0 || bp.x > BOARD_W || bp.y < 0 || bp.y > BOARD_H) return;
+    const state = engine.getState();
+    const hit = hitUnit(state.units, bp);
+
+    if (state.phase === 'SHOOTING') {
       if (hit) {
         if (hit.playerId === state.activePlayer) {
           sel = sel === hit.id ? null : hit.id;
           log = sel ? `Selected: ${hit.name}` : 'Deselected.';
-        } else if (sel && state.phase === 'SHOOTING') {
-          // Clicking enemy in SHOOTING phase = auto-shoot with first ranged weapon
-          const attacker = state.units.find((u) => u.id === sel);
-          const weaponIdx = attacker?.weapons.findIndex((w) => w.type === 'ranged') ?? -1;
-          if (weaponIdx >= 0) {
-            const res = engine.dispatch({ type: 'SHOOT', attackerId: sel, targetId: hit.id, weaponIndex: weaponIdx });
-            if (res.success) {
-              const tr = engine.getTranscript();
-              const hits = tr.getByType('HIT_ROLL').filter((r) => r.success).length;
-              const wounds = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
-              const saves = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
-              const dmg = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
-              const destroyed = tr.getByType('UNIT_DESTROYED').some((d) => d.unitId === hit.id);
-              const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${hit.wounds - dmg}/${hit.maxWounds}W`;
-              log = `${attacker?.name ?? ''} ⟶ ${hit.name}: ${hits}h ${wounds}w ${saves}sv ${dmg}dmg${suffix}`;
-              mode = 'select';
-            } else { log = `⚠ ${res.error}`; }
-          } else { log = '⚠ No ranged weapons on selected unit'; }
+        } else if (sel) {
+          doShoot(sel, hit.id);
+          return;
         } else {
           log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
         }
-      } else { sel = null; log = 'No unit here.'; }
-    } else if (mode === 'shoot') {
-      if (!sel) { mode = 'select'; render(); return; }
-      const hit = hitUnit(state.units, bp);
-      if (!hit || hit.playerId === state.activePlayer) { log = 'Click an enemy to shoot.'; render(); return; }
-      const attacker = state.units.find((u) => u.id === sel);
-      const weaponIdx = attacker?.weapons.findIndex((w) => w.type === 'ranged') ?? -1;
-      if (weaponIdx < 0) { log = '⚠ No ranged weapons'; mode = 'select'; render(); return; }
-      const res = engine.dispatch({ type: 'SHOOT', attackerId: sel, targetId: hit.id, weaponIndex: weaponIdx });
-      if (res.success) {
-        const tr = engine.getTranscript();
-        const hits2 = tr.getByType('HIT_ROLL').filter((r) => r.success).length;
-        const wounds2 = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
-        const saves2 = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
-        const dmg2 = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
-        log = `${attacker?.name ?? ''} ⟶ ${hit.name}: ${hits2}h ${wounds2}w ${saves2}sv ${dmg2}dmg`;
-        mode = 'select';
-      } else { log = `⚠ ${res.error}`; }
+      } else { sel = null; log = 'Select a Custodes unit, then click an enemy to shoot.'; }
     } else {
-      if (!sel) { mode = 'select'; render(); return; }
-      const action = mode === 'move'
-        ? ({ type: 'MOVE_UNIT'    as const, unitId: sel, destination: bp })
-        : ({ type: 'ADVANCE_UNIT' as const, unitId: sel, destination: bp });
-      const res = engine.dispatch(action);
-      if (res.success) {
-        const moved = engine.getState().units.find(u => u.id === sel);
-        log = `${moved?.name ?? ''} ${mode === 'move' ? 'moved' : 'ADVANCED'} → (${bp.x.toFixed(1)}", ${bp.y.toFixed(1)}")`;
-        mode = 'select';
-      } else { log = `⚠ ${res.error}`; }
+      // Other phases — tap = select
+      if (hit && hit.playerId === state.activePlayer) {
+        sel = sel === hit.id ? null : hit.id;
+        log = sel ? `Selected: ${hit.name}` : 'Deselected.';
+      } else if (hit) {
+        log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
+      } else {
+        sel = null; log = 'No unit here.';
+      }
     }
     render();
   });
@@ -479,8 +570,8 @@ async function init(): Promise<void> {
     sel = null; mode = 'select';
     const ph = engine.getState().phase;
     const tips: Record<string, string> = {
-      MOVEMENT: 'Select a gold unit then press M to move or A to advance.',
-      SHOOTING: 'Shooting phase! Select a Custodes unit, then click an enemy or press S.',
+      MOVEMENT: 'Drag a gold unit to move it. Press A for Advance mode (rolls D6 extra).',
+      SHOOTING: 'Shooting phase! Click a Custodes unit, then click an enemy to shoot.',
       CHARGE: 'Charge phase. Press Enter to continue.',
       FIGHT: 'Fight phase (Phase 5). Press Enter to continue.',
       END: 'End phase. Press Enter to close the turn.',
@@ -495,10 +586,9 @@ async function init(): Promise<void> {
   hud.advBtn.on('pointertap', (e: FederatedPointerEvent) => { e.stopPropagation(); if (sel) { mode = mode === 'advance' ? 'select' : 'advance'; render(); } });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { sel = null; mode = 'select'; log = 'Deselected.'; render(); }
-    else if ((e.key === 'm' || e.key === 'M') && sel) { mode = mode === 'move' ? 'select' : 'move'; render(); }
-    else if ((e.key === 'a' || e.key === 'A') && sel) { mode = mode === 'advance' ? 'select' : 'advance'; render(); }
-    else if ((e.key === 's' || e.key === 'S') && sel) { mode = mode === 'shoot' ? 'select' : 'shoot'; render(); }
+    if (e.key === 'Escape') { sel = null; mode = 'select'; drag = null; log = 'Deselected.'; render(); }
+    else if (e.key === 'm' || e.key === 'M') { mode = 'move'; log = 'Move mode — drag a unit.'; render(); }
+    else if (e.key === 'a' || e.key === 'A') { mode = 'advance'; log = 'Advance mode — drag a unit (rolls D6 extra).'; render(); }
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); endPhase(); }
   });
 
