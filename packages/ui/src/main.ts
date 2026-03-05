@@ -19,6 +19,10 @@ import {
   Application, Graphics, Text, TextStyle, Container,
   type FederatedPointerEvent,
 } from 'pixi.js';
+
+// Injected at build time by Vite define
+declare const __APP_VERSION__: string;
+declare const __BUILD_DATE__: string;
 import {
   GameEngine, SeededRng, TranscriptLog, createInitialState,
   type BlobUnit, type EngineWeapon, type GameState, type Point,
@@ -358,6 +362,12 @@ function buildHUD(screenW: number): HUD {
 
   const endBtn = btn('⏭ END PHASE', 0x5a2a0e, 148);
 
+  // Version tag — top-right corner, subtle
+  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 9, fill: 0x4a3a1a });
+  const verText = new Text({ text: `${__APP_VERSION__} · ${__BUILD_DATE__}`, style: verStyle });
+  verText.alpha = 0.55; verText.anchor.set(1, 0); verText.x = screenW - 4; verText.y = 3;
+  c.addChild(verText);
+
   function update(state: GameState, log: string, _selId: string | null, _mode: Mode): void {
     const p1 = state.players[0]; const p2 = state.players[1];
     const label = state.activePlayer === 'player1' ? '⚜ CUSTODES' : '☠ CHAOS';
@@ -371,6 +381,7 @@ function buildHUD(screenW: number): HUD {
     bg.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.3 }); bg.moveTo(0, H).lineTo(screenW, H).stroke();
 
     endBtn.x = screenW - 148;
+    verText.x = screenW - 4;
   }
 
   return { container: c, height: H, update, endPhaseBtn: endBtn };

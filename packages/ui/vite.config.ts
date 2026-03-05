@@ -1,7 +1,18 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { execSync } from 'child_process';
+
+const gitTag = (() => {
+  try { return execSync('git describe --tags --abbrev=0').toString().trim(); }
+  catch { return 'dev'; }
+})();
+const buildDate = new Date().toISOString().slice(0, 10);
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(gitTag),
+    __BUILD_DATE__: JSON.stringify(buildDate),
+  },
   // For GitHub Pages: repo is at /warhammer-40k-simulator
   // When deploying to Pages, set base to the repo name
   base: process.env['GITHUB_PAGES'] === 'true' ? '/warhammer-40k-simulator/' : '/',
