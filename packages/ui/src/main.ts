@@ -39,7 +39,7 @@ const SEL_COLOR     = 0x00ffcc;   // selection ring
 const MOVE_COLOR    = 0x44aaff;   // move-range ring
 const ADV_COLOR     = 0x22ddaa;   // advance-range ring
 
-type Mode = 'select' | 'move' | 'advance' | 'shoot';
+type Mode = 'select' | 'shoot';
 
 // ---------------------------------------------------------------------------
 // Hardcoded demo armies
@@ -222,8 +222,28 @@ function renderUnits(g: Graphics, units: BlobUnit[], vp: Viewport, selId: string
 // ---------------------------------------------------------------------------
 
 const SHOOT_COLOR  = 0xff6622;   // shoot-range ring
+const ZONE_MOVE    = 0x44aaff;   // move zone colour
+const ZONE_ADV     = 0xffaa22;   // advance zone colour
+const ZONE_OVER    = 0xff3333;   // beyond max
 
-function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, mode: Mode, phase: string): void {
+/** Draw a dashed line between two screen points */
+function drawDashedLine(g: Graphics, x1: number, y1: number, x2: number, y2: number, dash = 8, gap = 5): void {
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 0.001) return;
+  const dx = (x2 - x1) / len; const dy = (y2 - y1) / len;
+  let pos = 0; let drawing = true;
+  while (pos < len - 0.001) {
+    const segLen = Math.min(drawing ? dash : gap, len - pos);
+    if (drawing) {
+      g.moveTo(x1 + dx * pos, y1 + dy * pos)
+       .lineTo(x1 + dx * (pos + segLen), y1 + dy * (pos + segLen));
+    }
+    pos += segLen; drawing = !drawing;
+  }
+  g.stroke();
+}
+
+function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: Mode, phase: string): void {
   if (!unit) return;
   const sc = boardToScreen(vp, unit.center);
   const sr = unit.radius * vp.scale;
@@ -231,9 +251,14 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, mode: M
   if (phase === 'MOVEMENT' && !unit.movedThisPhase) {
     const mr = (unit.remainingMove + unit.radius) * vp.scale;
     const ar = (unit.movementInches + 6 + unit.radius) * vp.scale;
-    g.circle(sc.x, sc.y, mr).fill({ color: MOVE_COLOR, alpha: 0.07 });
-    g.setStrokeStyle({ width: 2, color: MOVE_COLOR, alpha: 0.75 }); g.circle(sc.x, sc.y, mr).stroke();
-    g.setStrokeStyle({ width: 1.5, color: ADV_COLOR, alpha: 0.4 }); g.circle(sc.x, sc.y, ar).stroke();
+    g.circle(sc.x, sc.y, mr).fill({ color: ZONE_MOVE, alpha: 0.06 });
+    g.setStrokeStyle({ width: 2, color: ZONE_MOVE, alpha: 0.8 }); g.circle(sc.x, sc.y, mr).stroke();
+    g.setStrokeStyle({ width: 1.5, color: ZONE_ADV, alpha: 0.45 }); g.circle(sc.x, sc.y, ar).stroke();
+    // Zone label
+    const zs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 10, fill: ZONE_ADV });
+    const zt = new Text({ text: `${unit.remainingMove.toFixed(0)}" move / ${unit.movementInches + 6}" advance`, style: zs });
+    zt.anchor.set(0.5, 1); zt.x = sc.x; zt.y = sc.y - ar - 4;
+    g.addChild(zt);
   }
 
   // Shoot range ring (first ranged weapon)
@@ -250,15 +275,7 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, mode: M
     }
   }
 
-  // Mode badge
-  if (mode !== 'select') {
-    const modeColor = mode === 'move' ? MOVE_COLOR : mode === 'advance' ? ADV_COLOR : SHOOT_COLOR;
-    const modeText = mode === 'move' ? '→ MOVE: click destination' : mode === 'advance' ? '→ ADVANCE: click destination' : '🎯 SHOOT: click enemy';
-    const ms = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: modeColor });
-    const mt = new Text({ text: modeText, style: ms });
-    mt.anchor.set(0.5, 1); mt.x = sc.x; mt.y = sc.y - sr - 8;
-    g.addChild(mt);
-  }
+  void sr; // suppress unused warning
 
   // Stat tooltip
   const ts = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 12, fill: 0xe8d5a0, lineHeight: 18 });
@@ -285,8 +302,6 @@ interface HUD {
   height: number;
   update(state: GameState, log: string, selId: string | null, mode: Mode): void;
   endPhaseBtn: Graphics;
-  moveBtn: Graphics;
-  advBtn: Graphics;
 }
 
 function buildHUD(screenW: number): HUD {
@@ -322,10 +337,8 @@ function buildHUD(screenW: number): HUD {
   }
 
   const endBtn = btn('⏭ END PHASE', 0x5a2a0e, 148);
-  const mBtn   = btn('⬡ MOVE [M]',  0x0e3a7a, 298);
-  const aBtn   = btn('⚡ ADVANCE [A]', 0x0e5a3a, 448);
 
-  function update(state: GameState, log: string, selId: string | null, mode: Mode): void {
+  function update(state: GameState, log: string, _selId: string | null, _mode: Mode): void {
     const p1 = state.players[0]; const p2 = state.players[1];
     const label = state.activePlayer === 'player1' ? '⚜ CUSTODES' : '☠ CHAOS';
     phText.text = `Turn ${state.turn}  ·  ${state.phase}  ·  ${label}`;
@@ -333,25 +346,14 @@ function buildHUD(screenW: number): HUD {
     vpText.text = `VP: ${p1?.victoryPoints ?? 0} — ${p2?.victoryPoints ?? 0}`;
     vpText.x = screenW / 2;
 
-    const canAct = state.phase === 'MOVEMENT' && state.activePlayer === 'player1' && !!selId;
-    mBtn.alpha = canAct ? 1 : 0.3; mBtn.interactive = canAct;
-    aBtn.alpha = canAct ? 1 : 0.3; aBtn.interactive = canAct;
-    mBtn.tint = mode === 'move' ? 0x88ddff : 0xffffff;
-    aBtn.tint = mode === 'advance' ? 0x88ffcc : 0xffffff;
-
-    // Resize bg
-    (bg.children[0] as undefined); // no-op to avoid unused warning
     bg.clear();
     bg.rect(0, 0, screenW, H).fill({ color: 0x080609, alpha: 0.97 });
     bg.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.3 }); bg.moveTo(0, H).lineTo(screenW, H).stroke();
 
-    // Reposition buttons for width
     endBtn.x = screenW - 148;
-    mBtn.x = screenW - 298;
-    aBtn.x = screenW - 448;
   }
 
-  return { container: c, height: H, update, endPhaseBtn: endBtn, moveBtn: mBtn, advBtn: aBtn };
+  return { container: c, height: H, update, endPhaseBtn: endBtn };
 }
 
 // ---------------------------------------------------------------------------
@@ -395,7 +397,7 @@ async function init(): Promise<void> {
   // State
   let sel: string | null = null;
   let mode: Mode = 'select';
-  let log = 'Drag a gold unit to move it. Hold A for Advance.';
+  let log = 'Drag a gold unit — drop in move ring or advance ring.';
 
   // Drag state — tracks an in-progress unit drag
   interface DragState { unitId: string; downScreen: Point; ghostBP: Point }
@@ -408,37 +410,58 @@ async function init(): Promise<void> {
 
     boardLayer.clear(); boardLayer.removeChildren(); renderBoard(boardLayer, vp);
 
-    // Render units — hide the dragging unit from its original position
-    const visibleUnits = drag ? state.units.filter(u => u.id !== drag!.unitId) : state.units;
-    unitLayer.clear(); unitLayer.removeChildren(); renderUnits(unitLayer, visibleUnits, vp, sel);
+    // Render units; during drag, show dragging unit at 30% opacity (origin position)
+    unitLayer.clear(); unitLayer.removeChildren();
+    if (drag) {
+      const dimmed = state.units.map(u => u.id === drag!.unitId ? { ...u, movedThisPhase: true } : u);
+      renderUnits(unitLayer, dimmed, vp, sel);
+    } else {
+      renderUnits(unitLayer, state.units, vp, sel);
+    }
 
     overlayLayer.clear(); overlayLayer.removeChildren();
     const selUnit = sel ? (state.units.find(u => u.id === sel) ?? null) : null;
-    renderOverlay(overlayLayer, selUnit, vp, mode, state.phase);
+    // During drag, show rings around ORIGIN (where it came from), not ghost position
+    const overlayUnit = drag ? (state.units.find(u => u.id === drag!.unitId) ?? null) : selUnit;
+    renderOverlay(overlayLayer, overlayUnit, vp, mode, state.phase);
 
-    // Drag ghost — semi-transparent unit at cursor
+    // Drag: unit at cursor + ghost ring at origin + dashed ruler
     if (drag) {
       const draggingUnit = state.units.find(u => u.id === drag!.unitId);
       if (draggingUnit) {
-        const ghostUnit: BlobUnit = { ...draggingUnit, center: drag.ghostBP };
-        const sc = boardToScreen(vp, drag.ghostBP);
+        const originSC = boardToScreen(vp, draggingUnit.center);
+        const ghostSC  = boardToScreen(vp, drag.ghostBP);
         const sr = draggingUnit.radius * vp.scale;
-        const col = P1_COLOR;
-        // Check if in range
+
+        // Determine zone
         const dist = Math.hypot(drag.ghostBP.x - draggingUnit.center.x, drag.ghostBP.y - draggingUnit.center.y);
-        const maxDist = mode === 'advance' ? draggingUnit.movementInches + 6 : draggingUnit.remainingMove;
-        const inRange = dist <= maxDist + 0.001;
-        overlayLayer.circle(sc.x + 2, sc.y + 2, sr).fill({ color: 0x000000, alpha: 0.15 });
-        overlayLayer.circle(sc.x, sc.y, sr).fill({ color: col, alpha: inRange ? 0.7 : 0.3 });
-        overlayLayer.setStrokeStyle({ width: 3, color: inRange ? SEL_COLOR : 0xff4444 });
-        overlayLayer.circle(sc.x, sc.y, sr + 4).stroke();
-        // Range indicator label
-        const rs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 12, fontWeight: 'bold',
-          fill: inRange ? SEL_COLOR : 0xff4444 });
-        const rt = new Text({ text: `${dist.toFixed(1)}" / ${maxDist}"`, style: rs });
-        rt.anchor.set(0.5, 1); rt.x = sc.x; rt.y = sc.y - sr - 6;
-        overlayLayer.addChild(rt);
-        void ghostUnit; // suppress unused warning
+        const moveMax = draggingUnit.remainingMove;
+        const advMax  = draggingUnit.movementInches + 6;
+        const inMove    = dist <= moveMax + 0.001;
+        const inAdvance = !inMove && dist <= advMax + 0.001;
+        const zoneColor = inMove ? ZONE_MOVE : inAdvance ? ZONE_ADV : ZONE_OVER;
+
+        // Ghost ring at origin
+        overlayLayer.setStrokeStyle({ width: 2, color: zoneColor, alpha: 0.5 });
+        overlayLayer.circle(originSC.x, originSC.y, sr + 3).stroke();
+
+        // Dashed ruler
+        overlayLayer.setStrokeStyle({ width: 1.5, color: zoneColor, alpha: 0.9 });
+        drawDashedLine(overlayLayer, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
+
+        // Unit at cursor (bright)
+        overlayLayer.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
+        overlayLayer.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.9 });
+        overlayLayer.setStrokeStyle({ width: 3, color: zoneColor });
+        overlayLayer.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+
+        // Distance label + zone hint
+        const zone = inMove ? 'MOVE' : inAdvance ? 'ADVANCE ⚄' : `MAX ${advMax.toFixed(0)}"`;
+        const labelColor = zoneColor;
+        const ls = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: labelColor });
+        const lt = new Text({ text: `${dist.toFixed(1)}"  ${zone}`, style: ls });
+        lt.anchor.set(0.5, 1); lt.x = ghostSC.x; lt.y = ghostSC.y - sr - 8;
+        overlayLayer.addChild(lt);
       }
     }
 
@@ -487,7 +510,7 @@ async function init(): Promise<void> {
     if (state.phase === 'MOVEMENT' && hit && hit.playerId === state.activePlayer && !hit.movedThisPhase) {
       sel = hit.id;
       drag = { unitId: hit.id, downScreen: { x: e.global.x, y: e.global.y }, ghostBP: { ...hit.center } };
-      log = mode === 'advance' ? `Dragging ${hit.name} — ADVANCE mode` : `Dragging ${hit.name} — drop to move`;
+      log = `Dragging ${hit.name} — drop in blue ring (move) or orange ring (advance 🎲)`;
       render();
     }
   });
@@ -516,17 +539,46 @@ async function init(): Promise<void> {
       drag = null;
 
       if (screenDist > 6) {
-        // Commit drag as move action
-        const dest = { x: Math.max(0, Math.min(BOARD_W, bp.x)), y: Math.max(0, Math.min(BOARD_H, bp.y)) };
-        const action = mode === 'advance'
-          ? ({ type: 'ADVANCE_UNIT' as const, unitId, destination: dest })
-          : ({ type: 'MOVE_UNIT'    as const, unitId, destination: dest });
-        const res = engine.dispatch(action);
-        if (res.success) {
-          const moved = engine.getState().units.find(u => u.id === unitId);
-          log = `${moved?.name ?? ''} ${mode === 'advance' ? 'ADVANCED' : 'moved'} → (${dest.x.toFixed(1)}", ${dest.y.toFixed(1)}")`;
-        } else {
-          log = `⚠ ${res.error}`;
+        // Auto-detect zone from drop distance
+        const stateNow = engine.getState();
+        const dragUnit = stateNow.units.find(u => u.id === unitId);
+        const rawDest = { x: Math.max(0, Math.min(BOARD_W, bp.x)), y: Math.max(0, Math.min(BOARD_H, bp.y)) };
+
+        if (dragUnit) {
+          const dist = Math.hypot(rawDest.x - dragUnit.center.x, rawDest.y - dragUnit.center.y);
+          const moveMax = dragUnit.remainingMove;
+          const advMax  = dragUnit.movementInches + 6;
+
+          if (dist <= moveMax + 0.001) {
+            // MOVE zone
+            const res = engine.dispatch({ type: 'MOVE_UNIT', unitId, destination: rawDest });
+            if (res.success) {
+              const moved = engine.getState().units.find(u => u.id === unitId);
+              log = `${moved?.name ?? ''} moved → (${rawDest.x.toFixed(1)}", ${rawDest.y.toFixed(1)}")`;
+            } else { log = `⚠ ${res.error}`; }
+          } else {
+            // ADVANCE zone (or clamped beyond max — engine clamps internally)
+            const dest = dist <= advMax + 0.001
+              ? rawDest
+              : (() => {
+                  const ratio = advMax / dist;
+                  return {
+                    x: dragUnit.center.x + (rawDest.x - dragUnit.center.x) * ratio,
+                    y: dragUnit.center.y + (rawDest.y - dragUnit.center.y) * ratio,
+                  };
+                })();
+            const res = engine.dispatch({ type: 'ADVANCE_UNIT', unitId, destination: dest });
+            if (res.success) {
+              // Read D6 result from transcript
+              const tr = engine.getTranscript();
+              const advRolls = tr.getByType('ROLL').filter((r: { rollType: string }) => r.rollType === 'ADVANCE');
+              const advRoll = advRolls[advRolls.length - 1];
+              const rollText = advRoll ? ` 🎲 +${advRoll.value}"` : '';
+              const moved = engine.getState().units.find(u => u.id === unitId);
+              const finalPos = moved?.center ?? dest;
+              log = `${dragUnit.name} ADVANCED${rollText} → (${finalPos.x.toFixed(1)}", ${finalPos.y.toFixed(1)}")`;
+            } else { log = `⚠ ${res.error}`; }
+          }
         }
       }
       // (tap on friendly = already selected via pointerdown; no extra action needed)
@@ -570,7 +622,7 @@ async function init(): Promise<void> {
     sel = null; mode = 'select';
     const ph = engine.getState().phase;
     const tips: Record<string, string> = {
-      MOVEMENT: 'Drag a gold unit to move it. Press A for Advance mode (rolls D6 extra).',
+      MOVEMENT: 'Drag within move ring = normal move. Drag into advance ring = auto-rolls D6.',
       SHOOTING: 'Shooting phase! Click a Custodes unit, then click an enemy to shoot.',
       CHARGE: 'Charge phase. Press Enter to continue.',
       FIGHT: 'Fight phase (Phase 5). Press Enter to continue.',
@@ -582,13 +634,9 @@ async function init(): Promise<void> {
   }
 
   hud.endPhaseBtn.on('pointertap', (e: FederatedPointerEvent) => { e.stopPropagation(); endPhase(); });
-  hud.moveBtn.on('pointertap', (e: FederatedPointerEvent) => { e.stopPropagation(); if (sel) { mode = mode === 'move' ? 'select' : 'move'; render(); } });
-  hud.advBtn.on('pointertap', (e: FederatedPointerEvent) => { e.stopPropagation(); if (sel) { mode = mode === 'advance' ? 'select' : 'advance'; render(); } });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { sel = null; mode = 'select'; drag = null; log = 'Deselected.'; render(); }
-    else if (e.key === 'm' || e.key === 'M') { mode = 'move'; log = 'Move mode — drag a unit.'; render(); }
-    else if (e.key === 'a' || e.key === 'A') { mode = 'advance'; log = 'Advance mode — drag a unit (rolls D6 extra).'; render(); }
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); endPhase(); }
   });
 
