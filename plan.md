@@ -20,8 +20,10 @@ and animation/UX polish — don't treat them as mutually exclusive.
 | 3     | v0.3   | ✅ Done      | Movement phase (blob units, drag UI) |
 | 4     | v0.4   | ✅ Done      | Shooting pipeline                  |
 | 5     | v0.5   | ✅ Done      | Charge + Fight phases              |
-| 6     | v0.6   | 🔜 Next     | Complete game loop (both players, end screen, VP, polish) |
-| 7     | v0.7   | Planned     | Army rules + Detachments           |
+| 6     | v0.6   | ✅ Done      | Complete game loop (both players, end screen, VP, dice flash) |
+| 6.5   | v0.6.x | 🔜 Next     | Dice animation polish (delightful sequential hit→wound→save) |
+| 7     | v0.7   | Planned     | Deployment phase + army selection screen                   |
+| 8     | v0.8   | Planned     | Army rules + Detachments           |
 | 8     | v0.8   | Planned     | Stratagems + CP economy            |
 | 9     | v0.9   | Planned     | Advanced combat rules              |
 | 10    | v0.10  | Planned     | Per-model unit representation      |
@@ -36,8 +38,15 @@ and animation/UX polish — don't treat them as mutually exclusive.
 
 Things missing from the 40K ruleset (tracked here until implemented):
 
+### Pre-game gaps
+- [ ] **Deployment phase** — Before turn 1: alternate unit-by-unit deployment into deployment zones; currently units are hardcoded; should be a full drag-to-deploy flow
+- [ ] **Army selection screen** — Pick army before deploying; currently hardcoded Custodes vs Chaos
+- [ ] **Scout moves** — Units with Scout keyword make a 6" move after deployment, before turn 1
+- [ ] **Pre-game stratagems** — Some abilities/stratagems fire before the first turn
+
 ### Engine gaps
-- [ ] **Both players interactive** — currently only player 1 is interactive; player 2 is passive
+- [ ] ~~**Both players interactive**~~ — ✅ Done in v0.6
+- [ ] **Command phase content** — Currently a pass-through; should: gain 1 CP, trigger battle-shock tests, allow CP-cost stratagems
 - [ ] **CP economy** — Command Points pool, replenishment, spending
 - [ ] **Stratagems** — keyword-gated, phase-gated, CP cost, validation
 - [ ] **Army rules** — faction keywords, passive/triggered abilities, auras
