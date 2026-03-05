@@ -34,6 +34,7 @@ function makeUnit(overrides: Partial<BlobUnit> = {}): BlobUnit {
     hasAdvanced: false,
     isInEngagement: false,
     movedThisPhase: false,
+    weapons: [],
     ...overrides,
   };
 }

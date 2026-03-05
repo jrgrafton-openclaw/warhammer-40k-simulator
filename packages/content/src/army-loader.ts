@@ -4,7 +4,8 @@
  * Bridges the gap between @wh40k/content (data layer) and @wh40k/engine (simulation layer).
  */
 
-import type { ArmyList, ArmyListUnit } from './schemas.js';
+import type { ArmyList, ArmyListUnit, WeaponProfile } from './schemas.js';
+import type { EngineWeapon } from '@wh40k/engine';
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -136,6 +137,23 @@ export interface BlobUnitInit {
   wounds: number;
   maxWounds: number;
   radius: number; // auto-computed from model count + base size
+  weapons: EngineWeapon[];
+}
+
+/** Map a content WeaponProfile to an engine-internal EngineWeapon */
+function weaponToEngine(w: WeaponProfile): EngineWeapon {
+  return {
+    id: w.id,
+    name: w.name,
+    type: w.type,
+    range: w.range,
+    attacks: w.attacks,
+    skill: w.skill,
+    strength: w.strength,
+    ap: w.ap,
+    damage: w.damage,
+    keywords: w.keywords,
+  };
 }
 
 /**
@@ -171,5 +189,6 @@ export function unitToBlob(unit: ArmyListUnit): BlobUnitInit {
     wounds: ds.wounds,
     maxWounds: ds.wounds,
     radius: estimateRadius(unit),
+    weapons: ds.weapons.map(weaponToEngine),
   };
 }

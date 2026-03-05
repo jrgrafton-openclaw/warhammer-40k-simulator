@@ -21,6 +21,28 @@ export interface Point {
 }
 
 /**
+ * EngineWeapon — minimal weapon profile for combat resolution.
+ * Intentionally engine-internal; the content package maps WeaponProfile → EngineWeapon.
+ */
+export interface EngineWeapon {
+  id: string;
+  name: string;
+  type: 'melee' | 'ranged';
+  /** Range in inches for ranged weapons, or 'Melee' */
+  range: number | 'Melee';
+  /** Attacks characteristic — DiceExpr string e.g. "3", "D6", "2D3" */
+  attacks: string;
+  /** Weapon Skill or Ballistic Skill (e.g. 2 = "2+") */
+  skill: number;
+  strength: number;
+  /** Armour Penetration — 0 or negative (e.g. -2 = AP-2) */
+  ap: number;
+  /** Damage characteristic — DiceExpr string e.g. "1", "D3", "D6" */
+  damage: string;
+  keywords: string[];
+}
+
+/**
  * BlobUnit — a unit represented as a circle footprint.
  * Upgrade path: add optional `models: ModelPosition[]` — if present, geometry uses per-model positions.
  */
@@ -54,6 +76,9 @@ export interface BlobUnit {
   hasAdvanced: boolean;       // Rolled advance this phase (can't charge; can still use ASSAULT weapons)
   isInEngagement: boolean;
   movedThisPhase: boolean;
+
+  /** Weapons available to this unit for shooting/fighting */
+  weapons: EngineWeapon[];
 }
 
 export interface Objective {

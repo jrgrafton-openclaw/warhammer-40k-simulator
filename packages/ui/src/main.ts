@@ -14,7 +14,7 @@ import {
 } from 'pixi.js';
 import {
   GameEngine, SeededRng, TranscriptLog, createInitialState,
-  type BlobUnit, type GameState, type Point,
+  type BlobUnit, type EngineWeapon, type GameState, type Point,
 } from '@wh40k/engine';
 
 // ---------------------------------------------------------------------------
@@ -32,30 +32,44 @@ const SEL_COLOR     = 0x00ffcc;   // selection ring
 const MOVE_COLOR    = 0x44aaff;   // move-range ring
 const ADV_COLOR     = 0x22ddaa;   // advance-range ring
 
-type Mode = 'select' | 'move' | 'advance';
+type Mode = 'select' | 'move' | 'advance' | 'shoot';
 
 // ---------------------------------------------------------------------------
 // Hardcoded demo armies
 // ---------------------------------------------------------------------------
 
+// Weapon helpers
+const w = (id: string, name: string, type: 'ranged'|'melee', range: number|'Melee', attacks: string, skill: number, strength: number, ap: number, damage: string, keywords: string[] = []): EngineWeapon =>
+  ({ id, name, type, range, attacks, skill, strength, ap, damage, keywords });
+
+const GUARDIAN_SPEAR_R = w('guardian-spear-r','Guardian Spear','ranged',24,'3',2,5,-1,'1');
+const GUARDIAN_SPEAR_M = w('guardian-spear-m','Guardian Spear','melee','Melee','5',2,8,-3,'2');
+const BALISTUS_GRENADE = w('balistus-grenade','Balistus Grenade Launcher','ranged',18,'D6',2,4,-1,'1');
+const CASTELLAN_AXE    = w('castellan-axe','Castellan Axe','melee','Melee','4',2,8,-2,'2');
+const ACCEL_CANNON     = w('accel-cannon','Illiastus Accelerator Cannons','ranged',36,'6',2,7,-2,'2');
+const DAEMON_SWORD     = w('daemon-sword','Daemon Sword','melee','Melee','5',2,5,-2,'2');
+const INFERNAL_AXE     = w('infernal-axe','Infernal Greataxe','melee','Melee','2',3,5,-1,'1');
+const COMBI_WEAPON     = w('combi-weapon','Combi-weapon','ranged',24,'2',4,4,0,'1');
+const POWER_FIST       = w('power-fist','Power Fist','melee','Melee','3',4,8,-2,'2');
+
 function makeCustodes(pid: string): BlobUnit[] {
   const base = { playerId: pid, hasFired: false, hasCharged: false, hasFought: false, hasAdvanced: false, isInEngagement: false, movedThisPhase: false };
   return [
-    { id: `${pid}-0`, datasheetId: 'blade-champion',    name: 'Blade Champion ★', center:{x:8,y:8},   radius:1,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:8,  maxWounds:8,  ...base },
-    { id: `${pid}-1`, datasheetId: 'custodian-guard',   name: 'Custodian Guard I',center:{x:21,y:7},  radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  ...base },
-    { id: `${pid}-2`, datasheetId: 'custodian-guard',   name: 'Custodian Guard II',center:{x:37,y:7}, radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  ...base },
-    { id: `${pid}-3`, datasheetId: 'allarus-custodians',name: 'Allarus Custodians',center:{x:50,y:8}, radius:2,   movementInches:5,  remainingMove:5,  toughness:7,  save:2, invuln:4,    fnp:null, oc:2, wounds:4,  maxWounds:4,  ...base },
-    { id: `${pid}-4`, datasheetId: 'caladius-grav-tank',name: 'Caladius',          center:{x:30,y:10},radius:2.5, movementInches:10, remainingMove:10, toughness:11, save:2, invuln:5,    fnp:null, oc:4, wounds:14, maxWounds:14, ...base },
+    { id: `${pid}-0`, datasheetId: 'blade-champion',    name: 'Blade Champion ★', center:{x:8,y:8},   radius:1,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:8,  maxWounds:8,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
+    { id: `${pid}-1`, datasheetId: 'custodian-guard',   name: 'Custodian Guard I',center:{x:21,y:7},  radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
+    { id: `${pid}-2`, datasheetId: 'custodian-guard',   name: 'Custodian Guard II',center:{x:37,y:7}, radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
+    { id: `${pid}-3`, datasheetId: 'allarus-custodians',name: 'Allarus Custodians',center:{x:50,y:8}, radius:2,   movementInches:5,  remainingMove:5,  toughness:7,  save:2, invuln:4,    fnp:null, oc:2, wounds:4,  maxWounds:4,  weapons:[BALISTUS_GRENADE,CASTELLAN_AXE],    ...base },
+    { id: `${pid}-4`, datasheetId: 'caladius-grav-tank',name: 'Caladius',          center:{x:30,y:10},radius:2.5, movementInches:10, remainingMove:10, toughness:11, save:2, invuln:5,    fnp:null, oc:4, wounds:14, maxWounds:14, weapons:[ACCEL_CANNON],                     ...base },
   ];
 }
 
 function makeOpponent(pid: string): BlobUnit[] {
   const base = { playerId: pid, hasFired: false, hasCharged: false, hasFought: false, hasAdvanced: false, isInEngagement: false, movedThisPhase: false };
   return [
-    { id: `${pid}-0`, datasheetId: 'chaos-lord',        name: 'Chaos Lord',       center:{x:8,y:36},  radius:1,   movementInches:6, remainingMove:6, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:6, maxWounds:6, ...base },
-    { id: `${pid}-1`, datasheetId: 'chaos-warriors',    name: 'Warriors I',       center:{x:22,y:37}, radius:3.5, movementInches:6, remainingMove:6, toughness:4, save:3, invuln:null, fnp:null, oc:2, wounds:2, maxWounds:2, ...base },
-    { id: `${pid}-2`, datasheetId: 'chaos-warriors',    name: 'Warriors II',      center:{x:38,y:37}, radius:3.5, movementInches:6, remainingMove:6, toughness:4, save:3, invuln:null, fnp:null, oc:2, wounds:2, maxWounds:2, ...base },
-    { id: `${pid}-3`, datasheetId: 'chaos-terminators', name: 'Chaos Terminators',center:{x:52,y:36}, radius:2,   movementInches:5, remainingMove:5, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:3, maxWounds:3, ...base },
+    { id: `${pid}-0`, datasheetId: 'chaos-lord',        name: 'Chaos Lord',       center:{x:8,y:36},  radius:1,   movementInches:6, remainingMove:6, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:6,  maxWounds:6,  weapons:[DAEMON_SWORD],              ...base },
+    { id: `${pid}-1`, datasheetId: 'chaos-warriors',    name: 'Warriors I',       center:{x:22,y:37}, radius:3.5, movementInches:6, remainingMove:6, toughness:4, save:3, invuln:null, fnp:null, oc:2, wounds:2,  maxWounds:2,  weapons:[COMBI_WEAPON,INFERNAL_AXE], ...base },
+    { id: `${pid}-2`, datasheetId: 'chaos-warriors',    name: 'Warriors II',      center:{x:38,y:37}, radius:3.5, movementInches:6, remainingMove:6, toughness:4, save:3, invuln:null, fnp:null, oc:2, wounds:2,  maxWounds:2,  weapons:[COMBI_WEAPON,INFERNAL_AXE], ...base },
+    { id: `${pid}-3`, datasheetId: 'chaos-terminators', name: 'Chaos Terminators',center:{x:52,y:36}, radius:2,   movementInches:5, remainingMove:5, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[COMBI_WEAPON,POWER_FIST],   ...base },
   ];
 }
 
@@ -200,12 +214,14 @@ function renderUnits(g: Graphics, units: BlobUnit[], vp: Viewport, selId: string
 // Selection overlay
 // ---------------------------------------------------------------------------
 
-function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, mode: Mode): void {
+const SHOOT_COLOR  = 0xff6622;   // shoot-range ring
+
+function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, mode: Mode, phase: string): void {
   if (!unit) return;
   const sc = boardToScreen(vp, unit.center);
   const sr = unit.radius * vp.scale;
 
-  if (!unit.movedThisPhase) {
+  if (phase === 'MOVEMENT' && !unit.movedThisPhase) {
     const mr = (unit.remainingMove + unit.radius) * vp.scale;
     const ar = (unit.movementInches + 6 + unit.radius) * vp.scale;
     g.circle(sc.x, sc.y, mr).fill({ color: MOVE_COLOR, alpha: 0.07 });
@@ -213,10 +229,26 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, mode: M
     g.setStrokeStyle({ width: 1.5, color: ADV_COLOR, alpha: 0.4 }); g.circle(sc.x, sc.y, ar).stroke();
   }
 
+  // Shoot range ring (first ranged weapon)
+  if (phase === 'SHOOTING' && !unit.hasFired) {
+    const rangedWeapon = unit.weapons.find((w) => w.type === 'ranged');
+    if (rangedWeapon && typeof rangedWeapon.range === 'number') {
+      const rr = (rangedWeapon.range + unit.radius) * vp.scale;
+      g.circle(sc.x, sc.y, rr).fill({ color: SHOOT_COLOR, alpha: 0.05 });
+      g.setStrokeStyle({ width: 2, color: SHOOT_COLOR, alpha: 0.7 }); g.circle(sc.x, sc.y, rr).stroke();
+      const rs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 11, fill: SHOOT_COLOR });
+      const rt = new Text({ text: `${rangedWeapon.name} ${rangedWeapon.range}"`, style: rs });
+      rt.anchor.set(0.5, 1); rt.x = sc.x; rt.y = sc.y - rr - 4;
+      g.addChild(rt);
+    }
+  }
+
   // Mode badge
   if (mode !== 'select') {
-    const ms = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: mode === 'move' ? MOVE_COLOR : ADV_COLOR });
-    const mt = new Text({ text: mode === 'move' ? '→ MOVE: click destination' : '→ ADVANCE: click destination', style: ms });
+    const modeColor = mode === 'move' ? MOVE_COLOR : mode === 'advance' ? ADV_COLOR : SHOOT_COLOR;
+    const modeText = mode === 'move' ? '→ MOVE: click destination' : mode === 'advance' ? '→ ADVANCE: click destination' : '🎯 SHOOT: click enemy';
+    const ms = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: modeColor });
+    const mt = new Text({ text: modeText, style: ms });
     mt.anchor.set(0.5, 1); mt.x = sc.x; mt.y = sc.y - sr - 8;
     g.addChild(mt);
   }
@@ -367,7 +399,7 @@ async function init(): Promise<void> {
     unitLayer.clear();  unitLayer.removeChildren();  renderUnits(unitLayer, state.units, vp, sel);
     overlayLayer.clear(); overlayLayer.removeChildren();
     const selUnit = sel ? (state.units.find(u => u.id === sel) ?? null) : null;
-    renderOverlay(overlayLayer, selUnit, vp, mode);
+    renderOverlay(overlayLayer, selUnit, vp, mode, state.phase);
 
     hud.update(state, log, sel, mode);
   }
@@ -388,10 +420,45 @@ async function init(): Promise<void> {
         if (hit.playerId === state.activePlayer) {
           sel = sel === hit.id ? null : hit.id;
           log = sel ? `Selected: ${hit.name}` : 'Deselected.';
+        } else if (sel && state.phase === 'SHOOTING') {
+          // Clicking enemy in SHOOTING phase = auto-shoot with first ranged weapon
+          const attacker = state.units.find((u) => u.id === sel);
+          const weaponIdx = attacker?.weapons.findIndex((w) => w.type === 'ranged') ?? -1;
+          if (weaponIdx >= 0) {
+            const res = engine.dispatch({ type: 'SHOOT', attackerId: sel, targetId: hit.id, weaponIndex: weaponIdx });
+            if (res.success) {
+              const tr = engine.getTranscript();
+              const hits = tr.getByType('HIT_ROLL').filter((r) => r.success).length;
+              const wounds = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
+              const saves = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
+              const dmg = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
+              const destroyed = tr.getByType('UNIT_DESTROYED').some((d) => d.unitId === hit.id);
+              const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${hit.wounds - dmg}/${hit.maxWounds}W`;
+              log = `${attacker?.name ?? ''} ⟶ ${hit.name}: ${hits}h ${wounds}w ${saves}sv ${dmg}dmg${suffix}`;
+              mode = 'select';
+            } else { log = `⚠ ${res.error}`; }
+          } else { log = '⚠ No ranged weapons on selected unit'; }
         } else {
           log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
         }
       } else { sel = null; log = 'No unit here.'; }
+    } else if (mode === 'shoot') {
+      if (!sel) { mode = 'select'; render(); return; }
+      const hit = hitUnit(state.units, bp);
+      if (!hit || hit.playerId === state.activePlayer) { log = 'Click an enemy to shoot.'; render(); return; }
+      const attacker = state.units.find((u) => u.id === sel);
+      const weaponIdx = attacker?.weapons.findIndex((w) => w.type === 'ranged') ?? -1;
+      if (weaponIdx < 0) { log = '⚠ No ranged weapons'; mode = 'select'; render(); return; }
+      const res = engine.dispatch({ type: 'SHOOT', attackerId: sel, targetId: hit.id, weaponIndex: weaponIdx });
+      if (res.success) {
+        const tr = engine.getTranscript();
+        const hits2 = tr.getByType('HIT_ROLL').filter((r) => r.success).length;
+        const wounds2 = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
+        const saves2 = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
+        const dmg2 = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
+        log = `${attacker?.name ?? ''} ⟶ ${hit.name}: ${hits2}h ${wounds2}w ${saves2}sv ${dmg2}dmg`;
+        mode = 'select';
+      } else { log = `⚠ ${res.error}`; }
     } else {
       if (!sel) { mode = 'select'; render(); return; }
       const action = mode === 'move'
@@ -413,8 +480,8 @@ async function init(): Promise<void> {
     const ph = engine.getState().phase;
     const tips: Record<string, string> = {
       MOVEMENT: 'Select a gold unit then press M to move or A to advance.',
-      SHOOTING: 'Shooting phase (Phase 4). Press Enter to continue.',
-      CHARGE: 'Charge phase (Phase 5). Press Enter to continue.',
+      SHOOTING: 'Shooting phase! Select a Custodes unit, then click an enemy or press S.',
+      CHARGE: 'Charge phase. Press Enter to continue.',
       FIGHT: 'Fight phase (Phase 5). Press Enter to continue.',
       END: 'End phase. Press Enter to close the turn.',
       COMMAND: 'New turn! Check VPs. Select a unit to act.',
@@ -431,6 +498,7 @@ async function init(): Promise<void> {
     if (e.key === 'Escape') { sel = null; mode = 'select'; log = 'Deselected.'; render(); }
     else if ((e.key === 'm' || e.key === 'M') && sel) { mode = mode === 'move' ? 'select' : 'move'; render(); }
     else if ((e.key === 'a' || e.key === 'A') && sel) { mode = mode === 'advance' ? 'select' : 'advance'; render(); }
+    else if ((e.key === 's' || e.key === 'S') && sel) { mode = mode === 'shoot' ? 'select' : 'shoot'; render(); }
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); endPhase(); }
   });
 

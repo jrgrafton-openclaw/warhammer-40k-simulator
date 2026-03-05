@@ -23,6 +23,16 @@ import {
   PHASE_ORDER,
   nextPhase,
 } from './state.js';
+import { rollDiceExpr } from './dice.js';
+
+/** WH40K 10th ed wound roll table */
+function woundRollNeeded(strength: number, toughness: number): number {
+  if (strength >= toughness * 2) return 2;
+  if (strength > toughness)      return 3;
+  if (strength === toughness)    return 4;
+  if (strength * 2 <= toughness) return 6;
+  return 5;
+}
 
 export class GameEngine {
   private state: GameState;
@@ -148,6 +158,15 @@ export class GameEngine {
           return { valid: false, reason: 'Cannot shoot friendly unit' };
         if (attacker.hasFired)
           return { valid: false, reason: 'Unit has already fired this phase' };
+        const shootWeapon = attacker.weapons[action.weaponIndex];
+        if (!shootWeapon) return { valid: false, reason: `Weapon index ${action.weaponIndex} not found on ${attacker.name}` };
+        if (shootWeapon.type === 'melee') return { valid: false, reason: 'Melee weapons cannot be used in Shooting phase' };
+        const shootDist = Math.hypot(attacker.center.x - target.center.x, attacker.center.y - target.center.y);
+        const shootRange = typeof shootWeapon.range === 'number' ? shootWeapon.range : 0;
+        if (shootDist > shootRange + 0.001)
+          return { valid: false, reason: `Target out of range (${shootDist.toFixed(1)}" > ${shootRange}")` };
+        if (attacker.isInEngagement && !shootWeapon.keywords.includes('PISTOL'))
+          return { valid: false, reason: 'Cannot shoot while in engagement range (no Pistol weapon)' };
         return { valid: true };
       }
 
@@ -361,10 +380,91 @@ export class GameEngine {
   }
 
   private resolveShoot(action: Extract<Action, { type: 'SHOOT' }>): void {
-    // Phase 4 will implement full shooting pipeline
-    // Stub: mark unit as fired
     const attacker = this.state.units.find((u) => u.id === action.attackerId);
-    if (attacker) attacker.hasFired = true;
+    const target = this.state.units.find((u) => u.id === action.targetId);
+    if (!attacker || !target) return;
+
+    const weapon = attacker.weapons[action.weaponIndex];
+    if (!weapon) {
+      attacker.hasFired = true;
+      return;
+    }
+
+    // 1. Roll attacks
+    const attackCount = rollDiceExpr(weapon.attacks, this.rng);
+    this.transcript.append({
+      type: 'ROLL', rollType: 'ATTACKS', value: attackCount, sides: 6,
+      context: `${attacker.name} fires ${weapon.name} (${attackCount} attacks)`,
+    });
+
+    // 2. Hit rolls (D6 >= skill)
+    let hits = 0;
+    for (let i = 0; i < attackCount; i++) {
+      const roll = this.rng.d6();
+      const success = roll >= weapon.skill;
+      if (success) hits++;
+      this.transcript.append({
+        type: 'HIT_ROLL', attackerId: attacker.id, targetId: target.id,
+        roll, needed: weapon.skill, success,
+      });
+    }
+
+    // 3. Wound rolls (S vs T table)
+    const woundNeeded = woundRollNeeded(weapon.strength, target.toughness);
+    let woundsScored = 0;
+    for (let i = 0; i < hits; i++) {
+      const roll = this.rng.d6();
+      const success = roll >= woundNeeded;
+      if (success) woundsScored++;
+      this.transcript.append({
+        type: 'WOUND_ROLL', attackerId: attacker.id, targetId: target.id,
+        roll, needed: woundNeeded, success,
+      });
+    }
+
+    // 4. Save rolls (best of armour+AP vs invuln)
+    const modifiedSave = target.save - weapon.ap; // ap is 0 or negative, so this = save + |ap|
+    const isInvulnBetter = target.invuln !== null && target.invuln < modifiedSave;
+    const effectiveSave = isInvulnBetter ? target.invuln! : modifiedSave;
+    let unsaved = 0;
+    for (let i = 0; i < woundsScored; i++) {
+      const roll = this.rng.d6();
+      const success = roll >= effectiveSave;
+      if (!success) unsaved++;
+      this.transcript.append({
+        type: 'SAVE_ROLL', unitId: target.id,
+        roll, needed: effectiveSave, success, isInvuln: isInvulnBetter,
+      });
+    }
+
+    // 5. Apply damage (with optional FNP)
+    let totalDamage = 0;
+    for (let i = 0; i < unsaved; i++) {
+      const dmg = rollDiceExpr(weapon.damage, this.rng);
+      let finalDmg = dmg;
+
+      // Feel No Pain — roll per wound point
+      if (target.fnp !== null) {
+        let blocked = 0;
+        for (let w = 0; w < dmg; w++) {
+          if (this.rng.d6() >= target.fnp) blocked++;
+        }
+        finalDmg = dmg - blocked;
+      }
+
+      totalDamage += finalDmg;
+      const remaining = Math.max(0, target.wounds - totalDamage);
+      this.transcript.append({ type: 'DAMAGE_APPLIED', unitId: target.id, amount: finalDmg, remaining });
+    }
+
+    target.wounds = Math.max(0, target.wounds - totalDamage);
+    attacker.hasFired = true;
+
+    // Remove destroyed unit
+    if (target.wounds <= 0) {
+      this.state.units = this.state.units.filter((u) => u.id !== target.id);
+      this.transcript.append({ type: 'UNIT_DESTROYED', unitId: target.id, destroyedBy: attacker.id });
+    }
   }
 
   private resolveCharge(action: Extract<Action, { type: 'CHARGE' }>): void {

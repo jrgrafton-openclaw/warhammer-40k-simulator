@@ -3,8 +3,12 @@
  * Handles deployment zone placement for both players.
  */
 
-import type { ArmyList, ArmyListUnit } from './schemas.js';
-import type { BlobUnit } from '@wh40k/engine';
+import type { ArmyList, ArmyListUnit, WeaponProfile } from './schemas.js';
+import type { BlobUnit, EngineWeapon } from '@wh40k/engine';
+
+function weaponToEngine(w: WeaponProfile): EngineWeapon {
+  return { id: w.id, name: w.name, type: w.type, range: w.range, attacks: w.attacks, skill: w.skill, strength: w.strength, ap: w.ap, damage: w.damage, keywords: w.keywords };
+}
 
 // ---------------------------------------------------------------------------
 // Radius estimation (inches)
@@ -126,6 +130,7 @@ export function spawnArmy(
       hasAdvanced: false,
       isInEngagement: false,
       movedThisPhase: false,
+      weapons: ds.weapons.map(weaponToEngine),
     };
   });
 }
@@ -195,6 +200,7 @@ export function createPlaceholderOpponent(
       hasAdvanced: false,
       isInEngagement: false,
       movedThisPhase: false,
+      weapons: [],
     };
   });
 }

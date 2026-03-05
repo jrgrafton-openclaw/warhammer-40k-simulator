@@ -16,10 +16,12 @@ export {
   type Phase,
   type Point,
   type BlobUnit,
+  type EngineWeapon,
   type Objective,
   type PlayerState,
   type GameState,
 } from './state.js';
+export { rollDiceExpr, minDiceExpr, maxDiceExpr } from './dice.js';
 export { type Action, type ValidationResult, type ActionResult } from './actions.js';
 export { GameEngine } from './engine.js';
 export {
