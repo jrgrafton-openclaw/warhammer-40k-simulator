@@ -1,19 +1,20 @@
 /**
  * WH40K Simulator — Interactive Board
+ * Both players (Custodes gold + Chaos red) take turns interactively.
  *
  * Movement (MOVEMENT phase):
- *   Drag gold unit   → move it (snaps back if out of range)
+ *   Drag active player's unit → move it (snaps back if out of range)
  *   A key / ADV btn  → switch to Advance mode, then drag
  *   M key / MOVE btn → switch back to Move mode
  *
  * Shooting (SHOOTING phase):
- *   Click gold unit  → select it
- *   Click red unit   → shoot with selected unit (auto-picks first ranged weapon)
- *   S key            → toggle shoot mode
+ *   Click active player's unit → select it
+ *   Click enemy unit  → shoot with selected unit (auto-picks first ranged weapon)
+ *   S key             → toggle shoot mode
  *
  * General:
- *   Esc              → deselect / cancel
- *   Enter / Space    → end phase
+ *   Esc               → deselect / cancel
+ *   Enter / Space     → end phase
  */
 import {
   Application, Graphics, Text, TextStyle, Container,
@@ -129,7 +130,7 @@ function hitUnit(units: BlobUnit[], board: Point, minR = 1.5): BlobUnit | null {
 // Board renderer
 // ---------------------------------------------------------------------------
 
-function renderBoard(layer: Container, vp: Viewport): void {
+function renderBoard(layer: Container, vp: Viewport, state: GameState): void {
   const g = new Graphics(); layer.addChild(g);
   const { ox: x, oy: y, scale: s } = vp;
   const bw = BOARD_W * s, bh = BOARD_H * s;
@@ -149,13 +150,25 @@ function renderBoard(layer: Container, vp: Viewport): void {
   for (let gy = y; gy <= y + bh + 1; gy += gs) g.moveTo(x, gy).lineTo(x + bw, gy);
   g.stroke();
 
-  // Objectives
-  for (const [ox2, oy2] of [[15, 22], [30, 22], [45, 22]] as [number, number][]) {
-    const sc = boardToScreen(vp, { x: ox2, y: oy2 });
-    g.circle(sc.x, sc.y, 3 * s).fill({ color: 0xffffff, alpha: 0.07 });
-    g.setStrokeStyle({ width: 2, color: 0xffffff, alpha: 0.5 });
-    g.circle(sc.x, sc.y, 3 * s).stroke();
-    g.circle(sc.x, sc.y, 3).fill({ color: 0xffffff, alpha: 0.7 });
+  // Objectives — colour reflects control from state.objectives
+  for (const obj of state.objectives) {
+    const sc = boardToScreen(vp, obj.position);
+    const ocEntries = Object.entries(obj.contestedOcPerPlayer);
+    const isContested = ocEntries.length >= 2 && ocEntries[0]?.[1] === ocEntries[1]?.[1];
+    let objColor: number;
+    if (isContested) {
+      objColor = 0xffffff; // contested → white
+    } else if (obj.controlledBy === 'player1') {
+      objColor = P1_COLOR; // player1 → gold
+    } else if (obj.controlledBy === 'player2') {
+      objColor = P2_COLOR; // player2 → red
+    } else {
+      objColor = 0x888888; // uncontrolled → grey
+    }
+    g.circle(sc.x, sc.y, obj.radius * s).fill({ color: objColor, alpha: 0.07 });
+    g.setStrokeStyle({ width: 2, color: objColor, alpha: 0.6 });
+    g.circle(sc.x, sc.y, obj.radius * s).stroke();
+    g.circle(sc.x, sc.y, 3).fill({ color: objColor, alpha: 0.8 });
   }
 
   // Border
@@ -378,9 +391,12 @@ function buildHUD(screenW: number): HUD {
     vpText.text = `VP: ${p1?.victoryPoints ?? 0} — ${p2?.victoryPoints ?? 0}`;
     vpText.x = screenW / 2;
 
+    // Subtle bg tint + separator line colour reflect active player
+    const hudBg = state.activePlayer === 'player1' ? 0x0a0906 : 0x090608;
+    const sepColor = state.activePlayer === 'player1' ? ACCENT : 0xaa1111;
     bg.clear();
-    bg.rect(0, 0, screenW, H).fill({ color: 0x080609, alpha: 0.97 });
-    bg.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.3 }); bg.moveTo(0, H).lineTo(screenW, H).stroke();
+    bg.rect(0, 0, screenW, H).fill({ color: hudBg, alpha: 0.97 });
+    bg.setStrokeStyle({ width: 1, color: sepColor, alpha: 0.5 }); bg.moveTo(0, H).lineTo(screenW, H).stroke();
 
     endBtn.x = screenW - 148;
   }
@@ -399,33 +415,42 @@ async function init(): Promise<void> {
   if (!el) throw new Error('Missing #app');
   el.appendChild(app.canvas);
 
-  // Engine
-  const engine = new GameEngine(
-    Object.assign(
-      createInitialState(['player1', 'player2'], { rngSeed: Date.now() }),
-      {
-        units: [...makeCustodes('player1'), ...makeOpponent('player2')],
-        objectives: [
-          { id: 'obj-a', position: {x:15,y:22}, radius:3, controlledBy:null, contestedOcPerPlayer:{} },
-          { id: 'obj-b', position: {x:30,y:22}, radius:3, controlledBy:null, contestedOcPerPlayer:{} },
-          { id: 'obj-c', position: {x:45,y:22}, radius:3, controlledBy:null, contestedOcPerPlayer:{} },
-        ],
-      }
-    ),
-    new SeededRng(Date.now()),
-    new TranscriptLog(),
-  );
+  // Engine factory — used for initial creation and Play Again restarts
+  function makeGameEngine(): GameEngine {
+    const seed = Date.now();
+    return new GameEngine(
+      Object.assign(
+        createInitialState(['player1', 'player2'], { rngSeed: seed }),
+        {
+          units: [...makeCustodes('player1'), ...makeOpponent('player2')],
+          objectives: [
+            { id: 'obj-a', position: {x:15,y:22}, radius:3, controlledBy:null, contestedOcPerPlayer:{} },
+            { id: 'obj-b', position: {x:30,y:22}, radius:3, controlledBy:null, contestedOcPerPlayer:{} },
+            { id: 'obj-c', position: {x:45,y:22}, radius:3, controlledBy:null, contestedOcPerPlayer:{} },
+          ],
+        }
+      ),
+      new SeededRng(seed),
+      new TranscriptLog(),
+    );
+  }
+  let engine = makeGameEngine();
 
   // Layers — use Container so Text can be added without PixiJS deprecation warning
   // (Graphics only for drawing; text added directly to the Container)
   const boardLayer   = new Container();
   const unitLayer    = new Container();
   const overlayLayer = new Container();
-  app.stage.addChild(boardLayer, unitLayer, overlayLayer);
+  const diceLayer    = new Container(); // dice flash — above board but below HUD
+  app.stage.addChild(boardLayer, unitLayer, overlayLayer, diceLayer);
 
   // HUD
   const hud = buildHUD(app.screen.width);
   app.stage.addChild(hud.container);
+
+  // End screen — on top of everything including HUD
+  const endLayer = new Container();
+  app.stage.addChild(endLayer);
 
   // Version overlay — bottom-right corner, clickable link to git commit
   const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 10, fill: 0x9a8855 });
@@ -453,12 +478,159 @@ async function init(): Promise<void> {
   interface DragState { unitId: string; downScreen: Point; ghostBP: Point; mode: 'move' | 'charge' }
   let drag: DragState | null = null;
 
+  // ---------------------------------------------------------------------------
+  // Dice flash — brief overlay showing last roll results
+  // ---------------------------------------------------------------------------
+  function showDiceFlash(layer: Container, rolls: Array<{value: number, success: boolean}>, label: string): void {
+    const c = new Container();
+    layer.addChild(c);
+
+    const sw = app.screen.width;
+    const sh = app.screen.height;
+    const pw = Math.min(400, sw - 40);
+    const ph = 80;
+    const px = (sw - pw) / 2;
+    const py = sh - hud.height - ph - 20;
+
+    const bg2 = new Graphics();
+    bg2.roundRect(px, py, pw, ph, 8).fill({ color: 0x0a0806, alpha: 0.88 });
+    bg2.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.5 });
+    bg2.roundRect(px, py, pw, ph, 8).stroke();
+    c.addChild(bg2);
+
+    // Label
+    const ls = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fill: ACCENT });
+    const lt = new Text({ text: label, style: ls });
+    lt.x = px + 12; lt.y = py + 8;
+    c.addChild(lt);
+
+    // Dice pips
+    const maxDice = Math.min(rolls.length, 20);
+    const diceSize = 22;
+    const gap = 4;
+    const startX = px + 12;
+    const diceY = py + 34;
+    for (let i = 0; i < maxDice; i++) {
+      const roll = rolls[i]!;
+      const dx = startX + i * (diceSize + gap);
+      if (dx + diceSize > px + pw - 12) break;
+      const dg = new Graphics();
+      dg.roundRect(dx, diceY, diceSize, diceSize, 3).fill({ color: roll.success ? 0x224422 : 0x442222, alpha: 0.9 });
+      dg.setStrokeStyle({ width: 1, color: roll.success ? 0x44ff44 : 0xff4444, alpha: 0.8 });
+      dg.roundRect(dx, diceY, diceSize, diceSize, 3).stroke();
+      c.addChild(dg);
+      const numStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 11, fontWeight: 'bold', fill: roll.success ? 0x88ff88 : 0xff8888 });
+      const numText = new Text({ text: String(roll.value), style: numStyle });
+      numText.anchor.set(0.5, 0.5);
+      numText.x = dx + diceSize / 2;
+      numText.y = diceY + diceSize / 2;
+      c.addChild(numText);
+    }
+
+    // Fade out and remove
+    let elapsed = 0;
+    const DURATION = 90; // ~1.5s at 60fps
+    const tick = () => {
+      elapsed++;
+      if (elapsed >= DURATION) {
+        app.ticker.remove(tick);
+        layer.removeChild(c);
+      } else if (elapsed > 60) {
+        c.alpha = 1 - (elapsed - 60) / 30;
+      }
+    };
+    app.ticker.add(tick);
+  }
+
+  // ---------------------------------------------------------------------------
+  // End screen overlay
+  // ---------------------------------------------------------------------------
+  function renderEndScreen(state: GameState): void {
+    endLayer.removeChildren();
+    if (!state.gameOver) return;
+
+    const sw = app.screen.width;
+    const sh = app.screen.height;
+
+    // Dark semi-transparent backdrop
+    const backdrop = new Graphics();
+    backdrop.rect(0, 0, sw, sh).fill({ color: 0x000000, alpha: 0.78 });
+    endLayer.addChild(backdrop);
+
+    // Panel
+    const pw = Math.min(480, sw - 40);
+    const ph = 260;
+    const px = (sw - pw) / 2;
+    const py = (sh - ph) / 2;
+    const panel = new Graphics();
+    panel.roundRect(px, py, pw, ph, 12).fill({ color: 0x0e0b06, alpha: 0.98 });
+    panel.setStrokeStyle({ width: 2, color: ACCENT, alpha: 0.8 });
+    panel.roundRect(px, py, pw, ph, 12).stroke();
+    endLayer.addChild(panel);
+
+    // VICTORY title
+    const titleStyle = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 42, fontWeight: 'bold', fill: ACCENT, letterSpacing: 8 });
+    const titleText = new Text({ text: 'VICTORY', style: titleStyle });
+    titleText.anchor.set(0.5, 0);
+    titleText.x = sw / 2;
+    titleText.y = py + 24;
+    endLayer.addChild(titleText);
+
+    // Winner name
+    const winnerName = state.winner === 'player1' ? 'Custodes' : state.winner === 'player2' ? 'Chaos' : 'Draw';
+    const winnerColor = state.winner === 'player1' ? P1_COLOR : state.winner === 'player2' ? P2_COLOR : 0xaaaaaa;
+    const winStyle = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 26, fontWeight: 'bold', fill: winnerColor, letterSpacing: 3 });
+    const winText = new Text({ text: winnerName, style: winStyle });
+    winText.anchor.set(0.5, 0);
+    winText.x = sw / 2;
+    winText.y = py + 84;
+    endLayer.addChild(winText);
+
+    // VP breakdown
+    const p1vp = state.players[0]?.victoryPoints ?? 0;
+    const p2vp = state.players[1]?.victoryPoints ?? 0;
+    const vpStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 18, fill: 0xccbb88 });
+    const vpText = new Text({ text: `Custodes ${p1vp}  —  Chaos ${p2vp}`, style: vpStyle });
+    vpText.anchor.set(0.5, 0);
+    vpText.x = sw / 2;
+    vpText.y = py + 126;
+    endLayer.addChild(vpText);
+
+    // Play Again button
+    const btnW = 180; const btnH = 44;
+    const btnX = (sw - btnW) / 2;
+    const btnY = py + ph - 70;
+    const btnC = new Container();
+    btnC.x = btnX; btnC.y = btnY;
+    btnC.interactive = true; btnC.cursor = 'pointer';
+    const btnBg = new Graphics();
+    btnBg.roundRect(0, 0, btnW, btnH, 8).fill({ color: 0x2a1a04, alpha: 1 });
+    btnBg.setStrokeStyle({ width: 2, color: ACCENT, alpha: 0.8 });
+    btnBg.roundRect(0, 0, btnW, btnH, 8).stroke();
+    btnC.addChild(btnBg);
+    const btnStyle = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 16, fontWeight: 'bold', fill: ACCENT, letterSpacing: 2 });
+    const btnText = new Text({ text: '⟳ PLAY AGAIN', style: btnStyle });
+    btnText.anchor.set(0.5, 0.5);
+    btnText.x = btnW / 2; btnText.y = btnH / 2;
+    btnC.addChild(btnText);
+    endLayer.addChild(btnC);
+
+    btnC.on('pointertap', () => {
+      // Reset engine with fresh state
+      engine = makeGameEngine();
+      sel = null; drag = null; mode = 'select';
+      log = 'New game! Drag a unit to begin.';
+      endLayer.removeChildren();
+      render();
+    });
+  }
+
   // Render
   function render(): void {
     const state = engine.getState();
     const vp = makeViewport(app.screen.width, app.screen.height, hud.height);
 
-    boardLayer.removeChildren(); renderBoard(boardLayer, vp);
+    boardLayer.removeChildren(); renderBoard(boardLayer, vp, state);
 
     // Render units; during drag, show dragging unit at 30% opacity (origin position)
     unitLayer.removeChildren();
@@ -482,6 +654,8 @@ async function init(): Promise<void> {
         const originSC = boardToScreen(vp, draggingUnit.center);
         const ghostSC  = boardToScreen(vp, drag.ghostBP);
         const sr = draggingUnit.radius * vp.scale;
+        // Ghost colour follows the dragging unit's player
+        const unitColor = draggingUnit.playerId === 'player1' ? P1_COLOR : P2_COLOR;
 
         // Drag Graphics — a fresh Graphics added to the Container layer
         const dg = new Graphics(); overlayLayer.addChild(dg);
@@ -514,7 +688,7 @@ async function init(): Promise<void> {
 
           // Unit at cursor
           dg.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
-          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.75 });
+          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: unitColor, alpha: 0.75 });
           dg.setStrokeStyle({ width: 3, color: chargeColor });
           dg.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
 
@@ -545,7 +719,7 @@ async function init(): Promise<void> {
 
           // Unit at cursor (bright)
           dg.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
-          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.9 });
+          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: unitColor, alpha: 0.9 });
           dg.setStrokeStyle({ width: 3, color: zoneColor });
           dg.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
 
@@ -561,6 +735,9 @@ async function init(): Promise<void> {
     }
 
     hud.update(state, log, sel, mode);
+
+    // End screen — shown on top of everything when game is over
+    renderEndScreen(state);
   }
 
   // ---------------------------------------------------------------------------
@@ -574,7 +751,8 @@ async function init(): Promise<void> {
     const res = engine.dispatch({ type: 'SHOOT', attackerId, targetId, weaponIndex: weaponIdx });
     if (res.success) {
       const tr = engine.getTranscript();
-      const hits = tr.getByType('HIT_ROLL').filter((r) => r.success).length;
+      const hitRolls = tr.getByType('HIT_ROLL');
+      const hits = hitRolls.filter((r) => r.success).length;
       const wounds = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
       const saves = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
       const dmg = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
@@ -582,6 +760,11 @@ async function init(): Promise<void> {
       const destroyed = !engine.getState().units.find(u => u.id === targetId);
       const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${(target?.wounds ?? 0) - dmg}/${target?.maxWounds ?? 0}W`;
       log = `${attacker?.name ?? ''} ⟶ ${target?.name ?? ''}: ${hits}h ${wounds}w ${saves}sv ${dmg}dmg${suffix}`;
+      // Dice flash — show hit roll results
+      const flashRolls = hitRolls.map(r => ({ value: r.roll as number, success: r.success as boolean }));
+      if (flashRolls.length > 0) {
+        showDiceFlash(diceLayer, flashRolls, `🎯 ${attacker?.name ?? ''} hits: ${hits}/${flashRolls.length}`);
+      }
     } else { log = `⚠ ${res.error}`; }
     render();
   }
@@ -743,7 +926,8 @@ async function init(): Promise<void> {
           const res = engine.dispatch({ type: 'FIGHT', attackerId: sel, targetId: hit.id });
           if (res.success) {
             const tr = engine.getTranscript();
-            const hits2 = tr.getByType('HIT_ROLL').filter(r => r.success).length;
+            const hitRolls2 = tr.getByType('HIT_ROLL');
+            const hits2 = hitRolls2.filter(r => r.success).length;
             const wounds2 = tr.getByType('WOUND_ROLL').filter(r => r.success).length;
             const saves2 = tr.getByType('SAVE_ROLL').filter(r => r.success).length;
             const dmg2 = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
@@ -751,6 +935,11 @@ async function init(): Promise<void> {
             const destroyed = !engine.getState().units.find(u => u.id === hit.id);
             const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${(hit.wounds - dmg2)}/${hit.maxWounds}W`;
             log = `${attacker?.name ?? ''} ⚔ ${hit.name}: ${hits2}h ${wounds2}w ${saves2}sv ${dmg2}dmg${suffix}`;
+            // Dice flash — show hit roll results
+            const flashRolls2 = hitRolls2.map(r => ({ value: r.roll as number, success: r.success as boolean }));
+            if (flashRolls2.length > 0) {
+              showDiceFlash(diceLayer, flashRolls2, `⚔ ${attacker?.name ?? ''} hits: ${hits2}/${flashRolls2.length}`);
+            }
           } else { log = `⚠ ${res.error}`; }
           render(); return;
         } else {
