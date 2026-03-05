@@ -13,6 +13,7 @@ Generated from git history via [git-cliff](https://git-cliff.org).
 ### Chores
 
 - Add git-cliff + CHANGELOG.md (auto-generated from conventional commits)
+- Update CHANGELOG
 
 ## [0.4.0] — 2026-03-05
 

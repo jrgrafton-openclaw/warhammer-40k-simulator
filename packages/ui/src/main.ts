@@ -261,6 +261,25 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: 
     g.addChild(zt);
   }
 
+  // Charge range ring (max 12" = 2D6 max)
+  if (phase === 'CHARGE' && !unit.hasCharged && !unit.hasAdvanced) {
+    const cr = (12 + unit.radius) * vp.scale;
+    g.setStrokeStyle({ width: 1.5, color: 0xffdd44, alpha: 0.5 });
+    drawDashedLine(g, sc.x - cr, sc.y, sc.x + cr, sc.y, 6, 4); // horizontal guideline only
+    g.circle(sc.x, sc.y, cr).fill({ color: 0xffdd44, alpha: 0.03 });
+    g.setStrokeStyle({ width: 1.5, color: 0xffdd44, alpha: 0.5 }); g.circle(sc.x, sc.y, cr).stroke();
+    const cs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 10, fill: 0xffdd44 });
+    const ct = new Text({ text: 'Charge range 12"  (2D6)', style: cs });
+    ct.anchor.set(0.5, 1); ct.x = sc.x; ct.y = sc.y - cr - 4;
+    g.addChild(ct);
+  }
+
+  // Fight ring — show enemies in engagement
+  if (phase === 'FIGHT' && unit.isInEngagement && !unit.hasFought) {
+    g.setStrokeStyle({ width: 3, color: 0xff2222, alpha: 0.9 });
+    g.circle(sc.x, sc.y, sr + 6).stroke();
+  }
+
   // Shoot range ring (first ranged weapon)
   if (phase === 'SHOOTING' && !unit.hasFired) {
     const rangedWeapon = unit.weapons.find((w) => w.type === 'ranged');
@@ -603,6 +622,51 @@ async function init(): Promise<void> {
           log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
         }
       } else { sel = null; log = 'Select a Custodes unit, then click an enemy to shoot.'; }
+    } else if (state.phase === 'CHARGE') {
+      if (hit) {
+        if (hit.playerId === state.activePlayer) {
+          sel = sel === hit.id ? null : hit.id;
+          log = sel ? `Selected: ${hit.name} — click enemy to charge` : 'Deselected.';
+        } else if (sel) {
+          // Charge!
+          const res = engine.dispatch({ type: 'CHARGE', attackerId: sel, targetIds: [hit.id] });
+          if (res.success) {
+            const chargeRoll = engine.getTranscript().getByType('CHARGE_ROLL').slice(-1)[0]!;
+            const attacker = state.units.find(u => u.id === sel);
+            const icon = chargeRoll.success ? '✅' : '❌';
+            log = `${attacker?.name ?? ''} charges ${hit.name} — 🎲 ${chargeRoll.roll} (needed ${chargeRoll.distance.toFixed(1)}") ${icon}`;
+          } else { log = `⚠ ${res.error}`; }
+          render(); return;
+        } else {
+          log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
+        }
+      } else { sel = null; log = 'Charge phase — select a unit, then click an enemy.'; }
+    } else if (state.phase === 'FIGHT') {
+      if (hit) {
+        if (hit.playerId === state.activePlayer) {
+          sel = sel === hit.id ? null : hit.id;
+          log = sel
+            ? (hit.isInEngagement ? `Selected: ${hit.name} — click enemy to fight` : `${hit.name} is not in engagement`)
+            : 'Deselected.';
+        } else if (sel) {
+          // Fight!
+          const res = engine.dispatch({ type: 'FIGHT', attackerId: sel, targetId: hit.id });
+          if (res.success) {
+            const tr = engine.getTranscript();
+            const hits2 = tr.getByType('HIT_ROLL').filter(r => r.success).length;
+            const wounds2 = tr.getByType('WOUND_ROLL').filter(r => r.success).length;
+            const saves2 = tr.getByType('SAVE_ROLL').filter(r => r.success).length;
+            const dmg2 = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
+            const attacker = state.units.find(u => u.id === sel);
+            const destroyed = !engine.getState().units.find(u => u.id === hit.id);
+            const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${(hit.wounds - dmg2)}/${hit.maxWounds}W`;
+            log = `${attacker?.name ?? ''} ⚔ ${hit.name}: ${hits2}h ${wounds2}w ${saves2}sv ${dmg2}dmg${suffix}`;
+          } else { log = `⚠ ${res.error}`; }
+          render(); return;
+        } else {
+          log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
+        }
+      } else { sel = null; log = 'Fight phase — select an engaged unit, then click an enemy.'; }
     } else {
       // Other phases — tap = select
       if (hit && hit.playerId === state.activePlayer) {
@@ -624,8 +688,8 @@ async function init(): Promise<void> {
     const tips: Record<string, string> = {
       MOVEMENT: 'Drag within move ring = normal move. Drag into advance ring = auto-rolls D6.',
       SHOOTING: 'Shooting phase! Click a Custodes unit, then click an enemy to shoot.',
-      CHARGE: 'Charge phase. Press Enter to continue.',
-      FIGHT: 'Fight phase (Phase 5). Press Enter to continue.',
+      CHARGE: 'Charge phase! Select a unit then click an enemy to charge (2D6 roll).',
+      FIGHT:  'Fight phase! Select a unit in engagement (red ring) then click an enemy to fight.',
       END: 'End phase. Press Enter to close the turn.',
       COMMAND: 'New turn! Check VPs. Select a unit to act.',
     };

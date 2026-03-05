@@ -25,6 +25,23 @@ import {
 } from './state.js';
 import { rollDiceExpr } from './dice.js';
 
+/** Recalculate isInEngagement for all units (call after any position change). */
+function updateEngagement(state: GameState): void {
+  for (const u of state.units) u.isInEngagement = false;
+  for (let i = 0; i < state.units.length; i++) {
+    for (let j = i + 1; j < state.units.length; j++) {
+      const a = state.units[i]!;
+      const b = state.units[j]!;
+      if (a.playerId === b.playerId) continue;
+      const dist = Math.hypot(a.center.x - b.center.x, a.center.y - b.center.y);
+      if (dist <= a.radius + b.radius + 1.01) {
+        a.isInEngagement = true;
+        b.isInEngagement = true;
+      }
+    }
+  }
+}
+
 /** WH40K 10th ed wound roll table */
 function woundRollNeeded(strength: number, toughness: number): number {
   if (strength >= toughness * 2) return 2;
@@ -187,14 +204,23 @@ export class GameEngine {
       case 'FIGHT': {
         if (this.state.phase !== 'FIGHT')
           return { valid: false, reason: `Cannot fight in ${this.state.phase} phase` };
-        const attacker = this.state.units.find((u) => u.id === action.attackerId);
-        const target = this.state.units.find((u) => u.id === action.targetId);
-        if (!attacker) return { valid: false, reason: 'Attacker not found' };
-        if (!target) return { valid: false, reason: 'Target not found' };
-        if (attacker.playerId !== this.state.activePlayer)
+        const fightAttacker = this.state.units.find((u) => u.id === action.attackerId);
+        const fightTarget = this.state.units.find((u) => u.id === action.targetId);
+        if (!fightAttacker) return { valid: false, reason: 'Attacker not found' };
+        if (!fightTarget) return { valid: false, reason: 'Target not found' };
+        if (fightAttacker.playerId !== this.state.activePlayer)
           return { valid: false, reason: 'Cannot fight with opponent unit' };
-        if (attacker.hasFought)
+        if (fightTarget.playerId === fightAttacker.playerId)
+          return { valid: false, reason: 'Cannot fight friendly unit' };
+        if (fightAttacker.hasFought)
           return { valid: false, reason: 'Unit has already fought this phase' };
+        if (!fightAttacker.isInEngagement)
+          return { valid: false, reason: 'Unit is not in engagement range' };
+        const fightDist = Math.hypot(fightAttacker.center.x - fightTarget.center.x, fightAttacker.center.y - fightTarget.center.y);
+        if (fightDist > fightAttacker.radius + fightTarget.radius + 1.01)
+          return { valid: false, reason: 'Target is not in engagement range' };
+        if (!fightAttacker.weapons.some((w) => w.type === 'melee'))
+          return { valid: false, reason: `${fightAttacker.name} has no melee weapons` };
         return { valid: true };
       }
 
@@ -240,6 +266,7 @@ export class GameEngine {
           unit.center = action.destination;
           unit.remainingMove -= dist;
           unit.movedThisPhase = true;
+          updateEngagement(this.state);
         }
         break;
       }
@@ -278,6 +305,7 @@ export class GameEngine {
           unit.remainingMove = advanceLimit - clampedDist;
           unit.movedThisPhase = true;
           unit.hasAdvanced = true;
+          updateEngagement(this.state);
         }
         break;
       }
@@ -468,25 +496,112 @@ export class GameEngine {
   }
 
   private resolveCharge(action: Extract<Action, { type: 'CHARGE' }>): void {
-    // Phase 5 will implement full charge resolution
-    // Stub: roll 2D6, log it
+    const attacker = this.state.units.find((u) => u.id === action.attackerId);
+    const primaryTarget = this.state.units.find((u) => u.id === action.targetIds[0]);
+    if (!attacker) return;
+    if (!primaryTarget) { attacker.hasCharged = true; return; }
+
+    // Roll 2D6 charge distance
     const roll = this.rng.d6() + this.rng.d6();
+
+    // Distance attacker needs to travel to reach engagement (1" edge-to-edge)
+    const centerDist = Math.hypot(
+      primaryTarget.center.x - attacker.center.x,
+      primaryTarget.center.y - attacker.center.y
+    );
+    const needed = Math.max(0, centerDist - attacker.radius - primaryTarget.radius - 1);
+    const success = roll >= needed;
+
     this.transcript.append({
-      type: 'ROLL',
-      rollType: 'CHARGE',
-      value: roll,
-      sides: 6,
-      context: `${action.attackerId} charges`,
+      type: 'CHARGE_ROLL',
+      attackerId: attacker.id,
+      targetId: primaryTarget.id,
+      roll,
+      distance: needed,
+      success,
     });
 
-    const attacker = this.state.units.find((u) => u.id === action.attackerId);
-    if (attacker) attacker.hasCharged = true;
+    if (success) {
+      // Move attacker to engagement range (0.5" edge-to-edge from target)
+      const engageCenterDist = attacker.radius + primaryTarget.radius + 0.5;
+      if (centerDist > engageCenterDist) {
+        const ratio = engageCenterDist / centerDist;
+        attacker.center = {
+          x: primaryTarget.center.x - (primaryTarget.center.x - attacker.center.x) * ratio,
+          y: primaryTarget.center.y - (primaryTarget.center.y - attacker.center.y) * ratio,
+        };
+      }
+      updateEngagement(this.state);
+    }
+
+    attacker.hasCharged = true;
   }
 
   private resolveFight(action: Extract<Action, { type: 'FIGHT' }>): void {
-    // Phase 5 will implement full fight resolution
     const attacker = this.state.units.find((u) => u.id === action.attackerId);
-    if (attacker) attacker.hasFought = true;
+    const target = this.state.units.find((u) => u.id === action.targetId);
+    if (!attacker || !target) return;
+
+    const weapon = attacker.weapons.find((w) => w.type === 'melee');
+    if (!weapon) { attacker.hasFought = true; return; }
+
+    // Hit rolls
+    const attackCount = rollDiceExpr(weapon.attacks, this.rng);
+    this.transcript.append({ type: 'ROLL', rollType: 'ATTACKS', value: attackCount, sides: 6,
+      context: `${attacker.name} fights ${target.name} with ${weapon.name}` });
+
+    let hits = 0;
+    for (let i = 0; i < attackCount; i++) {
+      const roll = this.rng.d6();
+      const success = roll >= weapon.skill;
+      if (success) hits++;
+      this.transcript.append({ type: 'HIT_ROLL', attackerId: attacker.id, targetId: target.id, roll, needed: weapon.skill, success });
+    }
+
+    // Wound rolls
+    const woundNeeded = woundRollNeeded(weapon.strength, target.toughness);
+    let woundsScored = 0;
+    for (let i = 0; i < hits; i++) {
+      const roll = this.rng.d6();
+      const success = roll >= woundNeeded;
+      if (success) woundsScored++;
+      this.transcript.append({ type: 'WOUND_ROLL', attackerId: attacker.id, targetId: target.id, roll, needed: woundNeeded, success });
+    }
+
+    // Save rolls
+    const modifiedSave = target.save - weapon.ap;
+    const isInvulnBetter = target.invuln !== null && target.invuln < modifiedSave;
+    const effectiveSave = isInvulnBetter ? target.invuln! : modifiedSave;
+    let unsaved = 0;
+    for (let i = 0; i < woundsScored; i++) {
+      const roll = this.rng.d6();
+      const success = roll >= effectiveSave;
+      if (!success) unsaved++;
+      this.transcript.append({ type: 'SAVE_ROLL', unitId: target.id, roll, needed: effectiveSave, success, isInvuln: isInvulnBetter });
+    }
+
+    // Damage + FNP
+    let totalDamage = 0;
+    for (let i = 0; i < unsaved; i++) {
+      const dmg = rollDiceExpr(weapon.damage, this.rng);
+      let finalDmg = dmg;
+      if (target.fnp !== null) {
+        let blocked = 0;
+        for (let w = 0; w < dmg; w++) { if (this.rng.d6() >= target.fnp) blocked++; }
+        finalDmg = dmg - blocked;
+      }
+      totalDamage += finalDmg;
+      this.transcript.append({ type: 'DAMAGE_APPLIED', unitId: target.id, amount: finalDmg, remaining: Math.max(0, target.wounds - totalDamage) });
+    }
+
+    target.wounds = Math.max(0, target.wounds - totalDamage);
+    attacker.hasFought = true;
+
+    if (target.wounds <= 0) {
+      this.state.units = this.state.units.filter((u) => u.id !== target.id);
+      this.transcript.append({ type: 'UNIT_DESTROYED', unitId: target.id, destroyedBy: attacker.id });
+      updateEngagement(this.state);
+    }
   }
 
   private resolveGameEnd(): void {
