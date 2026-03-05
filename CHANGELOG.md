@@ -8,6 +8,11 @@ Generated from git history via [git-cliff](https://git-cliff.org).
 ### Bug Fixes
 
 - **ui:** Drag-based unit movement replaces click-to-destination
+- **ui:** Zone-aware drag movement — auto-detect move vs advance
+
+### Chores
+
+- Add git-cliff + CHANGELOG.md (auto-generated from conventional commits)
 
 ## [0.4.0] — 2026-03-05
 
