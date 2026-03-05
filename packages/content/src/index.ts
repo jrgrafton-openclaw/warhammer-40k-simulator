@@ -1,8 +1,52 @@
 /**
- * @wh40k/content — Phase 2 implementation
- * Stub exports for Phase 0/1.
+ * @wh40k/content — Phase 2
+ * Content schemas, dice expressions, and army importers for WH40K 10th Edition.
  */
 
-export const CONTENT_VERSION = '0.0.1-stub';
+export const CONTENT_VERSION = '0.2.0';
 
-// Phase 2: UnitDatasheet, WeaponProfile, Stratagem, ArmyList, DiceExpr schemas + quickslate importer
+// Dice expressions
+export {
+  parseDiceExpr,
+  tryParseDiceExpr,
+  diceMin,
+  diceMax,
+  diceAverage,
+  diceToString,
+  diceRoll,
+} from './dice-expr.js';
+export type { DiceExpr } from './dice-expr.js';
+
+// Schemas & types
+export {
+  DiceExprStringSchema,
+  WeaponTypeSchema,
+  WeaponProfileSchema,
+  AbilitySchema,
+  UnitDatasheetSchema,
+  ArmyListUnitSchema,
+  ArmyListSchema,
+} from './schemas.js';
+export type {
+  WeaponProfile,
+  Ability,
+  UnitDatasheet,
+  ArmyListUnit,
+  ArmyList,
+} from './schemas.js';
+
+// BattleScribe importer
+export { importBattleScribeRoster } from './battlescribe-importer.js';
+export type { ImportOptions } from './battlescribe-importer.js';
+
+// Army loader
+export {
+  validateArmyList,
+  summarizeArmy,
+  unitToBlob,
+} from './army-loader.js';
+export type {
+  ArmyValidationResult,
+  ArmySummary,
+  BlobUnitInit,
+} from './army-loader.js';

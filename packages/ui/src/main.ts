@@ -1,5 +1,5 @@
 /**
- * WH40K Simulator — Phase 0 UI Placeholder
+ * WH40K Simulator — Phase 2 UI Placeholder
  * PixiJS renders a dark battlefield board with status overlay.
  */
 import { Application, Graphics, Text, TextStyle, Container } from 'pixi.js';
@@ -135,7 +135,7 @@ function buildInfoCard(): Container {
     lineHeight: 20,
   });
 
-  const heading = new Text({ text: 'Phase 0 — Scaffold ✓', style: headStyle });
+  const heading = new Text({ text: 'Phase 2 — Content + Importer ✓', style: headStyle });
   heading.x = 32;
   heading.y = 24;
   c.addChild(heading);
@@ -143,7 +143,7 @@ function buildInfoCard(): Container {
   const phases = [
     '✅  Phase 0  Repo + CI + GitHub Pages',
     '✅  Phase 1  Deterministic Engine Skeleton',
-    '⏳  Phase 2  Content Schema + Importer',
+    '✅  Phase 2  Content Schema + BattleScribe Importer',
     '⏳  Phase 3  Movement (Blob Units)',
     '⏳  Phase 4  Shooting Pipeline',
     '⏳  Phase 5  Charge + Fight',
@@ -159,7 +159,7 @@ function buildInfoCard(): Container {
   c.addChild(phaseList);
 
   const footer = new Text({
-    text: 'Engine: deterministic RNG · serializable state · 6-phase machine',
+    text: 'Content: Zod schemas · DiceExpr parser · BattleScribe roster importer (103 tests)',
     style: dimStyle,
   });
   footer.x = 32;
