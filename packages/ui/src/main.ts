@@ -128,7 +128,8 @@ function hitUnit(units: BlobUnit[], board: Point, minR = 1.5): BlobUnit | null {
 // Board renderer
 // ---------------------------------------------------------------------------
 
-function renderBoard(g: Graphics, vp: Viewport): void {
+function renderBoard(layer: Container, vp: Viewport): void {
+  const g = new Graphics(); layer.addChild(g);
   const { ox: x, oy: y, scale: s } = vp;
   const bw = BOARD_W * s, bh = BOARD_H * s;
 
@@ -166,7 +167,7 @@ function renderBoard(g: Graphics, vp: Viewport): void {
   // Zone labels
   const zs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 10, fill: 0x7a5820, letterSpacing: 2 });
   for (const [txt, lx, ly] of [['▲ PLAYER 1', x + 8, y + 3], ['▼ PLAYER 2', x + 8, y + bh - 14]] as [string,number,number][]) {
-    const t = new Text({ text: txt, style: zs }); t.x = lx; t.y = ly; g.addChild(t);
+    const t = new Text({ text: txt, style: zs }); t.x = lx; t.y = ly; layer.addChild(t);
   }
 }
 
@@ -182,7 +183,8 @@ const SHORT: Record<string, string> = {
   'Chaos Terminators': 'C.Terms',
 };
 
-function renderUnits(g: Graphics, units: BlobUnit[], vp: Viewport, selId: string | null): void {
+function renderUnits(layer: Container, units: BlobUnit[], vp: Viewport, selId: string | null): void {
+  const g = new Graphics(); layer.addChild(g);
   for (const u of units) {
     const sc = boardToScreen(vp, u.center);
     const sr = u.radius * vp.scale;
@@ -210,14 +212,14 @@ function renderUnits(g: Graphics, units: BlobUnit[], vp: Viewport, selId: string
       dropShadow: { color: 0x000000, alpha: 0.9, blur: 3, distance: 1, angle: Math.PI / 4 } });
     const lbl = new Text({ text: SHORT[u.name] ?? u.name.slice(0, 10), style: ls });
     lbl.anchor.set(0.5, 0.5); lbl.x = sc.x; lbl.y = sc.y;
-    g.addChild(lbl);
+    layer.addChild(lbl);
 
     if (sr > 22) {
       const ss = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: Math.max(7, sr * 0.28), fill: 0xddddcc, align: 'center' });
       const inv = u.invuln ? `/${u.invuln}+` : '';
       const st = new Text({ text: `T${u.toughness} ${u.save}+${inv}`, style: ss });
       st.anchor.set(0.5, 0); st.x = sc.x; st.y = sc.y + sr * 0.32;
-      g.addChild(st);
+      layer.addChild(st);
     }
   }
 }
@@ -248,8 +250,9 @@ function drawDashedLine(g: Graphics, x1: number, y1: number, x2: number, y2: num
   g.stroke();
 }
 
-function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: Mode, phase: string): void {
+function renderOverlay(layer: Container, unit: BlobUnit | null, vp: Viewport, _mode: Mode, phase: string): void {
   if (!unit) return;
+  const g = new Graphics(); layer.addChild(g);
   const sc = boardToScreen(vp, unit.center);
   const sr = unit.radius * vp.scale;
 
@@ -263,7 +266,7 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: 
     const zs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 10, fill: ZONE_ADV });
     const zt = new Text({ text: `${unit.remainingMove.toFixed(0)}" move / ${unit.movementInches + 6}" advance`, style: zs });
     zt.anchor.set(0.5, 1); zt.x = sc.x; zt.y = sc.y - ar - 4;
-    g.addChild(zt);
+    layer.addChild(zt);
   }
 
   // Charge range ring (max 12" = 2D6 max)
@@ -276,7 +279,7 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: 
     const cs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 10, fill: 0xffdd44 });
     const ct = new Text({ text: 'Charge range 12"  (2D6)', style: cs });
     ct.anchor.set(0.5, 1); ct.x = sc.x; ct.y = sc.y - cr - 4;
-    g.addChild(ct);
+    layer.addChild(ct);
   }
 
   // Fight ring — show enemies in engagement
@@ -295,7 +298,7 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: 
       const rs = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 11, fill: SHOOT_COLOR });
       const rt = new Text({ text: `${rangedWeapon.name} ${rangedWeapon.range}"`, style: rs });
       rt.anchor.set(0.5, 1); rt.x = sc.x; rt.y = sc.y - rr - 4;
-      g.addChild(rt);
+      layer.addChild(rt);
     }
   }
 
@@ -313,8 +316,8 @@ function renderOverlay(g: Graphics, unit: BlobUnit | null, vp: Viewport, _mode: 
   const bg = new Graphics();
   bg.roundRect(ttx - 8, tty - 6, ttw, tth, 4).fill({ color: 0x0e0c08, alpha: 0.9 });
   bg.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.55 }); bg.roundRect(ttx - 8, tty - 6, ttw, tth, 4).stroke();
-  g.addChild(bg);
-  tt.x = ttx; tt.y = tty; g.addChild(tt);
+  layer.addChild(bg);
+  tt.x = ttx; tt.y = tty; layer.addChild(tt);
 }
 
 // ---------------------------------------------------------------------------
@@ -363,9 +366,9 @@ function buildHUD(screenW: number): HUD {
   const endBtn = btn('⏭ END PHASE', 0x5a2a0e, 148);
 
   // Version tag — top-right corner, subtle
-  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 9, fill: 0x4a3a1a });
+  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 9, fill: 0x7a6844 });
   const verText = new Text({ text: `${__APP_VERSION__} · ${__BUILD_DATE__}`, style: verStyle });
-  verText.alpha = 0.55; verText.anchor.set(1, 0); verText.x = screenW - 4; verText.y = 3;
+  verText.alpha = 0.75; verText.anchor.set(1, 0); verText.x = screenW - 4; verText.y = 3;
   c.addChild(verText);
 
   function update(state: GameState, log: string, _selId: string | null, _mode: Mode): void {
@@ -415,10 +418,11 @@ async function init(): Promise<void> {
     new TranscriptLog(),
   );
 
-  // Layers
-  const boardLayer   = new Graphics();
-  const unitLayer    = new Graphics();
-  const overlayLayer = new Graphics();
+  // Layers — use Container so Text can be added without PixiJS deprecation warning
+  // (Graphics only for drawing; text added directly to the Container)
+  const boardLayer   = new Container();
+  const unitLayer    = new Container();
+  const overlayLayer = new Container();
   app.stage.addChild(boardLayer, unitLayer, overlayLayer);
 
   // HUD
@@ -439,10 +443,10 @@ async function init(): Promise<void> {
     const state = engine.getState();
     const vp = makeViewport(app.screen.width, app.screen.height, hud.height);
 
-    boardLayer.clear(); boardLayer.removeChildren(); renderBoard(boardLayer, vp);
+    boardLayer.removeChildren(); renderBoard(boardLayer, vp);
 
     // Render units; during drag, show dragging unit at 30% opacity (origin position)
-    unitLayer.clear(); unitLayer.removeChildren();
+    unitLayer.removeChildren();
     if (drag) {
       const dimmed = state.units.map(u => u.id === drag!.unitId ? { ...u, movedThisPhase: true } : u);
       renderUnits(unitLayer, dimmed, vp, sel);
@@ -450,7 +454,7 @@ async function init(): Promise<void> {
       renderUnits(unitLayer, state.units, vp, sel);
     }
 
-    overlayLayer.clear(); overlayLayer.removeChildren();
+    overlayLayer.removeChildren();
     const selUnit = sel ? (state.units.find(u => u.id === sel) ?? null) : null;
     // During drag, show rings around ORIGIN (where it came from), not ghost position
     const overlayUnit = drag ? (state.units.find(u => u.id === drag!.unitId) ?? null) : selUnit;
@@ -463,6 +467,9 @@ async function init(): Promise<void> {
         const originSC = boardToScreen(vp, draggingUnit.center);
         const ghostSC  = boardToScreen(vp, drag.ghostBP);
         const sr = draggingUnit.radius * vp.scale;
+
+        // Drag Graphics — a fresh Graphics added to the Container layer
+        const dg = new Graphics(); overlayLayer.addChild(dg);
 
         if (drag.mode === 'charge') {
           // ---- CHARGE drag visuals ----
@@ -478,23 +485,23 @@ async function init(): Promise<void> {
           if (dropTarget) {
             const tc = boardToScreen(vp, dropTarget.center);
             const tr2 = dropTarget.radius * vp.scale;
-            overlayLayer.setStrokeStyle({ width: 4, color: 0x44ff88, alpha: 0.9 });
-            overlayLayer.circle(tc.x, tc.y, tr2 + 6).stroke();
+            dg.setStrokeStyle({ width: 4, color: 0x44ff88, alpha: 0.9 });
+            dg.circle(tc.x, tc.y, tr2 + 6).stroke();
           }
 
           // Ghost ring at origin
-          overlayLayer.setStrokeStyle({ width: 2, color: CHARGE_COLOR, alpha: 0.5 });
-          overlayLayer.circle(originSC.x, originSC.y, sr + 3).stroke();
+          dg.setStrokeStyle({ width: 2, color: CHARGE_COLOR, alpha: 0.5 });
+          dg.circle(originSC.x, originSC.y, sr + 3).stroke();
 
           // Dashed ruler
-          overlayLayer.setStrokeStyle({ width: 1.5, color: chargeColor, alpha: 0.9 });
-          drawDashedLine(overlayLayer, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
+          dg.setStrokeStyle({ width: 1.5, color: chargeColor, alpha: 0.9 });
+          drawDashedLine(dg, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
 
           // Unit at cursor
-          overlayLayer.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
-          overlayLayer.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.75 });
-          overlayLayer.setStrokeStyle({ width: 3, color: chargeColor });
-          overlayLayer.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+          dg.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
+          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.75 });
+          dg.setStrokeStyle({ width: 3, color: chargeColor });
+          dg.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
 
           // Label
           const dist2 = Math.hypot(drag.ghostBP.x - draggingUnit.center.x, drag.ghostBP.y - draggingUnit.center.y);
@@ -514,18 +521,18 @@ async function init(): Promise<void> {
           const zoneColor = inMove ? ZONE_MOVE : inAdvance ? ZONE_ADV : ZONE_OVER;
 
           // Ghost ring at origin
-          overlayLayer.setStrokeStyle({ width: 2, color: zoneColor, alpha: 0.5 });
-          overlayLayer.circle(originSC.x, originSC.y, sr + 3).stroke();
+          dg.setStrokeStyle({ width: 2, color: zoneColor, alpha: 0.5 });
+          dg.circle(originSC.x, originSC.y, sr + 3).stroke();
 
           // Dashed ruler
-          overlayLayer.setStrokeStyle({ width: 1.5, color: zoneColor, alpha: 0.9 });
-          drawDashedLine(overlayLayer, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
+          dg.setStrokeStyle({ width: 1.5, color: zoneColor, alpha: 0.9 });
+          drawDashedLine(dg, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
 
           // Unit at cursor (bright)
-          overlayLayer.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
-          overlayLayer.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.9 });
-          overlayLayer.setStrokeStyle({ width: 3, color: zoneColor });
-          overlayLayer.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+          dg.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
+          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.9 });
+          dg.setStrokeStyle({ width: 3, color: zoneColor });
+          dg.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
 
           // Distance label + zone hint
           const zone = inMove ? 'MOVE' : inAdvance ? 'ADVANCE ⚄' : `MAX ${advMax.toFixed(0)}"`;
