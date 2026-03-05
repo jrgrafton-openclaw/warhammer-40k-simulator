@@ -328,7 +328,7 @@ interface HUD {
   container: Container;
   height: number;
   update(state: GameState, log: string, selId: string | null, mode: Mode): void;
-  endPhaseBtn: Graphics;
+  endPhaseBtn: Container;
 }
 
 function buildHUD(screenW: number): HUD {
@@ -352,23 +352,27 @@ function buildHUD(screenW: number): HUD {
   const vpText = new Text({ text: 'VP: 0 — 0', style: vpStyle });
   vpText.anchor.set(0.5, 0); vpText.x = screenW / 2; vpText.y = 17; c.addChild(vpText);
 
-  function btn(label: string, color: number, rx: number): Graphics {
+  function btn(label: string, color: number, rx: number): Container {
     const bw = 140; const bh = 34;
-    const b = new Graphics();
-    b.roundRect(0, 0, bw, bh, 6).fill({ color });
-    b.setStrokeStyle({ width: 1, color: 0xffffff, alpha: 0.2 }); b.roundRect(0, 0, bw, bh, 6).stroke();
+    // Use Container so Text isn't added to Graphics (PixiJS v8 pattern)
+    const bc = new Container();
+    bc.x = screenW - rx; bc.y = 8; bc.interactive = true; bc.cursor = 'pointer';
+    const bg2 = new Graphics();
+    bg2.roundRect(0, 0, bw, bh, 6).fill({ color });
+    bg2.setStrokeStyle({ width: 1, color: 0xffffff, alpha: 0.2 }); bg2.roundRect(0, 0, bw, bh, 6).stroke();
+    bc.addChild(bg2);
     const ts = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: 0xffffff, letterSpacing: 1 });
     const t = new Text({ text: label, style: ts }); t.anchor.set(0.5, 0.5); t.x = bw / 2; t.y = bh / 2;
-    b.addChild(t); b.x = screenW - rx; b.y = 8; b.interactive = true; b.cursor = 'pointer';
-    c.addChild(b); return b;
+    bc.addChild(t);
+    c.addChild(bc); return bc;
   }
 
   const endBtn = btn('⏭ END PHASE', 0x5a2a0e, 148);
 
   // Version tag — top-right corner, subtle
-  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 9, fill: 0x7a6844 });
+  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 9, fill: 0x9a8855 });
   const verText = new Text({ text: `${__APP_VERSION__} · ${__BUILD_DATE__}`, style: verStyle });
-  verText.alpha = 0.75; verText.anchor.set(1, 0); verText.x = screenW - 4; verText.y = 3;
+  verText.alpha = 0.8; verText.anchor.set(1, 1); verText.x = screenW - 152; verText.y = 46;
   c.addChild(verText);
 
   function update(state: GameState, log: string, _selId: string | null, _mode: Mode): void {
@@ -384,7 +388,7 @@ function buildHUD(screenW: number): HUD {
     bg.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.3 }); bg.moveTo(0, H).lineTo(screenW, H).stroke();
 
     endBtn.x = screenW - 148;
-    verText.x = screenW - 4;
+    verText.x = screenW - 152;
   }
 
   return { container: c, height: H, update, endPhaseBtn: endBtn };
