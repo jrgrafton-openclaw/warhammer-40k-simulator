@@ -23,6 +23,7 @@ import {
 // Injected at build time by Vite define
 declare const __APP_VERSION__: string;
 declare const __BUILD_DATE__: string;
+declare const __GIT_SHA__: string;
 import {
   GameEngine, SeededRng, TranscriptLog, createInitialState,
   type BlobUnit, type EngineWeapon, type GameState, type Point,
@@ -369,12 +370,6 @@ function buildHUD(screenW: number): HUD {
 
   const endBtn = btn('⏭ END PHASE', 0x5a2a0e, 148);
 
-  // Version tag — top-right corner, subtle
-  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 9, fill: 0x9a8855 });
-  const verText = new Text({ text: `${__APP_VERSION__} · ${__BUILD_DATE__}`, style: verStyle });
-  verText.alpha = 0.8; verText.anchor.set(1, 1); verText.x = screenW - 152; verText.y = 46;
-  c.addChild(verText);
-
   function update(state: GameState, log: string, _selId: string | null, _mode: Mode): void {
     const p1 = state.players[0]; const p2 = state.players[1];
     const label = state.activePlayer === 'player1' ? '⚜ CUSTODES' : '☠ CHAOS';
@@ -388,7 +383,6 @@ function buildHUD(screenW: number): HUD {
     bg.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.3 }); bg.moveTo(0, H).lineTo(screenW, H).stroke();
 
     endBtn.x = screenW - 148;
-    verText.x = screenW - 152;
   }
 
   return { container: c, height: H, update, endPhaseBtn: endBtn };
@@ -432,6 +426,23 @@ async function init(): Promise<void> {
   // HUD
   const hud = buildHUD(app.screen.width);
   app.stage.addChild(hud.container);
+
+  // Version overlay — bottom-right corner, clickable link to git commit
+  const verStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 10, fill: 0x9a8855 });
+  const verText = new Text({ text: `${__APP_VERSION__} · ${__BUILD_DATE__} · ${__GIT_SHA__}`, style: verStyle });
+  verText.alpha = 0.7;
+  verText.anchor.set(1, 1);
+  verText.interactive = true;
+  verText.cursor = 'pointer';
+  verText.on('pointertap', () => {
+    window.open(`https://github.com/jrgrafton-openclaw/warhammer-40k-simulator/commit/${__GIT_SHA__}`, '_blank');
+  });
+  app.stage.addChild(verText);
+  function positionVer(): void {
+    verText.x = app.screen.width - 8;
+    verText.y = app.screen.height - 8;
+  }
+  positionVer();
 
   // State
   let sel: string | null = null;
@@ -783,7 +794,7 @@ async function init(): Promise<void> {
     else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); endPhase(); }
   });
 
-  app.renderer.on('resize', () => render());
+  app.renderer.on('resize', () => { render(); positionVer(); });
   render();
 }
 

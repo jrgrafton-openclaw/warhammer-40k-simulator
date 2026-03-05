@@ -6,12 +6,17 @@ const gitTag = (() => {
   try { return execSync('git describe --tags --abbrev=0').toString().trim(); }
   catch { return 'dev'; }
 })();
+const gitSha = (() => {
+  try { return execSync('git rev-parse --short HEAD').toString().trim(); }
+  catch { return 'unknown'; }
+})();
 const buildDate = new Date().toISOString().slice(0, 10);
 
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(gitTag),
     __BUILD_DATE__: JSON.stringify(buildDate),
+    __GIT_SHA__: JSON.stringify(gitSha),
   },
   // For GitHub Pages: repo is at /warhammer-40k-simulator
   // When deploying to Pages, set base to the repo name
