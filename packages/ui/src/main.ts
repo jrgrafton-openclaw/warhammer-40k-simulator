@@ -29,6 +29,7 @@ import {
   GameEngine, SeededRng, TranscriptLog, createInitialState,
   type BlobUnit, type EngineWeapon, type GameState, type Point,
 } from '@wh40k/engine';
+import { showCombatPanel, type CombatRollData } from './combat-dice-panel.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -479,67 +480,33 @@ async function init(): Promise<void> {
   let drag: DragState | null = null;
 
   // ---------------------------------------------------------------------------
-  // Dice flash — brief overlay showing last roll results
+  // buildCombatData — extract roll data from transcript delta
   // ---------------------------------------------------------------------------
-  function showDiceFlash(layer: Container, rolls: Array<{value: number, success: boolean}>, label: string): void {
-    const c = new Container();
-    layer.addChild(c);
-
-    const sw = app.screen.width;
-    const sh = app.screen.height;
-    const pw = Math.min(400, sw - 40);
-    const ph = 80;
-    const px = (sw - pw) / 2;
-    const py = sh - hud.height - ph - 20;
-
-    const bg2 = new Graphics();
-    bg2.roundRect(px, py, pw, ph, 8).fill({ color: 0x0a0806, alpha: 0.88 });
-    bg2.setStrokeStyle({ width: 1, color: ACCENT, alpha: 0.5 });
-    bg2.roundRect(px, py, pw, ph, 8).stroke();
-    c.addChild(bg2);
-
-    // Label
-    const ls = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fill: ACCENT });
-    const lt = new Text({ text: label, style: ls });
-    lt.x = px + 12; lt.y = py + 8;
-    c.addChild(lt);
-
-    // Dice pips
-    const maxDice = Math.min(rolls.length, 20);
-    const diceSize = 22;
-    const gap = 4;
-    const startX = px + 12;
-    const diceY = py + 34;
-    for (let i = 0; i < maxDice; i++) {
-      const roll = rolls[i]!;
-      const dx = startX + i * (diceSize + gap);
-      if (dx + diceSize > px + pw - 12) break;
-      const dg = new Graphics();
-      dg.roundRect(dx, diceY, diceSize, diceSize, 3).fill({ color: roll.success ? 0x224422 : 0x442222, alpha: 0.9 });
-      dg.setStrokeStyle({ width: 1, color: roll.success ? 0x44ff44 : 0xff4444, alpha: 0.8 });
-      dg.roundRect(dx, diceY, diceSize, diceSize, 3).stroke();
-      c.addChild(dg);
-      const numStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: 11, fontWeight: 'bold', fill: roll.success ? 0x88ff88 : 0xff8888 });
-      const numText = new Text({ text: String(roll.value), style: numStyle });
-      numText.anchor.set(0.5, 0.5);
-      numText.x = dx + diceSize / 2;
-      numText.y = diceY + diceSize / 2;
-      c.addChild(numText);
-    }
-
-    // Fade out and remove
-    let elapsed = 0;
-    const DURATION = 90; // ~1.5s at 60fps
-    const tick = () => {
-      elapsed++;
-      if (elapsed >= DURATION) {
-        app.ticker.remove(tick);
-        layer.removeChild(c);
-      } else if (elapsed > 60) {
-        c.alpha = 1 - (elapsed - 60) / 30;
-      }
+  function buildCombatData(
+    attackerName: string,
+    targetName: string,
+    weaponName: string,
+    weaponStats: string,
+    prevHit: number, prevWound: number, prevSave: number, prevDmg: number,
+    targetId: string,
+  ): CombatRollData {
+    const tr = engine.getTranscript();
+    const newHits   = tr.getByType('HIT_ROLL').slice(prevHit);
+    const newWounds = tr.getByType('WOUND_ROLL').slice(prevWound);
+    const newSaves  = tr.getByType('SAVE_ROLL').slice(prevSave);
+    const totalDamage = tr.getByType('DAMAGE_APPLIED').slice(prevDmg).reduce((s, d) => s + d.amount, 0);
+    const targetDestroyed = !engine.getState().units.find(u => u.id === targetId);
+    return {
+      attackerName,
+      targetName,
+      weaponName,
+      weaponStats,
+      hitRolls:   newHits.map(r => ({ value: r.roll, needed: r.needed, success: r.success })),
+      woundRolls: newWounds.map(r => ({ value: r.roll, needed: r.needed, success: r.success })),
+      saveRolls:  newSaves.map(r => ({ value: r.roll, needed: r.needed, success: r.success, isInvuln: r.isInvuln })),
+      totalDamage,
+      targetDestroyed,
     };
-    app.ticker.add(tick);
   }
 
   // ---------------------------------------------------------------------------
@@ -615,7 +582,8 @@ async function init(): Promise<void> {
     btnC.addChild(btnText);
     endLayer.addChild(btnC);
 
-    btnC.on('pointertap', () => {
+    btnC.on('pointertap', (e) => {
+      e.stopPropagation();
       // Reset engine with fresh state
       engine = makeGameEngine();
       sel = null; drag = null; mode = 'select';
@@ -748,25 +716,43 @@ async function init(): Promise<void> {
     const attacker = state.units.find((u) => u.id === attackerId);
     const weaponIdx = attacker?.weapons.findIndex((w) => w.type === 'ranged') ?? -1;
     if (weaponIdx < 0) { log = '⚠ No ranged weapons on selected unit'; render(); return; }
+
+    // Snapshot transcript counts before dispatch
+    const tr = engine.getTranscript();
+    const prevHit   = tr.getByType('HIT_ROLL').length;
+    const prevWound = tr.getByType('WOUND_ROLL').length;
+    const prevSave  = tr.getByType('SAVE_ROLL').length;
+    const prevDmg   = tr.getByType('DAMAGE_APPLIED').length;
+
     const res = engine.dispatch({ type: 'SHOOT', attackerId, targetId, weaponIndex: weaponIdx });
     if (res.success) {
-      const tr = engine.getTranscript();
-      const hitRolls = tr.getByType('HIT_ROLL');
-      const hits = hitRolls.filter((r) => r.success).length;
-      const wounds = tr.getByType('WOUND_ROLL').filter((r) => r.success).length;
-      const saves = tr.getByType('SAVE_ROLL').filter((r) => r.success).length;
-      const dmg = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
-      const target = state.units.find(u => u.id === targetId);
-      const destroyed = !engine.getState().units.find(u => u.id === targetId);
-      const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${(target?.wounds ?? 0) - dmg}/${target?.maxWounds ?? 0}W`;
-      log = `${attacker?.name ?? ''} ⟶ ${target?.name ?? ''}: ${hits}h ${wounds}w ${saves}sv ${dmg}dmg${suffix}`;
-      // Dice flash — show hit roll results
-      const flashRolls = hitRolls.map(r => ({ value: r.roll as number, success: r.success as boolean }));
-      if (flashRolls.length > 0) {
-        showDiceFlash(diceLayer, flashRolls, `🎯 ${attacker?.name ?? ''} hits: ${hits}/${flashRolls.length}`);
-      }
+      const target  = state.units.find(u => u.id === targetId);
+      const weapon  = attacker!.weapons[weaponIdx]!;
+      const apStr   = weapon.ap === 0 ? '0' : weapon.ap < 0 ? String(weapon.ap) : `+${weapon.ap}`;
+      const wStats  = `A${weapon.attacks} · WS${weapon.skill}+ · S${weapon.strength} · AP${apStr} · D${weapon.damage}`;
+
+      const combatData = buildCombatData(
+        attacker!.name,
+        target?.name ?? targetId,
+        weapon.name,
+        wStats,
+        prevHit, prevWound, prevSave, prevDmg,
+        targetId,
+      );
+
+      // Show delightful animation — log update deferred to dismiss callback
+      showCombatPanel(app, diceLayer, combatData, () => {
+        const h = combatData.hitRolls.filter(r => r.success).length;
+        const w = combatData.woundRolls.filter(r => r.success).length;
+        const sv = combatData.saveRolls.filter(r => r.success).length;
+        const suffix = combatData.targetDestroyed
+          ? ' 💀 DESTROYED'
+          : ` → ${(target?.wounds ?? 0) - combatData.totalDamage}/${target?.maxWounds ?? 0}W`;
+        log = `${attacker!.name} ⟶ ${target?.name ?? ''}: ${h}h ${w}w ${sv}sv ${combatData.totalDamage}dmg${suffix}`;
+        render();
+      });
     } else { log = `⚠ ${res.error}`; }
-    render();
+    render(); // immediate board state update
   }
 
   // ---------------------------------------------------------------------------
@@ -923,23 +909,42 @@ async function init(): Promise<void> {
             : 'Deselected.';
         } else if (sel) {
           // Fight!
+          const fightAttacker = state.units.find(u => u.id === sel);
+          const fightWeapon   = fightAttacker?.weapons.find(w => w.type === 'melee');
+
+          // Snapshot transcript before dispatch
+          const tr2        = engine.getTranscript();
+          const prevHit2   = tr2.getByType('HIT_ROLL').length;
+          const prevWound2 = tr2.getByType('WOUND_ROLL').length;
+          const prevSave2  = tr2.getByType('SAVE_ROLL').length;
+          const prevDmg2   = tr2.getByType('DAMAGE_APPLIED').length;
+
           const res = engine.dispatch({ type: 'FIGHT', attackerId: sel, targetId: hit.id });
           if (res.success) {
-            const tr = engine.getTranscript();
-            const hitRolls2 = tr.getByType('HIT_ROLL');
-            const hits2 = hitRolls2.filter(r => r.success).length;
-            const wounds2 = tr.getByType('WOUND_ROLL').filter(r => r.success).length;
-            const saves2 = tr.getByType('SAVE_ROLL').filter(r => r.success).length;
-            const dmg2 = tr.getByType('DAMAGE_APPLIED').reduce((s, d) => s + d.amount, 0);
-            const attacker = state.units.find(u => u.id === sel);
-            const destroyed = !engine.getState().units.find(u => u.id === hit.id);
-            const suffix = destroyed ? ' 💀 DESTROYED' : ` → ${(hit.wounds - dmg2)}/${hit.maxWounds}W`;
-            log = `${attacker?.name ?? ''} ⚔ ${hit.name}: ${hits2}h ${wounds2}w ${saves2}sv ${dmg2}dmg${suffix}`;
-            // Dice flash — show hit roll results
-            const flashRolls2 = hitRolls2.map(r => ({ value: r.roll as number, success: r.success as boolean }));
-            if (flashRolls2.length > 0) {
-              showDiceFlash(diceLayer, flashRolls2, `⚔ ${attacker?.name ?? ''} hits: ${hits2}/${flashRolls2.length}`);
-            }
+            const apStr2  = !fightWeapon ? '0' : fightWeapon.ap === 0 ? '0' : fightWeapon.ap < 0 ? String(fightWeapon.ap) : `+${fightWeapon.ap}`;
+            const wStats2 = fightWeapon
+              ? `A${fightWeapon.attacks} · WS${fightWeapon.skill}+ · S${fightWeapon.strength} · AP${apStr2} · D${fightWeapon.damage}`
+              : '';
+
+            const combatData2 = buildCombatData(
+              fightAttacker?.name ?? sel,
+              hit.name,
+              fightWeapon?.name ?? 'Melee',
+              wStats2,
+              prevHit2, prevWound2, prevSave2, prevDmg2,
+              hit.id,
+            );
+
+            showCombatPanel(app, diceLayer, combatData2, () => {
+              const h2  = combatData2.hitRolls.filter(r => r.success).length;
+              const w2  = combatData2.woundRolls.filter(r => r.success).length;
+              const sv2 = combatData2.saveRolls.filter(r => r.success).length;
+              const suffix2 = combatData2.targetDestroyed
+                ? ' 💀 DESTROYED'
+                : ` → ${hit.wounds - combatData2.totalDamage}/${hit.maxWounds}W`;
+              log = `${fightAttacker?.name ?? ''} ⚔ ${hit.name}: ${h2}h ${w2}w ${sv2}sv ${combatData2.totalDamage}dmg${suffix2}`;
+              render();
+            });
           } else { log = `⚠ ${res.error}`; }
           render(); return;
         } else {
