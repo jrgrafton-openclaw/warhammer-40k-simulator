@@ -189,9 +189,13 @@ export function nextPhase(state: GameState): { phase: Phase; turn: number; activ
   const nextIdx = currentIdx + 1;
 
   if (nextIdx >= PHASE_ORDER.length) {
-    // End of phase list — next turn
-    const nextTurn = state.turn + 1;
+    // End of phase list — switch to opponent.
+    // A WH40K "game turn" = both players completing all phases.
+    // Only increment the turn counter when cycling back to the FIRST player
+    // (i.e. after player 2 finishes, not after player 1 finishes).
     const opponent = getOpponent(state, state.activePlayer);
+    const isNewGameTurn = opponent === state.players[0]?.id;
+    const nextTurn = isNewGameTurn ? state.turn + 1 : state.turn;
     return { phase: 'COMMAND', turn: nextTurn, activePlayer: opponent };
   }
 
