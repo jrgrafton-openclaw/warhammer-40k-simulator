@@ -54,6 +54,7 @@ const GUARDIAN_SPEAR_M = w('guardian-spear-m','Guardian Spear','melee','Melee','
 const BALISTUS_GRENADE = w('balistus-grenade','Balistus Grenade Launcher','ranged',18,'D6',2,4,-1,'1');
 const CASTELLAN_AXE    = w('castellan-axe','Castellan Axe','melee','Melee','4',2,8,-2,'2');
 const ACCEL_CANNON     = w('accel-cannon','Illiastus Accelerator Cannons','ranged',36,'6',2,7,-2,'2');
+const ARMOURED_HULL    = w('armoured-hull','Armoured Hull','melee','Melee','3',4,6,0,'1');
 const DAEMON_SWORD     = w('daemon-sword','Daemon Sword','melee','Melee','5',2,5,-2,'2');
 const INFERNAL_AXE     = w('infernal-axe','Infernal Greataxe','melee','Melee','2',3,5,-1,'1');
 const COMBI_WEAPON     = w('combi-weapon','Combi-weapon','ranged',24,'2',4,4,0,'1');
@@ -66,7 +67,7 @@ function makeCustodes(pid: string): BlobUnit[] {
     { id: `${pid}-1`, datasheetId: 'custodian-guard',   name: 'Custodian Guard I',center:{x:21,y:7},  radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
     { id: `${pid}-2`, datasheetId: 'custodian-guard',   name: 'Custodian Guard II',center:{x:37,y:7}, radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
     { id: `${pid}-3`, datasheetId: 'allarus-custodians',name: 'Allarus Custodians',center:{x:50,y:8}, radius:2,   movementInches:5,  remainingMove:5,  toughness:7,  save:2, invuln:4,    fnp:null, oc:2, wounds:4,  maxWounds:4,  weapons:[BALISTUS_GRENADE,CASTELLAN_AXE],    ...base },
-    { id: `${pid}-4`, datasheetId: 'caladius-grav-tank',name: 'Caladius',          center:{x:30,y:10},radius:2.5, movementInches:10, remainingMove:10, toughness:11, save:2, invuln:5,    fnp:null, oc:4, wounds:14, maxWounds:14, weapons:[ACCEL_CANNON],                     ...base },
+    { id: `${pid}-4`, datasheetId: 'caladius-grav-tank',name: 'Caladius',          center:{x:30,y:10},radius:2.5, movementInches:10, remainingMove:10, toughness:11, save:2, invuln:5,    fnp:null, oc:4, wounds:14, maxWounds:14, weapons:[ACCEL_CANNON,ARMOURED_HULL],        ...base },
   ];
 }
 
@@ -419,7 +420,7 @@ async function init(): Promise<void> {
   let log = 'Drag a gold unit — drop in move ring or advance ring.';
 
   // Drag state — tracks an in-progress unit drag
-  interface DragState { unitId: string; downScreen: Point; ghostBP: Point }
+  interface DragState { unitId: string; downScreen: Point; ghostBP: Point; mode: 'move' | 'charge' }
   let drag: DragState | null = null;
 
   // Render
@@ -452,35 +453,77 @@ async function init(): Promise<void> {
         const ghostSC  = boardToScreen(vp, drag.ghostBP);
         const sr = draggingUnit.radius * vp.scale;
 
-        // Determine zone
-        const dist = Math.hypot(drag.ghostBP.x - draggingUnit.center.x, drag.ghostBP.y - draggingUnit.center.y);
-        const moveMax = draggingUnit.remainingMove;
-        const advMax  = draggingUnit.movementInches + 6;
-        const inMove    = dist <= moveMax + 0.001;
-        const inAdvance = !inMove && dist <= advMax + 0.001;
-        const zoneColor = inMove ? ZONE_MOVE : inAdvance ? ZONE_ADV : ZONE_OVER;
+        if (drag.mode === 'charge') {
+          // ---- CHARGE drag visuals ----
+          const CHARGE_COLOR = 0xffdd44;
+          // Enemy under cursor?
+          const dropTarget = state.units.find(u => {
+            if (u.playerId === state.activePlayer) return false;
+            return Math.hypot(drag!.ghostBP.x - u.center.x, drag!.ghostBP.y - u.center.y) <= u.radius + 1.5;
+          });
+          const chargeColor = dropTarget ? 0x44ff88 : CHARGE_COLOR;
 
-        // Ghost ring at origin
-        overlayLayer.setStrokeStyle({ width: 2, color: zoneColor, alpha: 0.5 });
-        overlayLayer.circle(originSC.x, originSC.y, sr + 3).stroke();
+          // Highlight enemy under cursor
+          if (dropTarget) {
+            const tc = boardToScreen(vp, dropTarget.center);
+            const tr2 = dropTarget.radius * vp.scale;
+            overlayLayer.setStrokeStyle({ width: 4, color: 0x44ff88, alpha: 0.9 });
+            overlayLayer.circle(tc.x, tc.y, tr2 + 6).stroke();
+          }
 
-        // Dashed ruler
-        overlayLayer.setStrokeStyle({ width: 1.5, color: zoneColor, alpha: 0.9 });
-        drawDashedLine(overlayLayer, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
+          // Ghost ring at origin
+          overlayLayer.setStrokeStyle({ width: 2, color: CHARGE_COLOR, alpha: 0.5 });
+          overlayLayer.circle(originSC.x, originSC.y, sr + 3).stroke();
 
-        // Unit at cursor (bright)
-        overlayLayer.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
-        overlayLayer.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.9 });
-        overlayLayer.setStrokeStyle({ width: 3, color: zoneColor });
-        overlayLayer.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+          // Dashed ruler
+          overlayLayer.setStrokeStyle({ width: 1.5, color: chargeColor, alpha: 0.9 });
+          drawDashedLine(overlayLayer, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
 
-        // Distance label + zone hint
-        const zone = inMove ? 'MOVE' : inAdvance ? 'ADVANCE ⚄' : `MAX ${advMax.toFixed(0)}"`;
-        const labelColor = zoneColor;
-        const ls = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: labelColor });
-        const lt = new Text({ text: `${dist.toFixed(1)}"  ${zone}`, style: ls });
-        lt.anchor.set(0.5, 1); lt.x = ghostSC.x; lt.y = ghostSC.y - sr - 8;
-        overlayLayer.addChild(lt);
+          // Unit at cursor
+          overlayLayer.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
+          overlayLayer.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.75 });
+          overlayLayer.setStrokeStyle({ width: 3, color: chargeColor });
+          overlayLayer.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+
+          // Label
+          const dist2 = Math.hypot(drag.ghostBP.x - draggingUnit.center.x, drag.ghostBP.y - draggingUnit.center.y);
+          const hint = dropTarget ? `⚔ CHARGE ${dropTarget.name}` : '⟲ snap back';
+          const ls2 = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: chargeColor });
+          const lt2 = new Text({ text: `${dist2.toFixed(1)}"  ${hint}`, style: ls2 });
+          lt2.anchor.set(0.5, 1); lt2.x = ghostSC.x; lt2.y = ghostSC.y - sr - 8;
+          overlayLayer.addChild(lt2);
+
+        } else {
+          // ---- MOVE/ADVANCE drag visuals ----
+          const dist = Math.hypot(drag.ghostBP.x - draggingUnit.center.x, drag.ghostBP.y - draggingUnit.center.y);
+          const moveMax = draggingUnit.remainingMove;
+          const advMax  = draggingUnit.movementInches + 6;
+          const inMove    = dist <= moveMax + 0.001;
+          const inAdvance = !inMove && dist <= advMax + 0.001;
+          const zoneColor = inMove ? ZONE_MOVE : inAdvance ? ZONE_ADV : ZONE_OVER;
+
+          // Ghost ring at origin
+          overlayLayer.setStrokeStyle({ width: 2, color: zoneColor, alpha: 0.5 });
+          overlayLayer.circle(originSC.x, originSC.y, sr + 3).stroke();
+
+          // Dashed ruler
+          overlayLayer.setStrokeStyle({ width: 1.5, color: zoneColor, alpha: 0.9 });
+          drawDashedLine(overlayLayer, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
+
+          // Unit at cursor (bright)
+          overlayLayer.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
+          overlayLayer.circle(ghostSC.x, ghostSC.y, sr).fill({ color: P1_COLOR, alpha: 0.9 });
+          overlayLayer.setStrokeStyle({ width: 3, color: zoneColor });
+          overlayLayer.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+
+          // Distance label + zone hint
+          const zone = inMove ? 'MOVE' : inAdvance ? 'ADVANCE ⚄' : `MAX ${advMax.toFixed(0)}"`;
+          const labelColor = zoneColor;
+          const ls = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: labelColor });
+          const lt = new Text({ text: `${dist.toFixed(1)}"  ${zone}`, style: ls });
+          lt.anchor.set(0.5, 1); lt.x = ghostSC.x; lt.y = ghostSC.y - sr - 8;
+          overlayLayer.addChild(lt);
+        }
       }
     }
 
@@ -528,8 +571,16 @@ async function init(): Promise<void> {
     // Start drag if: MOVEMENT phase + hit a friendly unit that hasn't moved
     if (state.phase === 'MOVEMENT' && hit && hit.playerId === state.activePlayer && !hit.movedThisPhase) {
       sel = hit.id;
-      drag = { unitId: hit.id, downScreen: { x: e.global.x, y: e.global.y }, ghostBP: { ...hit.center } };
+      drag = { unitId: hit.id, downScreen: { x: e.global.x, y: e.global.y }, ghostBP: { ...hit.center }, mode: 'move' };
       log = `Dragging ${hit.name} — drop in blue ring (move) or orange ring (advance 🎲)`;
+      render();
+    }
+
+    // Start charge drag: CHARGE phase + friendly unit that hasn't charged or advanced
+    if (state.phase === 'CHARGE' && hit && hit.playerId === state.activePlayer && !hit.hasCharged && !hit.hasAdvanced) {
+      sel = hit.id;
+      drag = { unitId: hit.id, downScreen: { x: e.global.x, y: e.global.y }, ghostBP: { ...hit.center }, mode: 'charge' };
+      log = `Charging with ${hit.name} — drag onto an enemy to charge, or release in empty space to cancel`;
       render();
     }
   });
@@ -555,15 +606,33 @@ async function init(): Promise<void> {
       // Determine if this was a real drag (> 6px screen movement) or just a tap
       const screenDist = Math.hypot(upScreen.x - drag.downScreen.x, upScreen.y - drag.downScreen.y);
       const unitId = drag.unitId;
+      const dragMode = drag.mode;
       drag = null;
 
       if (screenDist > 6) {
-        // Auto-detect zone from drop distance
         const stateNow = engine.getState();
         const dragUnit = stateNow.units.find(u => u.id === unitId);
         const rawDest = { x: Math.max(0, Math.min(BOARD_W, bp.x)), y: Math.max(0, Math.min(BOARD_H, bp.y)) };
 
-        if (dragUnit) {
+        if (dragMode === 'charge') {
+          // Charge drag — find enemy under drop point, else snap back
+          const dropTarget = stateNow.units.find(u => {
+            if (u.playerId === stateNow.activePlayer) return false;
+            return Math.hypot(rawDest.x - u.center.x, rawDest.y - u.center.y) <= u.radius + 1.5;
+          });
+          if (dropTarget) {
+            const res = engine.dispatch({ type: 'CHARGE', attackerId: unitId, targetIds: [dropTarget.id] });
+            if (res.success) {
+              const chargeRoll = engine.getTranscript().getByType('CHARGE_ROLL').slice(-1)[0]!;
+              const attacker = stateNow.units.find(u => u.id === unitId);
+              const icon = chargeRoll.success ? '✅' : '❌';
+              log = `${attacker?.name ?? ''} charges ${dropTarget.name} — 🎲 ${chargeRoll.roll} (needed ${chargeRoll.distance.toFixed(1)}") ${icon}`;
+            } else { log = `⚠ ${res.error}`; }
+          } else {
+            log = `⟲ ${dragUnit?.name ?? 'Unit'} — no enemy at drop point, drag onto a red unit to charge`;
+          }
+        } else if (dragUnit) {
+          // Move/Advance drag — zone-aware
           const dist = Math.hypot(rawDest.x - dragUnit.center.x, rawDest.y - dragUnit.center.y);
           const moveMax = dragUnit.remainingMove;
           const advMax  = dragUnit.movementInches + 6;
@@ -623,24 +692,12 @@ async function init(): Promise<void> {
         }
       } else { sel = null; log = 'Select a Custodes unit, then click an enemy to shoot.'; }
     } else if (state.phase === 'CHARGE') {
+      // Charge is drag-only — tap just shows info
       if (hit) {
-        if (hit.playerId === state.activePlayer) {
-          sel = sel === hit.id ? null : hit.id;
-          log = sel ? `Selected: ${hit.name} — click enemy to charge` : 'Deselected.';
-        } else if (sel) {
-          // Charge!
-          const res = engine.dispatch({ type: 'CHARGE', attackerId: sel, targetIds: [hit.id] });
-          if (res.success) {
-            const chargeRoll = engine.getTranscript().getByType('CHARGE_ROLL').slice(-1)[0]!;
-            const attacker = state.units.find(u => u.id === sel);
-            const icon = chargeRoll.success ? '✅' : '❌';
-            log = `${attacker?.name ?? ''} charges ${hit.name} — 🎲 ${chargeRoll.roll} (needed ${chargeRoll.distance.toFixed(1)}") ${icon}`;
-          } else { log = `⚠ ${res.error}`; }
-          render(); return;
-        } else {
-          log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
-        }
-      } else { sel = null; log = 'Charge phase — select a unit, then click an enemy.'; }
+        log = hit.playerId === state.activePlayer
+          ? (hit.hasCharged || hit.hasAdvanced ? `${hit.name} cannot charge this phase` : `${hit.name} — drag onto a red unit to charge`)
+          : `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
+      } else { sel = null; log = 'Charge phase — drag a gold unit onto a red enemy to charge (2D6 roll).'; }
     } else if (state.phase === 'FIGHT') {
       if (hit) {
         if (hit.playerId === state.activePlayer) {
@@ -688,7 +745,7 @@ async function init(): Promise<void> {
     const tips: Record<string, string> = {
       MOVEMENT: 'Drag within move ring = normal move. Drag into advance ring = auto-rolls D6.',
       SHOOTING: 'Shooting phase! Click a Custodes unit, then click an enemy to shoot.',
-      CHARGE: 'Charge phase! Select a unit then click an enemy to charge (2D6 roll).',
+      CHARGE: 'Charge phase! Drag a gold unit onto a red enemy to charge (2D6 roll). Miss = stays put.',
       FIGHT:  'Fight phase! Select a unit in engagement (red ring) then click an enemy to fight.',
       END: 'End phase. Press Enter to close the turn.',
       COMMAND: 'New turn! Check VPs. Select a unit to act.',

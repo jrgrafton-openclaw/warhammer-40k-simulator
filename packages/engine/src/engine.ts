@@ -180,8 +180,10 @@ export class GameEngine {
         if (shootWeapon.type === 'melee') return { valid: false, reason: 'Melee weapons cannot be used in Shooting phase' };
         const shootDist = Math.hypot(attacker.center.x - target.center.x, attacker.center.y - target.center.y);
         const shootRange = typeof shootWeapon.range === 'number' ? shootWeapon.range : 0;
-        if (shootDist > shootRange + 0.001)
-          return { valid: false, reason: `Target out of range (${shootDist.toFixed(1)}" > ${shootRange}")` };
+        // WH40K measures range edge-to-edge (base-to-base), not centre-to-centre
+        const shootEdgeDist = Math.max(0, shootDist - attacker.radius - target.radius);
+        if (shootEdgeDist > shootRange + 0.001)
+          return { valid: false, reason: `Target out of range (${shootEdgeDist.toFixed(1)}" > ${shootRange}")` };
         if (attacker.isInEngagement && !shootWeapon.keywords.includes('PISTOL'))
           return { valid: false, reason: 'Cannot shoot while in engagement range (no Pistol weapon)' };
         return { valid: true };
