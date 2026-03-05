@@ -119,6 +119,22 @@ export class GameEngine {
         return { valid: true };
       }
 
+      case 'ADVANCE_UNIT': {
+        if (this.state.phase !== 'MOVEMENT')
+          return { valid: false, reason: `Cannot advance in ${this.state.phase} phase` };
+        const unit = this.state.units.find((u) => u.id === action.unitId);
+        if (!unit) return { valid: false, reason: `Unit ${action.unitId} not found` };
+        if (unit.playerId !== this.state.activePlayer)
+          return { valid: false, reason: 'Cannot advance opponent unit' };
+        if (unit.movedThisPhase)
+          return { valid: false, reason: 'Unit has already moved this phase' };
+        // Advance distance limit is validated after rolling; just check board bounds here
+        if (action.destination.x < 0 || action.destination.x > this.state.boardWidth ||
+            action.destination.y < 0 || action.destination.y > this.state.boardHeight)
+          return { valid: false, reason: 'Destination is off the board' };
+        return { valid: true };
+      }
+
       case 'SHOOT': {
         if (this.state.phase !== 'SHOOTING')
           return { valid: false, reason: `Cannot shoot in ${this.state.phase} phase` };
@@ -144,6 +160,8 @@ export class GameEngine {
           return { valid: false, reason: 'Cannot charge with opponent unit' };
         if (attacker.hasCharged)
           return { valid: false, reason: 'Unit has already charged this phase' };
+        if (attacker.hasAdvanced)
+          return { valid: false, reason: 'Unit cannot charge after advancing (unless special rule)' };
         return { valid: true };
       }
 
@@ -207,6 +225,44 @@ export class GameEngine {
         break;
       }
 
+      case 'ADVANCE_UNIT': {
+        const unit = this.state.units.find((u) => u.id === action.unitId);
+        if (unit) {
+          // Roll advance dice BEFORE checking destination distance
+          const advanceRoll = this.rng.d6();
+          const advanceLimit = unit.movementInches + advanceRoll;
+
+          this.transcript.append({
+            type: 'ROLL',
+            rollType: 'ADVANCE',
+            value: advanceRoll,
+            sides: 6,
+            context: `${unit.name} advances (+${advanceRoll}")`,
+          });
+
+          const dist = Math.sqrt(
+            (action.destination.x - unit.center.x) ** 2 +
+            (action.destination.y - unit.center.y) ** 2
+          );
+          // Clamp to advance limit — if destination is too far, move to max allowed
+          const clampedDist = Math.min(dist, advanceLimit);
+          if (dist <= advanceLimit + 0.001) {
+            unit.center = action.destination;
+          } else {
+            // Move along the vector to max advance distance
+            const ratio = advanceLimit / dist;
+            unit.center = {
+              x: unit.center.x + (action.destination.x - unit.center.x) * ratio,
+              y: unit.center.y + (action.destination.y - unit.center.y) * ratio,
+            };
+          }
+          unit.remainingMove = advanceLimit - clampedDist;
+          unit.movedThisPhase = true;
+          unit.hasAdvanced = true;
+        }
+        break;
+      }
+
       case 'SHOOT':
         this.resolveShoot(action);
         break;
@@ -247,6 +303,7 @@ export class GameEngine {
         unit.hasFired = false;
         unit.hasCharged = false;
         unit.hasFought = false;
+        unit.hasAdvanced = false;
         unit.movedThisPhase = false;
       }
 

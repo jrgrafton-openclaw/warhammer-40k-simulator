@@ -14,6 +14,8 @@ import type { Point } from './state.js';
 export type Action =
   | { type: 'DEPLOY_UNIT'; unitId: string; position: Point }
   | { type: 'MOVE_UNIT'; unitId: string; destination: Point }
+  /** Advance: move up to M + D6 inches, but cannot Charge this turn */
+  | { type: 'ADVANCE_UNIT'; unitId: string; destination: Point }
   | { type: 'SHOOT'; attackerId: string; targetId: string; weaponIndex: number }
   | { type: 'CHARGE'; attackerId: string; targetIds: string[] }
   | { type: 'FIGHT'; attackerId: string; targetId: string }

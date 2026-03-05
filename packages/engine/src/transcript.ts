@@ -3,7 +3,7 @@
  * Every roll, action, phase change, and derived event is recorded here.
  * The hash of the transcript is used for determinism testing and replay verification.
  */
-import { createHash } from 'crypto';
+// No external crypto import — use a portable pure-JS hash for browser + Node compatibility
 import type { Action } from './actions.js';
 import type { Phase } from './state.js';
 
@@ -32,10 +32,23 @@ export class TranscriptLog {
     return this.events;
   }
 
-  /** SHA-256 hash of the transcript — used for determinism golden tests */
+  /**
+   * FNV-1a 64-bit hash of the transcript (as two 32-bit words) — portable, deterministic.
+   * Used for determinism golden tests. Not cryptographic.
+   */
   hash(): string {
-    const serialized = JSON.stringify(this.events);
-    return createHash('sha256').update(serialized, 'utf8').digest('hex');
+    const str = JSON.stringify(this.events);
+    // FNV-1a with two interleaved 32-bit accumulators (simulates 64-bit)
+    let h1 = 0x811c9dc5;
+    let h2 = 0xdeadbeef;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      h1 = Math.imul(h1 ^ c, 0x01000193);
+      h2 = Math.imul(h2 ^ c, 0x01000193) ^ (h1 >>> 13);
+      h1 = h1 >>> 0;
+      h2 = h2 >>> 0;
+    }
+    return h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
   }
 
   serialize(): string {

@@ -51,6 +51,7 @@ export interface BlobUnit {
   hasFired: boolean;
   hasCharged: boolean;
   hasFought: boolean;
+  hasAdvanced: boolean;       // Rolled advance this phase (can't charge; can still use ASSAULT weapons)
   isInEngagement: boolean;
   movedThisPhase: boolean;
 }

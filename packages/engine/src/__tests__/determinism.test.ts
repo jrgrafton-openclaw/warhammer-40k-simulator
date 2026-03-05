@@ -28,9 +28,9 @@ describe('Deterministic RNG + Transcript', () => {
     expect(hash1).not.toBe(hash2);
   });
 
-  it('transcript hash is a 64-char hex string (SHA-256)', () => {
+  it('transcript hash is a 16-char hex string (FNV-1a, browser-portable)', () => {
     const hash = runSimulation(1337);
-    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(hash).toMatch(/^[0-9a-f]{16}$/);
   });
 
   it('multiple runs with same seed are bit-identical', () => {

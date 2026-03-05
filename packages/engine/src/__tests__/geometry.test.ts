@@ -9,7 +9,7 @@ function makeBlob(x: number, y: number, radius = 1): BlobUnit {
     center: { x, y }, radius,
     movementInches: 6, toughness: 4, save: 3, invuln: null, fnp: null, oc: 2,
     wounds: 10, maxWounds: 10, remainingMove: 6,
-    hasFired: false, hasCharged: false, hasFought: false, isInEngagement: false, movedThisPhase: false,
+    hasFired: false, hasCharged: false, hasFought: false, hasAdvanced: false, isInEngagement: false, movedThisPhase: false,
   };
 }
 

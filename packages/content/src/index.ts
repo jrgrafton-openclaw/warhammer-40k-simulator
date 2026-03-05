@@ -50,3 +50,7 @@ export type {
   ArmySummary,
   BlobUnitInit,
 } from './army-loader.js';
+
+// Army spawner (content → engine bridge)
+export { spawnArmy, createPlaceholderOpponent } from './army-spawner.js';
+export type { PlayerSide } from './army-spawner.js';
