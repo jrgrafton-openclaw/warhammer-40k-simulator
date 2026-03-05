@@ -1,0 +1,39 @@
+# git-cliff configuration — WH40K Simulator
+# Generates CHANGELOG.md from conventional commits.
+# Usage: git cliff -o CHANGELOG.md
+#        git cliff --latest -o CHANGELOG.md  (since last tag only)
+
+[changelog]
+header = "# Changelog\n\nAll notable changes to the WH40K Simulator.\nGenerated from git history via [git-cliff](https://git-cliff.org).\n\n"
+body = """
+{% if version %}\
+## [{{ version | trim_start_matches(pat="v") }}] — {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+## [Unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}\n
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = true
+commit_parsers = [
+  { message = "^feat",     group = "Features"    },
+  { message = "^fix",      group = "Bug Fixes"   },
+  { message = "^perf",     group = "Performance" },
+  { message = "^refactor", group = "Refactoring" },
+  { message = "^docs",     group = "Docs"        },
+  { message = "^test",     group = "Tests"       },
+  { message = "^chore",    group = "Chores"      },
+  { message = "^ci",       group = "CI"          },
+]
+filter_commits = false
+tag_pattern = "v[0-9].*"
+sort_commits = "oldest"

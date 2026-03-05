@@ -1,37 +1,46 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
-Format: `## [vX.Y] — YYYY-MM-DD | Phase N — Description`
+All notable changes to the WH40K Simulator.
+Generated from git history via [git-cliff](https://git-cliff.org).
 
----
+## [Unreleased]
 
-## [v0.1] — 2026-03-03 | Phase 1 — Deterministic Engine Skeleton
+### Bug Fixes
 
-### Added
-- `SeededRng` (mulberry32) — deterministic, cloneable, serializable
-- `TranscriptLog` — append-only typed event log with SHA-256 hash for determinism testing
-- `GameState` v1 — serializable, versioned, deep-cloneable
-- `GameEngine` — dispatch pipeline (validate → resolve → transcript → newState)
-- Phase state machine: COMMAND → MOVEMENT → SHOOTING → CHARGE → FIGHT → END → (next turn)
-- `BlobUnit` model with upgrade path to per-model positions
-- `Objective` model with OC-based control determination
-- Geometry module: `pointDistance`, `blobToBlob`, `isInEngagement`, `isLegalMove`
+- **ui:** Drag-based unit movement replaces click-to-destination
 
-### Tests
-- Determinism golden test: same seed/actions → identical transcript hash
-- State serialization round-trip
-- Geometry unit tests + fast-check property tests
-- 28 tests, all passing
+## [0.4.0] — 2026-03-05
 
----
+### Features
 
-## [v0.0] — 2026-03-03 | Phase 0 — Repo + CI + Pages
+- **v0.4:** Shooting phase — full hit/wound/save/damage pipeline
 
-### Added
-- pnpm monorepo: `packages/engine`, `packages/ui`, `packages/ai`, `packages/content`, `scripts/`
-- TypeScript strict mode, ESLint, Prettier
-- Vitest configured at root
-- GitHub Actions CI: test → build → deploy to Pages
-- PixiJS UI placeholder with grimdark theme and phase progress tracker
-- GitHub Pages live at `https://jrgrafton-openclaw.github.io/warhammer-40k-simulator/`
-- `plan.md`, `architecture.md`, `rules_coverage.md`, `CLAUDE.md`
+## [0.3.0] — 2026-03-05
+
+### Features
+
+- **engine+ui:** Phase 3 — Movement phase + interactive board
+
+## [0.2.0] — 2026-03-05
+
+### Bug Fixes
+
+- **engine:** ExactOptionalPropertyTypes TS strict-mode violations
+
+### Features
+
+- **content:** Phase 2 — Content schemas, DiceExpr parser, BattleScribe importer
+
+## [0.1] — 2026-03-03
+
+### Features
+
+- **phase-1:** Deterministic engine skeleton
+
+## [0.0] — 2026-03-03
+
+### Features
+
+- **phase-0:** Scaffold monorepo, CI, Pages, docs
+
+

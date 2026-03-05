@@ -11,7 +11,9 @@
     "build:ui": "pnpm --filter ui build",
     "lint": "eslint packages --ext .ts,.tsx",
     "format": "prettier --write packages scripts",
-    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r typecheck"
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm -r typecheck",
+    "changelog": "git cliff -o CHANGELOG.md",
+    "changelog:latest": "git cliff --latest -o CHANGELOG.md"
   },
   "devDependencies": {
     "@fast-check/vitest": "^0.2.4",
