@@ -22,7 +22,14 @@ export type Action =
   | { type: 'USE_STRATAGEM'; stratagemId: string; targetUnitId?: string }
   | { type: 'END_PHASE' }
   | { type: 'END_TURN' }
-  | { type: 'CONCEDE'; playerId: string };
+  | { type: 'CONCEDE'; playerId: string }
+  /**
+   * Attach a LEADER unit to a bodyguard unit.
+   * - leaderId must have isLeader: true
+   * - bodyguardId must be compatible (same faction keywords)
+   * - Sets attachedLeaderId on bodyguard, leadingUnitId on leader
+   */
+  | { type: 'ATTACH_LEADER'; leaderId: string; bodyguardId: string };
 
 export interface ValidationResult {
   valid: boolean;

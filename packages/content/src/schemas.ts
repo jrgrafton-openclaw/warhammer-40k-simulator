@@ -119,6 +119,27 @@ export const ArmyListUnitSchema = z.object({
 export type ArmyListUnit = z.infer<typeof ArmyListUnitSchema>;
 
 // ---------------------------------------------------------------------------
+// Detachment
+// ---------------------------------------------------------------------------
+
+export const DetachmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  faction: z.string(),
+  rule: z.object({
+    name: z.string(),
+    description: z.string(),
+  }),
+  enhancements: z.array(z.object({
+    name: z.string(),
+    description: z.string(),
+    points: z.number(),
+  })),
+  stratagemIds: z.array(z.string()),
+});
+export type Detachment = z.infer<typeof DetachmentSchema>;
+
+// ---------------------------------------------------------------------------
 // Army list
 // ---------------------------------------------------------------------------
 

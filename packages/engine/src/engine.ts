@@ -22,6 +22,7 @@ import {
   getOpponent,
   PHASE_ORDER,
   nextPhase,
+  getEffectiveMovement,
 } from './state.js';
 import { rollDiceExpr } from './dice.js';
 
@@ -175,6 +176,11 @@ export class GameEngine {
           return { valid: false, reason: 'Cannot shoot friendly unit' };
         if (attacker.hasFired)
           return { valid: false, reason: 'Unit has already fired this phase' };
+        // Leader units embedded in a bodyguard cannot be targeted independently
+        if (target.leadingUnitId) {
+          const bodyguard = this.state.units.find((u) => u.id === target.leadingUnitId);
+          return { valid: false, reason: `${target.name} is attached to ${bodyguard?.name ?? target.leadingUnitId} — cannot be targeted independently` };
+        }
         const shootWeapon = attacker.weapons[action.weaponIndex];
         if (!shootWeapon) return { valid: false, reason: `Weapon index ${action.weaponIndex} not found on ${attacker.name}` };
         if (shootWeapon.type === 'melee') return { valid: false, reason: 'Melee weapons cannot be used in Shooting phase' };
@@ -218,6 +224,11 @@ export class GameEngine {
           return { valid: false, reason: 'Unit has already fought this phase' };
         if (!fightAttacker.isInEngagement)
           return { valid: false, reason: 'Unit is not in engagement range' };
+        // Leader units embedded in a bodyguard cannot be targeted independently
+        if (fightTarget.leadingUnitId) {
+          const bodyguard = this.state.units.find((u) => u.id === fightTarget.leadingUnitId);
+          return { valid: false, reason: `${fightTarget.name} is attached to ${bodyguard?.name ?? fightTarget.leadingUnitId} — cannot be targeted independently` };
+        }
         const fightDist = Math.hypot(fightAttacker.center.x - fightTarget.center.x, fightAttacker.center.y - fightTarget.center.y);
         if (fightDist > fightAttacker.radius + fightTarget.radius + 1.01)
           return { valid: false, reason: 'Target is not in engagement range' };
@@ -228,6 +239,24 @@ export class GameEngine {
 
       case 'USE_STRATAGEM':
         return { valid: true }; // Phase 2+ stubs full validation
+
+      case 'ATTACH_LEADER': {
+        const leader = this.state.units.find((u) => u.id === action.leaderId);
+        const bodyguard = this.state.units.find((u) => u.id === action.bodyguardId);
+        if (!leader) return { valid: false, reason: `Leader unit ${action.leaderId} not found` };
+        if (!bodyguard) return { valid: false, reason: `Bodyguard unit ${action.bodyguardId} not found` };
+        if (!leader.isLeader) return { valid: false, reason: `${leader.name} is not a LEADER unit` };
+        if (leader.leadingUnitId) return { valid: false, reason: `${leader.name} is already attached to another unit` };
+        if (bodyguard.attachedLeaderId) return { valid: false, reason: `${bodyguard.name} already has a leader attached` };
+        // Faction compatibility: leader must share at least one faction keyword with bodyguard
+        const leaderFaction = leader.factionKeywords ?? [];
+        const guardFaction = bodyguard.factionKeywords ?? [];
+        const shared = leaderFaction.filter((k) => guardFaction.includes(k));
+        if (leaderFaction.length > 0 && guardFaction.length > 0 && shared.length === 0) {
+          return { valid: false, reason: `${leader.name} and ${bodyguard.name} share no faction keywords — incompatible` };
+        }
+        return { valid: true };
+      }
 
       default:
         return { valid: false, reason: `Unknown action type: ${(action as Action).type}` };
@@ -278,7 +307,7 @@ export class GameEngine {
         if (unit) {
           // Roll advance dice BEFORE checking destination distance
           const advanceRoll = this.rng.d6();
-          const advanceLimit = unit.movementInches + advanceRoll;
+          const advanceLimit = getEffectiveMovement(unit) + advanceRoll;
 
           this.transcript.append({
             type: 'ROLL',
@@ -327,6 +356,16 @@ export class GameEngine {
       case 'USE_STRATAGEM':
         // Phase 2+ implementation
         break;
+
+      case 'ATTACH_LEADER': {
+        const leader = this.state.units.find((u) => u.id === action.leaderId);
+        const bodyguard = this.state.units.find((u) => u.id === action.bodyguardId);
+        if (leader && bodyguard) {
+          leader.leadingUnitId = action.bodyguardId;
+          bodyguard.attachedLeaderId = action.leaderId;
+        }
+        break;
+      }
     }
   }
 
@@ -346,9 +385,9 @@ export class GameEngine {
       this.state.turn = turn;
       this.state.activePlayer = activePlayer;
 
-      // Reset per-activation state
+      // Reset per-activation state; apply wound profile degradation to movement
       for (const unit of this.state.units) {
-        unit.remainingMove = unit.movementInches;
+        unit.remainingMove = getEffectiveMovement(unit);
         unit.hasFired = false;
         unit.hasCharged = false;
         unit.hasFought = false;
@@ -492,8 +531,27 @@ export class GameEngine {
 
     // Remove destroyed unit
     if (target.wounds <= 0) {
+      this.detachLeaderOnDeath(target);
       this.state.units = this.state.units.filter((u) => u.id !== target.id);
       this.transcript.append({ type: 'UNIT_DESTROYED', unitId: target.id, destroyedBy: attacker.id });
+    }
+  }
+
+  /**
+   * When a unit is destroyed, clean up leader attachment references.
+   * - If target was a bodyguard with an attached leader → leader becomes standalone
+   * - If target was an attached leader → bodyguard loses its attachedLeaderId reference
+   */
+  private detachLeaderOnDeath(target: BlobUnit): void {
+    if (target.attachedLeaderId) {
+      const attachedLeader = this.state.units.find((u) => u.id === target.attachedLeaderId);
+      if (attachedLeader) {
+        delete attachedLeader.leadingUnitId;
+      }
+    }
+    if (target.leadingUnitId) {
+      const bodyguard = this.state.units.find((u) => u.id === target.leadingUnitId);
+      if (bodyguard) delete bodyguard.attachedLeaderId;
     }
   }
 
@@ -600,6 +658,7 @@ export class GameEngine {
     attacker.hasFought = true;
 
     if (target.wounds <= 0) {
+      this.detachLeaderOnDeath(target);
       this.state.units = this.state.units.filter((u) => u.id !== target.id);
       this.transcript.append({ type: 'UNIT_DESTROYED', unitId: target.id, destroyedBy: attacker.id });
       updateEngagement(this.state);

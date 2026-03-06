@@ -3,6 +3,36 @@
 All notable changes to the WH40K Simulator.
 Generated from git history via [git-cliff](https://git-cliff.org).
 
+## [0.7.0] — 2026-03-05
+
+### Features
+
+- **engine:** Leader attachment mechanic — ATTACH_LEADER action, embedded leaders cannot be targeted independently
+- **engine:** Wound profile degradation — multi-row datasheets (Caladius Grav-Tank M14/M10/M6 by wound bracket)
+- **engine/state:** `BlobUnit` extended with `keywords`, `factionKeywords`, `isLeader`, `attachedLeaderId`, `leadingUnitId`, `woundProfiles`
+- **engine:** `getEffectiveMovement()` helper — applies wound profile degradation to movement stat
+- **engine:** Phase reset uses effective movement (degraded by wounds)
+- **content:** `DetachmentSchema` — Zod schema for detachment definitions
+- **content:** `SHIELD_HOST` — Shield Host detachment definition (Adeptus Custodes), rule stubbed
+- **ui:** Shield-Captain on Dawneagle Jetbike added as LEADER unit, attached to Custodian Guard I
+- **ui:** Leader badge (✦) and gold crown ring shown on bodyguard unit; leader not rendered independently while embedded
+- **ui:** Caladius wound profiles configured (M14/M10/M6 degradation)
+- **ui:** Detachment name "Shield Host" shown in HUD
+- **ui:** Warning shown when attempting to target an embedded leader
+
+### Tests
+
+- **engine:** `leader.test.ts` — 13 new tests (ATTACH_LEADER action, targeting validation, state effects, leader separation on death)
+- **engine:** `wound-profiles.test.ts` — 11 new tests (getEffectiveMovement, engine integration)
+- **content:** `detachment.test.ts` — 11 new tests (DetachmentSchema validation, SHIELD_HOST)
+- **Total:** 227 tests (up from 192)
+
+### Notes
+
+- Shield Host detachment rule ("Shoulder the Mantle") is schema-defined but ENGINE-STUBBED in v0.7
+- Enhancement effects are STUBBED (schema only)
+- Faction ability system (Martial Ka'tah, Aegis of the Emperor) deferred to v0.8
+
 ## [0.6.1] — 2026-03-05
 
 ### Bug Fixes

@@ -26,6 +26,7 @@ export {
   UnitDatasheetSchema,
   ArmyListUnitSchema,
   ArmyListSchema,
+  DetachmentSchema,
 } from './schemas.js';
 export type {
   WeaponProfile,
@@ -33,7 +34,11 @@ export type {
   UnitDatasheet,
   ArmyListUnit,
   ArmyList,
+  Detachment,
 } from './schemas.js';
+
+// Detachments
+export { SHIELD_HOST } from './detachments/shield-host.js';
 
 // BattleScribe importer
 export { importBattleScribeRoster } from './battlescribe-importer.js';

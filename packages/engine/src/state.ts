@@ -43,6 +43,19 @@ export interface EngineWeapon {
 }
 
 /**
+ * WoundProfile — stat overrides applied based on wounds remaining.
+ * Used for multi-row datasheets (e.g. Caladius Grav-Tank).
+ * Sorted by minWounds descending; first matching profile is used.
+ */
+export interface WoundProfile {
+  /** Use this profile when wounds >= minWounds */
+  minWounds: number;
+  movement: number;
+  /** Override BS when degraded (lower = better e.g. 3 means "3+") */
+  ballistic_skill?: number;
+}
+
+/**
  * BlobUnit — a unit represented as a circle footprint.
  * Upgrade path: add optional `models: ModelPosition[]` — if present, geometry uses per-model positions.
  */
@@ -79,6 +92,36 @@ export interface BlobUnit {
 
   /** Weapons available to this unit for shooting/fighting */
   weapons: EngineWeapon[];
+
+  // ---------------------------------------------------------------------------
+  // Faction identity
+  // ---------------------------------------------------------------------------
+
+  /** Unit keywords (e.g. INFANTRY, CHARACTER, ADEPTUS_CUSTODES) */
+  keywords?: string[];
+  /** Faction keywords (e.g. IMPERIUM, ADEPTUS_CUSTODES) — used for detachment/ability gating */
+  factionKeywords?: string[];
+
+  // ---------------------------------------------------------------------------
+  // Leader attachment (v0.7)
+  // ---------------------------------------------------------------------------
+
+  /** True if this is a CHARACTER/LEADER unit that can attach to a bodyguard */
+  isLeader?: boolean;
+  /** ID of the bodyguard unit this leader is currently embedded in */
+  leadingUnitId?: string;
+  /** ID of the leader unit attached to this bodyguard unit */
+  attachedLeaderId?: string;
+
+  // ---------------------------------------------------------------------------
+  // Wound profile degradation (v0.7)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Multi-row datasheet profiles. Sorted by minWounds descending before use.
+   * First profile where wounds >= minWounds applies its stat overrides.
+   */
+  woundProfiles?: WoundProfile[];
 }
 
 export interface Objective {
@@ -162,6 +205,23 @@ export function deserializeState(json: string): GameState {
 /** Deep clone state for AI lookahead — avoids mutating game state */
 export function cloneState(state: GameState): GameState {
   return JSON.parse(JSON.stringify(state)) as GameState;
+}
+
+/**
+ * Get the effective movement stat for a unit, applying wound profile degradation.
+ * Uses the first wound profile (sorted descending by minWounds) where wounds >= minWounds.
+ */
+export function getEffectiveMovement(unit: BlobUnit): number {
+  if (!unit.woundProfiles || unit.woundProfiles.length === 0) {
+    return unit.movementInches;
+  }
+  const sorted = [...unit.woundProfiles].sort((a, b) => b.minWounds - a.minWounds);
+  for (const profile of sorted) {
+    if (unit.wounds >= profile.minWounds) {
+      return profile.movement;
+    }
+  }
+  return unit.movementInches;
 }
 
 /** Get a unit by ID — throws if not found */

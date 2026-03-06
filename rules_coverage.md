@@ -2,7 +2,7 @@
 
 Status: ✅ Implemented | 🔶 Stubbed (typed, no logic) | ❌ Not started
 
-Last updated: Phase 1 (v0.1)
+Last updated: Phase 7 (v0.7.0)
 
 ---
 
@@ -115,14 +115,14 @@ Last updated: Phase 1 (v0.1)
 
 | Keyword                   | Status | Planned Phase |
 |---------------------------|--------|---------------|
-| Infantry                  | 🔶     | Schema only   |
-| Vehicle / Monster         | 🔶     | Schema only   |
-| Fly                       | ❌     | 3             |
-| Character                 | ❌     | 4+            |
-| Battleline                | 🔶     | Schema only   |
-| Synapse (Tyranids)        | ❌     | Army-specific |
-| Objective Secured         | ❌     | 6             |
-| Leader (attach to unit)   | ❌     | 2+            |
+| Infantry                  | ✅     | keywords[] on BlobUnit (v0.7)     |
+| Vehicle / Monster         | ✅     | keywords[] on BlobUnit (v0.7)     |
+| Fly                       | ❌     | 3                                  |
+| Character                 | ✅     | isLeader flag + attachment (v0.7) |
+| Battleline                | 🔶     | Schema only                        |
+| Synapse (Tyranids)        | ❌     | Army-specific                     |
+| Objective Secured         | ❌     | 6                                  |
+| Leader (attach to unit)   | ✅     | ATTACH_LEADER, wound routing, separation on death (v0.7) |
 
 ---
 
@@ -133,7 +133,21 @@ Last updated: Phase 1 (v0.1)
 3. **Battle-shock**: not implemented — units never fail morale.
 4. **Stratagems**: schema only; no effect resolution.
 5. **Secondary objectives**: scoring stubs only.
-6. **Character protection**: not implemented in Phase 4.
-7. **Leader rules**: not implemented; characters treat as regular units.
-8. **Dedicated Transport**: not implemented.
-9. **Reserves**: not implemented.
+6. **Faction abilities**: Martial Ka'tah, Aegis of the Emperor stubbed (v0.8+).
+7. **Detachment rules**: Shield Host defined in schema but rule engine-effect is STUBBED.
+8. **Leader rules (partial)**: ATTACH_LEADER + targeting protection + separation on death ✅. Wound overflow from bodyguard to leader not yet implemented (leader only exposed after bodyguard dies).
+9. **Dedicated Transport**: not implemented.
+10. **Reserves**: not implemented.
+
+## v0.7 Additions
+
+| Feature                        | Status | Notes                                        |
+|-------------------------------|--------|----------------------------------------------|
+| Faction keywords (BlobUnit)   | ✅     | `keywords[]` + `factionKeywords[]` on unit   |
+| Leader attachment              | ✅     | ATTACH_LEADER, can't target embedded leaders |
+| Leader separation on death     | ✅     | Bodyguard death → leader becomes standalone  |
+| Wound profile degradation      | ✅     | getEffectiveMovement(), Caladius M14/10/6    |
+| Detachment schema              | ✅     | DetachmentSchema (Zod), SHIELD_HOST defined  |
+| Shield Host rule engine        | 🔶     | Schema only — mechanic STUBBED               |
+| Martial Ka'tah / Aegis         | ❌     | Deferred to v0.8                             |
+| Enhancement effects            | 🔶     | Schema only — STUBBED                        |

@@ -34,6 +34,7 @@ declare const __GIT_SHA__: string;
 import {
   GameEngine, SeededRng, TranscriptLog, createInitialState,
   type BlobUnit, type EngineWeapon, type GameState, type Point,
+  type WoundProfile,
 } from '@wh40k/engine';
 import { showCombatPanel, type CombatRollData } from './combat-dice-panel.js';
 
@@ -62,32 +63,84 @@ type Mode = 'select' | 'shoot';
 const w = (id: string, name: string, type: 'ranged'|'melee', range: number|'Melee', attacks: string, skill: number, strength: number, ap: number, damage: string, keywords: string[] = []): EngineWeapon =>
   ({ id, name, type, range, attacks, skill, strength, ap, damage, keywords });
 
-const GUARDIAN_SPEAR_R = w('guardian-spear-r','Guardian Spear','ranged',24,'3',2,5,-1,'1');
-const GUARDIAN_SPEAR_M = w('guardian-spear-m','Guardian Spear','melee','Melee','5',2,8,-3,'2');
-const BALISTUS_GRENADE = w('balistus-grenade','Balistus Grenade Launcher','ranged',18,'D6',2,4,-1,'1');
-const CASTELLAN_AXE    = w('castellan-axe','Castellan Axe','melee','Melee','4',2,8,-2,'2');
-const ACCEL_CANNON     = w('accel-cannon','Illiastus Accelerator Cannons','ranged',36,'6',2,7,-2,'2');
-const ARMOURED_HULL    = w('armoured-hull','Armoured Hull','melee','Melee','3',4,6,0,'1');
-const DAEMON_SWORD     = w('daemon-sword','Daemon Sword','melee','Melee','5',2,5,-2,'2');
-const INFERNAL_AXE     = w('infernal-axe','Infernal Greataxe','melee','Melee','2',3,5,-1,'1');
-const COMBI_WEAPON     = w('combi-weapon','Combi-weapon','ranged',24,'2',4,4,0,'1');
-const POWER_FIST       = w('power-fist','Power Fist','melee','Melee','3',4,8,-2,'2');
+const GUARDIAN_SPEAR_R   = w('guardian-spear-r','Guardian Spear','ranged',24,'3',2,5,-1,'1');
+const GUARDIAN_SPEAR_M   = w('guardian-spear-m','Guardian Spear','melee','Melee','5',2,8,-3,'2');
+const BALISTUS_GRENADE   = w('balistus-grenade','Balistus Grenade Launcher','ranged',18,'D6',2,4,-1,'1');
+const CASTELLAN_AXE      = w('castellan-axe','Castellan Axe','melee','Melee','4',2,8,-2,'2');
+const ACCEL_CANNON       = w('accel-cannon','Illiastus Accelerator Cannons','ranged',36,'6',2,7,-2,'2');
+const ARMOURED_HULL      = w('armoured-hull','Armoured Hull','melee','Melee','3',4,6,0,'1');
+const DAEMON_SWORD       = w('daemon-sword','Daemon Sword','melee','Melee','5',2,5,-2,'2');
+const INFERNAL_AXE       = w('infernal-axe','Infernal Greataxe','melee','Melee','2',3,5,-1,'1');
+const COMBI_WEAPON       = w('combi-weapon','Combi-weapon','ranged',24,'2',4,4,0,'1');
+const POWER_FIST         = w('power-fist','Power Fist','melee','Melee','3',4,8,-2,'2');
+const DAWNEAGLE_LANCE    = w('dawneagle-lance','Interceptor Lance','melee','Melee','6',2,9,-3,'3');
+const SALVO_LAUNCHER     = w('salvo-launcher','Salvo Launcher','ranged',24,'2',2,6,-2,'3');
+
+const CUSTODES_FACTION = ['IMPERIUM', 'ADEPTUS_CUSTODES'];
+
+/** Caladius wound profile — stat degradation by wound bracket */
+const CALADIUS_WOUND_PROFILES: WoundProfile[] = [
+  { minWounds: 8, movement: 14 }, // Full health: M14"
+  { minWounds: 5, movement: 10 }, // Damaged: M10"
+  { minWounds: 1, movement: 6  }, // Crippled: M6"
+];
 
 function makeCustodes(pid: string): BlobUnit[] {
-  const base = { playerId: pid, hasFired: false, hasCharged: false, hasFought: false, hasAdvanced: false, isInEngagement: false, movedThisPhase: false };
+  const base = {
+    playerId: pid,
+    hasFired: false, hasCharged: false, hasFought: false,
+    hasAdvanced: false, isInEngagement: false, movedThisPhase: false,
+  };
+  const cBase = { ...base, factionKeywords: CUSTODES_FACTION, keywords: ['INFANTRY', 'ADEPTUS_CUSTODES'] };
+
+  // Shield-Captain — LEADER unit, attaches to Custodian Guard I
+  const shieldCaptain: BlobUnit = {
+    id: `${pid}-captain`,
+    datasheetId: 'shield-captain-jetbike',
+    name: 'Shield-Captain ✦',
+    center: { x: 21, y: 7 }, // co-located with Guard I (same position as bodyguard)
+    radius: 1.2,
+    movementInches: 14, remainingMove: 14,
+    toughness: 6, save: 2, invuln: 4, fnp: null, oc: 2,
+    wounds: 7, maxWounds: 7,
+    weapons: [SALVO_LAUNCHER, DAWNEAGLE_LANCE],
+    ...cBase,
+    keywords: ['CHARACTER', 'MOUNTED', 'FLY', 'INFANTRY', 'ADEPTUS_CUSTODES', 'LEADER'],
+    isLeader: true,
+    // leadingUnitId will be set by ATTACH_LEADER action
+  };
+
   return [
-    { id: `${pid}-0`, datasheetId: 'blade-champion',    name: 'Blade Champion ★', center:{x:8,y:8},   radius:1,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:8,  maxWounds:8,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
-    { id: `${pid}-1`, datasheetId: 'custodian-guard',   name: 'Custodian Guard I',center:{x:21,y:7},  radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
-    { id: `${pid}-2`, datasheetId: 'custodian-guard',   name: 'Custodian Guard II',center:{x:37,y:7}, radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...base },
-    { id: `${pid}-3`, datasheetId: 'allarus-custodians',name: 'Allarus Custodians',center:{x:50,y:8}, radius:2,   movementInches:5,  remainingMove:5,  toughness:7,  save:2, invuln:4,    fnp:null, oc:2, wounds:4,  maxWounds:4,  weapons:[BALISTUS_GRENADE,CASTELLAN_AXE],    ...base },
-    { id: `${pid}-4`, datasheetId: 'caladius-grav-tank',name: 'Caladius',          center:{x:30,y:10},radius:2.5, movementInches:10, remainingMove:10, toughness:11, save:2, invuln:5,    fnp:null, oc:4, wounds:14, maxWounds:14, weapons:[ACCEL_CANNON,ARMOURED_HULL],        ...base },
+    shieldCaptain,
+    { id: `${pid}-0`, datasheetId: 'blade-champion',    name: 'Blade Champion ★', center:{x:8,y:8},   radius:1,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:8,  maxWounds:8,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...cBase },
+    { id: `${pid}-1`, datasheetId: 'custodian-guard',   name: 'Custodian Guard I',center:{x:21,y:7},  radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...cBase },
+    { id: `${pid}-2`, datasheetId: 'custodian-guard',   name: 'Custodian Guard II',center:{x:37,y:7}, radius:3,   movementInches:6,  remainingMove:6,  toughness:6,  save:2, invuln:4,    fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[GUARDIAN_SPEAR_R,GUARDIAN_SPEAR_M], ...cBase },
+    { id: `${pid}-3`, datasheetId: 'allarus-custodians',name: 'Allarus Custodians',center:{x:50,y:8}, radius:2,   movementInches:5,  remainingMove:5,  toughness:7,  save:2, invuln:4,    fnp:null, oc:2, wounds:4,  maxWounds:4,  weapons:[BALISTUS_GRENADE,CASTELLAN_AXE],    ...cBase },
+    {
+      id: `${pid}-4`, datasheetId: 'caladius-grav-tank', name: 'Caladius',
+      center:{x:30,y:10}, radius:2.5,
+      movementInches:14, remainingMove:14, // Base stat (woundProfiles provide the actual degradation)
+      toughness:11, save:2, invuln:5, fnp:null, oc:4, wounds:14, maxWounds:14,
+      weapons:[ACCEL_CANNON,ARMOURED_HULL],
+      woundProfiles: CALADIUS_WOUND_PROFILES,
+      ...cBase,
+      keywords: ['VEHICLE', 'WALKER', 'ADEPTUS_CUSTODES'],
+    },
   ];
 }
 
+const CHAOS_FACTION = ['CHAOS', 'HERETIC_ASTARTES'];
+
 function makeOpponent(pid: string): BlobUnit[] {
-  const base = { playerId: pid, hasFired: false, hasCharged: false, hasFought: false, hasAdvanced: false, isInEngagement: false, movedThisPhase: false };
+  const base = {
+    playerId: pid,
+    hasFired: false, hasCharged: false, hasFought: false,
+    hasAdvanced: false, isInEngagement: false, movedThisPhase: false,
+    factionKeywords: CHAOS_FACTION,
+    keywords: ['INFANTRY', 'HERETIC_ASTARTES'],
+  };
   return [
-    { id: `${pid}-0`, datasheetId: 'chaos-lord',        name: 'Chaos Lord',       center:{x:8,y:36},  radius:1,   movementInches:6, remainingMove:6, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:6,  maxWounds:6,  weapons:[DAEMON_SWORD],              ...base },
+    { id: `${pid}-0`, datasheetId: 'chaos-lord',        name: 'Chaos Lord',       center:{x:8,y:36},  radius:1,   movementInches:6, remainingMove:6, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:6,  maxWounds:6,  weapons:[DAEMON_SWORD],              ...base, keywords: ['CHARACTER', 'INFANTRY', 'HERETIC_ASTARTES'] },
     { id: `${pid}-1`, datasheetId: 'chaos-warriors',    name: 'Warriors I',       center:{x:22,y:37}, radius:3.5, movementInches:6, remainingMove:6, toughness:4, save:3, invuln:null, fnp:null, oc:2, wounds:2,  maxWounds:2,  weapons:[COMBI_WEAPON,INFERNAL_AXE], ...base },
     { id: `${pid}-2`, datasheetId: 'chaos-warriors',    name: 'Warriors II',      center:{x:38,y:37}, radius:3.5, movementInches:6, remainingMove:6, toughness:4, save:3, invuln:null, fnp:null, oc:2, wounds:2,  maxWounds:2,  weapons:[COMBI_WEAPON,INFERNAL_AXE], ...base },
     { id: `${pid}-3`, datasheetId: 'chaos-terminators', name: 'Chaos Terminators',center:{x:52,y:36}, radius:2,   movementInches:5, remainingMove:5, toughness:5, save:2, invuln:null, fnp:null, oc:2, wounds:3,  maxWounds:3,  weapons:[COMBI_WEAPON,POWER_FIST],   ...base },
@@ -197,7 +250,7 @@ function renderBoard(layer: Container, vp: Viewport, state: GameState): void {
 // ---------------------------------------------------------------------------
 
 const SHORT: Record<string, string> = {
-  'Custodian Guard I': 'Guard I', 'Custodian Guard II': 'Guard II',
+  'Shield-Captain ✦': 'S.Capt✦', 'Custodian Guard I': 'Guard I', 'Custodian Guard II': 'Guard II',
   'Allarus Custodians': 'Allarus', 'Caladius': 'Caladius',
   'Blade Champion ★': 'Champion★',
   'Chaos Lord': 'C.Lord', 'Warriors I': 'War.I', 'Warriors II': 'War.II',
@@ -207,6 +260,10 @@ const SHORT: Record<string, string> = {
 function renderUnits(layer: Container, units: BlobUnit[], vp: Viewport, selId: string | null): void {
   const g = new Graphics(); layer.addChild(g);
   for (const u of units) {
+    // Leader units embedded in a bodyguard are not rendered independently —
+    // a crown badge is shown on the bodyguard unit instead.
+    if (u.leadingUnitId) continue;
+
     const sc = boardToScreen(vp, u.center);
     const sr = u.radius * vp.scale;
     const col = u.playerId === 'player1' ? P1_COLOR : P2_COLOR;
@@ -222,12 +279,18 @@ function renderUnits(layer: Container, units: BlobUnit[], vp: Viewport, selId: s
       g.circle(sc.x, sc.y, sr + 4).stroke();
     }
 
+    // Crown badge — rendered as a gold ring when unit has an attached leader
+    if (u.attachedLeaderId) {
+      g.setStrokeStyle({ width: 3, color: 0xffd700, alpha: 0.95 });
+      g.circle(sc.x, sc.y, sr + 5).stroke();
+    }
+
     // Wound pip
     const wf = u.wounds / u.maxWounds;
     const pc = wf > 0.5 ? 0x44ee44 : wf > 0.25 ? 0xffaa00 : 0xff2222;
     g.circle(sc.x + sr * 0.6, sc.y + sr * 0.6, Math.max(3, sr * 0.18)).fill(pc);
 
-    // Label
+    // Label — add leader name badge if unit has attached leader
     const fs = Math.max(9, Math.min(13, sr * 0.5));
     const ls = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: fs, fill: 0xffffff, align: 'center',
       dropShadow: { color: 0x000000, alpha: 0.9, blur: 3, distance: 1, angle: Math.PI / 4 } });
@@ -241,6 +304,19 @@ function renderUnits(layer: Container, units: BlobUnit[], vp: Viewport, selId: s
       const st = new Text({ text: `T${u.toughness} ${u.save}+${inv}`, style: ss });
       st.anchor.set(0.5, 0); st.x = sc.x; st.y = sc.y + sr * 0.32;
       layer.addChild(st);
+    }
+
+    // Leader badge label below unit
+    if (u.attachedLeaderId) {
+      const allUnits = units; // units array in closure
+      const leaderUnit = allUnits.find((lu) => lu.id === u.attachedLeaderId);
+      if (leaderUnit) {
+        const badgeStyle = new TextStyle({ fontFamily: '"Courier New",monospace', fontSize: Math.max(8, sr * 0.26), fill: 0xffd700, align: 'center',
+          dropShadow: { color: 0x000000, alpha: 0.9, blur: 2, distance: 1, angle: Math.PI / 4 } });
+        const badge = new Text({ text: `✦ ${SHORT[leaderUnit.name] ?? leaderUnit.name.slice(0, 8)}`, style: badgeStyle });
+        badge.anchor.set(0.5, 0); badge.x = sc.x; badge.y = sc.y + sr + 4;
+        layer.addChild(badge);
+      }
     }
   }
 }
@@ -392,7 +468,7 @@ function buildHUD(screenW: number): HUD {
 
   function update(state: GameState, log: string, _selId: string | null, _mode: Mode): void {
     const p1 = state.players[0]; const p2 = state.players[1];
-    const label = state.activePlayer === 'player1' ? '⚜ CUSTODES' : '☠ CHAOS';
+    const label = state.activePlayer === 'player1' ? '⚜ CUSTODES [Shield Host]' : '☠ CHAOS';
     phText.text = `Turn ${state.turn}  ·  ${state.phase}  ·  ${label}`;
     lgText.text = log.slice(0, 100);
     vpText.text = `VP: ${p1?.victoryPoints ?? 0} — ${p2?.victoryPoints ?? 0}`;
@@ -425,7 +501,7 @@ async function init(): Promise<void> {
   // Engine factory — used for initial creation and Play Again restarts
   function makeGameEngine(): GameEngine {
     const seed = Date.now();
-    return new GameEngine(
+    const eng = new GameEngine(
       Object.assign(
         createInitialState(['player1', 'player2'], { rngSeed: seed }),
         {
@@ -440,6 +516,9 @@ async function init(): Promise<void> {
       new SeededRng(seed),
       new TranscriptLog(),
     );
+    // Attach Shield-Captain to Custodian Guard I (leader mechanics — v0.7)
+    eng.dispatch({ type: 'ATTACH_LEADER', leaderId: 'player1-captain', bodyguardId: 'player1-1' });
+    return eng;
   }
   let engine = makeGameEngine();
 
@@ -982,6 +1061,10 @@ async function init(): Promise<void> {
         if (hit.playerId === state.activePlayer) {
           sel = sel === hit.id ? null : hit.id;
           log = sel ? `Selected: ${hit.name}` : 'Deselected.';
+        } else if (hit.leadingUnitId) {
+          // Leader is embedded — cannot be targeted; show helpful warning
+          const bodyguard = state.units.find((u) => u.id === hit.leadingUnitId);
+          log = `⚠ ${hit.name} is attached to ${bodyguard?.name ?? 'a unit'} — cannot be targeted independently`;
         } else if (sel) {
           doShoot(sel, hit.id);
           return;
