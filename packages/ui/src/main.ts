@@ -12,6 +12,12 @@
  *   Click enemy unit  → shoot with selected unit (auto-picks first ranged weapon)
  *   S key             → toggle shoot mode
  *
+ * Charge (CHARGE phase):
+ *   Drag active player's unit onto enemy → charge (2D6 roll)
+ *
+ * Fight (FIGHT phase):
+ *   Drag an engaged friendly unit onto enemy → fight (melee attack)
+ *
  * General:
  *   Esc               → deselect / cancel
  *   Enter / Space     → end phase
@@ -476,7 +482,7 @@ async function init(): Promise<void> {
   let log = 'Drag a gold unit — drop in move ring or advance ring.';
 
   // Drag state — tracks an in-progress unit drag
-  interface DragState { unitId: string; downScreen: Point; ghostBP: Point; mode: 'move' | 'charge' }
+  interface DragState { unitId: string; downScreen: Point; ghostBP: Point; mode: 'move' | 'charge' | 'fight' }
   let drag: DragState | null = null;
 
   // ---------------------------------------------------------------------------
@@ -522,6 +528,7 @@ async function init(): Promise<void> {
     // Dark semi-transparent backdrop
     const backdrop = new Graphics();
     backdrop.rect(0, 0, sw, sh).fill({ color: 0x000000, alpha: 0.78 });
+    backdrop.eventMode = 'none';
     endLayer.addChild(backdrop);
 
     // Panel
@@ -569,7 +576,7 @@ async function init(): Promise<void> {
     const btnY = py + ph - 70;
     const btnC = new Container();
     btnC.x = btnX; btnC.y = btnY;
-    btnC.interactive = true; btnC.cursor = 'pointer';
+    btnC.interactive = true; btnC.eventMode = 'static'; btnC.cursor = 'pointer';
     const btnBg = new Graphics();
     btnBg.roundRect(0, 0, btnW, btnH, 8).fill({ color: 0x2a1a04, alpha: 1 });
     btnBg.setStrokeStyle({ width: 2, color: ACCENT, alpha: 0.8 });
@@ -582,7 +589,7 @@ async function init(): Promise<void> {
     btnC.addChild(btnText);
     endLayer.addChild(btnC);
 
-    btnC.on('pointertap', (e) => {
+    btnC.on('pointerdown', (e) => {
       e.stopPropagation();
       // Reset engine with fresh state
       engine = makeGameEngine();
@@ -667,6 +674,45 @@ async function init(): Promise<void> {
           const lt2 = new Text({ text: `${dist2.toFixed(1)}"  ${hint}`, style: ls2 });
           lt2.anchor.set(0.5, 1); lt2.x = ghostSC.x; lt2.y = ghostSC.y - sr - 8;
           overlayLayer.addChild(lt2);
+
+        } else if (drag.mode === 'fight') {
+          // ---- FIGHT drag visuals ----
+          const FIGHT_COLOR = 0xff6644;
+          // Enemy under cursor?
+          const dropFightTarget = state.units.find(u => {
+            if (u.playerId === state.activePlayer) return false;
+            return Math.hypot(drag!.ghostBP.x - u.center.x, drag!.ghostBP.y - u.center.y) <= u.radius + 1.5;
+          });
+          const fightDragColor = dropFightTarget ? 0xff2222 : FIGHT_COLOR;
+
+          // Highlight enemy under cursor
+          if (dropFightTarget) {
+            const tc = boardToScreen(vp, dropFightTarget.center);
+            const tr2 = dropFightTarget.radius * vp.scale;
+            dg.setStrokeStyle({ width: 4, color: 0xff2222, alpha: 0.9 });
+            dg.circle(tc.x, tc.y, tr2 + 6).stroke();
+          }
+
+          // Ghost ring at origin
+          dg.setStrokeStyle({ width: 2, color: FIGHT_COLOR, alpha: 0.5 });
+          dg.circle(originSC.x, originSC.y, sr + 3).stroke();
+
+          // Dashed ruler
+          dg.setStrokeStyle({ width: 1.5, color: fightDragColor, alpha: 0.9 });
+          drawDashedLine(dg, originSC.x, originSC.y, ghostSC.x, ghostSC.y);
+
+          // Unit at cursor
+          dg.circle(ghostSC.x + 2, ghostSC.y + 2, sr).fill({ color: 0x000000, alpha: 0.18 });
+          dg.circle(ghostSC.x, ghostSC.y, sr).fill({ color: unitColor, alpha: 0.75 });
+          dg.setStrokeStyle({ width: 3, color: fightDragColor });
+          dg.circle(ghostSC.x, ghostSC.y, sr + 4).stroke();
+
+          // Label
+          const fightHint = dropFightTarget ? `⚔ FIGHT ${dropFightTarget.name}` : '⟲ no target';
+          const lsFight = new TextStyle({ fontFamily: 'Georgia,serif', fontSize: 13, fontWeight: 'bold', fill: fightDragColor });
+          const ltFight = new Text({ text: fightHint, style: lsFight });
+          ltFight.anchor.set(0.5, 1); ltFight.x = ghostSC.x; ltFight.y = ghostSC.y - sr - 8;
+          overlayLayer.addChild(ltFight);
 
         } else {
           // ---- MOVE/ADVANCE drag visuals ----
@@ -785,6 +831,14 @@ async function init(): Promise<void> {
       log = `Charging with ${hit.name} — drag onto an enemy to charge, or release in empty space to cancel`;
       render();
     }
+
+    // Start fight drag: FIGHT phase + friendly unit in engagement + hasn't fought
+    if (state.phase === 'FIGHT' && hit && hit.playerId === state.activePlayer && hit.isInEngagement && !hit.hasFought) {
+      sel = hit.id;
+      drag = { unitId: hit.id, downScreen: { x: e.global.x, y: e.global.y }, ghostBP: { ...hit.center }, mode: 'fight' };
+      log = `Fighting with ${hit.name} — drag onto a red unit to fight`;
+      render();
+    }
   });
 
   app.stage.on('pointermove', (e: FederatedPointerEvent) => {
@@ -832,6 +886,48 @@ async function init(): Promise<void> {
             } else { log = `⚠ ${res.error}`; }
           } else {
             log = `⟲ ${dragUnit?.name ?? 'Unit'} — no enemy at drop point, drag onto a red unit to charge`;
+          }
+        } else if (dragMode === 'fight') {
+          // Fight drag — find enemy under drop point
+          const dropTarget = stateNow.units.find(u => {
+            if (u.playerId === stateNow.activePlayer) return false;
+            return Math.hypot(rawDest.x - u.center.x, rawDest.y - u.center.y) <= u.radius + 1.5;
+          });
+          if (dropTarget) {
+            const fightAttacker = stateNow.units.find(u => u.id === unitId);
+            const fightWeapon = fightAttacker?.weapons.find(w => w.type === 'melee');
+            const tr2 = engine.getTranscript();
+            const prevHit2 = tr2.getByType('HIT_ROLL').length;
+            const prevWound2 = tr2.getByType('WOUND_ROLL').length;
+            const prevSave2 = tr2.getByType('SAVE_ROLL').length;
+            const prevDmg2 = tr2.getByType('DAMAGE_APPLIED').length;
+            const res = engine.dispatch({ type: 'FIGHT', attackerId: unitId, targetId: dropTarget.id });
+            if (res.success) {
+              const apStr2 = !fightWeapon ? '0' : fightWeapon.ap === 0 ? '0' : fightWeapon.ap < 0 ? String(fightWeapon.ap) : `+${fightWeapon.ap}`;
+              const wStats2 = fightWeapon
+                ? `A${fightWeapon.attacks} · WS${fightWeapon.skill}+ · S${fightWeapon.strength} · AP${apStr2} · D${fightWeapon.damage}`
+                : '';
+              const combatData2 = buildCombatData(
+                fightAttacker?.name ?? unitId,
+                dropTarget.name,
+                fightWeapon?.name ?? 'Melee',
+                wStats2,
+                prevHit2, prevWound2, prevSave2, prevDmg2,
+                dropTarget.id,
+              );
+              showCombatPanel(app, diceLayer, combatData2, () => {
+                const h2 = combatData2.hitRolls.filter(r => r.success).length;
+                const w2 = combatData2.woundRolls.filter(r => r.success).length;
+                const sv2 = combatData2.saveRolls.filter(r => r.success).length;
+                const suffix2 = combatData2.targetDestroyed
+                  ? ' 💀 DESTROYED'
+                  : ` → ${dropTarget.wounds - combatData2.totalDamage}/${dropTarget.maxWounds}W`;
+                log = `${fightAttacker?.name ?? ''} ⚔ ${dropTarget.name}: ${h2}h ${w2}w ${sv2}sv ${combatData2.totalDamage}dmg${suffix2}`;
+                render();
+              });
+            } else { log = `⚠ ${res.error}`; }
+          } else {
+            log = `⟲ ${stateNow.units.find(u => u.id === unitId)?.name ?? 'Unit'} — no enemy at drop point, drag onto a red unit to fight`;
           }
         } else if (dragUnit) {
           // Move/Advance drag — zone-aware
@@ -901,56 +997,12 @@ async function init(): Promise<void> {
           : `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
       } else { sel = null; log = 'Charge phase — drag a gold unit onto a red enemy to charge (2D6 roll).'; }
     } else if (state.phase === 'FIGHT') {
+      // Fight is drag-only — tap just shows info
       if (hit) {
-        if (hit.playerId === state.activePlayer) {
-          sel = sel === hit.id ? null : hit.id;
-          log = sel
-            ? (hit.isInEngagement ? `Selected: ${hit.name} — click enemy to fight` : `${hit.name} is not in engagement`)
-            : 'Deselected.';
-        } else if (sel) {
-          // Fight!
-          const fightAttacker = state.units.find(u => u.id === sel);
-          const fightWeapon   = fightAttacker?.weapons.find(w => w.type === 'melee');
-
-          // Snapshot transcript before dispatch
-          const tr2        = engine.getTranscript();
-          const prevHit2   = tr2.getByType('HIT_ROLL').length;
-          const prevWound2 = tr2.getByType('WOUND_ROLL').length;
-          const prevSave2  = tr2.getByType('SAVE_ROLL').length;
-          const prevDmg2   = tr2.getByType('DAMAGE_APPLIED').length;
-
-          const res = engine.dispatch({ type: 'FIGHT', attackerId: sel, targetId: hit.id });
-          if (res.success) {
-            const apStr2  = !fightWeapon ? '0' : fightWeapon.ap === 0 ? '0' : fightWeapon.ap < 0 ? String(fightWeapon.ap) : `+${fightWeapon.ap}`;
-            const wStats2 = fightWeapon
-              ? `A${fightWeapon.attacks} · WS${fightWeapon.skill}+ · S${fightWeapon.strength} · AP${apStr2} · D${fightWeapon.damage}`
-              : '';
-
-            const combatData2 = buildCombatData(
-              fightAttacker?.name ?? sel,
-              hit.name,
-              fightWeapon?.name ?? 'Melee',
-              wStats2,
-              prevHit2, prevWound2, prevSave2, prevDmg2,
-              hit.id,
-            );
-
-            showCombatPanel(app, diceLayer, combatData2, () => {
-              const h2  = combatData2.hitRolls.filter(r => r.success).length;
-              const w2  = combatData2.woundRolls.filter(r => r.success).length;
-              const sv2 = combatData2.saveRolls.filter(r => r.success).length;
-              const suffix2 = combatData2.targetDestroyed
-                ? ' 💀 DESTROYED'
-                : ` → ${hit.wounds - combatData2.totalDamage}/${hit.maxWounds}W`;
-              log = `${fightAttacker?.name ?? ''} ⚔ ${hit.name}: ${h2}h ${w2}w ${sv2}sv ${combatData2.totalDamage}dmg${suffix2}`;
-              render();
-            });
-          } else { log = `⚠ ${res.error}`; }
-          render(); return;
-        } else {
-          log = `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
-        }
-      } else { sel = null; log = 'Fight phase — select an engaged unit, then click an enemy.'; }
+        log = hit.playerId === state.activePlayer
+          ? (hit.isInEngagement && !hit.hasFought ? `${hit.name} — drag onto a red unit to fight` : `${hit.name} cannot fight this phase`)
+          : `${hit.name} — T${hit.toughness} SV${hit.save}+ W${hit.wounds}/${hit.maxWounds}`;
+      } else { sel = null; log = 'Fight phase — drag an engaged gold unit onto a red enemy.'; }
     } else {
       // Other phases — tap = select
       if (hit && hit.playerId === state.activePlayer) {
@@ -973,7 +1025,7 @@ async function init(): Promise<void> {
       MOVEMENT: 'Drag within move ring = normal move. Drag into advance ring = auto-rolls D6.',
       SHOOTING: 'Shooting phase! Click a Custodes unit, then click an enemy to shoot.',
       CHARGE: 'Charge phase! Drag a gold unit onto a red enemy to charge (2D6 roll). Miss = stays put.',
-      FIGHT:  'Fight phase! Select a unit in engagement (red ring) then click an enemy to fight.',
+      FIGHT:  'Fight phase! Drag an engaged gold unit (red ring) onto a red enemy to fight.',
       END: 'End phase. Press Enter to close the turn.',
       COMMAND: 'New turn! Check VPs. Select a unit to act.',
     };

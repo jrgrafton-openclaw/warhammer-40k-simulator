@@ -6,7 +6,7 @@
  *   SLIDE_IN (15f) → HIT_TUMBLE (25f) → HIT_SETTLE (15f) → HIT_HOLD (20f)
  *   → WOUND_TUMBLE (25f) → WOUND_SETTLE (15f) → WOUND_HOLD (20f)
  *   → SAVE_TUMBLE (25f) → SAVE_SETTLE (15f)
- *   → RESULT_HOLD (∞, click or 3s) → SLIDE_OUT (15f)
+ *   → RESULT_HOLD (∞, click to dismiss) → SLIDE_OUT (15f)
  */
 import { Application, Container, Graphics, Text, TextStyle, Rectangle } from 'pixi.js';
 
@@ -375,8 +375,6 @@ export function showCombatPanel(
   // ---- State machine ----
   let panelState: PanelState = 'SLIDE_IN';
   let stateFrame   = 0;
-  let resultTimer  = 0;
-  const RESULT_TIMEOUT = 180; // 3 s @ 60 fps
 
   function nextState(s: PanelState): void {
     panelState = s;
@@ -473,8 +471,7 @@ export function showCombatPanel(
 
       // ------------------------------------------------------------------
       case 'RESULT_HOLD':
-        resultTimer++;
-        if (resultTimer >= RESULT_TIMEOUT) dismiss();
+        // Wait for user click — dismiss() called via enableDismissClick() handler
         break;
 
       // ------------------------------------------------------------------

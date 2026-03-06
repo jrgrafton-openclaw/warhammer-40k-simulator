@@ -3,6 +3,14 @@
 All notable changes to the WH40K Simulator.
 Generated from git history via [git-cliff](https://git-cliff.org).
 
+## [0.6.1] — 2026-03-05
+
+### Bug Fixes
+
+- **ui:** Dice overlay now stays open until user clicks to dismiss (removed 3-second auto-dismiss)
+- **ui:** Fight phase converted to drag-to-fight UX (consistent with charge phase)
+- **ui:** Play Again button now works reliably (backdrop event passthrough, eventMode fixes, pointerdown handler)
+
 ## [0.6.0] — 2026-03-05
 
 ### Bug Fixes
