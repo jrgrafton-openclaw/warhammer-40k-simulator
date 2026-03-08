@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — UI Mockup v0.5</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Oswald:wght@400;600&family=Roboto+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       RESET & BASE
+       ============================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: #050404;
+      color: #e8c060;
+      font-family: 'Roboto Condensed', sans-serif;
+    }
+
+    /* ============================================================
+       ROOT GRID
+       ============================================================ */
+    #app {
+      display: grid;
+      grid-template-columns: 220px 1fr 285px;
+      grid-template-rows: 1fr 80px;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ============================================================
+       LEFT SIDEBAR
+       ============================================================ */
+    #sidebar-left {
+      grid-column: 1;
+      grid-row: 1;
+      background: #0a0804;
+      border-right: 1px solid #2a1e08;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      height: 36px;
+      min-height: 36px;
+      background: linear-gradient(180deg, #1c1408 0%, #0e0a04 100%);
+      border-bottom: 1px solid #3d2e10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+    }
+    .sidebar-header-title {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 4px;
+      color: #c9a352;
+      text-transform: uppercase;
+    }
+    .sidebar-header-actions {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+      color: #5a4a28;
+      cursor: pointer;
+    }
+    .sidebar-header-actions span:hover { color: #c9a352; }
+
+    /* Roster scroll area */
+    .roster-scroll {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .roster-scroll::-webkit-scrollbar { width: 4px; }
+    .roster-scroll::-webkit-scrollbar-track { background: transparent; }
+    .roster-scroll::-webkit-scrollbar-thumb { background: #2a1e08; border-radius: 2px; }
+
+    /* Faction section */
+    .faction-section {
+      border-left: 2px solid #3d2e10;
+    }
+    .faction-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: #0e0e0e;
+      cursor: pointer;
+      user-select: none;
+    }
+    .faction-header:hover { background: #141414; }
+    .chevron {
+      font-size: 9px;
+      color: #c9a352;
+      transition: transform 0.2s ease;
+      display: inline-block;
+    }
+    .faction-name {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 3px;
+      color: #c9a352;
+      text-transform: uppercase;
+      flex: 1;
+    }
+    .faction-icons { font-size: 11px; color: #5a4a28; }
+
+    .faction-units {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .faction-units.collapsed { max-height: 0 !important; }
+
+    /* Unit row */
+    .roster-unit {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px 9px 12px;
+      height: 54px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: background 0.1s, border-color 0.1s;
+      position: relative;
+    }
+    .roster-unit:hover { background: rgba(201,163,82,0.04); }
+    .roster-unit.active {
+      border-left-color: #00d4ff;
+      background: rgba(0,180,220,0.07);
+    }
+
+    .unit-portrait {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border-radius: 50%;
+      background: #0a1020;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .unit-portrait.imp { border: 2px solid #1e55cc; }
+    .unit-portrait.ork { border: 2px solid #7a1515; }
+    .unit-portrait.char-portrait { border-color: #c9a352; }
+
+    .portrait-icon {
+      font-size: 14px;
+      line-height: 1;
+    }
+    .portrait-icon.imp { color: rgba(80,130,220,0.7); }
+    .portrait-icon.ork { color: rgba(180,60,60,0.7); }
+    .portrait-icon.char { color: rgba(201,163,82,0.7); }
+
+    .count-badge {
+      position: absolute;
+      top: -3px;
+      right: -5px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #aa1515;
+      color: #fff;
+      font: 700 10px/18px 'Roboto Condensed', sans-serif;
+      text-align: center;
+      z-index: 2;
+    }
+
+    .unit-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .unit-name {
+      font: 700 14px/1.2 'Roboto Condensed', sans-serif;
+      color: #e8c060;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .unit-status {
+      font: 400 11px/1.3 'Oswald', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+    .unit-status.moving { color: #f0a030; }
+    .unit-status.ready  { color: #2ed573; }
+    .unit-status.fought { color: #888; }
+
+    .unit-indicator {
+      font-size: 11px;
+      min-width: 14px;
+      text-align: right;
+    }
+    .unit-indicator.ready-ind  { color: #2ed573; }
+    .unit-indicator.moving-ind { color: #f0a030; }
+
+    /* Army Abilities (collapsible, above footer) */
+    .army-abilities-section {
+      border-top: 1px solid #1a1408;
+    }
+    .army-abilities-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      background: #0e0e0e;
+      cursor: pointer;
+      user-select: none;
+    }
+    .army-abilities-header:hover { background: #141414; }
+    .army-abilities-title {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 3px;
+      color: #c9a352;
+      text-transform: uppercase;
+      flex: 1;
+    }
+
+    .army-abilities-body {
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .army-abilities-body.collapsed { max-height: 0 !important; }
+
+    .ability-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 12px 5px 20px;
+      font: 400 12px/1.4 'Roboto Condensed', sans-serif;
+      color: #aaa;
+    }
+    .ability-tag {
+      font: 600 8px/1 'Oswald', sans-serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 2px 5px;
+      border-radius: 2px;
+    }
+    .ability-tag.passive { background: #222; color: #666; }
+    .ability-tag.phase   { background: #1e1608; color: #8a6a28; border: 1px solid #3d2e10; }
+    .ability-tag.active-now {
+      background: rgba(0,180,220,0.15);
+      color: #00d4ff;
+      border: 1px solid #003a50;
+      animation: pulse-tag 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-tag {
+      0%, 100% { box-shadow: 0 0 4px rgba(0,212,255,0.3); }
+      50%       { box-shadow: 0 0 10px rgba(0,212,255,0.7); }
+    }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      min-height: 80px;
+      background: #0a0804;
+      border-top: 1px solid #3d2e10;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .footer-stat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .footer-label {
+      font: 400 10px/1 'Roboto Condensed', sans-serif;
+      color: #777;
+    }
+    .footer-value-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .footer-value {
+      font: 700 14px/1 'Roboto Condensed', sans-serif;
+      color: #e8c060;
+    }
+    .footer-icon { font-size: 11px; color: #c9a352; }
+
+    /* ============================================================
+       BATTLEFIELD (CENTER)
+       ============================================================ */
+    #battlefield {
+      grid-column: 2; grid-row: 1;
+      position: relative; overflow: hidden; cursor: default;
+      background-color: #060708;
+      background-image: 
+        radial-gradient(ellipse 90% 85% at 50% 50%, transparent 40%, rgba(0,0,0,0.85) 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.04) 39px, rgba(255,255,255,0.04) 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.04) 39px, rgba(255,255,255,0.04) 40px),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.05' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+      /* The noise is the last layer, grid is above it, vignette is above grid */
+      background-size: 100% 100%, 100% 100%, 100% 100%, 150px 150px;
+    }
+
+    /* Phase header bar */
+    #phase-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 44px;
+      background: linear-gradient(180deg, rgba(20,14,4,0.97), rgba(10,8,4,0.9));
+      border-bottom: 1px solid #3d2e10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .phase-header-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .phase-title {
+      font: 600 16px/1 'Cinzel', serif;
+      letter-spacing: 3px;
+      color: #e8dcc8;
+    }
+    .phase-subtitle {
+      font: 400 10px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      color: #c9a352;
+      text-transform: uppercase;
+    }
+    .phase-header-right {
+      position: absolute;
+      right: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #zoom-indicator {
+      font: 400 10px/1 'Oswald', sans-serif;
+      letter-spacing: 1px;
+      color: #5a4a28;
+    }
+    #reset-view, #demo-ability-btn {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      background: transparent;
+      border: 1px solid #2a1e08;
+      color: #5a4a28;
+      padding: 4px 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    #reset-view:hover, #demo-ability-btn:hover {
+      border-color: #c9a352;
+      color: #c9a352;
+      background: rgba(201,163,82,0.06);
+    }
+    #demo-ability-btn {
+      color: #006688;
+      border-color: #003040;
+    }
+    #demo-ability-btn:hover {
+      border-color: #00d4ff;
+      color: #00d4ff;
+      background: rgba(0,212,255,0.06);
+    }
+
+    /* Battlefield inner (pannable/zoomable) */
+    #battlefield-inner {
+      position: absolute;
+      top: 44px; left: 0; right: 0; bottom: 0;
+      transform-origin: center;
+      cursor: grab;
+    }
+    #battlefield-inner.dragging { cursor: grabbing; }
+
+    /* SVG overlay */
+    #bf-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Objective markers */
+    .obj-marker {
+      position: absolute;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 2.5px solid #c9a352;
+      background: rgba(201,163,82,0.12);
+      box-shadow: 0 0 16px rgba(201,163,82,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+      cursor: default;
+    }
+    .obj-label {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 1px;
+      color: #c9a352;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    /* Tokens base */
+    .token {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 3;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .token-label {
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      margin-top: 5px;
+      font: 400 9px/1 'Oswald', sans-serif;
+      color: #aaa;
+      white-space: nowrap;
+      pointer-events: none;
+      letter-spacing: 0.5px;
+    }
+
+    /* Token sizes */
+    .token-infantry { width: 56px; height: 56px; }
+    .token-character { width: 50px; height: 50px; }
+    .token-vehicle {
+      width: 76px; height: 68px;
+      border-radius: 14px;
+    }
+
+    /* Imperium token colors */
+    .token-imperium {
+      border: 2.5px solid #2266dd;
+      background: radial-gradient(circle, #1a3060 0%, #0a1830 100%);
+      box-shadow: 0 0 14px rgba(30,100,220,0.5), inset 0 1px 0 rgba(100,150,255,0.2);
+    }
+    .token-imperium:hover {
+      box-shadow: 0 0 22px rgba(30,100,220,0.8);
+    }
+    .token-imperium.selected {
+      border-color: #00d4ff;
+      box-shadow: 0 0 20px rgba(0,212,255,0.7);
+    }
+    .token-imperium-char {
+      border: 2.5px solid #c9a352;
+      background: radial-gradient(circle, #1a3060 0%, #0a1830 100%);
+      box-shadow: 0 0 14px rgba(201,163,82,0.4), inset 0 1px 0 rgba(201,163,82,0.15);
+    }
+    .token-imperium-char:hover {
+      box-shadow: 0 0 22px rgba(201,163,82,0.6);
+    }
+    .token-imperium-char.selected {
+      border-color: #00d4ff;
+      box-shadow: 0 0 20px rgba(0,212,255,0.7);
+    }
+
+    /* Ork token colors */
+    .token-ork {
+      border: 2.5px solid #882222;
+      background: radial-gradient(circle, #3d0e0e 0%, #1c0505 100%);
+      box-shadow: 0 0 14px rgba(180,30,30,0.5);
+    }
+    .token-ork:hover { box-shadow: 0 0 22px rgba(180,30,30,0.8); }
+    .token-ork.selected {
+      border-color: #00d4ff;
+      box-shadow: 0 0 20px rgba(0,212,255,0.7);
+    }
+    .token-ork-char {
+      border: 2.5px solid #c9a352;
+      background: radial-gradient(circle, #3d0e0e 0%, #1c0505 100%);
+      box-shadow: 0 0 14px rgba(201,163,82,0.3);
+    }
+    .token-ork-char:hover { box-shadow: 0 0 22px rgba(201,163,82,0.5); }
+    .token-ork-char.selected {
+      border-color: #00d4ff;
+      box-shadow: 0 0 20px rgba(0,212,255,0.7);
+    }
+
+    /* Token icon SVG */
+    .token-icon {
+      width: 22px; height: 22px;
+      pointer-events: none;
+    }
+
+    /* Token count badge */
+    .token-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #aa1515;
+      color: #fff;
+      font: 700 10px/20px 'Roboto Condensed', sans-serif;
+      text-align: center;
+      z-index: 4;
+    }
+
+    /* Ability notification banner */
+    #ability-banner {
+      position: absolute;
+      top: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(520px, 90%);
+      background: #0a1420;
+      border: 1px solid #00d4ff;
+      box-shadow: 0 0 20px rgba(0,212,255,0.2);
+      padding: 12px 16px;
+      z-index: 20;
+      display: none;
+    }
+    #ability-banner.visible { display: block; }
+    .banner-title {
+      font: 600 11px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #c9a352;
+      margin-bottom: 6px;
+    }
+    .banner-title .banner-icon { color: #00d4ff; margin-right: 4px; }
+    .banner-body {
+      font: 400 12px/1.5 'Roboto Condensed', sans-serif;
+      color: #aaa;
+      margin-bottom: 10px;
+    }
+    .banner-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .banner-btn {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border: 1px solid;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .banner-btn.use   { color: #00d4ff; border-color: #003a50; }
+    .banner-btn.use:hover { background: rgba(0,212,255,0.1); border-color: #00d4ff; }
+    .banner-btn.dismiss { color: #666; border-color: #2a2a2a; }
+    .banner-btn.dismiss:hover { color: #aaa; border-color: #555; }
+
+    /* ============================================================
+       RIGHT SIDEBAR
+       ============================================================ */
+    #sidebar-right {
+      grid-column: 3;
+      grid-row: 1;
+      background: #08070a;
+      border-left: 1px solid #1a1420;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      position: relative;
+    }
+    #sidebar-right::-webkit-scrollbar { width: 4px; }
+    #sidebar-right::-webkit-scrollbar-track { background: transparent; }
+    #sidebar-right::-webkit-scrollbar-thumb { background: #1a1420; border-radius: 2px; }
+
+    .right-header {
+      height: 32px;
+      min-height: 32px;
+      background: linear-gradient(180deg, #1c1408 0%, #0e0a04 100%);
+      border-bottom: 1px solid #3d2e10;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+    }
+    .right-header-title {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 4px;
+      color: #c9a352;
+      text-transform: uppercase;
+    }
+
+    .unit-name-display {
+      font: 700 26px/1.1 'Cinzel', serif;
+      color: #ffffff;
+      text-shadow: 0 0 30px rgba(201,163,82,0.4), 0 1px 3px rgba(0,0,0,0.8);
+      padding: 14px 14px 8px;
+      letter-spacing: 1px;
+    }
+
+    .faction-tag {
+      font: 400 9px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      color: #888;
+      padding: 0 14px 12px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      text-transform: uppercase;
+    }
+    .faction-diamond { color: #2266dd; font-size: 9px; }
+
+    /* Section header (reusable) */
+    .section-header {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 3px;
+      color: #c9a352;
+      text-transform: uppercase;
+      padding: 10px 14px 6px;
+      border-left: 2px solid #3d2e10;
+      background: rgba(201,163,82,0.04);
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    /* Stat block table */
+    .stat-table {
+      width: calc(100% - 28px);
+      margin: 8px 14px 12px;
+      border-collapse: collapse;
+      border: 1px solid #3d2e10;
+    }
+    .stat-table thead tr {
+      background: linear-gradient(180deg, #1e1608 0%, #140e04 100%);
+      border-bottom: 1px solid #3d2e10;
+    }
+    .stat-table thead th {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      color: #c9a352;
+      padding: 6px 4px;
+      text-align: center;
+      border-right: 1px solid #1c1c1c;
+    }
+    .stat-table thead th:last-child { border-right: none; }
+    .stat-table tbody tr {
+      background: #11141c;
+    }
+    .stat-table tbody td {
+      font: 700 20px/1 'Roboto Condensed', sans-serif;
+      color: #ffffff;
+      padding: 10px 4px;
+      text-align: center;
+      border-right: 1px solid #1c1c1c;
+    }
+    .stat-table tbody td:last-child { border-right: none; }
+
+    /* Weapon table */
+    .weapon-table {
+      width: calc(100% - 28px);
+      margin: 6px 14px 12px;
+      border-collapse: collapse;
+      border: 1px solid #3d2e10;
+      font-size: 13px;
+    }
+    .weapon-table thead tr {
+      background: linear-gradient(180deg, #1e1608 0%, #140e04 100%);
+      border-bottom: 1px solid #3d2e10;
+    }
+    .weapon-table thead th {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 1.5px;
+      color: #c9a352;
+      padding: 5px 4px;
+      text-align: center;
+      border-right: 1px solid #1c1c1c;
+    }
+    .weapon-table thead th:first-child { text-align: left; padding-left: 7px; }
+    .weapon-table thead th:last-child { border-right: none; }
+
+    .weapon-table tbody tr:nth-child(odd)  { background: #0e0e12; }
+    .weapon-table tbody tr:nth-child(even) { background: #111116; }
+    .weapon-table tbody td {
+      font: 400 13px/1 'Roboto Condensed', sans-serif;
+      color: #c8c4bc;
+      padding: 6px 4px;
+      text-align: center;
+      border-right: 1px solid #1a1a1a;
+    }
+    .weapon-table tbody td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: #e8c060;
+      padding-left: 7px;
+    }
+    .weapon-table tbody td:last-child { border-right: none; }
+    .kw-tag {
+      font: 600 9px/1 'Oswald', sans-serif;
+      letter-spacing: 0.5px;
+      color: #c9a352;
+      text-transform: uppercase;
+    }
+
+    /* Context boxes */
+    .context-box {
+      margin: 0 14px 10px;
+      padding: 10px 14px;
+    }
+    .context-box.terrain {
+      background: rgba(201,163,82,0.04);
+      border: 1px solid #2a2010;
+    }
+    .context-box.los {
+      background: rgba(0,212,255,0.04);
+      border: 1px solid #003a50;
+    }
+    .context-box-title {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      color: #c9a352;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .context-box.los .context-box-title { color: #888; }
+    .context-box-title .los-clear { color: #00d4ff; }
+    .context-body {
+      font: 400 12px/1.6 'Roboto Condensed', sans-serif;
+      color: #aaa;
+    }
+    .los-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 2px 0;
+    }
+    .los-label {
+      font: 400 11px/1 'Roboto Condensed', sans-serif;
+      color: #666;
+    }
+    .los-value {
+      font: 700 12px/1 'Roboto Condensed', sans-serif;
+    }
+    .los-value.ok    { color: #2ed573; }
+    .los-value.warn  { color: #f0a030; }
+    .los-value.bad   { color: #cc3333; }
+    .los-value.neutral { color: #aaa; }
+
+    /* Unit abilities */
+    .right-ability-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 14px;
+      font: 400 12px/1.4 'Roboto Condensed', sans-serif;
+      color: #aaa;
+      border-bottom: 1px solid #111;
+    }
+    .right-ability-row:last-child { border-bottom: none; }
+
+    /* Aquila watermark */
+    #aquila {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 64px;
+      color: rgba(201,163,82,0.08);
+      pointer-events: none;
+      user-select: none;
+      line-height: 1;
+    }
+
+    /* ============================================================
+       ACTION BAR (BOTTOM)
+       ============================================================ */
+    #action-bar {
+      grid-column: 1 / 4;
+      grid-row: 2;
+      height: 80px;
+      background: linear-gradient(180deg, #0e0a04, #080604);
+      border-top: 1px solid #3d2e10;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* Zone 1 — Phase Tracker */
+    #zone-phase {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 14px;
+      height: 100%;
+      width: 38%;
+      min-width: 0;
+    }
+
+    .phase-step {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 9px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .phase-step.done {
+      background: #1c1408;
+      color: #555;
+    }
+    .phase-num-done {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #3d2e10;
+      color: #555;
+      font: 600 9px/16px 'Oswald', sans-serif;
+      text-align: center;
+    }
+    .phase-name-done {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #555;
+    }
+
+    .phase-step.active {
+      background: #001a28;
+      border: 1px solid #004a6a;
+      box-shadow: 0 0 10px rgba(0,212,255,0.15);
+    }
+    .phase-num-active {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #003a50;
+      color: #00d4ff;
+      font: 600 9px/16px 'Oswald', sans-serif;
+      text-align: center;
+    }
+    .phase-name-active {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #00d4ff;
+    }
+
+    .phase-step.upcoming {
+      background: #0d0d0d;
+    }
+    .phase-num-upcoming {
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: #181818;
+      color: #444;
+      font: 600 9px/16px 'Oswald', sans-serif;
+      text-align: center;
+    }
+    .phase-name-upcoming {
+      font: 600 10px/1 'Oswald', sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    .phase-sep {
+      color: #333;
+      font-size: 10px;
+      margin: 0 1px;
+    }
+
+    /* Zone separator */
+    .zone-sep {
+      width: 1px;
+      height: 52px;
+      background: #2a2a2a;
+      margin: 0 8px;
+      flex-shrink: 0;
+    }
+
+    /* Zone 2 — Unit Actions */
+    #zone-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 10px;
+      height: 100%;
+      width: 35%;
+      min-width: 0;
+    }
+
+    .action-btn {
+      height: 52px;
+      min-width: 110px;
+      padding: 0 18px;
+      font: 600 13px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: #111418;
+      border: 1px solid #2a2a30;
+      color: #888;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      white-space: nowrap;
+    }
+    .action-btn:hover {
+      border-color: #c9a352;
+      color: #c9a352;
+      background: rgba(201,163,82,0.06);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .action-btn.active {
+      background: rgba(0,180,220,0.1);
+      border-color: #00aadd;
+      color: #00d4ff;
+      box-shadow: 0 0 16px rgba(0,212,255,0.2), inset 0 1px 0 rgba(0,212,255,0.1);
+    }
+
+    /* Zone 3 — Global Actions */
+    #zone-global {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      height: 100%;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .stratagem-btn {
+      height: 52px;
+      min-width: 140px;
+      padding: 0 16px;
+      font: 600 12px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: rgba(201,163,82,0.08);
+      border: 1px solid #5a4010;
+      color: #c9a352;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .stratagem-btn:hover {
+      border-color: #c9a352;
+      color: #e8c070;
+      background: rgba(201,163,82,0.14);
+      box-shadow: 0 0 12px rgba(201,163,82,0.15);
+    }
+
+    .end-phase-btn {
+      height: 52px;
+      min-width: 180px;
+      padding: 0 20px;
+      font: 600 12px/1 'Oswald', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #1a1005, #0e0804);
+      border: 1px solid #c9a352;
+      color: #c9a352;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: 0 0 16px rgba(201,163,82,0.1);
+      white-space: nowrap;
+    }
+    .end-phase-btn:hover {
+      background: linear-gradient(180deg, #241808, #181004);
+      box-shadow: 0 0 28px rgba(201,163,82,0.3), inset 0 1px 0 rgba(201,163,82,0.1);
+      color: #e8c070;
+    }
+
+    /* ============================================================
+       STRATAGEM MODAL
+       ============================================================ */
+    #modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    #stratagem-modal {
+      width: 420px;
+      max-height: 70vh;
+      background: #0a0a0e;
+      border: 1px solid #c9a352;
+      box-shadow: 0 0 40px rgba(201,163,82,0.2);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, #1e1608 0%, #120e06 100%);
+      border-bottom: 1px solid #3d2e10;
+      font: 600 12px/1 'Oswald', sans-serif;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #c9a352;
+    }
+    .modal-close {
+      font-size: 18px;
+      color: #5a4a28;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #c9a352; }
+
+    .stratagem-list {
+      overflow-y: auto;
+      flex: 1;
+      padding: 8px 0;
+    }
+    .stratagem-list::-webkit-scrollbar { width: 4px; }
+    .stratagem-list::-webkit-scrollbar-thumb { background: #2a1e08; }
+
+    .stratagem-item {
+      padding: 12px 18px;
+      border-bottom: 1px solid #141414;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .stratagem-item:hover { background: rgba(201,163,82,0.04); }
+    .stratagem-item:last-child { border-bottom: none; }
+
+    .stratagem-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .stratagem-name {
+      font: 700 13px/1 'Roboto Condensed', sans-serif;
+      color: #e8c060;
+      flex: 1;
+    }
+    .stratagem-cost {
+      font: 700 10px/1 'Oswald', sans-serif;
+      background: #6a0808;
+      color: #ff9999;
+      padding: 3px 6px;
+      border-radius: 2px;
+    }
+    .stratagem-timing {
+      font: 600 9px/1 'Oswald', sans-serif;
+      color: #c9a352;
+      background: rgba(201,163,82,0.1);
+      border: 1px solid #3d2e10;
+      padding: 2px 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .stratagem-desc {
+      font: 400 11px/1.5 'Roboto Condensed', sans-serif;
+      color: #666;
+    }
+
+    /* ============================================================
+       ANIMATIONS
+       ============================================================ */
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+  
+    .ability-item:hover::after {
+      content: attr(data-desc);
+      position: absolute; bottom: 100%; left: 0;
+      width: 220px; background: #06080a; border: 1px solid #c9a352;
+      color: #fff; padding: 8px; font-size: 11px; line-height: 1.4;
+      font-family: 'Roboto Condensed', sans-serif;
+      z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      pointer-events: none; white-space: normal;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============================
+       LEFT SIDEBAR
+       ============================ -->
+  <aside id="sidebar-left">
+    <div class="sidebar-header">
+      <span class="sidebar-header-title">Army Roster</span>
+      <span class="sidebar-header-actions">
+        <span title="Settings">⚙</span>
+        <span title="Close">×</span>
+      </span>
+    </div>
+
+    <div class="roster-scroll">
+
+      <!-- IMPERIUM section -->
+      <div class="faction-section">
+        <div class="faction-header" data-faction="imperium">
+          <span class="chevron">▼</span>
+          <span class="faction-name">Imperium</span>
+          <span class="faction-icons">○ †</span>
+        </div>
+        <div class="faction-units" id="faction-imperium" style="max-height: 400px;">
+
+          <!-- Assault Intercessors - SELECTED by default -->
+          <div class="roster-unit active" data-unit="assault-intercessors">
+            <div class="unit-portrait imp" style="position:relative;">
+              <span class="portrait-icon imp">◆</span>
+              <div class="count-badge">5</div>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Assault Int.</div>
+              <div class="unit-status moving">MOVING</div>
+            </div>
+            <div class="unit-indicator moving-ind">►</div>
+          </div>
+
+          <!-- Primaris Lieutenant -->
+          <div class="roster-unit" data-unit="primaris-lieutenant">
+            <div class="unit-portrait imp char-portrait" style="position:relative;">
+              <span class="portrait-icon char">★</span>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Primaris Lt.</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+          <!-- Intercessor Squad A -->
+          <div class="roster-unit" data-unit="intercessor-squad-a">
+            <div class="unit-portrait imp" style="position:relative;">
+              <span class="portrait-icon imp">◆</span>
+              <div class="count-badge">5</div>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Intercessors A</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+          <!-- Hellblasters -->
+          <div class="roster-unit" data-unit="hellblasters">
+            <div class="unit-portrait imp" style="position:relative;">
+              <span class="portrait-icon imp">◆</span>
+              <div class="count-badge">5</div>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Hellblasters</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+          <!-- Redemptor Dreadnought -->
+          <div class="roster-unit" data-unit="redemptor-dreadnought">
+            <div class="unit-portrait imp" style="position:relative; border-radius: 6px; border-color: #5a8acc;">
+              <span class="portrait-icon imp">⬡</span>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Dreadnought</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+        </div>
+      </div><!-- /imperium -->
+
+      <!-- ORKS section (collapsed) -->
+      <div class="faction-section" style="border-top: 1px solid #1a1408;">
+        <div class="faction-header" data-faction="orks">
+          <span class="chevron" style="transform: rotate(-90deg);">▼</span>
+          <span class="faction-name" style="color: #a04040;">Orks</span>
+          <span class="faction-icons">☠</span>
+        </div>
+        <div class="faction-units collapsed" id="faction-orks" style="max-height: 0;">
+
+          <!-- Boss Nob -->
+          <div class="roster-unit" data-unit="boss-nob">
+            <div class="unit-portrait ork char-portrait" style="position:relative; border-color: #c9a352;">
+              <span class="portrait-icon char" style="color: rgba(180,60,60,0.7);">★</span>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Boss Nob</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+          <!-- Boyz Mob -->
+          <div class="roster-unit" data-unit="boyz-mob">
+            <div class="unit-portrait ork" style="position:relative;">
+              <span class="portrait-icon ork">◆</span>
+              <div class="count-badge" style="background: #6a1010;">10</div>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Boyz Mob</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+          <!-- Mekboy -->
+          <div class="roster-unit" data-unit="mekboy">
+            <div class="unit-portrait ork char-portrait" style="position:relative; border-color: #c9a352;">
+              <span class="portrait-icon char" style="color: rgba(180,60,60,0.7);">★</span>
+            </div>
+            <div class="unit-info">
+              <div class="unit-name">Mekboy</div>
+              <div class="unit-status ready">READY</div>
+            </div>
+            <div class="unit-indicator ready-ind">✓</div>
+          </div>
+
+        </div>
+      </div><!-- /orks -->
+
+      <!-- Army Abilities -->
+      <div class="army-abilities-section">
+        <div class="army-abilities-header" id="abilities-header">
+          <span class="chevron">▼</span>
+          <span class="army-abilities-title">Army Abilities</span>
+        </div>
+        <div class="army-abilities-body" id="abilities-body" style="max-height: 200px;">
+          <div class="ability-row">
+            <span>And They Shall Know No Fear</span>
+            <span class="ability-tag passive">PASSIVE</span>
+          </div>
+          <div class="ability-row">
+            <span>Shock Assault</span>
+            <span class="ability-tag phase">FIGHT PHASE</span>
+          </div>
+          <div class="ability-row">
+            <span>Oath of Moment</span>
+            <span class="ability-tag passive">PASSIVE</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /roster-scroll -->
+
+    <!-- Footer -->
+    <div class="sidebar-footer">
+      <div class="footer-stat">
+        <span class="footer-label">Active Units</span>
+        <div class="footer-value-group">
+          <span class="footer-value">8</span>
+          <span class="footer-icon">●</span>
+        </div>
+      </div>
+      <div class="footer-stat">
+        <span class="footer-label">CP Remaining</span>
+        <div class="footer-value-group">
+          <span class="footer-value">5</span>
+          <span class="footer-icon">⚙</span>
+        </div>
+      </div>
+      <div class="footer-stat">
+        <span class="footer-label">Victory Points</span>
+        <div class="footer-value-group">
+          <span class="footer-value">10</span>
+          <span class="footer-icon">⚑</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================
+       BATTLEFIELD (CENTER)
+       ============================ -->
+  <main id="battlefield">
+    <!-- Phase header -->
+    <div id="phase-header">
+      <div class="phase-header-center">
+        <div class="phase-title">MOVEMENT PHASE — ROUND 2/5</div>
+        <div class="phase-subtitle">Imperium Active</div>
+      </div>
+      <div class="phase-header-right">
+        <span id="zoom-indicator">Zoom: 100%</span>
+        <button id="reset-view">↺ Reset View</button>
+        <button id="demo-ability-btn">⚡ Demo Ability</button>
+      </div>
+    </div>
+
+    <!-- Ability notification banner -->
+    <div id="ability-banner">
+      <div class="banner-title">
+        <span class="banner-icon">⚡</span>
+        ARMY ABILITY AVAILABLE: SHOCK ASSAULT
+      </div>
+      <div class="banner-body">After this unit fights, it can consolidate an extra 3". Triggers at end of Fight Phase after this unit has fought.</div>
+      <div class="banner-actions">
+        <button class="banner-btn use" id="banner-use">USE</button>
+        <button class="banner-btn dismiss" id="banner-dismiss">DISMISS</button>
+      </div>
+    </div>
+
+    <!-- Battlefield inner (pan/zoom target) -->
+    <div id="battlefield-inner">
+
+      <!-- SVG overlay: movement arrow, LOS line, threat ring -->
+      <svg id="bf-svg" viewBox="0 0 1000 600" preserveAspectRatio="none">
+        <defs>
+          <marker id="arrow-head" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00ccff"/>
+          </marker>
+        </defs>
+        <!-- Ruins shapes -->
+        <polygon points="200,300 200,450 350,450 350,400 250,400 250,300" fill="rgba(30,30,40,0.4)" stroke="#444" stroke-width="1" stroke-dasharray="4,4" />
+        <polygon points="600,100 800,100 800,250 750,250 750,150 600,150" fill="rgba(30,30,40,0.4)" stroke="#444" stroke-width="1" stroke-dasharray="4,4" />
+        <!-- Movement path: from Assault Intercessors (~30%, 40%) toward upper-right -->
+        <line x1="300" y1="240" x2="460" y2="130"
+              stroke="#00ccff" stroke-width="2"
+              stroke-dasharray="8,5"
+              marker-end="url(#arrow-head)"
+              opacity="0.85"/>
+        <!-- LOS line: Assault Intercessors to Boss Nob (~70%, 18%) -->
+        <line x1="300" y1="240" x2="700" y2="108"
+              stroke="#00ff88" stroke-width="1.5"
+              opacity="0.8"/>
+        <!-- LOS midpoint label -->
+        <rect x="465" y="160" width="80" height="14" fill="rgba(0,0,0,0.6)"/>
+        <text x="505" y="170" text-anchor="middle" fill="#00ff88"
+              font-family="Oswald, sans-serif" font-size="9" letter-spacing="1">LOS: CLEAR</text>
+        <!-- Threat range ring around Boyz Mob (~72%, 32%) -->
+        <circle cx="720" cy="192" r="90"
+                fill="rgba(180,30,30,0.1)"
+                stroke="rgba(180,30,30,0.3)"
+                stroke-width="1"/>
+      </svg>
+
+      <!-- Objective Markers -->
+      <div class="obj-marker" style="left: 15%; top: 20%;">
+        <span class="obj-label">OBJ 1</span>
+      </div>
+      <div class="obj-marker" style="left: 50%; top: 65%;">
+        <span class="obj-label">OBJ 2</span>
+      </div>
+      <div class="obj-marker" style="left: 80%; top: 30%;">
+        <span class="obj-label">OBJ 3</span>
+      </div>
+
+      <!-- ── IMPERIUM TOKENS ── -->
+
+      <!-- Assault Intercessors (SELECTED, infantry) -->
+      <div class="token token-infantry token-imperium selected" data-unit="assault-intercessors"
+           style="left: 30%; top: 40%;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 20,11 11,20 2,11" fill="rgba(100,160,255,0.6)"/>
+        </svg>
+        <div class="token-badge">5</div>
+        <div class="token-label">Assault Int.</div>
+      </div>
+
+      <!-- Primaris Lieutenant (character, gold ring) -->
+      <div class="token token-character token-imperium-char" data-unit="primaris-lieutenant"
+           style="left: 35%; top: 55%;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 13.4,8.2 20,8.2 14.8,12.5 16.7,18.8 11,15 5.3,18.8 7.2,12.5 2,8.2 8.6,8.2" fill="rgba(201,163,82,0.7)"/>
+        </svg>
+        <div class="token-label">Lt.</div>
+      </div>
+
+      <!-- Intercessor Squad A (infantry) -->
+      <div class="token token-infantry token-imperium" data-unit="intercessor-squad-a"
+           style="left: 42%; top: 45%;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 20,11 11,20 2,11" fill="rgba(100,160,255,0.6)"/>
+        </svg>
+        <div class="token-badge">5</div>
+        <div class="token-label">Int. A</div>
+      </div>
+
+      <!-- Hellblasters (infantry) -->
+      <div class="token token-infantry token-imperium" data-unit="hellblasters"
+           style="left: 50%; top: 38%;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 20,11 11,20 2,11" fill="rgba(100,160,255,0.6)"/>
+        </svg>
+        <div class="token-badge">5</div>
+        <div class="token-label">Hellblasters</div>
+      </div>
+
+      <!-- Redemptor Dreadnought (vehicle — rect token) -->
+      <div class="token token-vehicle token-imperium" data-unit="redemptor-dreadnought"
+           style="left: 28%; top: 58%; border-radius: 14px;">
+        <svg class="token-icon" viewBox="0 0 22 22" style="width:28px;height:28px;">
+          <polygon points="11,3 19,8 19,14 11,19 3,14 3,8" fill="rgba(100,160,255,0.6)"/>
+        </svg>
+        <div class="token-label" style="margin-top:8px;">Dreadnought</div>
+      </div>
+
+      <!-- ── ORK TOKENS ── -->
+
+      <!-- Boss Nob (character, gold ring) -->
+      <div class="token token-character token-ork-char" data-unit="boss-nob"
+           style="left: 70%; top: 18%;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 13.4,8.2 20,8.2 14.8,12.5 16.7,18.8 11,15 5.3,18.8 7.2,12.5 2,8.2 8.6,8.2" fill="rgba(200,80,80,0.6)"/>
+        </svg>
+        <div class="token-label">Boss Nob</div>
+      </div>
+
+      <!-- Boyz Mob (larger infantry, 62px) -->
+      <div class="token token-ork" data-unit="boyz-mob"
+           style="left: 72%; top: 32%; width: 62px; height: 62px;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 20,11 11,20 2,11" fill="rgba(255,100,100,0.5)"/>
+        </svg>
+        <div class="token-badge" style="background: #6a1010;">10</div>
+        <div class="token-label">Boyz</div>
+      </div>
+
+      <!-- Mekboy (character) -->
+      <div class="token token-character token-ork-char" data-unit="mekboy"
+           style="left: 62%; top: 45%;">
+        <svg class="token-icon" viewBox="0 0 22 22">
+          <polygon points="11,2 13.4,8.2 20,8.2 14.8,12.5 16.7,18.8 11,15 5.3,18.8 7.2,12.5 2,8.2 8.6,8.2" fill="rgba(200,80,80,0.6)"/>
+        </svg>
+        <div class="token-label">Mekboy</div>
+      </div>
+
+    </div><!-- /battlefield-inner -->
+  </main>
+
+  <!-- ============================
+       RIGHT SIDEBAR
+       ============================ -->
+  <aside id="sidebar-right">
+    <div class="right-header">
+      <span class="right-header-title">Selected Unit</span>
+    </div>
+
+    <div id="unit-name-display" class="unit-name-display">ASSAULT INTERCESSORS</div>
+
+    <div id="faction-tag" class="faction-tag">
+      <span class="faction-diamond">◆</span>
+      <span id="faction-tag-text">SPACE MARINES · ADEPTUS ASTARTES</span>
+    </div>
+
+    <!-- CHARACTERISTICS -->
+    <div class="section-header">Characteristics</div>
+    <table class="stat-table">
+      <thead>
+        <tr>
+          <th>M</th><th>WS</th><th>BS</th><th>S</th><th>T</th>
+          <th>W</th><th>A</th><th>Ld</th><th>Sv</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td id="stat-m">6"</td>
+          <td id="stat-ws">3+</td>
+          <td id="stat-bs">3+</td>
+          <td id="stat-s">4</td>
+          <td id="stat-t">4</td>
+          <td id="stat-w">2</td>
+          <td id="stat-a">3</td>
+          <td id="stat-ld">7</td>
+          <td id="stat-sv">3+</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- WEAPONS -->
+    <div class="section-header">Weapons</div>
+    <table class="weapon-table" id="weapon-table">
+      <thead>
+        <tr>
+          <th>Weapon</th>
+          <th>Rng</th>
+          <th>A</th>
+          <th>S</th>
+          <th>AP</th>
+          <th>D</th>
+          <th>Keywords</th>
+        </tr>
+      </thead>
+      <tbody id="weapon-tbody">
+        <tr>
+          <td>Astartes Chainsword</td>
+          <td>—</td><td>4</td><td>4</td><td>-1</td><td>1</td>
+          <td><span class="kw-tag">MELEE</span></td>
+        </tr>
+        <tr>
+          <td>Heavy Bolt Pistol</td>
+          <td>18"</td><td>2</td><td>4</td><td>0</td><td>1</td>
+          <td><span class="kw-tag">PISTOL</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- CONTEXT -->
+    <div class="section-header">Context</div>
+
+    <div class="context-box terrain">
+      <div class="context-box-title" id="terrain-title">TERRAIN — LIGHT COVER (RUINS)</div>
+      <div class="context-body" id="terrain-body">
+        Unit is in light cover. Ranged attacks subtract 1 from hit rolls against this unit.
+      </div>
+    </div>
+
+    <div class="context-box los">
+      <div class="context-box-title">
+        LINE OF SIGHT CHECK &nbsp;
+        <span class="los-clear">✓ CLEAR</span>
+      </div>
+      <div>
+        <div class="los-row">
+          <span class="los-label">Range to target</span>
+          <span class="los-value neutral">9.5"</span>
+        </div>
+        <div class="los-row">
+          <span class="los-label">LOS status</span>
+          <span class="los-value ok">Clear ✓</span>
+        </div>
+        <div class="los-row">
+          <span class="los-label">Cover save</span>
+          <span class="los-value warn">Light (+1 Sv)</span>
+        </div>
+        <div class="los-row">
+          <span class="los-label">Weapon range</span>
+          <span class="los-value ok">Within ✓</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIT ABILITIES -->
+    <div class="section-header">Unit Abilities</div>
+    <div id="abilities-list">
+      <div class="right-ability-row">
+        <span>And They Shall Know No Fear</span>
+        <span class="ability-tag passive">PASSIVE</span>
+      </div>
+      <div class="right-ability-row">
+        <span>Shock Assault</span>
+        <span class="ability-tag phase">FIGHT PHASE</span>
+      </div>
+    </div>
+
+    <!-- Aquila watermark -->
+    <div id="aquila">⚜</div>
+  </aside>
+
+  <!-- ============================
+       ACTION BAR (BOTTOM)
+       ============================ -->
+  <footer id="action-bar">
+    <!-- Zone 1: Phase Tracker -->
+    <div id="zone-phase">
+      <!-- COMMAND (done) -->
+      <div class="phase-step done">
+        <div class="phase-num-done">①</div>
+        <span class="phase-name-done">Command</span>
+      </div>
+      <span class="phase-sep">➜</span>
+      <!-- MOVEMENT (active) -->
+      <div class="phase-step active">
+        <div class="phase-num-active">②</div>
+        <span class="phase-name-active">Movement</span>
+      </div>
+      <span class="phase-sep">➜</span>
+      <!-- SHOOTING (upcoming) -->
+      <div class="phase-step upcoming">
+        <div class="phase-num-upcoming">③</div>
+        <span class="phase-name-upcoming">Shooting</span>
+      </div>
+      <span class="phase-sep">➜</span>
+      <!-- CHARGE (upcoming) -->
+      <div class="phase-step upcoming">
+        <div class="phase-num-upcoming">④</div>
+        <span class="phase-name-upcoming">Charge</span>
+      </div>
+      <span class="phase-sep">➜</span>
+      <!-- FIGHT (upcoming) -->
+      <div class="phase-step upcoming">
+        <div class="phase-num-upcoming">⑤</div>
+        <span class="phase-name-upcoming">Fight</span>
+      </div>
+    </div>
+
+    <div class="zone-sep"></div>
+
+    <!-- Zone 2: Unit Actions -->
+    <div id="zone-actions">
+      <button class="action-btn active" id="btn-normal-move">NORMAL MOVE</button>
+      <button class="action-btn" id="btn-advance">ADVANCE</button>
+    </div>
+
+    <div class="zone-sep"></div>
+
+    <!-- Zone 3: Global Actions -->
+    <div id="zone-global">
+      <button class="stratagem-btn" id="btn-stratagem">USE STRATAGEM ⚙</button>
+      <button class="end-phase-btn" id="btn-end-phase">END MOVEMENT PHASE →</button>
+    </div>
+  </footer>
+
+</div><!-- /app -->
+
+<!-- Stratagem Modal Overlay -->
+<div id="modal-overlay">
+  <div id="stratagem-modal">
+    <div class="modal-header">
+      Select Stratagem
+      <span class="modal-close" id="modal-close">×</span>
+    </div>
+    <div class="stratagem-list">
+      <div class="stratagem-item">
+        <div class="stratagem-top">
+          <span class="stratagem-name">COMMAND RE-ROLL</span>
+          <span class="stratagem-cost">1 CP</span>
+          <span class="stratagem-timing">ANY PHASE</span>
+        </div>
+        <p class="stratagem-desc">Re-roll one dice result.</p>
+      </div>
+      <div class="stratagem-item">
+        <div class="stratagem-top">
+          <span class="stratagem-name">INSANE BRAVERY</span>
+          <span class="stratagem-cost">1 CP</span>
+          <span class="stratagem-timing">COMMAND PHASE</span>
+        </div>
+        <p class="stratagem-desc">A unit automatically passes a Battle-shock test.</p>
+      </div>
+      <div class="stratagem-item">
+        <div class="stratagem-top">
+          <span class="stratagem-name">TANK SHOCK</span>
+          <span class="stratagem-cost">1 CP</span>
+          <span class="stratagem-timing">MOVEMENT PHASE</span>
+        </div>
+        <p class="stratagem-desc">A VEHICLE unit can move through enemy units during the Movement Phase.</p>
+      </div>
+      <div class="stratagem-item">
+        <div class="stratagem-top">
+          <span class="stratagem-name">FIRE OVERWATCH</span>
+          <span class="stratagem-cost">1 CP</span>
+          <span class="stratagem-timing">OPPONENT'S MOVEMENT PHASE</span>
+        </div>
+        <p class="stratagem-desc">When an enemy unit is declared as a charge, one of your units within 24" can shoot at it.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   UNIT DATA
+   ============================================================ */
+const UNITS = {
+  'assault-intercessors': {
+    name: 'ASSAULT INTERCESSORS',
+    faction: 'SPACE MARINES · ADEPTUS ASTARTES',
+    factionColor: '#2266dd',
+    stats: { M:'6"', WS:'3+', BS:'3+', S:4, T:4, W:2, A:3, Ld:7, Sv:'3+' },
+    weapons: [
+      { name: 'Astartes Chainsword', rng:'—',  a:4, s:4, ap:-1, d:1,   kw:'MELEE' },
+      { name: 'Heavy Bolt Pistol',   rng:'18"', a:2, s:4, ap:0,  d:1,   kw:'PISTOL' }
+    ],
+    terrain: 'LIGHT COVER (RUINS)',
+    terrainEffect: 'Unit is in light cover. Ranged attacks subtract 1 from hit rolls against this unit.',
+    abilities: [
+      { name: 'And They Shall Know No Fear', timing: 'PASSIVE', triggerable: false },
+      { name: 'Shock Assault',               timing: 'FIGHT PHASE', triggerable: false }
+    ],
+    status: 'MOVING',
+    count: 5,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'primaris-lieutenant': {
+    name: 'PRIMARIS LIEUTENANT',
+    faction: 'SPACE MARINES · CHARACTER',
+    factionColor: '#c9a352',
+    stats: { M:'6"', WS:'2+', BS:'2+', S:4, T:4, W:5, A:5, Ld:6, Sv:'3+' },
+    weapons: [
+      { name: 'Master-crafted Auto Pistol', rng:'18"', a:2, s:4, ap:0,  d:1, kw:'PISTOL' },
+      { name: 'Paired Combat Blades',       rng:'—',   a:6, s:4, ap:-1, d:1, kw:'MELEE' }
+    ],
+    terrain: 'OPEN GROUND',
+    terrainEffect: 'No terrain modifier active.',
+    abilities: [
+      { name: 'Tactical Precision',   timing: 'PASSIVE',     triggerable: false },
+      { name: 'Honour the Chapter',   timing: 'FIGHT PHASE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 1,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'intercessor-squad-a': {
+    name: 'INTERCESSOR SQUAD A',
+    faction: 'SPACE MARINES · INFANTRY',
+    factionColor: '#2266dd',
+    stats: { M:'6"', WS:'3+', BS:'3+', S:4, T:4, W:2, A:2, Ld:7, Sv:'3+' },
+    weapons: [
+      { name: 'Bolt Rifle',  rng:'30"', a:2, s:4, ap:-1, d:1, kw:'RAPID FIRE 1' },
+      { name: 'Bolt Pistol', rng:'12"', a:1, s:4, ap:0,  d:1, kw:'PISTOL' }
+    ],
+    terrain: 'DENSE COVER',
+    terrainEffect: 'Unit cannot be targeted by ranged attacks from more than 12" away.',
+    abilities: [
+      { name: 'And They Shall Know No Fear', timing: 'PASSIVE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 5,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'hellblasters': {
+    name: 'HELLBLASTERS',
+    faction: 'SPACE MARINES · INFANTRY',
+    factionColor: '#2266dd',
+    stats: { M:'6"', WS:'3+', BS:'3+', S:4, T:4, W:2, A:2, Ld:7, Sv:'3+' },
+    weapons: [
+      { name: 'Plasma Incinerator (std)', rng:'30"', a:2, s:7, ap:-3, d:2, kw:'RAPID FIRE 1' },
+      { name: 'Plasma Incinerator (sup)', rng:'30"', a:2, s:8, ap:-3, d:3, kw:'RAPID FIRE 1, HAZARDOUS' }
+    ],
+    terrain: 'OPEN GROUND',
+    terrainEffect: 'No terrain modifier active.',
+    abilities: [
+      { name: 'And They Shall Know No Fear', timing: 'PASSIVE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 5,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'redemptor-dreadnought': {
+    name: 'REDEMPTOR DREADNOUGHT',
+    faction: 'SPACE MARINES · VEHICLE',
+    factionColor: '#5a8acc',
+    stats: { M:'8"', WS:'3+', BS:'3+', S:9, T:10, W:12, A:4, Ld:6, Sv:'2+' },
+    weapons: [
+      { name: 'Redemptor Fist',           rng:'—',   a:5, s:12, ap:-3, d:3,    kw:'MELEE' },
+      { name: 'Macro Plasma Incinerator', rng:'36"', a:3, s:8,  ap:-4, d:2,    kw:'HEAVY, BLAST' }
+    ],
+    terrain: 'OPEN GROUND',
+    terrainEffect: 'No terrain modifier active.',
+    abilities: [
+      { name: 'Duty Eternal',           timing: 'PASSIVE', triggerable: false },
+      { name: 'Guardian of the Chapter', timing: 'PASSIVE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 1,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'boss-nob': {
+    name: 'BOSS NOB',
+    faction: 'ORKS · CHARACTER',
+    factionColor: '#cc4444',
+    stats: { M:'5"', WS:'3+', BS:'5+', S:5, T:5, W:5, A:4, Ld:7, Sv:'4+' },
+    weapons: [
+      { name: 'Power Klaw', rng:'—',   a:4, s:8, ap:-3, d:2, kw:'MELEE' },
+      { name: 'Slugga',     rng:'12"', a:2, s:4, ap:0,  d:1, kw:'PISTOL' }
+    ],
+    terrain: 'OPEN GROUND',
+    terrainEffect: 'No terrain modifier active.',
+    abilities: [
+      { name: "'Ere We Go",    timing: 'PASSIVE',       triggerable: false },
+      { name: 'Waaagh! Charge', timing: 'CHARGE PHASE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 1,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'boyz-mob': {
+    name: 'BOYZ MOB',
+    faction: 'ORKS · INFANTRY',
+    factionColor: '#cc4444',
+    stats: { M:'5"', WS:'3+', BS:'5+', S:4, T:4, W:1, A:2, Ld:'7+', Sv:'5+' },
+    weapons: [
+      { name: 'Choppa', rng:'—',   a:2, s:4, ap:-1, d:1, kw:'MELEE' },
+      { name: 'Shoota', rng:'12"', a:2, s:4, ap:0,  d:1, kw:'ASSAULT 2' }
+    ],
+    terrain: 'OPEN GROUND',
+    terrainEffect: 'No terrain modifier active.',
+    abilities: [
+      { name: "'Ere We Go", timing: 'PASSIVE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 10,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  },
+  'mekboy': {
+    name: 'MEKBOY',
+    faction: 'ORKS · CHARACTER',
+    factionColor: '#cc4444',
+    stats: { M:'5"', WS:'3+', BS:'5+', S:4, T:4, W:4, A:3, Ld:7, Sv:'5+' },
+    weapons: [
+      { name: 'Kustom Mega-blasta', rng:'24"', a:3, s:8, ap:-3, d:'D3', kw:'MELTA 2' },
+      { name: 'Choppa',             rng:'—',   a:3, s:4, ap:-1, d:1,    kw:'MELEE' }
+    ],
+    terrain: 'OPEN GROUND',
+    terrainEffect: 'No terrain modifier active.',
+    abilities: [
+      { name: "Grot Oiler",  timing: 'PASSIVE', triggerable: false },
+      { name: "Mek's Tools", timing: 'PASSIVE', triggerable: false }
+    ],
+    status: 'READY',
+    count: 1,
+    phase_actions: ['NORMAL MOVE', 'ADVANCE']
+  }
+};
+
+/* ============================================================
+   UPDATE RIGHT SIDEBAR
+   ============================================================ */
+function updateSidebar(unitId) {
+  const u = UNITS[unitId];
+  if (!u) return;
+
+  // Name
+  document.getElementById('unit-name-display').textContent = u.name;
+
+  // Faction tag
+  const diamond = document.querySelector('.faction-diamond');
+  if (u.faction.startsWith('ORKS')) {
+    diamond.style.color = '#cc4444';
+  } else if (u.faction.includes('CHARACTER')) {
+    diamond.style.color = '#c9a352';
+  } else {
+    diamond.style.color = u.factionColor || '#2266dd';
+  }
+  document.getElementById('faction-tag-text').textContent = u.faction;
+
+  // Stats
+  const s = u.stats;
+  document.getElementById('stat-m').textContent  = s.M;
+  document.getElementById('stat-ws').textContent = s.WS;
+  document.getElementById('stat-bs').textContent = s.BS;
+  document.getElementById('stat-s').textContent  = s.S;
+  document.getElementById('stat-t').textContent  = s.T;
+  document.getElementById('stat-w').textContent  = s.W;
+  document.getElementById('stat-a').textContent  = s.A;
+  document.getElementById('stat-ld').textContent = s.Ld;
+  document.getElementById('stat-sv').textContent = s.Sv;
+
+  // Weapons
+  const tbody = document.getElementById('weapon-tbody');
+  tbody.innerHTML = '';
+  u.weapons.forEach((w, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${w.name}</td>
+      <td>${w.rng}</td>
+      <td>${w.a}</td>
+      <td>${w.s}</td>
+      <td>${w.ap}</td>
+      <td>${w.d}</td>
+      <td><span class="kw-tag">${w.kw}</span></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Terrain
+  document.getElementById('terrain-title').textContent = 'TERRAIN — ' + u.terrain;
+  document.getElementById('terrain-body').textContent  = u.terrainEffect;
+
+  // Abilities
+  const abList = document.getElementById('abilities-list');
+  abList.innerHTML = '';
+  u.abilities.forEach(ab => {
+    const row = document.createElement('div');
+    row.className = 'right-ability-row';
+    let tagClass = ab.triggerable ? 'active-now' : (ab.timing === 'PASSIVE' ? 'passive' : 'phase');
+    row.innerHTML = `
+      <span>${ab.name}</span>
+      <span class="ability-tag ${tagClass}">${ab.timing}</span>
+    `;
+    abList.appendChild(row);
+  });
+
+  // Update action bar zone 2 for context
+  updateActionButtons(u);
+}
+
+function updateActionButtons(u) {
+  const zone = document.getElementById('zone-actions');
+  zone.innerHTML = '';
+  const actions = u.phase_actions || ['NORMAL MOVE', 'ADVANCE'];
+  actions.forEach((label, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'action-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      zone.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+    zone.appendChild(btn);
+  });
+}
+
+/* ============================================================
+   UNIT SELECTION
+   ============================================================ */
+document.querySelectorAll('.roster-unit').forEach(row => {
+  row.addEventListener('click', () => {
+    document.querySelectorAll('.roster-unit').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+    const unitId = row.dataset.unit;
+    updateSidebar(unitId);
+    document.querySelectorAll('.token').forEach(t => t.classList.remove('selected'));
+    const token = document.querySelector(`.token[data-unit="${unitId}"]`);
+    if (token) token.classList.add('selected');
+  });
+});
+
+/* Token click → roster click */
+document.querySelectorAll('.token').forEach(token => {
+  token.addEventListener('click', e => {
+    e.stopPropagation();
+    const unitId = token.dataset.unit;
+    document.querySelector(`.roster-unit[data-unit="${unitId}"]`)?.click();
+  });
+});
+
+/* ============================================================
+   FACTION COLLAPSE
+   ============================================================ */
+document.querySelectorAll('.faction-header').forEach(header => {
+  const factionId = header.dataset.faction;
+  const section = document.getElementById('faction-' + factionId);
+  const chevron = header.querySelector('.chevron');
+
+  // Set initial max-height for expanded sections
+  if (section && !section.classList.contains('collapsed')) {
+    section.style.maxHeight = section.scrollHeight + 'px';
+  }
+
+  header.addEventListener('click', () => {
+    if (!section) return;
+    const isCollapsed = section.classList.toggle('collapsed');
+    chevron.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    section.style.maxHeight = isCollapsed ? '0' : section.scrollHeight + 'px';
+  });
+});
+
+/* Army abilities collapse */
+(function() {
+  const header = document.getElementById('abilities-header');
+  const body   = document.getElementById('abilities-body');
+  const chevron = header.querySelector('.chevron');
+  body.style.maxHeight = body.scrollHeight + 'px';
+  header.addEventListener('click', () => {
+    const isCollapsed = body.classList.toggle('collapsed');
+    chevron.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+    body.style.maxHeight = isCollapsed ? '0' : body.scrollHeight + 'px';
+  });
+})();
+
+/* ============================================================
+   STRATAGEM MODAL
+   ============================================================ */
+const overlay      = document.getElementById('modal-overlay');
+const modalClose   = document.getElementById('modal-close');
+const stratagemBtn = document.getElementById('btn-stratagem');
+
+stratagemBtn.addEventListener('click', () => overlay.classList.add('visible'));
+modalClose.addEventListener('click', () => overlay.classList.remove('visible'));
+overlay.addEventListener('click', e => {
+  if (e.target === overlay) overlay.classList.remove('visible');
+});
+
+/* ============================================================
+   ABILITY BANNER
+   ============================================================ */
+const banner      = document.getElementById('ability-banner');
+const demoBtn     = document.getElementById('demo-ability-btn');
+const bannerUse   = document.getElementById('banner-use');
+const bannerDismiss = document.getElementById('banner-dismiss');
+
+demoBtn.addEventListener('click', () => banner.classList.add('visible'));
+bannerUse.addEventListener('click', () => banner.classList.remove('visible'));
+bannerDismiss.addEventListener('click', () => banner.classList.remove('visible'));
+
+/* ============================================================
+   PAN & ZOOM
+   ============================================================ */
+let scale = 1, tx = 0, ty = 0;
+let isDragging = false, startX, startY;
+const inner = document.getElementById('battlefield-inner');
+const bf    = document.getElementById('battlefield');
+
+function applyTransform() {
+  inner.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  const zi = document.getElementById('zoom-indicator');
+  if (zi) zi.textContent = `Zoom: ${Math.round(scale * 100)}%`;
+}
+
+bf.addEventListener('wheel', e => {
+  e.preventDefault();
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.min(3, Math.max(0.4, scale * delta));
+  applyTransform();
+}, { passive: false });
+
+bf.addEventListener('mousedown', e => {
+  if (e.target.closest('.token') || e.target.closest('.obj-marker')) return;
+  if (e.target.closest('#ability-banner')) return;
+  isDragging = true;
+  startX = e.clientX - tx;
+  startY = e.clientY - ty;
+  inner.classList.add('dragging');
+});
+
+document.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  tx = e.clientX - startX;
+  ty = e.clientY - startY;
+  applyTransform();
+});
+
+document.addEventListener('mouseup', () => {
+  isDragging = false;
+  inner.classList.remove('dragging');
+});
+
+document.getElementById('reset-view')?.addEventListener('click', () => {
+  scale = 1; tx = 0; ty = 0;
+  applyTransform();
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+// Set initial max-height on imperium faction (already expanded)
+(function() {
+  const impSection = document.getElementById('faction-imperium');
+  if (impSection) impSection.style.maxHeight = impSection.scrollHeight + 'px';
+})();
+
+// Initial sidebar state matches "assault-intercessors" (already default)
+</script>
+</body>
+</html>
