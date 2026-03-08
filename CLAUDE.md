@@ -5,6 +5,25 @@ Read `architecture.md` and `rules_coverage.md` before making changes.
 
 ---
 
+## Mockups & Static Files
+
+**Mockups live in `packages/ui/public/mockups/`** — NOT in the repo root `mockups/`.
+
+Vite copies `packages/ui/public/` verbatim into `docs/` during `pnpm --filter @wh40k/ui build`.
+`docs/` is what GitHub Pages deploys (via `peaceiris/actions-gh-pages`, branch `gh-pages`).
+
+Anything placed in the root `mockups/` directory is **not deployed** and will 404 on Pages.
+
+| File location | Deployed to Pages? |
+|---|---|
+| `packages/ui/public/mockups/v0.x.html` | ✅ Yes — `https://.../mockups/v0.x.html` |
+| `mockups/v0.x.html` (repo root) | ❌ No — never deployed |
+| `docs/mockups/v0.x.html` | ❌ No — wiped by Vite build (`emptyOutDir: true`) |
+
+After adding a mockup, the CI pipeline (`CI + Deploy to GitHub Pages`) must complete before the URL is live.
+
+---
+
 ## Architecture Contracts (DO NOT BREAK)
 
 ### 1. `@wh40k/engine` has NO external dependencies
