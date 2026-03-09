@@ -137,6 +137,8 @@
     /* Battlefield inner — pan/zoom container */
     #battlefield-inner{position:absolute;top:0;left:0;right:0;bottom:0;transform-origin:center;cursor:grab;}
     #battlefield-inner.dragging{cursor:grabbing!important;}
+    /* Zoom easing — only during wheel events, disabled during drag for responsiveness */
+    #battlefield-inner.zoom-easing{transition:transform 0.15s cubic-bezier(0.25,0.46,0.45,0.94);}
 
     /* CSS range circles — always circular regardless of SVG aspect ratio */
     .range-circle{
@@ -530,14 +532,6 @@
 
       </svg><!-- /bf-svg -->
 
-      <!-- CSS range circles — always circular, not distorted by SVG aspect ratio -->
-      <div id="range-move"    class="range-circle rc-move"   ></div>
-      <div id="range-advance" class="range-circle rc-advance"></div>
-      <div id="range-charge"  class="range-circle rc-charge" ></div>
-      <div id="range-move-label"    class="range-label rl-move"   >MOVE</div>
-      <div id="range-advance-label" class="range-label rl-advance">ADV</div>
-      <div id="range-charge-label"  class="range-label rl-charge" >CHARGE</div>
-
       <!-- ═══ TERRAIN PIECES (z-index:2) ═══ -->
       <!-- DOM ORDER: terrain → objectives → tokens (for correct z-stacking) -->
 
@@ -692,6 +686,15 @@
       </div>
 
     </div><!-- /battlefield-inner -->
+
+    <!-- Range circles: outside inner-div so no double-transform.
+         position:absolute relative to #battlefield. Updated by JS on select/zoom/pan. -->
+    <div id="range-move"    class="range-circle rc-move"   ></div>
+    <div id="range-advance" class="range-circle rc-advance"></div>
+    <div id="range-charge"  class="range-circle rc-charge" ></div>
+    <div id="range-move-label"    class="range-label rl-move"   >MOVE</div>
+    <div id="range-advance-label" class="range-label rl-advance">ADV</div>
+    <div id="range-charge-label"  class="range-label rl-charge" >CHARGE</div>
 
     <!-- UNIT CARD -->
     <div id="unit-card" class="visible">
@@ -1008,24 +1011,35 @@ function getTokenInnerCoords(tokenEl) {
 }
 
 function updateRangeCircles(uid, tokenEl) {
+  if (!uid || !tokenEl) return;
   const u = UNITS[uid]; if (!u) return;
-  const coords = getTokenInnerCoords(tokenEl);
-  const radii  = getRangeInches(u);
-  // pixels-per-inch in inner-div space (width-based: board = 60" wide)
-  const ppi = coords.bfWidth / 60;
+  const bf = document.getElementById('battlefield');
+  const bfRect = bf.getBoundingClientRect();
+  const tokenRect = tokenEl.getBoundingClientRect();
+  const matrix = new DOMMatrixReadOnly(window.getComputedStyle(inner).transform);
+  const sc = matrix.a || 1;
 
+  // Token centre in battlefield-relative px (screen coords minus bf offset)
+  const tcx = tokenRect.left + tokenRect.width  / 2 - bfRect.left;
+  const tcy = tokenRect.top  + tokenRect.height / 2 - bfRect.top;
+
+  // ppi in screen coords at current zoom:
+  // At scale=1, board width (60") = bfRect.width px.
+  // At scale=sc, 1 game-inch = (bfRect.width / 60) * sc screen px.
+  const ppi = (bfRect.width / 60) * sc;
+
+  const radii = getRangeInches(u);
   ['move','advance','charge'].forEach(type => {
     const circle = document.getElementById('range-' + type);
     const label  = document.getElementById('range-' + type + '-label');
-    const R_px = radii[type] * ppi;  // radius in inner-div pixels
+    const R_px = radii[type] * ppi;
     const diam = R_px * 2;
-    circle.style.left   = (coords.x - R_px) + 'px';
-    circle.style.top    = (coords.y - R_px) + 'px';
+    circle.style.left   = (tcx - R_px) + 'px';
+    circle.style.top    = (tcy - R_px) + 'px';
     circle.style.width  = diam + 'px';
     circle.style.height = diam + 'px';
-    // Label above the circle
-    label.style.left = coords.x + 'px';
-    label.style.top  = (coords.y - R_px - 16) + 'px';
+    label.style.left = tcx + 'px';
+    label.style.top  = (tcy - R_px - 18) + 'px';
     const isActive = activeRangeTypes.has(type);
     circle.style.display = isActive ? 'block' : 'none';
     label.style.display  = isActive ? 'block' : 'none';
@@ -1225,13 +1239,20 @@ function applyTx() {
   inner.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
 }
 
+let zoomEaseTimer = null;
 bf.addEventListener('wheel', e => {
   e.preventDefault();
+  // Enable easing for smooth zoom
+  inner.classList.add('zoom-easing');
+  clearTimeout(zoomEaseTimer);
+  zoomEaseTimer = setTimeout(() => inner.classList.remove('zoom-easing'), 200);
+
   scale = Math.min(3, Math.max(.35, scale * (e.deltaY>0 ? .9 : 1.1)));
   applyTx();
+  // Update range circles after the CSS transition settles
   if (currentUnit && activeRangeTypes.size > 0) {
     const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-    if (tok) updateRangeCircles(currentUnit, tok);
+    if (tok) setTimeout(() => updateRangeCircles(currentUnit, tok), 160);
   }
 }, {passive:false});
 
@@ -1241,6 +1262,7 @@ bf.addEventListener('mousedown', e => {
   startX = e.clientX - tx;
   startY = e.clientY - ty;
   inner.classList.add('dragging');
+  inner.classList.remove('zoom-easing'); // disable easing during drag for responsiveness
 });
 
 document.addEventListener('mousemove', e => {
@@ -1248,6 +1270,11 @@ document.addEventListener('mousemove', e => {
   tx = e.clientX - startX;
   ty = e.clientY - startY;
   applyTx();
+  // Update range circles while panning
+  if (currentUnit && activeRangeTypes.size > 0) {
+    const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
+    if (tok) updateRangeCircles(currentUnit, tok);
+  }
 });
 
 document.addEventListener('mouseup', () => {
