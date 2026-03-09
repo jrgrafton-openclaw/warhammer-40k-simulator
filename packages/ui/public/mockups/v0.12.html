@@ -175,10 +175,11 @@
     #battlefield-inner::before{
       content:'';position:absolute;inset:0;z-index:0;
       background-image:
-        repeating-linear-gradient(0deg, transparent 0px, transparent 19px, rgba(201,163,82,.03) 19px, rgba(201,163,82,.03) 20px),
-        repeating-linear-gradient(90deg, transparent 0px, transparent 19px, rgba(201,163,82,.03) 19px, rgba(201,163,82,.03) 20px),
-        repeating-linear-gradient(0deg, transparent 0px, transparent 99px, rgba(201,163,82,.07) 99px, rgba(201,163,82,.07) 100px),
-        repeating-linear-gradient(90deg, transparent 0px, transparent 99px, rgba(201,163,82,.07) 99px, rgba(201,163,82,.07) 100px);
+        /* Grid scaled to match mapData: 1"=12px, 5"=60px */
+        repeating-linear-gradient(0deg, transparent 0px, transparent 11px, rgba(201,163,82,.03) 11px, rgba(201,163,82,.03) 12px),
+        repeating-linear-gradient(90deg, transparent 0px, transparent 11px, rgba(201,163,82,.03) 11px, rgba(201,163,82,.03) 12px),
+        repeating-linear-gradient(0deg, transparent 0px, transparent 59px, rgba(201,163,82,.07) 59px, rgba(201,163,82,.07) 60px),
+        repeating-linear-gradient(90deg, transparent 0px, transparent 59px, rgba(201,163,82,.07) 59px, rgba(201,163,82,.07) 60px);
       pointer-events:none;
     }
 
