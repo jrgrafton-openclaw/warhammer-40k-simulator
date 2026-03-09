@@ -185,6 +185,9 @@
 
     /* SVG layer */
     #bf-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+    /* Model bases and hulls need pointer events even though SVG parent is none */
+    .model-base{pointer-events:all;cursor:grab;}
+    .unit-hull{pointer-events:all;cursor:grab;}
 
     /* ── TERRAIN ── */
     .tp-scatter{
@@ -496,6 +499,42 @@
       <!-- SVG LAYER: DZ fills, boundary lines, area circles, combat overlays -->
       <!-- SVG BATTLEFIELD (Terrain + Hulls + Models) -->
     <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;">
+      <defs>
+        <!-- Model fill: dark radial gradient with subtle highlight -->
+        <radialGradient id="mg-fill" cx="38%" cy="32%" r="62%">
+          <stop offset="0%" stop-color="#1a1c2e"/>
+          <stop offset="60%" stop-color="#0d0e18"/>
+          <stop offset="100%" stop-color="#060508"/>
+        </radialGradient>
+        <!-- Glow filter — Imperium (blue) -->
+        <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#2266ee" flood-opacity="0.85" result="col"/>
+          <feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>
+          <feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Glow filter — Orks (red) -->
+        <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#cc2222" flood-opacity="0.85" result="col"/>
+          <feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>
+          <feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Glow filter — Selected (teal) -->
+        <filter id="mf-sel" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#00c8a8" flood-opacity="0.9" result="col"/>
+          <feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>
+          <feGaussianBlur in="clipped" stdDeviation="2.8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Glow filter — Broken cohesion (red alert) -->
+        <filter id="mf-broken" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#ff2222" flood-opacity="0.95" result="col"/>
+          <feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>
+          <feGaussianBlur in="clipped" stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
       <g id="terrain-layer"></g>
       <g id="layer-hulls"></g>
       <g id="layer-models"></g>
@@ -1124,10 +1163,12 @@ function buildCard(uid) {
 function selectUnit(uid) {
   currentUnit = uid;
   document.querySelectorAll('.rail-unit').forEach(r => r.classList.toggle('active', r.dataset.unit===uid));
-  document.querySelectorAll('.token').forEach(t => t.classList.toggle('selected', t.dataset.unit===uid));
-  buildCard(uid);
-  const tokenEl = document.querySelector(`.token[data-unit="${uid}"]`);
-  if (tokenEl) updateRangeCircles(uid, tokenEl);
+  if (uid) {
+    buildCard(uid);
+    if (activeRangeTypes.size > 0) setTimeout(() => updateRangeCirclesFromUnit(uid), 0);
+  } else {
+    clearRangeCircles();
+  }
 }
 
 document.querySelectorAll('.rail-unit').forEach(r => r.addEventListener('click', () => selectUnit(r.dataset.unit)));
@@ -1156,8 +1197,7 @@ document.getElementById('card-close').addEventListener('click', () => {
       btn.classList.add('active');
     }
     if (currentUnit) {
-      const tokenEl = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-      if (tokenEl) updateRangeCircles(currentUnit, tokenEl);
+      updateRangeCirclesFromUnit(currentUnit);
     }
   });
 });
@@ -1208,7 +1248,7 @@ modalBg.addEventListener('click', e => { if(e.target===modalBg) modalBg.classLis
 /* ══════════════════════════════════════════════
    PAN & ZOOM
 ══════════════════════════════════════════════ */
-let scale=1, tx=0, ty=0, isDragging=false, startX, startY;
+let scale=0.5, tx=0, ty=0, isDragging=false, startX, startY;
 const inner = document.getElementById('battlefield-inner');
 const bf    = document.getElementById('battlefield');
 
@@ -1228,14 +1268,7 @@ function hideRangeCircles() {
 }
 function showRangeCircles() {
   if (!currentUnit || activeRangeTypes.size === 0) return;
-  const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-  if (!tok) return;
-  updateRangeCircles(currentUnit, tok);
-  ['move','advance','charge'].forEach(t => {
-    if (!activeRangeTypes.has(t)) return;
-    document.getElementById('range-'+t).style.opacity = '1';
-    document.getElementById('range-'+t+'-label').style.opacity = '1';
-  });
+  updateRangeCirclesFromUnit(currentUnit);
 }
 
 bf.addEventListener('wheel', e => {
@@ -1258,7 +1291,7 @@ bf.addEventListener('wheel', e => {
 }, {passive:false});
 
 bf.addEventListener('mousedown', e => {
-  if (e.target.closest('.token,.obj-hex-wrap,#unit-card,#vp-bar,#phase-header,#action-bar')) return;
+  if (e.target.closest('.token,.obj-hex-wrap,#unit-card,#vp-bar,#phase-header,#action-bar,#bf-svg')) return;
   isDragging = true;
   startX = e.clientX - tx;
   startY = e.clientY - ty;
@@ -1271,28 +1304,20 @@ document.addEventListener('mousemove', e => {
   tx = e.clientX - startX;
   ty = e.clientY - startY;
   applyTx();
-  // Update range circles while panning
-  if (currentUnit && activeRangeTypes.size > 0) {
-    const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-    if (tok) updateRangeCircles(currentUnit, tok);
-  }
+  if (currentUnit && activeRangeTypes.size > 0) updateRangeCirclesFromUnit(currentUnit);
 });
 
 document.addEventListener('mouseup', () => {
   if (!isDragging) return;
   isDragging = false;
   inner.classList.remove('dragging');
-  if (currentUnit && activeRangeTypes.size > 0) {
-    const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-    if (tok) updateRangeCircles(currentUnit, tok);
-  }
+  if (currentUnit && activeRangeTypes.size > 0) updateRangeCirclesFromUnit(currentUnit);
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  scale=1; tx=0; ty=0; applyTx();
+  scale=0.5; tx=0; ty=0; applyTx();
   if (currentUnit && activeRangeTypes.size > 0) {
-    const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-    if (tok) setTimeout(() => updateRangeCircles(currentUnit, tok), 50);
+    setTimeout(() => updateRangeCirclesFromUnit(currentUnit), 50);
   }
 });
 
@@ -1313,79 +1338,83 @@ document.addEventListener('keydown', e => {
 renderTerrain();
 buildCard('assault-intercessors');
 initAllTooltips();
+applyTx(); // apply initial 50% zoom
 
-// V0.14 d3 logic integration
-const COHESION_RANGE = 120; // 2" at 60px/inch
+// ── SCALE SCHEMA ────────────────────────────────────────────
+// Board: 60"×44" → SVG viewBox 720×528 → 12 px per inch
+// Base radius formula: mmR(mm) = round(mm / 25.4 × 12 / 2)
+//   25mm → 6px   32mm → 8px   40mm → 9px   50mm → 12px   60mm → 14px
+// Dreadnought (90×52mm oval) → SVG rect: w=43 h=25 rx=5
+const PX_PER_INCH = 12;
+function mmR(mm) { return Math.round(mm / 25.4 * PX_PER_INCH / 2); }
+// 2" coherency range
+const COHESION_RANGE = 2 * PX_PER_INCH; // 24px
 
+// All radii derived from: mmR(mm) = round(mm / 25.4 × 12 / 2)
+// Infantry 32mm→r=8, Character 40mm→r=9, Dreadnought oval 90×52mm→rect w=43 h=25 r=22(collision)
+const R32 = mmR(32); // 8px — standard infantry
+const R40 = mmR(40); // 9px — characters
 const unitsData = [
   {
-    id: 'assault-intercessors', // from v0.12 ID
-    rosterIndex: 0,
-    faction: 'imp',
+    id: 'assault-intercessors',
+    rosterIndex: 0, faction: 'imp',
     models: [
-      {id:'ai1', x:165, y:230, r:16}, {id:'ai2', x:195, y:220, r:16},
-      {id:'ai3', x:160, y:260, r:16}, {id:'ai4', x:190, y:250, r:16}, {id:'ai5', x:210, y:270, r:16}
+      {id:'ai1', x:165, y:233, r:R32}, {id:'ai2', x:182, y:228, r:R32}, {id:'ai3', x:199, y:233, r:R32},
+      {id:'ai4', x:173, y:249, r:R32}, {id:'ai5', x:190, y:249, r:R32}
     ],
     broken: false
   },
   {
     id: 'primaris-lieutenant',
-    rosterIndex: 1,
-    faction: 'imp',
-    models: [ {id:'pl1', x:120, y:295, r:16} ],
+    rosterIndex: 1, faction: 'imp',
+    models: [ {id:'pl1', x:125, y:312, r:R40} ],
     broken: false
   },
   {
     id: 'intercessor-squad-a',
-    rosterIndex: 2,
-    faction: 'imp',
+    rosterIndex: 2, faction: 'imp',
     models: [
-      {id:'isa1', x:200, y:220, r:16}, {id:'isa2', x:230, y:210, r:16},
-      {id:'isa3', x:195, y:250, r:16}, {id:'isa4', x:225, y:240, r:16}, {id:'isa5', x:245, y:260, r:16}
+      {id:'isa1', x:222, y:200, r:R32}, {id:'isa2', x:239, y:195, r:R32}, {id:'isa3', x:256, y:200, r:R32},
+      {id:'isa4', x:230, y:216, r:R32}, {id:'isa5', x:248, y:216, r:R32}
     ],
     broken: false
   },
   {
     id: 'hellblasters',
-    rosterIndex: 3,
-    faction: 'imp',
+    rosterIndex: 3, faction: 'imp',
     models: [
-      {id:'hb1', x:85, y:220, r:16}, {id:'hb2', x:115, y:210, r:16},
-      {id:'hb3', x:80, y:250, r:16}, {id:'hb4', x:110, y:240, r:16}, {id:'hb5', x:130, y:260, r:16}
+      {id:'hb1', x:80, y:200, r:R32}, {id:'hb2', x:97, y:195, r:R32}, {id:'hb3', x:114, y:200, r:R32},
+      {id:'hb4', x:88, y:216, r:R32}, {id:'hb5', x:105, y:216, r:R32}
     ],
     broken: false
   },
   {
     id: 'redemptor-dreadnought',
-    rosterIndex: 4,
-    faction: 'imp',
-    models: [ {id:'rd1', x:130, y:270, r:30} ],
+    rosterIndex: 4, faction: 'imp',
+    // 90×52mm oval base → 43×25px rect; r=22 used only for collision/cohesion
+    models: [ {id:'rd1', x:140, y:285, r:22, shape:'rect', w:43, h:25} ],
     broken: false
   },
   {
     id: 'boss-nob',
-    rosterIndex: 6,
-    faction: 'ork',
-    models: [ {id:'bn1', x:540, y:125, r:16} ],
+    rosterIndex: 6, faction: 'ork',
+    models: [ {id:'bn1', x:548, y:132, r:R32} ],
     broken: false
   },
   {
     id: 'boyz-mob',
-    rosterIndex: 7,
-    faction: 'ork',
+    rosterIndex: 7, faction: 'ork',
     models: [
-      {id:'bm1', x:520, y:210, r:16}, {id:'bm2', x:550, y:200, r:16},
-      {id:'bm3', x:515, y:240, r:16}, {id:'bm4', x:545, y:230, r:16}, {id:'bm5', x:565, y:250, r:16},
-      {id:'bm6', x:520, y:180, r:16}, {id:'bm7', x:550, y:170, r:16},
-      {id:'bm8', x:515, y:150, r:16}, {id:'bm9', x:545, y:140, r:16}, {id:'bm10', x:565, y:160, r:16}
+      {id:'bm1', x:518, y:195, r:R32}, {id:'bm2', x:535, y:195, r:R32}, {id:'bm3', x:552, y:195, r:R32}, {id:'bm4', x:569, y:195, r:R32},
+      {id:'bm5', x:526, y:212, r:R32}, {id:'bm6', x:543, y:212, r:R32}, {id:'bm7', x:560, y:212, r:R32},
+      {id:'bm8', x:518, y:229, r:R32}, {id:'bm9', x:535, y:229, r:R32}, {id:'bm10', x:552, y:229, r:R32}
     ],
     broken: false
   },
   {
     id: 'mekboy',
-    rosterIndex: 8,
-    faction: 'ork',
-    models: [ {id:'mb1', x:475, y:265, r:16} ],
+    rosterIndex: 8, faction: 'ork',
+    models: [ {id:'mb1', x:480, y:272, r:R32} ],
     broken: false
   }
 ];
@@ -1418,12 +1447,12 @@ function getCurvedHullPath(models) {
     if (models.length === 0) return '';
     if (models.length === 1) {
         const m = models[0];
-        const r = m.r + 15;
+        const r = m.r + 6;
         return "M " + m.x + " " + (m.y - r) + " A " + r + " " + r + " 0 1 1 " + m.x + " " + (m.y + r) + " A " + r + " " + r + " 0 1 1 " + m.x + " " + (m.y - r);
     }
     if (models.length === 2) {
          const m1 = models[0]; const m2 = models[1];
-         const r = m1.r + 15;
+         const r = m1.r + 6;
          const dx = m2.x - m1.x; const dy = m2.y - m1.y;
          const len = Math.hypot(dx, dy);
          if (len === 0) return '';
@@ -1434,7 +1463,7 @@ function getCurvedHullPath(models) {
     
     const extents = [];
     models.forEach(m => {
-        const r = m.r + 15; 
+        const r = m.r + 6; 
         const steps = 12;
         for(let i=0; i<steps; i++) {
             const angle = (Math.PI * 2 * i) / steps;
@@ -1453,7 +1482,7 @@ function renderModels() {
     const layerHulls = document.getElementById('layer-hulls');
     const layerModels = document.getElementById('layer-models');
     if (!layerHulls || !layerModels) return;
-    
+
     layerHulls.innerHTML = '';
     layerModels.innerHTML = '';
     let anyBroken = false;
@@ -1462,64 +1491,151 @@ function renderModels() {
         checkCohesion(unit);
         if (unit.broken) anyBroken = true;
 
-        const isSelectedUnit = (window.activeUnitId === unit.id);
-        
-        // Faction Colors
-        const isImp = unit.faction === 'imp';
-        let strokeColor = isImp ? '#0096ff' : '#cc2222';
-        let fillColor = isImp ? 'rgba(0, 150, 255, 0.1)' : 'rgba(204, 34, 34, 0.1)';
-        
-        if (isSelectedUnit) {
-            strokeColor = '#00c8a8';
-            fillColor = 'rgba(0, 200, 168, 0.2)';
-        }
+        const isSel  = (window.activeUnitId === unit.id);
+        const isImp  = unit.faction === 'imp';
 
-        // Hull
+        // ── Hull ────────────────────────────────────────────
+        const hullStroke = unit.broken ? '#ff3333' : isSel ? '#00c8a8' : isImp ? '#2266ee' : '#cc2222';
+        const hullFill   = unit.broken ? 'rgba(255,50,50,0.07)' : isSel ? 'rgba(0,200,168,0.1)' : isImp ? 'rgba(34,102,238,0.06)' : 'rgba(204,34,34,0.06)';
+
         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', getCurvedHullPath(unit.models));
-        
-        let hclass = 'unit-hull';
-        if (isSelectedUnit) hclass += ' selected';
-        if (unit.broken) hclass += ' broken';
-        
-        path.setAttribute('class', hclass);
+        path.setAttribute('class', 'unit-hull' + (isSel ? ' selected' : '') + (unit.broken ? ' broken' : ''));
         path.dataset.unitId = unit.id;
-        
-        // Inline styles for colors since we removed static stylesheet
-        path.style.fill = fillColor;
-        path.style.stroke = unit.broken ? '#ff3333' : strokeColor;
-        path.style.strokeWidth = isSelectedUnit ? '3' : '2';
-        path.style.strokeDasharray = (isSelectedUnit || unit.broken) ? 'none' : '6 4';
-        path.style.cursor = 'grab';
-        
+        path.style.fill            = hullFill;
+        path.style.stroke          = hullStroke;
+        path.style.strokeWidth     = isSel ? '2' : '1.5';
+        path.style.strokeDasharray = (isSel || unit.broken) ? 'none' : '5 3';
+        path.style.strokeOpacity   = isSel ? '0.85' : '0.55';
         layerHulls.appendChild(path);
 
-        // Models
+        // ── Model bases ──────────────────────────────────────
         unit.models.forEach(model => {
-            const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-            c.setAttribute('cx', model.x);
-            c.setAttribute('cy', model.y);
-            c.setAttribute('r', model.r);
-            
-            let mclass = 'model-base';
-            if (model.broken) mclass += ' broken-cohesion';
-            c.setAttribute('class', mclass);
-            c.dataset.unitId = unit.id;
-            c.dataset.modelId = model.id;
-            
-            c.style.fill = isSelectedUnit ? '#00c8a8' : '#333';
-            c.style.stroke = model.broken ? '#ff3333' : (isImp ? 'rgba(30,85,204,0.8)' : 'rgba(136,34,34,0.8)');
-            c.style.strokeWidth = '2';
-            c.style.cursor = 'grab';
-            
-            layerModels.appendChild(c);
+            // Choose glow filter
+            let glowFilter, strokeCol, strokeW;
+            if (model.broken) {
+                glowFilter = 'url(#mf-broken)'; strokeCol = '#ff3333'; strokeW = '1.5';
+            } else if (isSel) {
+                glowFilter = 'url(#mf-sel)';    strokeCol = '#00c8a8'; strokeW = '1.5';
+            } else if (isImp) {
+                glowFilter = 'url(#mf-imp)';    strokeCol = '#2266ee'; strokeW = '1.5';
+            } else {
+                glowFilter = 'url(#mf-ork)';    strokeCol = '#cc2222'; strokeW = '1.5';
+            }
+
+            const NS = 'http://www.w3.org/2000/svg';
+            let el;
+            if (model.shape === 'rect') {
+                // Vehicle oval base → rounded rectangle
+                el = document.createElementNS(NS, 'rect');
+                el.setAttribute('x',      model.x - model.w / 2);
+                el.setAttribute('y',      model.y - model.h / 2);
+                el.setAttribute('width',  model.w);
+                el.setAttribute('height', model.h);
+                el.setAttribute('rx', '5'); el.setAttribute('ry', '5');
+            } else {
+                el = document.createElementNS(NS, 'circle');
+                el.setAttribute('cx', model.x);
+                el.setAttribute('cy', model.y);
+                el.setAttribute('r',  model.r);
+            }
+
+            el.setAttribute('class', 'model-base' + (model.broken ? ' broken-cohesion' : ''));
+            el.dataset.unitId  = unit.id;
+            el.dataset.modelId = model.id;
+            el.setAttribute('fill',         'url(#mg-fill)');
+            el.setAttribute('stroke',       strokeCol);
+            el.setAttribute('stroke-width', strokeW);
+            el.setAttribute('filter',       glowFilter);
+
+            layerModels.appendChild(el);
         });
     });
-    
+
     const banner = document.getElementById('cohesion-banner');
-    if (banner) {
-        banner.style.display = anyBroken ? 'block' : 'none';
+    if (banner) banner.style.display = anyBroken ? 'block' : 'none';
+
+    // Update range circles from SVG model positions if a unit is selected
+    if (window.activeUnitId && activeRangeTypes.size > 0) {
+        updateRangeCirclesFromUnit(window.activeUnitId);
     }
+}
+
+/* ══════════════════════════════════════════════
+   RANGE CIRCLES — SVG-model version
+   (no .token div needed; computes unit centroid from SVG coords)
+══════════════════════════════════════════════ */
+function updateRangeCirclesFromUnit(uid) {
+    if (!uid) return;
+    const unit = simState.units.find(u => u.id === uid);
+    if (!unit || unit.models.length === 0) return;
+    const u = UNITS[uid]; if (!u) return;
+
+    // Compute centroid in SVG user coords
+    const cx = unit.models.reduce((s, m) => s + m.x, 0) / unit.models.length;
+    const cy = unit.models.reduce((s, m) => s + m.y, 0) / unit.models.length;
+
+    // Map SVG coords → screen pixels using getScreenCTM
+    const svg = document.getElementById('bf-svg');
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const screenX = ctm.e + cx * ctm.a;
+    const screenY = ctm.f + cy * ctm.d;
+
+    const bf = document.getElementById('battlefield');
+    const bfRect = bf.getBoundingClientRect();
+    const tcx = screenX - bfRect.left;
+    const tcy = screenY - bfRect.top;
+
+    const matrix = new DOMMatrixReadOnly(window.getComputedStyle(inner).transform);
+    const sc = matrix.a || 1;
+    const ppi = (bfRect.width / 60) * sc;
+
+    const radii = getRangeInches(u);
+    ['move','advance','charge'].forEach(type => {
+        const circle = document.getElementById('range-' + type);
+        const label  = document.getElementById('range-' + type + '-label');
+        const R_px   = radii[type] * ppi;
+        const diam   = R_px * 2;
+        circle.style.left   = (tcx - R_px) + 'px';
+        circle.style.top    = (tcy - R_px) + 'px';
+        circle.style.width  = diam + 'px';
+        circle.style.height = diam + 'px';
+        if (label) { label.style.left = tcx + 'px'; label.style.top = (tcy - R_px - 18) + 'px'; }
+        const isActive = activeRangeTypes.has(type);
+        circle.style.display  = isActive ? 'block' : 'none';
+        circle.style.opacity  = isActive ? '1' : '0';
+        if (label) { label.style.display = isActive ? 'block' : 'none'; label.style.opacity = isActive ? '1' : '0'; }
+    });
+}
+
+/* ══════════════════════════════════════════════
+   OVERLAP RESOLUTION
+   Push model out of any overlapping neighbours.
+   Runs a few iterations to handle chained overlaps.
+══════════════════════════════════════════════ */
+function resolveOverlaps(draggedModel, proposedX, proposedY) {
+    let x = proposedX, y = proposedY;
+    for (let iter = 0; iter < 4; iter++) {
+        let moved = false;
+        simState.units.forEach(unit => {
+            unit.models.forEach(other => {
+                if (other === draggedModel) return;
+                const minDist = draggedModel.r + other.r + 1; // 1px gap
+                const dx = x - other.x;
+                const dy = y - other.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist < minDist && dist > 0.001) {
+                    const push = (minDist - dist) / dist;
+                    x += dx * push;
+                    y += dy * push;
+                    moved = true;
+                }
+            });
+        });
+        if (!moved) break;
+    }
+    return { x, y };
 }
 
 // Ensure d3 is injected for v0.15 index
@@ -1530,12 +1646,15 @@ if (!document.querySelector('script[src*="d3.min.js"]')) {
     document.head.appendChild(s);
 }
 
-// Overwrite window.selectUnit to trigger our render
+// Overwrite window.selectUnit to trigger our render and update range circles
 const oldSelectUnit = window.selectUnit;
 window.selectUnit = function(uid) {
     if (oldSelectUnit) oldSelectUnit(uid);
     window.activeUnitId = uid;
     renderModels();
+    if (uid && activeRangeTypes.size > 0) {
+        setTimeout(() => updateRangeCirclesFromUnit(uid), 0);
+    }
 };
 
 function getMousePos(evt) {
@@ -1553,7 +1672,9 @@ function getMousePos(evt) {
     };
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+// Run immediately — script is at end of body so DOM is fully parsed
+// Wrapped in a function to avoid DOMContentLoaded race conditions
+(function initSVGInteraction() {
     
     // Add banner
     const bdiv = document.createElement('div');
@@ -1610,14 +1731,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const pt = getMousePos(e);
         
         if (simState.drag.type === 'unit') {
+            // Move all models, then resolve overlaps vs other units
             simState.drag.offsets.forEach(o => {
                 o.m.x = pt.x + o.dx;
                 o.m.y = pt.y + o.dy;
             });
-        } 
+        }
         else if (simState.drag.type === 'model') {
-            simState.drag.model.x = pt.x + simState.drag.offsetX;
-            simState.drag.model.y = pt.y + simState.drag.offsetY;
+            // Single model drag with overlap prevention
+            const rawX = pt.x + simState.drag.offsetX;
+            const rawY = pt.y + simState.drag.offsetY;
+            const resolved = resolveOverlaps(simState.drag.model, rawX, rawY);
+            simState.drag.model.x = resolved.x;
+            simState.drag.model.y = resolved.y;
         }
         else if (simState.drag.type === 'rotate') {
             const pivot = simState.drag.pivot;
@@ -1645,10 +1771,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
-    
-    // Initial render call from inside document load
-    setTimeout(renderModels, 200);
-});
+
+    // Initial render (d3 may not be loaded yet; renderModels is also called in d3.onload)
+    setTimeout(renderModels, 300);
+})();
 
 
 </script>
