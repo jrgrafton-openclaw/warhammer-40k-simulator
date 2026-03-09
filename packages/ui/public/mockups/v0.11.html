@@ -90,44 +90,70 @@
     #battlefield{grid-column:2;position:relative;overflow:hidden;background:var(--bg);}
 
     /* TOP BAR — compact, no duplication with pill */
-    #bf-top-bar{
-      position:absolute;top:0;left:0;right:0;height:32px;z-index:10;
-      display:flex;align-items:center;padding:0 10px;
-      background:rgba(6,5,4,0.6);border-bottom:1px solid rgba(201,163,82,.08);
-      backdrop-filter:blur(4px);
+    /* HEADER: v0.8a layout exactly, Rajdhani typography */
+    #vp-bar{
+      position:absolute;top:0;left:0;right:0;height:32px;
+      background:rgba(6,5,4,0.92);
+      border-bottom:1px solid rgba(201,163,82,.12);
+      display:flex;align-items:center;justify-content:center;
+      gap:20px;z-index:50;backdrop-filter:blur(8px);
     }
-    .tb-section{display:flex;align-items:center;gap:6px;}
-    .tb-left{min-width:80px;}
-    .tb-centre{flex:1;justify-content:center;display:flex;align-items:center;gap:6px;font:600 11px/1 'Rajdhani',sans-serif;letter-spacing:1.5px;color:rgba(201,163,82,.6);text-transform:uppercase;}
-    .tb-right{min-width:160px;justify-content:flex-end;gap:8px;}
-    .tb-label{font:500 9px/1 'Rajdhani',sans-serif;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;}
-    .tb-value{font:700 16px/1 'Share Tech Mono',monospace;}
-    .tb-value.teal{color:var(--teal);}
-    .tb-imp{font:600 9px/1 'Rajdhani',sans-serif;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;}
-    .tb-imp strong{color:var(--white);font:700 14px/1 'Share Tech Mono',monospace;}
-    .tb-ork{font:600 9px/1 'Rajdhani',sans-serif;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;}
-    .tb-ork strong{color:#cc3333;font:700 14px/1 'Share Tech Mono',monospace;}
-    .tb-vs{font:500 9px/1 'Rajdhani',sans-serif;color:var(--text-dim);}
-    .tb-sep{color:var(--text-dim);}
+    .vp-faction{display:flex;align-items:center;gap:8px;font:600 10px/1 'Rajdhani',sans-serif;letter-spacing:2px;text-transform:uppercase;}
+    .vp-name-imp{color:var(--gold);}
+    .vp-name-ork{color:var(--red-enemy);}
+    .vp-score{font:700 20px/1 'Rajdhani',sans-serif;}
+    .vp-score.imp{color:var(--gold);text-shadow:0 0 10px rgba(201,163,82,.4);}
+    .vp-score.ork{color:var(--red-enemy);text-shadow:0 0 10px rgba(139,26,26,.5);}
+    .vp-vs{font:700 10px/1 'Rajdhani',sans-serif;color:#4a3f2f;letter-spacing:3px;}
+    .vp-round{font:600 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;color:#4a3f2f;text-transform:uppercase;position:absolute;right:12px;}
+    .vp-cp{font:600 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;color:#4a3f2f;text-transform:uppercase;position:absolute;left:12px;}
+    .vp-cp span{color:var(--teal);font:700 16px/1 'Rajdhani',sans-serif;margin-left:4px;}
     #reset-btn{
-      font:700 12px/1 'Rajdhani',sans-serif;color:var(--gold-dim);
-      background:none;border:1px solid var(--gold-dim);border-radius:2px;
-      padding:2px 8px;cursor:pointer;transition:all .15s;letter-spacing:1px;
-      pointer-events:auto;
+      font:600 10px/1 'Rajdhani',sans-serif;letter-spacing:1.5px;text-transform:uppercase;
+      background:rgba(6,5,4,.7);border:1px solid rgba(201,163,82,.1);color:rgba(201,163,82,.25);
+      padding:3px 8px;cursor:pointer;border-radius:2px;transition:all .15s;
+      position:absolute;right:80px;
     }
-    #reset-btn:hover{color:var(--gold);border-color:var(--gold);}
+    #reset-btn:hover{border-color:rgba(201,163,82,.4);color:var(--gold);}
 
-    /* Phase pill — ONLY phase name */
-    #phase-pill-wrap{position:absolute;top:32px;left:0;right:0;display:flex;justify-content:center;z-index:10;pointer-events:none;}
-    .phase-pill{
-      background:rgba(6,5,4,.88);border:1px solid var(--gold-dim);border-radius:4px;
-      padding:5px 18px;font:600 12px/1 'Rajdhani',sans-serif;letter-spacing:3px;
-      color:var(--gold);text-transform:uppercase;backdrop-filter:blur(4px);margin-top:8px;
+    /* Phase pill — floating below vp-bar, two lines: phase + active player/round */
+    #phase-header{
+      position:absolute;top:32px;left:0;right:0;height:56px;
+      background:transparent;display:flex;align-items:flex-start;justify-content:center;
+      z-index:10;pointer-events:none;
     }
+    .phase-pill{
+      margin-top:8px;
+      background:rgba(6,5,4,.9);border:1px solid rgba(201,163,82,.25);border-radius:20px;
+      padding:8px 28px;
+      display:flex;flex-direction:column;align-items:center;gap:3px;
+      pointer-events:auto;
+      box-shadow:0 0 20px rgba(201,163,82,.08),0 2px 20px rgba(0,0,0,.8);
+      backdrop-filter:blur(6px);
+    }
+    .phase-title{font:700 15px/1 'Rajdhani',sans-serif;letter-spacing:4px;color:var(--gold);text-transform:uppercase;}
+    .phase-subtitle{font:600 12px/1 'Rajdhani',sans-serif;letter-spacing:2px;color:rgba(201,163,82,.5);text-transform:uppercase;}
 
     /* Battlefield inner — pan/zoom container */
     #battlefield-inner{position:absolute;top:0;left:0;right:0;bottom:0;transform-origin:center;cursor:grab;}
     #battlefield-inner.dragging{cursor:grabbing!important;}
+
+    /* CSS range circles — always circular regardless of SVG aspect ratio */
+    .range-circle{
+      position:absolute;border-radius:50%;pointer-events:none;display:none;z-index:2;
+    }
+    .rc-move   {border:2px dashed rgba(0,200,168,.45);}
+    .rc-advance{border:1.5px dashed rgba(201,163,82,.45);}
+    .rc-charge {border:1.5px dashed rgba(212,130,10,.4);}
+    .range-label{
+      position:absolute;pointer-events:none;display:none;z-index:2;
+      font:700 10px/1 'Rajdhani',sans-serif;letter-spacing:1.5px;text-transform:uppercase;
+      transform:translateX(-50%);
+      background:rgba(6,5,4,.7);padding:1px 5px;border-radius:2px;
+    }
+    .rl-move   {color:rgba(0,200,168,.7);}
+    .rl-advance{color:rgba(201,163,82,.7);}
+    .rl-charge {color:rgba(212,130,10,.7);}
 
     /* Grid via CSS */
     #battlefield-inner::before{
@@ -188,7 +214,7 @@
     .token-m{width:58px;height:58px;}
     .token-l{width:74px;height:74px;}
     .token-vehicle{width:80px;height:70px;border-radius:12px;}
-    .token-label{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);font:500 9px/1 'Rajdhani',sans-serif;color:var(--text-dim);white-space:nowrap;pointer-events:none;letter-spacing:.5px;}
+    .token-label{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);font:600 10px/1 'Rajdhani',sans-serif;color:var(--text);white-space:nowrap;pointer-events:none;letter-spacing:.5px;background:rgba(6,5,4,0.75);padding:2px 6px;border-radius:3px;}
     .token-icon{font-size:16px;line-height:1;}
     .token-count{font:700 8px/1 'Share Tech Mono',monospace;color:rgba(232,224,208,.35);}
     .token-badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;padding:0 3px;background:#2a1a0a;border:1px solid rgba(201,163,82,.25);color:var(--gold);font:700 8px/16px 'Share Tech Mono',monospace;text-align:center;z-index:6;}
@@ -442,27 +468,28 @@
   <main id="battlefield">
 
     <!-- TOP BAR: CP left | Round/Turn centre | VP + Reset right -->
-    <div id="bf-top-bar">
-      <div class="tb-section tb-left">
-        <span class="tb-label">CP</span>
-        <span class="tb-value teal" id="cp-val">5</span>
+    <!-- VP SCOREBOARD BAR (v0.8a layout, Rajdhani fonts) -->
+    <div id="vp-bar">
+      <div class="vp-cp">CP <span id="cp-val">5</span></div>
+      <div class="vp-faction">
+        <span class="vp-name-imp">IMPERIUM</span>
+        <span class="vp-score imp">10</span>
       </div>
-      <div class="tb-section tb-centre">
-        <span class="tb-round">ROUND 2/5</span>
-        <span class="tb-sep">·</span>
-        <span class="tb-active">IMPERIUM ACTIVE</span>
+      <span class="vp-vs">VS</span>
+      <div class="vp-faction">
+        <span class="vp-score ork">4</span>
+        <span class="vp-name-ork">ORKS</span>
       </div>
-      <div class="tb-section tb-right">
-        <span class="tb-imp">IMP <strong>10</strong></span>
-        <span class="tb-vs">vs</span>
-        <span class="tb-ork">ORK <strong>4</strong></span>
-        <button id="reset-btn" title="Reset view [R]">↺</button>
-      </div>
+      <span class="vp-round">RND 2 / 5</span>
+      <button id="reset-btn" title="Reset view [R]">↺ RESET</button>
     </div>
 
-    <!-- PHASE PILL — ONLY phase name, no duplication -->
-    <div id="phase-pill-wrap">
-      <div class="phase-pill">MOVEMENT PHASE</div>
+    <!-- PHASE PILL — phase name + active player/round -->
+    <div id="phase-header">
+      <div class="phase-pill">
+        <div class="phase-title">MOVEMENT PHASE</div>
+        <div class="phase-subtitle">Imperium Active · Round 2</div>
+      </div>
     </div>
 
     <!-- BATTLEFIELD INNER (pan/zoom) -->
@@ -501,17 +528,15 @@
         <!-- OBJ 5: cx=600, cy=780 -->
         <circle cx="600" cy="780" r="100" fill="rgba(20,50,20,0.12)" stroke="rgba(201,163,82,0.35)" stroke-width="1.5" stroke-dasharray="6,3"/>
 
-        <!-- Combat overlays group (range circles) -->
-        <g id="combat-overlays">
-          <circle id="range-move" r="0" fill="none" stroke="rgba(0,200,168,.3)" stroke-width="2" stroke-dasharray="8,4" opacity="0"/>
-          <circle id="range-advance" r="0" fill="none" stroke="rgba(201,163,82,.3)" stroke-width="1.5" stroke-dasharray="6,4" opacity="0"/>
-          <circle id="range-charge" r="0" fill="none" stroke="rgba(212,130,10,.25)" stroke-width="1.5" stroke-dasharray="10,6" opacity="0"/>
-          <text id="range-move-label" opacity="0" font-size="11" font-family="Rajdhani" fill="rgba(0,200,168,.6)" letter-spacing="1" text-anchor="middle">MOVE</text>
-          <text id="range-advance-label" opacity="0" font-size="11" font-family="Rajdhani" fill="rgba(201,163,82,.6)" letter-spacing="1" text-anchor="middle">ADV</text>
-          <text id="range-charge-label" opacity="0" font-size="11" font-family="Rajdhani" fill="rgba(212,130,10,.6)" letter-spacing="1" text-anchor="middle">CHARGE</text>
-        </g>
-
       </svg><!-- /bf-svg -->
+
+      <!-- CSS range circles — always circular, not distorted by SVG aspect ratio -->
+      <div id="range-move"    class="range-circle rc-move"   ></div>
+      <div id="range-advance" class="range-circle rc-advance"></div>
+      <div id="range-charge"  class="range-circle rc-charge" ></div>
+      <div id="range-move-label"    class="range-label rl-move"   >MOVE</div>
+      <div id="range-advance-label" class="range-label rl-advance">ADV</div>
+      <div id="range-charge-label"  class="range-label rl-charge" >CHARGE</div>
 
       <!-- ═══ TERRAIN PIECES (z-index:2) ═══ -->
       <!-- DOM ORDER: terrain → objectives → tokens (for correct z-stacking) -->
@@ -949,71 +974,68 @@ document.querySelectorAll('[data-tip-key]').forEach(el => {
 /* ══════════════════════════════════════════════
    RANGE CIRCLES — corrected coordinate algorithm
 ══════════════════════════════════════════════ */
-function getRangeRadii(unit) {
-  const m = unit.M;
+function getRangeInches(unit) {
+  // Returns radii in INCHES
   return {
-    move:    m * 20,
-    advance: (m + 3.5) * 20,
-    charge:  (m + 7)   * 20,
+    move:    unit.M,
+    advance: unit.M + 3.5,
+    charge:  unit.M + 7,
   };
 }
 
 /**
- * Convert a token DOM element's centre to SVG viewBox coordinates (0-1200, 0-880).
- * Correctly accounts for the CSS transform on battlefield-inner.
+ * Get token centre in inner-div CSS pixel coords (before transform scaling).
+ * CSS div range circles are positioned here — they scale correctly with zoom.
  */
-function getTokenSVGCoords(tokenEl) {
+function getTokenInnerCoords(tokenEl) {
   const bf    = document.getElementById('battlefield');
   const inner = document.getElementById('battlefield-inner');
   const bfRect    = bf.getBoundingClientRect();
   const tokenRect = tokenEl.getBoundingClientRect();
-
-  // Decompose current CSS transform of battlefield-inner
   const matrix = new DOMMatrixReadOnly(window.getComputedStyle(inner).transform);
-  const sc = matrix.a || 1;   // scale
-  const tx = matrix.e || 0;   // translateX (px)
-  const ty = matrix.f || 0;   // translateY (px)
-
-  // Token centre in battlefield viewport coords (px)
-  const tokenCentreXinBf = tokenRect.left + tokenRect.width  / 2 - bfRect.left;
-  const tokenCentreYinBf = tokenRect.top  + tokenRect.height / 2 - bfRect.top;
-
-  // Invert the CSS transform to get inner-div coordinates
-  const innerX = (tokenCentreXinBf - tx) / sc;
-  const innerY = (tokenCentreYinBf - ty) / sc;
-
-  // Map inner-div pixels to SVG viewBox units (viewBox: 1200×880)
-  const svgX = (innerX / bfRect.width)  * 1200;
-  const svgY = (innerY / bfRect.height) * 880;
-
-  return { x: svgX, y: svgY };
+  const sc = matrix.a || 1;
+  const tx = matrix.e || 0;
+  const ty = matrix.f || 0;
+  // Token centre in bf viewport pixels
+  const cx = tokenRect.left + tokenRect.width  / 2 - bfRect.left;
+  const cy = tokenRect.top  + tokenRect.height / 2 - bfRect.top;
+  // Invert transform → inner-div pixels (native CSS coords inside the transformed div)
+  return {
+    x: (cx - tx) / sc,
+    y: (cy - ty) / sc,
+    bfWidth: bfRect.width,
+  };
 }
 
 function updateRangeCircles(uid, tokenEl) {
   const u = UNITS[uid]; if (!u) return;
-  const coords = getTokenSVGCoords(tokenEl);
-  const radii  = getRangeRadii(u);
+  const coords = getTokenInnerCoords(tokenEl);
+  const radii  = getRangeInches(u);
+  // pixels-per-inch in inner-div space (width-based: board = 60" wide)
+  const ppi = coords.bfWidth / 60;
 
   ['move','advance','charge'].forEach(type => {
     const circle = document.getElementById('range-' + type);
     const label  = document.getElementById('range-' + type + '-label');
-    const r = radii[type]; // already in SVG units
-    circle.setAttribute('cx', coords.x);
-    circle.setAttribute('cy', coords.y);
-    circle.setAttribute('r',  r);
-    label.setAttribute('x', coords.x);
-    label.setAttribute('y', coords.y - r - 6);
+    const R_px = radii[type] * ppi;  // radius in inner-div pixels
+    const diam = R_px * 2;
+    circle.style.left   = (coords.x - R_px) + 'px';
+    circle.style.top    = (coords.y - R_px) + 'px';
+    circle.style.width  = diam + 'px';
+    circle.style.height = diam + 'px';
+    // Label above the circle
+    label.style.left = coords.x + 'px';
+    label.style.top  = (coords.y - R_px - 16) + 'px';
     const isActive = activeRangeTypes.has(type);
-    circle.style.opacity = isActive ? '1' : '0';
-    label.style.opacity  = isActive ? '1' : '0';
+    circle.style.display = isActive ? 'block' : 'none';
+    label.style.display  = isActive ? 'block' : 'none';
   });
 }
 
 function clearRangeCircles() {
   ['move','advance','charge'].forEach(type => {
-    document.getElementById('range-' + type).style.opacity = '0';
-    document.getElementById('range-' + type + '-label').style.opacity = '0';
-    document.getElementById('range-' + type).setAttribute('r', '0');
+    document.getElementById('range-' + type).style.display = 'none';
+    document.getElementById('range-' + type + '-label').style.display = 'none';
   });
 }
 
@@ -1035,10 +1057,10 @@ function buildCard(uid) {
   ).join('');
 
   // Range toggle labels
-  const radii = getRangeRadii(u);
+  const radii = getRangeInches(u);
   document.getElementById('rt-move').textContent    = `MOVE ${u.M}"`;
-  document.getElementById('rt-advance').textContent = `ADV ~${Math.round(radii.advance/20)}"`;
-  document.getElementById('rt-charge').textContent  = `CHRG ~${Math.round(radii.charge/20)}"`;
+  document.getElementById('rt-advance').textContent = `ADV ~${Math.round(radii.advance)}"`;
+  document.getElementById('rt-charge').textContent  = `CHRG ~${Math.round(radii.charge)}"`;
 
   // Sync active state on toggles
   ['move','advance','charge'].forEach(t => {
@@ -1214,7 +1236,7 @@ bf.addEventListener('wheel', e => {
 }, {passive:false});
 
 bf.addEventListener('mousedown', e => {
-  if (e.target.closest('.token,.obj-hex-wrap,#unit-card,#bf-top-bar,#phase-pill-wrap,#action-bar')) return;
+  if (e.target.closest('.token,.obj-hex-wrap,#unit-card,#vp-bar,#phase-header,#action-bar')) return;
   isDragging = true;
   startX = e.clientX - tx;
   startY = e.clientY - ty;
