@@ -140,9 +140,23 @@
     /* Zoom easing — only during wheel events, disabled during drag for responsiveness */
     #battlefield-inner.zoom-easing{transition:transform 0.15s cubic-bezier(0.25,0.46,0.45,0.94);}
 
+    /* Objective area terrain rings — CSS div, width as % → always circular */
+    .obj-area-ring{
+      position:absolute;
+      width:16.67%; /* 10" diameter / 60" board = 16.67% of inner-div width */
+      aspect-ratio:1/1; /* height = width → perfect circle at any scale */
+      transform:translate(-50%,-50%); /* centre on left/top point */
+      border-radius:50%;
+      border:1.5px dashed rgba(201,163,82,0.38);
+      background:rgba(20,50,20,0.1);
+      pointer-events:none;
+      z-index:3; /* above terrain (2), below objectives (4) */
+    }
+
     /* CSS range circles — always circular regardless of SVG aspect ratio */
     .range-circle{
       position:absolute;border-radius:50%;pointer-events:none;display:none;z-index:2;
+      transition:opacity 0.15s ease;
     }
     .rc-move   {border:2px dashed rgba(0,200,168,.45);}
     .rc-advance{border:1.5px dashed rgba(201,163,82,.45);}
@@ -518,19 +532,16 @@
         <text x="1080" y="440" font-size="13" font-family="Rajdhani" font-weight="700" fill="rgba(160,30,30,0.15)" letter-spacing="6" text-anchor="middle" dominant-baseline="middle">ORK</text>
         <text x="1080" y="460" font-size="10" font-family="Rajdhani" font-weight="600" fill="rgba(160,30,30,0.12)" letter-spacing="5" text-anchor="middle" dominant-baseline="middle">DEPLOYMENT</text>
 
-        <!-- Area terrain circles — 5" radius (100 SVG units), higher contrast -->
-        <!-- OBJ 1: cx=600, cy=100 -->
-        <circle cx="600" cy="100" r="100" fill="rgba(20,50,20,0.12)" stroke="rgba(201,163,82,0.35)" stroke-width="1.5" stroke-dasharray="6,3"/>
-        <!-- OBJ 2: cx=160, cy=440 -->
-        <circle cx="160" cy="440" r="100" fill="rgba(20,50,20,0.12)" stroke="rgba(201,163,82,0.35)" stroke-width="1.5" stroke-dasharray="6,3"/>
-        <!-- OBJ 3: cx=600, cy=440 -->
-        <circle cx="600" cy="440" r="100" fill="rgba(20,50,20,0.12)" stroke="rgba(201,163,82,0.35)" stroke-width="1.5" stroke-dasharray="6,3"/>
-        <!-- OBJ 4: cx=1040, cy=440 -->
-        <circle cx="1040" cy="440" r="100" fill="rgba(20,50,20,0.12)" stroke="rgba(201,163,82,0.35)" stroke-width="1.5" stroke-dasharray="6,3"/>
-        <!-- OBJ 5: cx=600, cy=780 -->
-        <circle cx="600" cy="780" r="100" fill="rgba(20,50,20,0.12)" stroke="rgba(201,163,82,0.35)" stroke-width="1.5" stroke-dasharray="6,3"/>
-
       </svg><!-- /bf-svg -->
+
+      <!-- Objective area rings: CSS divs (not SVG) so they're always circular.
+           aspect-ratio:1 + width as % of inner-div = perfect circle at any zoom.
+           Left/top % match objective hex positions. transform:translate(-50%,-50%) centres them. -->
+      <div class="obj-area-ring" style="left:50%;top:11.36%;"></div>
+      <div class="obj-area-ring" style="left:13.33%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:86.67%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:88.64%;"></div>
 
       <!-- ═══ TERRAIN PIECES (z-index:2) ═══ -->
       <!-- DOM ORDER: terrain → objectives → tokens (for correct z-stacking) -->
@@ -1042,7 +1053,9 @@ function updateRangeCircles(uid, tokenEl) {
     label.style.top  = (tcy - R_px - 18) + 'px';
     const isActive = activeRangeTypes.has(type);
     circle.style.display = isActive ? 'block' : 'none';
+    circle.style.opacity = isActive ? '1' : '0';
     label.style.display  = isActive ? 'block' : 'none';
+    label.style.opacity  = isActive ? '1' : '0';
   });
 }
 
@@ -1240,20 +1253,44 @@ function applyTx() {
 }
 
 let zoomEaseTimer = null;
+let zoomSettleTimer = null;
+const RC_IDS = ['range-move','range-advance','range-charge','range-move-label','range-advance-label','range-charge-label'];
+
+function hideRangeCircles() {
+  RC_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.opacity = '0'; }
+  });
+}
+function showRangeCircles() {
+  if (!currentUnit || activeRangeTypes.size === 0) return;
+  const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
+  if (!tok) return;
+  updateRangeCircles(currentUnit, tok);
+  ['move','advance','charge'].forEach(t => {
+    if (!activeRangeTypes.has(t)) return;
+    document.getElementById('range-'+t).style.opacity = '1';
+    document.getElementById('range-'+t+'-label').style.opacity = '1';
+  });
+}
+
 bf.addEventListener('wheel', e => {
   e.preventDefault();
-  // Enable easing for smooth zoom
+
+  // Hide range circles at start of zoom gesture
+  if (activeRangeTypes.size > 0) hideRangeCircles();
+
+  // Smooth zoom easing
   inner.classList.add('zoom-easing');
   clearTimeout(zoomEaseTimer);
-  zoomEaseTimer = setTimeout(() => inner.classList.remove('zoom-easing'), 200);
+  zoomEaseTimer = setTimeout(() => inner.classList.remove('zoom-easing'), 220);
 
   scale = Math.min(3, Math.max(.35, scale * (e.deltaY>0 ? .9 : 1.1)));
   applyTx();
-  // Update range circles after the CSS transition settles
-  if (currentUnit && activeRangeTypes.size > 0) {
-    const tok = document.querySelector(`.token[data-unit="${currentUnit}"]`);
-    if (tok) setTimeout(() => updateRangeCircles(currentUnit, tok), 160);
-  }
+
+  // Show range circles after zoom settles (debounced)
+  clearTimeout(zoomSettleTimer);
+  zoomSettleTimer = setTimeout(showRangeCircles, 220);
 }, {passive:false});
 
 bf.addEventListener('mousedown', e => {
