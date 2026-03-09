@@ -535,6 +535,26 @@
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
+      <!-- ── DEPLOYMENT ZONES (Hammer & Anvil: 18" each long edge, 1"=12px) ── -->
+      <!-- Imperium left: x 0–216px, full height -->
+      <path d="M 0,0 L 216,0 L 216,528 L 0,528 Z"
+            fill="rgba(25,70,190,0.08)" stroke="rgba(25,70,190,0.22)" stroke-width="1"
+            vector-effect="non-scaling-stroke" pointer-events="none"/>
+      <!-- Orks right: x 504–720px, full height -->
+      <path d="M 504,0 L 720,0 L 720,528 L 504,528 Z"
+            fill="rgba(160,30,30,0.08)" stroke="rgba(160,30,30,0.22)" stroke-width="1"
+            vector-effect="non-scaling-stroke" pointer-events="none"/>
+      <!-- Midfield division -->
+      <line x1="360" y1="0" x2="360" y2="528" stroke="rgba(201,163,82,.07)" stroke-width="1" stroke-dasharray="8,8" pointer-events="none"/>
+      <line x1="0" y1="264" x2="720" y2="264" stroke="rgba(201,163,82,.04)" stroke-width="1" stroke-dasharray="4,12" pointer-events="none"/>
+      <!-- DZ labels -->
+      <text x="108" y="264" font-size="18" font-family="Rajdhani" font-weight="700"
+            fill="rgba(25,70,190,0.12)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
+            pointer-events="none">IMPERIUM</text>
+      <text x="612" y="264" font-size="18" font-family="Rajdhani" font-weight="700"
+            fill="rgba(160,30,30,0.12)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
+            pointer-events="none">ORKS</text>
+
       <g id="terrain-layer"></g>
       <g id="layer-hulls"></g>
       <g id="layer-models"></g>
