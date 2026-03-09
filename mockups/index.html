@@ -106,6 +106,54 @@
     .card.latest .card-link { color: #00d4ff; }
     .card.latest:hover .card-link { border-color: #00d4ff; background: rgba(0,212,255,0.06); }
 
+    /* ── BACKLOG GRID ────────────────────────────────────── */
+    .backlog-grid { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 48px; }
+    .backlog-card {
+      width: 220px; flex-shrink: 0;
+      background: #080604; border: 1px solid #1a1208;
+      padding: 18px; position: relative;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .backlog-card::before, .backlog-card::after { content: ''; position: absolute; width: 10px; height: 10px; pointer-events: none; }
+    .backlog-card::before { top: 0; left: 0; border-top: 1px solid #2a1e08; border-left: 1px solid #2a1e08; }
+    .backlog-card::after  { bottom: 0; right: 0; border-bottom: 1px solid #2a1e08; border-right: 1px solid #2a1e08; }
+    .backlog-card:hover { border-color: #2a1e08; background: #0a0806; }
+
+    .bl-version { font: 700 22px/1 'Cinzel', serif; color: #c9a352; margin-bottom: 6px; }
+    .bl-mechanic { font: 400 10px/1 'Oswald', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #5a4a2a; margin-bottom: 10px; }
+    .bl-desc { font: 400 11px/1.6 'Roboto Condensed', sans-serif; color: #3a3020; margin-bottom: 12px; }
+
+    .bl-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .phase-pill-tag {
+      font: 700 7px/1 'Oswald', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 3px 7px; border-radius: 2px;
+    }
+    .phase-pill-tag.movement  { background: rgba(0,200,168,0.1);  color: #00c8a8;  border: 1px solid rgba(0,200,168,0.25);  }
+    .phase-pill-tag.shooting  { background: rgba(85,136,204,0.1); color: #5588cc;  border: 1px solid rgba(85,136,204,0.25); }
+    .phase-pill-tag.charge    { background: rgba(212,130,10,0.1); color: #d4820a;  border: 1px solid rgba(212,130,10,0.25); }
+    .phase-pill-tag.fight     { background: rgba(204,34,34,0.1);  color: #cc4444;  border: 1px solid rgba(204,34,34,0.25);  }
+    .phase-pill-tag.command   { background: rgba(201,163,82,0.1); color: #c9a352;  border: 1px solid rgba(201,163,82,0.25); }
+    .phase-pill-tag.game      { background: rgba(148,100,200,0.1);color: #9464c8;  border: 1px solid rgba(148,100,200,0.25);}
+
+    .status-pill {
+      font: 700 7px/1 'Oswald', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 3px 7px; border-radius: 2px;
+    }
+    .status-pill.next-up     { background: rgba(0,200,168,0.15); color: #00c8a8; border: 1px solid rgba(0,200,168,0.4); }
+    .status-pill.in-progress { background: rgba(212,130,10,0.15); color: #d4820a; border: 1px solid rgba(212,130,10,0.4); }
+    .status-pill.planned     { background: rgba(201,163,82,0.05); color: #5a4a28; border: 1px solid rgba(201,163,82,0.12); }
+    .status-pill.integrated  { background: rgba(68,170,102,0.12); color: #44aa66; border: 1px solid rgba(68,170,102,0.3); }
+
+    /* v0.16 card theme */
+    .card.v16 { border-color: rgba(0,200,168,0.15); }
+    .card.v16::before, .card.v16::after { border-color: rgba(0,200,168,0.18); }
+    .card.v16:hover { border-color: #00c8a8; box-shadow: 0 0 24px rgba(0,200,168,0.1); }
+    .card.v16:hover::before, .card.v16:hover::after { border-color: #00c8a8; }
+    .card.v16 .card-version { color: #00c8a8; }
+    .card.v16 .card-codename { color: rgba(0,200,168,0.4); }
+    .card.v16 .card-link { color: #00c8a8; }
+    .card.v16:hover .card-link { border-color: #00c8a8; background: rgba(0,200,168,0.05); }
+
     /* ── FOOTER ──────────────────────────────────────────── */
     .page-footer { text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid #1a1408; font: 400 10px/1 'Oswald', sans-serif; letter-spacing: 2px; color: #2a2010; text-transform: uppercase; }
     .page-footer .aquila { font-size: 20px; color: rgba(201,163,82,0.12); margin-bottom: 8px; }
@@ -146,6 +194,28 @@
       </a>
     </div>
 
+    <!-- v0.16 IN PROGRESS -->
+    <div class="section-title">v0.16 — Movement Range Enforcement</div>
+    <div class="section-desc">
+      Movement range enforcement prototype. Select a unit, click NORMAL MOVE or ADVANCE to enter move mode. Ghost circles show start positions, shaded zones show maximum movement boundary. Dragging beyond M" snaps to boundary. CONFIRM commits the move; CANCEL snaps back.
+    </div>
+    <div class="card-grid featured">
+      <a class="card v16" href="v0.16-movement.html">
+        <span class="card-badge" style="background:rgba(212,130,10,0.15);color:#d4820a;border:1px solid rgba(212,130,10,0.4);">IN PROGRESS</span>
+        <div class="card-version">v0.16</div>
+        <div class="card-codename">MOVEMENT ENFORCEMENT</div>
+        <div class="card-title">Hard range limits · ghost circles · zone overlay</div>
+        <ul class="card-features">
+          <li>NORMAL MOVE / ADVANCE enters enforced move mode</li>
+          <li>Ghost circles at model start positions (dashed, faction colour)</li>
+          <li>Shaded movement zone circle per model (M" or M+3.5" radius)</li>
+          <li>Dragging beyond range snaps model to boundary</li>
+          <li>CONFIRM MOVE commits · CANCEL snaps back to start</li>
+        </ul>
+        <span class="card-link">Open →</span>
+      </a>
+    </div>
+
     <!-- v0.14 -->
     <div class="section-title">v0.14 — Unified Model Traction</div>
     <div class="section-desc">
@@ -164,6 +234,135 @@
          <span class="card-link">Open →</span>
       </a>
     </div>
+
+    <!-- PROTOTYPE BACKLOG -->
+    <div class="section-title">Prototype Backlog — Upcoming Mechanics</div>
+    <div class="section-desc">
+      Planned mechanic prototypes in priority order. Each version adds one focused game mechanic on top of the shared library built in v0.15.
+    </div>
+    <div class="backlog-grid">
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.16</div>
+        <div class="bl-mechanic">Movement range enforcement</div>
+        <div class="bl-desc">Hard movement limits with ghost circles and boundary snap.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag movement">MOVEMENT</span>
+          <span class="status-pill in-progress">IN PROGRESS</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.17</div>
+        <div class="bl-mechanic">Target selection + range highlighting</div>
+        <div class="bl-desc">Select attacker, highlight valid targets within weapon range.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag shooting">SHOOTING</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.18</div>
+        <div class="bl-mechanic">Dice roll UI (hit/wound/save pipeline)</div>
+        <div class="bl-desc">Animated dice rolls for hit → wound → save sequence.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag shooting">SHOOTING</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.19</div>
+        <div class="bl-mechanic">Line of Sight occlusion</div>
+        <div class="bl-desc">Terrain blocks LOS; highlight visible and hidden targets.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag shooting">SHOOTING</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.20</div>
+        <div class="bl-mechanic">Declare charge + 2D6 roll</div>
+        <div class="bl-desc">Charge declaration UI with 2D6 distance roll and outcome.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag charge">CHARGE</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.21</div>
+        <div class="bl-mechanic">Fight phase (pile-in, attacks, removal)</div>
+        <div class="bl-desc">Full fight phase: pile-in moves, attack resolution, model removal.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag fight">FIGHT</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.22</div>
+        <div class="bl-mechanic">Stratagem picker (contextual, CP cost)</div>
+        <div class="bl-desc">Context-aware stratagem picker filtered by phase and unit.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag command">COMMAND</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.23</div>
+        <div class="bl-mechanic">Ability use + timing confirmation</div>
+        <div class="bl-desc">Triggered ability prompts with timing windows and confirmation.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag command">COMMAND</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.24</div>
+        <div class="bl-mechanic">Deep Strike (reserve pool + 9" rule)</div>
+        <div class="bl-desc">Reserve pool UI and deep strike placement with 9" exclusion zone.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag command">COMMAND</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.25</div>
+        <div class="bl-mechanic">Pre-game deployment</div>
+        <div class="bl-desc">Full deployment phase with alternating unit placement and zones.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag command">COMMAND</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.26</div>
+        <div class="bl-mechanic">Objective scoring + VP tally</div>
+        <div class="bl-desc">End-of-phase objective scoring with VP accumulation display.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag game">GAME</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+      <div class="backlog-card">
+        <div class="bl-version">v0.27</div>
+        <div class="bl-mechanic">Full 5-round game loop</div>
+        <div class="bl-desc">Complete turn-based game loop with phase transitions and end-game summary.</div>
+        <div class="bl-tags">
+          <span class="phase-pill-tag game">GAME</span>
+          <span class="status-pill planned">PLANNED</span>
+        </div>
+      </div>
+
+    </div><!-- /backlog-grid -->
 
     <!-- v0.12 -->
     <div class="section-title">v0.12 — Accurate SVG Terrain from mapData</div>
@@ -490,7 +689,7 @@
 
   <footer class="page-footer">
     <div class="aquila">⚜</div>
-    <div>WH40K Simulator · UI Mockup Archive · v0.1 – v0.11</div>
+    <div>WH40K Simulator · UI Mockup Archive · v0.1 – v0.16</div>
   </footer>
 
 </body>
