@@ -1,0 +1,227 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Prototype B: Action Toolbar</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
+        #canvas { width: 100vw; height: 100vh; display: block; background: #222; cursor: grab; }
+        #canvas:active { cursor: grabbing; }
+        .ui { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; border: 1px solid #444; pointer-events: none; }
+        h3 { margin: 0 0 10px 0; color: #00c8a8; }
+        p { margin: 5px 0; font-size: 14px; color: #ccc; }
+        .interactive-ui { pointer-events: auto; }
+        
+        .unit-hull { fill: rgba(0, 150, 255, 0.1); stroke: #0096ff; stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
+        .unit-hull.selected { fill: rgba(0, 200, 168, 0.2); stroke: #00c8a8; stroke-width: 3; stroke-dasharray: none; }
+        .model-base { fill: #333; stroke: #666; stroke-width: 2; cursor: pointer; transition: fill 0.1s; }
+        .model-base:hover { fill: #555; }
+        .model-base.selected { fill: #00c8a8; stroke: #fff; }
+        
+        /* Toolbar styles */
+        #toolbar { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: none; background: #333; padding: 10px; border-radius: 8px; border: 1px solid #555; gap: 10px; pointer-events: auto; }
+        #toolbar.visible { display: flex; }
+        button { background: #444; color: white; border: 1px solid #666; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-family: inherit; }
+        button.active { background: #00c8a8; color: black; border-color: #00ffcc; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <h3>Prototype B: Action Toolbar</h3>
+        <p>• Click a unit to select it and reveal the toolbar.</p><p>• Uses "Move Formation" by default.</p><p>• Click "Move Models" to manipulate single bases.</p>
+    </div>
+    <div id="toolbar"><button id="btn-group" onclick="setMode('group')">📦 Move Formation</button><button id="btn-individual" onclick="setMode('individual')">🎯 Move Models</button></div>
+    <svg id="canvas">
+        <g id="layer-hulls"></g>
+        <g id="layer-models"></g>
+    </svg>
+
+    <script>
+        // Data State
+        const state = {
+            units: [
+                {
+                    id: 'u1',
+                    models: [
+                        {id: 'm1', x: 400, y: 300, r: 16}, {id: 'm2', x: 440, y: 290, r: 16},
+                        {id: 'm3', x: 390, y: 340, r: 16}, {id: 'm4', x: 430, y: 330, r: 16},
+                        {id: 'm5', x: 460, y: 360, r: 16}
+                    ]
+                },
+                {
+                    id: 'u2',
+                    models: [
+                        {id: 'm6', x: 700, y: 400, r: 20}, {id: 'm7', x: 750, y: 380, r: 20},
+                        {id: 'm8', x: 720, y: 440, r: 20}
+                    ]
+                }
+            ],
+            selection: { unitId: null, modelId: null },
+            mode: 'group', // 'group' or 'isolated'
+            drag: null // { unitId, modelId, startX, startY, offsets: [] }
+        };
+
+        const svg = document.getElementById('canvas');
+        const layerHulls = document.getElementById('layer-hulls');
+        const layerModels = document.getElementById('layer-models');
+
+        // Geometry: Convex Hull
+        function getConvexHull(points) {
+            if (points.length <= 2) return points;
+            const pts = [...points].sort((a,b) => a.x !== b.x ? a.x - b.x : a.y - b.y);
+            const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+            const lower = [];
+            for (let p of pts) {
+                while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+                lower.push(p);
+            }
+            const upper = [];
+            for (let i = pts.length - 1; i >= 0; i--) {
+                const p = pts[i];
+                while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+                upper.push(p);
+            }
+            upper.pop(); lower.pop();
+            return lower.concat(upper);
+        }
+
+        // Expanded Hull for padding bases
+        function getExpandedHullPath(models) {
+            if (models.length === 0) return '';
+            if (models.length === 1) {
+                const m = models[0];
+                const r = m.r + 10;
+                return "M " + m.x + " " + (m.y - r) + " A " + r + " " + r + " 0 1 1 " + m.x + " " + (m.y + r) + " A " + r + " " + r + " 0 1 1 " + m.x + " " + (m.y - r);
+            }
+            
+            // For padding, we generate points around each circle perimeter to ensure the hull wraps the extents natively
+            const extents = [];
+            models.forEach(m => {
+                const r = m.r + 10; // 10px padding
+                const steps = 8;
+                for(let i=0; i<steps; i++) {
+                    const angle = (Math.PI * 2 * i) / steps;
+                    extents.push({ x: m.x + Math.cos(angle)*r, y: m.y + Math.sin(angle)*r });
+                }
+            });
+            const hull = getConvexHull(extents);
+            if (hull.length === 0) return '';
+            let d = "M " + hull[0].x + "," + hull[0].y;
+            for(let i=1; i<hull.length; i++) d += " L " + hull[i].x + "," + hull[i].y;
+            d += ' Z';
+            return d;
+        }
+
+        function render() {
+            layerHulls.innerHTML = '';
+            layerModels.innerHTML = '';
+
+            state.units.forEach(unit => {
+                // Draw Hull
+                const isSelectedUnit = state.selection.unitId === unit.id;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', getExpandedHullPath(unit.models));
+                path.setAttribute('class', 'unit-hull' + (isSelectedUnit ? ' selected' : ''));
+                layerHulls.appendChild(path);
+
+                // Draw Models
+                unit.models.forEach(model => {
+                    const isSelectedModel = state.selection.modelId === model.id;
+                    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    c.setAttribute('cx', model.x);
+                    c.setAttribute('cy', model.y);
+                    c.setAttribute('r', model.r);
+                    c.setAttribute('class', 'model-base' + (isSelectedModel ? ' selected' : ''));
+                    c.dataset.unitId = unit.id;
+                    c.dataset.modelId = model.id;
+                    layerModels.appendChild(c);
+                });
+            });
+            
+            // Update UI Toolbar (if any)
+            if (window.updateUI) window.updateUI();
+        }
+
+        function getMousePos(evt) {
+            const CTM = svg.getScreenCTM();
+            return {
+                x: (evt.clientX - CTM.e) / CTM.a,
+                y: (evt.clientY - CTM.f) / CTM.d
+            };
+        }
+
+        // ----------------------------------------------------
+        // Interaction Logic Injected Below
+        // ----------------------------------------------------
+        
+        window.setMode = function(m) {
+            state.mode = m;
+            state.selection.modelId = null; 
+            render();
+        };
+
+        window.updateUI = function() {
+            const tb = document.getElementById('toolbar');
+            if (state.selection.unitId) {
+                tb.classList.add('visible');
+                document.getElementById('btn-group').classList.toggle('active', state.mode === 'group');
+                document.getElementById('btn-individual').classList.toggle('active', state.mode === 'individual');
+            } else {
+                tb.classList.remove('visible');
+            }
+        };
+
+        svg.addEventListener('mousedown', (e) => {
+            const trg = e.target;
+            const pt = getMousePos(e);
+            
+            if (trg.classList.contains('model-base')) {
+                const uId = trg.dataset.unitId;
+                const mId = trg.dataset.modelId;
+                const unit = state.units.find(u => u.id === uId);
+
+                if (state.selection.unitId !== uId) {
+                    state.selection.unitId = uId;
+                    state.mode = 'group'; 
+                }
+
+                if (state.mode === 'group') {
+                    state.selection.modelId = null;
+                    state.drag = { type: 'group', unit, startX: pt.x, startY: pt.y, offsets: unit.models.map(m => ({m, dx: m.x - pt.x, dy: m.y - pt.y})) };
+                } else {
+                    state.selection.modelId = mId;
+                    const model = unit.models.find(m => m.id === mId);
+                    state.drag = { type: 'model', model, startX: pt.x, startY: pt.y, offsetX: model.x - pt.x, offsetY: model.y - pt.y };
+                }
+            } else {
+                if(!e.target.closest('#toolbar')) {
+                    state.selection.unitId = null;
+                    state.selection.modelId = null;
+                }
+            }
+            render();
+        });
+
+        function onMouseMove(e) {
+            if (!state.drag) return;
+            const pt = getMousePos(e);
+            if (state.drag.type === 'group') {
+                state.drag.offsets.forEach(o => { o.m.x = pt.x + o.dx; o.m.y = pt.y + o.dy; });
+            } else if (state.drag.type === 'model') {
+                state.drag.model.x = pt.x + state.drag.offsetX; state.drag.model.y = pt.y + state.drag.offsetY;
+            }
+            render();
+        }
+        function onMouseUp(e) { state.drag = null; }
+
+        
+        svg.addEventListener('mousemove', onMouseMove);
+        svg.addEventListener('mouseup', onMouseUp);
+        svg.addEventListener('mouseleave', onMouseUp);
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>
