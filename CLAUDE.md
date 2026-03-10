@@ -55,8 +55,14 @@ See `docs/mockup-prototype-strategy.md` for full workflow.
 3. Commit both files together
 4. Push + confirm CI passes
 5. Verify the version card appears at `https://.../mockups/#[phase]` — not just that the direct URL is 200
+6. **Verify core interaction works**: open the live page, select a unit, drag it — confirm it moves and rulers appear
 
-Step 2 is the most commonly missed. A mockup that isn't in index.html does not exist for the user.
+Step 2 is the most commonly missed. Step 6 catches init-time crashes that HTTP 200 does not.
+
+**Coding conventions for slice scripts:**
+- All BattleUI values used in functions MUST be either destructured at the top of the script (`const { UNITS, mapData, ... } = BattleUI`) OR referenced as `BattleUI.X` inline. Never assume a BattleUI value is in local scope without one of these.
+- An undeclared variable reference (`!mapData` where `mapData` was never declared) throws `ReferenceError` and kills all subsequent initialization silently — no error badge, no rulers, no drag.
+- Every slice should have `window.onerror` set to show errors visibly on screen.
 
 After adding/editing a mockup, the CI pipeline (`CI + Deploy to GitHub Pages`) must complete before the URL is live.
 
