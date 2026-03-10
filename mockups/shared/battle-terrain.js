@@ -47,8 +47,8 @@
   };
 
   B.TERRAIN_RULES = {
-    ruins:   { title:'TALL RUINS ≥4"',  type:'ruins', rules:['+1 to saving throw vs ranged attacks (except AP0 vs 3+ saves)','BLOCKS LINE OF SIGHT — units outside cannot see through','DIFFICULT GROUND: -2" movement when moving through'] },
-    scatter: { title:'LOW TERRAIN ≤2"', type:'scatter', rules:['+1 to saving throw vs ranged attacks (except AP0 vs 3+ saves)','Does NOT block line of sight (can see/shoot over)','DIFFICULT GROUND: -2" movement when moving through'] },
+    ruins:   { title:'TALL RUINS ≥4"',  type:'ruins', rules:['+1 to saving throw vs ranged attacks (except AP0 vs 3+ saves)','BLOCKS LINE OF SIGHT — units outside cannot see through'] },
+    scatter: { title:'LOW TERRAIN ≤2"', type:'scatter', rules:['+1 to saving throw vs ranged attacks (except AP0 vs 3+ saves)','Does NOT block line of sight (can see/shoot over)'] },
     area:    { title:'OBJECTIVE AREA',  type:'area', rules:['Objective control radius: 3"','Unit within range with highest OC controls the objective'] },
   };
 
