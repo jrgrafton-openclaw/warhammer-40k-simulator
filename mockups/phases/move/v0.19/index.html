@@ -986,6 +986,7 @@ function parsePathPoints(d) {
 
 function buildTerrainSegments() {
   const svgEl = document.getElementById('bf-svg');
+  const mapData = BattleUI.mapData; // ← always use BattleUI.X; never assume local scope
   if (!svgEl || !mapData) return;
   mapData.terrain.forEach(piece => {
     // Build the SVG transform string used by renderTerrain
@@ -1036,6 +1037,14 @@ function resolveTerrainCollision(cx, cy, r) {
   }
   return { x, y };
 }
+
+// ── Visible error handler: init crashes show on screen instead of dying silently ──
+window.onerror = function(msg, src, line) {
+  const el = document.getElementById('cohesion-banner') || document.createElement('div');
+  el.style.cssText = 'position:fixed;top:8px;left:8px;right:8px;background:#cc2222;color:#fff;padding:8px 12px;font:700 11px/1.5 monospace;z-index:9999;border-radius:3px;';
+  el.textContent = '⚠ JS ERROR: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(el);
+};
 
 buildTerrainSegments(); // build once after SVG + mapData are ready
 
