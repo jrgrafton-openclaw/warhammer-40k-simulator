@@ -233,8 +233,20 @@
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="phases/move/v0.20/index.html">
+        <a class="card latest" href="phases/move/v0.21/index.html">
           <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.21</div>
+          <div class="card-codename">CORRECT WALLS + CONTINUOUS COLLISION</div>
+          <div class="card-title">Wall-only ruins · L-shape decomposition · drag-time collision · shared/collision.js</div>
+          <ul class="card-features">
+            <li>Ruins: collision against L-shaped WALL only (paths[1]), not the floor rectangle</li>
+            <li>L-shapes decomposed into grid-aligned AABBs via point-in-polygon</li>
+            <li>Collision + terrain now render DURING drag (re-render after adjustments)</li>
+            <li>Extracted shared/collision.js: pure functions, no DOM, no state</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card v08a" href="phases/move/v0.20/index.html">
           <div class="card-version">v0.20</div>
           <div class="card-codename">TERRAIN AABB + CONTINUOUS COLLISION</div>
           <div class="card-title">Correct terrain push-out · continuous unit drag collision · enemy view-only</div>
@@ -581,7 +593,7 @@
 
   <footer class="page-footer">
     <div class="aquila">⚜</div>
-    <div>WH40K Simulator · Phase Prototype Archive · move/v0.20 current</div>
+    <div>WH40K Simulator · Phase Prototype Archive · move/v0.21 current</div>
   </footer>
 
   <script>
