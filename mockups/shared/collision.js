@@ -80,15 +80,12 @@
     var aabbs = [];
 
     mapData.terrain.forEach(function(piece) {
-      // Select the correct collision path:
+      // Only RUINS WALLS are collidable:
       //   ruins  → paths[1] (L-shaped WALL structure) — floor is traversable
-      //   scatter → paths[0] (solid block)
-      var collisionPath;
-      if (piece.type === 'ruins' && piece.paths.length > 1) {
-        collisionPath = piece.paths[1]; // wall only
-      } else {
-        collisionPath = piece.paths[0]; // solid block
-      }
+      //   scatter → NO collision (models move through at half speed — future mechanic)
+      //   area   → NO collision
+      if (piece.type !== 'ruins' || piece.paths.length < 2) return; // skip scatter/area
+      var collisionPath = piece.paths[1]; // wall only
 
       var ox = piece.origin[0], oy = piece.origin[1];
       var tfStr = 'translate(' + ox + ',' + oy + ') ' + piece.transform + ' translate(' + (-ox) + ',' + (-oy) + ')';

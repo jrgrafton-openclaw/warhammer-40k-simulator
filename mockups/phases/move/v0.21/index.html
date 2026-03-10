@@ -844,11 +844,18 @@ function patchModelDrag() {
         const dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
         if (dist > rangePx) { const sc = rangePx/dist; m.x = ts.x+dx*sc; m.y = ts.y+dy*sc; }
       });
-      // Terrain collision per model
+      // Terrain collision: push ENTIRE unit as a block (not per-model, which deforms formation)
+      // Find the max push needed for any model, then apply to all
+      let maxPushX = 0, maxPushY = 0;
       drag.unit.models.forEach(function(m) {
         const tr = resolveTerrainCollision(m.x, m.y, m.r);
-        m.x = tr.x; m.y = tr.y;
+        const px = tr.x - m.x, py = tr.y - m.y;
+        if (Math.abs(px) > Math.abs(maxPushX)) maxPushX = px;
+        if (Math.abs(py) > Math.abs(maxPushY)) maxPushY = py;
       });
+      if (maxPushX !== 0 || maxPushY !== 0) {
+        drag.unit.models.forEach(function(m) { m.x += maxPushX; m.y += maxPushY; });
+      }
       // Final collision pass after terrain + zone adjustments
       resolveUnitDragCollisions(drag.unit);
     }
