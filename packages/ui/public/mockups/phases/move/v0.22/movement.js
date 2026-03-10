@@ -29,8 +29,9 @@
   // ── Movement state ─────────────────────────────────────
   var moveState = {
     mode: null,          // null | 'move' | 'advance'
-    advanceDie: null,    // 1–6 once ADVANCE declared
-    unitsMoved: new Set()
+    advanceDie: null,    // 1–6 once ADVANCE declared (current unit's roll)
+    unitsMoved: new Set(),
+    unitsAdvanced: {}    // unitId → dieResult (persists across deselect/reselect)
   };
 
   // ── Helpers ────────────────────────────────────────────
@@ -129,9 +130,10 @@
     var modeLabel  = document.getElementById('move-mode-label');
 
     if (btnMove)    { btnMove.classList.toggle('active', moveState.mode === 'move');
-                      btnMove.disabled = isEnemy || alreadyMoved || (moveState.mode === 'advance'); }
+                      btnMove.disabled = isEnemy || alreadyMoved || hasAdvanced || (moveState.mode === 'advance'); }
+    var hasAdvanced = uid && moveState.unitsAdvanced[uid] !== undefined;
     if (btnAdvance) { btnAdvance.classList.toggle('active', moveState.mode === 'advance');
-                      btnAdvance.disabled = isEnemy || alreadyMoved || moveState.mode === 'advance'; }
+                      btnAdvance.disabled = isEnemy || alreadyMoved || hasAdvanced || moveState.mode === 'advance'; }
     if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode;
     if (btnCancel)  btnCancel.disabled  = isEnemy || !inMode;
 
@@ -332,6 +334,7 @@
     }
     rollAdvanceDie(uid, function(die) {
       moveState.advanceDie = die;
+      moveState.unitsAdvanced[uid] = die; // persist across deselect/reselect
       enterMoveMode('advance');
       updateMoveButtons();
     });
@@ -348,7 +351,13 @@
     if (uid) {
       var unit = simState.units.find(function(u) { return u.id === uid; });
       if (unit && unit.faction === ACTIVE_PLAYER_FACTION && moveState.mode === null && !moveState.unitsMoved.has(uid)) {
-        enterMoveMode('move');
+        // If unit already committed to advance, restore advance mode with saved die
+        if (moveState.unitsAdvanced[uid] !== undefined) {
+          moveState.advanceDie = moveState.unitsAdvanced[uid];
+          enterMoveMode('advance');
+        } else {
+          enterMoveMode('move');
+        }
       }
     }
   };

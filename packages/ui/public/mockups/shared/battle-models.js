@@ -250,7 +250,12 @@
         var model = unit.models.find(function(m){ return m.id===mId; });
         if (!model) return;
         if (window.activeUnitId !== uId) B.selectUnit(uId);
-        B.simState.drag = { type:'model', model:model, offsetX:model.x-pt.x, offsetY:model.y-pt.y };
+        // Shift+click on model: rotate the unit (works for single-model units like Dreadnought)
+        if (e.shiftKey) {
+          B.simState.drag = { type:'rotate', pivot:pt, unit:unit, origins:unit.models.map(function(m){ return {x:m.x,y:m.y}; }) };
+        } else {
+          B.simState.drag = { type:'model', model:model, offsetX:model.x-pt.x, offsetY:model.y-pt.y };
+        }
         e.stopPropagation();
         B.renderModels();
       }
