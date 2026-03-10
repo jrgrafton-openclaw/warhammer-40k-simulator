@@ -131,7 +131,7 @@
     if (btnMove)    { btnMove.classList.toggle('active', moveState.mode === 'move');
                       btnMove.disabled = isEnemy || alreadyMoved || (moveState.mode === 'advance'); }
     if (btnAdvance) { btnAdvance.classList.toggle('active', moveState.mode === 'advance');
-                      btnAdvance.disabled = isEnemy || alreadyMoved || inMode; }
+                      btnAdvance.disabled = isEnemy || alreadyMoved || moveState.mode === 'advance'; }
     if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode;
     if (btnCancel)  btnCancel.disabled  = isEnemy || !inMode;
 
@@ -323,7 +323,13 @@
   });
   document.getElementById('btn-advance').addEventListener('click', function() {
     var uid = B.currentUnit;
-    if (!uid || moveState.unitsMoved.has(uid) || moveState.mode !== null) return;
+    if (!uid || moveState.unitsMoved.has(uid) || moveState.mode === 'advance') return;
+    // Cancel any current normal move first (snap back to turn-start before rolling)
+    if (moveState.mode === 'move') {
+      var unit = simState.units.find(function(u) { return u.id === uid; });
+      if (unit) { unit.models.forEach(function(m) { var ts = phaseTurnStarts[m.id]; if (ts) { m.x = ts.x; m.y = ts.y; } }); }
+      moveState.mode = null; clearMoveOverlays();
+    }
     rollAdvanceDie(uid, function(die) {
       moveState.advanceDie = die;
       enterMoveMode('advance');
