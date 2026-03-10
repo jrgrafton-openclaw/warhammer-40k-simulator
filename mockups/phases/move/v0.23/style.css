@@ -324,30 +324,48 @@ html, body {
 .rl-advance { color: rgba(204,136,0,.8); }
 .rl-charge  { color: rgba(204,100,0,.8); }
 
-/* ── Objectives ── */
-.obj-hex-wrap { position: absolute; transform: translate(-50%,-50%); width: 84px; height: 97px; z-index: 4; cursor: default; }
-.obj-hex-outer {
-  position: absolute; inset: 0;
-  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
-  display: flex; align-items: center; justify-content: center;
+/* ── Objectives — SVG hex approach for proper visible strokes ── */
+.obj-hex-wrap {
+  position: absolute; transform: translate(-50%,-50%);
+  width: 84px; height: 97px; z-index: 4; cursor: default;
 }
-.obj-hex-outer.neutral   { background: rgba(42,58,74,.4); }
-.obj-hex-outer.controlled { background: rgba(0,212,255,.25); filter: drop-shadow(0 0 12px rgba(0,212,255,.4)); }
-.obj-hex-outer.contested  { background: rgba(255,64,32,.35); animation: hex-blink 1.2s ease-in-out infinite; }
-@keyframes hex-blink {
-  0%,100% { filter: drop-shadow(0 0 8px rgba(255,64,32,.35)); }
-  50%      { filter: drop-shadow(0 0 22px rgba(255,64,32,.8)); }
+/* Glow for held objectives applied to the wrapper */
+.obj-hex-wrap.controlled { filter: drop-shadow(0 0 8px rgba(0,212,255,.5)); }
+.obj-hex-wrap.enemy      { filter: drop-shadow(0 0 8px rgba(255,64,32,.5)); }
+
+.obj-svg { display: block; overflow: visible; }
+
+/* hex fill (inner dark area) */
+.obj-bg  { fill: rgba(8,12,16,.92); }
+/* hex stroke ring — colored by state */
+.obj-ring { fill: none; stroke-width: 1.5; }
+
+/* number + label inside SVG */
+.obj-n {
+  font-family: 'Anton', sans-serif; font-size: 22px; font-weight: 400;
+  text-anchor: middle; dominant-baseline: central;
 }
-.obj-hex-inner {
-  width: 76px; height: 88px;
-  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
-  background: rgba(8,12,16,.92);
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+.obj-l {
+  font-family: 'Rajdhani', sans-serif; font-size: 7px; font-weight: 700;
+  letter-spacing: 2.5px; text-anchor: middle; dominant-baseline: central;
 }
-.obj-num { font: normal 400 22px/1 'Anton', sans-serif; color: var(--text-muted); }
-.obj-lbl { font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-dis); text-transform: uppercase; margin-top: 2px; }
-.obj-hex-outer.controlled .obj-num { color: var(--imp); }
-.obj-hex-outer.contested  .obj-num { color: var(--ork); }
+
+/* ── Neutral ── */
+.obj-hex-wrap.neutral .obj-ring { stroke: rgba(74,96,128,.55); }
+.obj-hex-wrap.neutral .obj-n    { fill: var(--text-sec); }
+.obj-hex-wrap.neutral .obj-l    { fill: var(--text-dis); }
+
+/* ── Player held ── */
+.obj-hex-wrap.controlled .obj-ring { stroke: var(--imp); }
+.obj-hex-wrap.controlled .obj-bg   { fill: rgba(0,212,255,.07); }
+.obj-hex-wrap.controlled .obj-n    { fill: var(--imp); }
+.obj-hex-wrap.controlled .obj-l    { fill: rgba(0,212,255,.65); }
+
+/* ── Enemy held ── */
+.obj-hex-wrap.enemy .obj-ring { stroke: var(--ork); }
+.obj-hex-wrap.enemy .obj-bg   { fill: rgba(255,64,32,.07); }
+.obj-hex-wrap.enemy .obj-n    { fill: var(--ork); }
+.obj-hex-wrap.enemy .obj-l    { fill: rgba(255,64,32,.65); }
 
 /* ══════════════════════════════════════════════════════════════
    UNIT CARD — v2-B Panel Chrome
@@ -505,7 +523,7 @@ html, body {
   margin-bottom: 5px;
   transition: background .12s;
 }
-.ability-desc { font: 400 12px/1.55 'Rajdhani', sans-serif; color: var(--text-muted); padding-left: 2px; }
+.ability-desc { font: 400 13px/1.55 'Rajdhani', sans-serif; color: var(--text-muted); padding-left: 2px; }
 
 /* ══════════════════════════════════════════════════════════════
    ACTION BAR — v3-A
@@ -664,7 +682,7 @@ html, body {
   background: var(--bg-raised);
   border: 1px solid rgba(0,212,255,.15);
   border-top: 2px solid var(--imp);
-  color: var(--text-muted); font: 400 10px/1.5 'Rajdhani', sans-serif;
+  color: var(--text-muted); font: 400 12px/1.5 'Rajdhani', sans-serif;
   padding: 7px 12px; pointer-events: none;
   box-shadow: 0 4px 16px rgba(0,0,0,.9); max-width: 260px;
   transition: opacity .15s;
