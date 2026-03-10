@@ -49,6 +49,15 @@ cp -r packages/ui/public/mockups/phases/move/v0.16/ \
 **shared/ policy:** Append-only once in use. Updated manually only at new-phase kickoff.
 See `docs/mockup-prototype-strategy.md` for full workflow.
 
+**Mockup deploy checklist — ALL steps required before "done":**
+1. Create `phases/[phase]/v0.N/index.html`
+2. **Update `index.html`** — add the new version as LATEST in the correct phase tab
+3. Commit both files together
+4. Push + confirm CI passes
+5. Verify the version card appears at `https://.../mockups/#[phase]` — not just that the direct URL is 200
+
+Step 2 is the most commonly missed. A mockup that isn't in index.html does not exist for the user.
+
 After adding/editing a mockup, the CI pipeline (`CI + Deploy to GitHub Pages`) must complete before the URL is live.
 
 ---
