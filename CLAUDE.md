@@ -12,15 +12,44 @@ Read `architecture.md` and `rules_coverage.md` before making changes.
 Vite copies `packages/ui/public/` verbatim into `docs/` during `pnpm --filter @wh40k/ui build`.
 `docs/` is what GitHub Pages deploys (via `peaceiris/actions-gh-pages`, branch `gh-pages`).
 
-Anything placed in the root `mockups/` directory is **not deployed** and will 404 on Pages.
+### Prototype structure (phase-organised)
+```
+mockups/
+  shared/               ← base CSS + JS template — updated only when starting a NEW phase
+  phases/
+    move/               ← Movement Phase (current active work)
+      v0.13/ … v0.16/   ← each version is a self-contained folder with index.html
+    shoot/ charge/ fight/ cmd/ INTEGRATED/  ← future phases (placeholders)
+  advanced/             ← stratagems, deep-strike etc.
+  archive/              ← v0.1–v0.12 historical design exploration
+  index.html            ← phase-tab navigation
+```
+
+**To start a new phase version:**
+```bash
+cp -r packages/ui/public/mockups/phases/move/v0.16/ \
+      packages/ui/public/mockups/phases/move/v0.17/
+# edit phases/move/v0.17/index.html
+```
+
+**To start a new phase** (e.g. shoot):
+```bash
+cp -r packages/ui/public/mockups/phases/move/v0.16/ \
+      packages/ui/public/mockups/phases/shoot/v0.1/
+# Update shared/ path references first (should already be ../../../shared/)
+```
 
 | File location | Deployed to Pages? |
 |---|---|
-| `packages/ui/public/mockups/v0.x.html` | ✅ Yes — `https://.../mockups/v0.x.html` |
+| `packages/ui/public/mockups/phases/move/v0.16/index.html` | ✅ Yes |
+| `packages/ui/public/mockups/archive/v0.12.html` | ✅ Yes |
 | `mockups/v0.x.html` (repo root) | ❌ No — never deployed |
-| `docs/mockups/v0.x.html` | ❌ No — wiped by Vite build (`emptyOutDir: true`) |
+| `docs/mockups/...` | ❌ No — wiped by Vite build (`emptyOutDir: true`) |
 
-After adding a mockup, the CI pipeline (`CI + Deploy to GitHub Pages`) must complete before the URL is live.
+**shared/ policy:** Append-only once in use. Updated manually only at new-phase kickoff.
+See `docs/mockup-prototype-strategy.md` for full workflow.
+
+After adding/editing a mockup, the CI pipeline (`CI + Deploy to GitHub Pages`) must complete before the URL is live.
 
 ---
 
