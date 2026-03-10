@@ -233,8 +233,21 @@
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="phases/move/v0.18/index.html">
+        <a class="card latest" href="phases/move/v0.19/index.html">
           <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.19</div>
+          <div class="card-codename">TERRAIN + ACTIVE PLAYER</div>
+          <div class="card-title">Terrain wall collision · Ork lock-out · soft deselect · unit drop collision</div>
+          <ul class="card-features">
+            <li>Models collide with terrain walls during drag (line-segment push-out)</li>
+            <li>Ork units cannot be moved (Imperium turn only); can still be selected</li>
+            <li>Drag interceptor blocks already-moved units at the source — not mousemove</li>
+            <li>Click outside = soft exit (keep positions); CANCEL still snaps back</li>
+            <li>Unit drag collision resolved at drop, not continuously during drag</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card v08a" href="phases/move/v0.18/index.html">
           <div class="card-version">v0.18</div>
           <div class="card-codename">MOVEMENT FIXES</div>
           <div class="card-title">Z-order correct · unit collision · deselect on cancel/click-outside</div>
@@ -557,7 +570,7 @@
 
   <footer class="page-footer">
     <div class="aquila">⚜</div>
-    <div>WH40K Simulator · Phase Prototype Archive · move/v0.18 current</div>
+    <div>WH40K Simulator · Phase Prototype Archive · move/v0.19 current</div>
   </footer>
 
   <script>
