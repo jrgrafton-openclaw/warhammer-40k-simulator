@@ -1,0 +1,77 @@
+/* v0.22 Movement Phase — Slice-specific styles */
+
+/* Prevent text selection during drag */
+html, body { user-select: none; -webkit-user-select: none; }
+
+/* Two-SVG layer structure */
+#bf-svg-terrain { position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1; }
+#bf-svg         { position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:6; }
+
+/* Movement ghost circles */
+.move-ghost { pointer-events:none; fill:none; stroke-dasharray:4 3; opacity:0.35; }
+
+/* Movement zone circles */
+.move-zone { pointer-events:none; stroke-dasharray:6 4; }
+.move-zone.zone-move    { fill:rgba(0,200,168,0.04); stroke:rgba(0,200,168,0.2); stroke-width:1.5; }
+.move-zone.zone-advance { fill:rgba(201,163,82,0.04); stroke:rgba(201,163,82,0.2); stroke-width:1.5; }
+
+/* Dashed ruler lines from turn-start → current */
+.move-ruler       { pointer-events:none; stroke-width:1; stroke-dasharray:4 3; fill:none; opacity:0.6; }
+.move-ruler-label { pointer-events:none; font:600 9px/1 'Rajdhani',sans-serif; fill:rgba(255,255,255,0.55); }
+
+/* Cohesion banner override (compact pill vs full overlay) */
+#cohesion-banner {
+  top:88px !important; left:50% !important;
+  transform:translateX(-50%) !important;
+  width:auto !important; max-width:280px !important;
+  padding:5px 14px !important; font-size:11px !important;
+  border-radius:3px !important; white-space:nowrap !important;
+}
+
+/* Shake animation for blocked CONFIRM */
+@keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.shake-error { animation: shake-err 0.4s ease; }
+
+/* Advance D6 dice overlay */
+#advance-dice-overlay {
+  position:fixed; inset:0; display:none;
+  align-items:center; justify-content:center;
+  z-index:500; background:rgba(0,0,0,0.55); backdrop-filter:blur(3px);
+}
+#advance-dice-overlay.visible { display:flex; }
+.dice-panel { text-align:center; animation:dice-panel-in 0.15s ease-out; }
+@keyframes dice-panel-in { from{transform:scale(0.6);opacity:0} to{transform:scale(1);opacity:1} }
+.dice-d6 {
+  width:88px; height:88px; margin:0 auto 14px;
+  background:#0a0804; border:3px solid #c9a352; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font:700 52px/1 'Share Tech Mono',monospace; color:#c9a352;
+  box-shadow:0 0 32px rgba(201,163,82,0.5);
+}
+.dice-d6.rolling { animation: dice-roll 0.65s cubic-bezier(0.18,0.89,0.32,1.28); }
+@keyframes dice-roll {
+  0%{transform:rotate(0) scale(0.3);opacity:0} 30%{transform:rotate(540deg) scale(1.18);opacity:1}
+  60%{transform:rotate(520deg) scale(0.94)} 78%{transform:rotate(532deg) scale(1.06)}
+  90%{transform:rotate(528deg) scale(0.98)} 100%{transform:rotate(530deg) scale(1)}
+}
+.dice-result-label { font:700 13px/1 'Rajdhani',sans-serif; letter-spacing:3px; text-transform:uppercase; color:#c9a352; }
+.dice-total-label  { font:600 11px/1 'Rajdhani',sans-serif; letter-spacing:2px; color:rgba(201,163,82,0.5); margin-top:6px; }
+
+/* CONFIRM / CANCEL buttons */
+.action-btn.confirm-move          { background:rgba(0,200,168,.15); border:1px solid rgba(0,200,168,.6); color:#00c8a8; }
+.action-btn.confirm-move:disabled { background:transparent; border:1px solid #222; color:#333; cursor:default; }
+.action-btn.cancel-move           { background:rgba(204,34,34,.1); border:1px solid rgba(204,34,34,.4); color:#cc4444; }
+.action-btn.cancel-move:disabled  { background:transparent; border:1px solid #222; color:#333; cursor:default; }
+
+/* Move mode label */
+#move-mode-label { font:700 9px/1 'Rajdhani',sans-serif; letter-spacing:2px; text-transform:uppercase; color:rgba(201,163,82,0.5); padding:0 4px; }
+#move-mode-label.active-move    { color:#00c8a8; }
+#move-mode-label.active-advance { color:#c9a352; }
+
+/* Version badge */
+.v22-badge {
+  position:absolute; top:32px; right:12px; z-index:50;
+  font:600 9px/1 'Rajdhani',sans-serif; letter-spacing:2px; text-transform:uppercase;
+  color:rgba(201,163,82,0.25); padding:3px 8px;
+  border:1px solid rgba(201,163,82,0.08); border-radius:2px;
+}
