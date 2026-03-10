@@ -192,6 +192,10 @@
           el.setAttribute('width',  model.w);
           el.setAttribute('height', model.h);
           el.setAttribute('rx', '5'); el.setAttribute('ry', '5');
+          // Apply rotation around model centre (visible on Dreadnought etc.)
+          if (model.rotation) {
+            el.setAttribute('transform', 'rotate(' + model.rotation + ',' + model.x + ',' + model.y + ')');
+          }
         } else {
           el = document.createElementNS(NS, 'circle');
           el.setAttribute('cx', model.x);
@@ -298,14 +302,21 @@
       else if (B.simState.drag.type === 'rotate') {
         var pivot = B.simState.drag.pivot;
         var currentAngle = Math.atan2(pt.y - pivot.y, pt.x - pivot.x);
-        if (B.simState.drag.startAngle === undefined) B.simState.drag.startAngle = currentAngle;
+        if (B.simState.drag.startAngle === undefined) {
+          B.simState.drag.startAngle = currentAngle;
+          // Store initial rotation of each model
+          B.simState.drag.origRotations = B.simState.drag.unit.models.map(function(m) { return m.rotation || 0; });
+        }
         var angleDiff = currentAngle - B.simState.drag.startAngle;
+        var angleDeg = angleDiff * 180 / Math.PI;
         B.simState.drag.unit.models.forEach(function(m, i) {
           var orig = B.simState.drag.origins[i];
           var dx = orig.x - pivot.x;
           var dy = orig.y - pivot.y;
           m.x = pivot.x + dx * Math.cos(angleDiff) - dy * Math.sin(angleDiff);
           m.y = pivot.y + dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff);
+          // Rotate each model's shape (visible on rects like Dreadnought)
+          m.rotation = (B.simState.drag.origRotations[i] || 0) + angleDeg;
         });
       }
       B.renderModels();
