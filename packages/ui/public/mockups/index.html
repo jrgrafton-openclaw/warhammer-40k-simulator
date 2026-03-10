@@ -208,474 +208,331 @@
   </header>
 
 
-  <div style="max-width:1100px; margin:0 auto;">
+  <div style="max-width:1200px; margin:0 auto;">
 
-    <!-- ── TAB NAVIGATION ─────────────────────────────── -->
-    <div class="tab-nav">
-      <button class="tab-btn active" data-tab="completed" onclick="switchTab('completed')">
-        COMPLETED PROTOTYPES <span class="tab-count">16</span>
-      </button>
-      <button class="tab-btn" data-tab="backlog" onclick="switchTab('backlog')">
-        PROTOTYPE BACKLOG <span class="tab-count">11</span>
-      </button>
-    </div>
-
-    <!-- ════════════════════════════════════════════════ -->
-    <!--  TAB: COMPLETED PROTOTYPES                      -->
-    <!-- ════════════════════════════════════════════════ -->
-    <div id="tab-completed" class="tab-pane">
-
-    <!-- v0.16 LATEST ─────────────────────────────────── -->
-    <div class="section-title">v0.16 — Movement Range Enforcement</div>
-    <div class="section-desc">
-      Hard M" movement limits enforced on individual model drag. Ghost circles mark start positions; shaded zone shows max reach. Advance mode uses M+3.5" average. CONFIRM commits; CANCEL snaps back. Built on shared/ library.
-    </div>
-    <div class="card-grid featured">
-      <a class="card latest" href="v0.16-movement.html">
-        <span class="card-badge badge-latest">LATEST</span>
-        <div class="card-version">v0.16</div>
-        <div class="card-codename">MOVEMENT ENFORCEMENT</div>
-        <div class="card-title">Hard range limits · ghost circles · zone overlay</div>
-        <ul class="card-features">
-          <li>NORMAL MOVE / ADVANCE enters enforced move mode</li>
-          <li>Ghost circles at model start positions (dashed, faction colour)</li>
-          <li>Shaded zone per model (M" move or M+3.5" advance)</li>
-          <li>Dragging beyond range snaps model to boundary</li>
-          <li>CONFIRM MOVE commits · CANCEL snaps back to start</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
+    <!-- ── PHASE TAB NAVIGATION ──────────────────────────── -->
+    <div class="tab-nav" id="phase-tabs">
+      <button class="tab-btn active" data-tab="move"       onclick="switchTab('move')">      MOVE       </button>
+      <button class="tab-btn"        data-tab="shoot"      onclick="switchTab('shoot')">     SHOOT      </button>
+      <button class="tab-btn"        data-tab="charge"     onclick="switchTab('charge')">    CHARGE     </button>
+      <button class="tab-btn"        data-tab="fight"      onclick="switchTab('fight')">     FIGHT      </button>
+      <button class="tab-btn"        data-tab="cmd"        onclick="switchTab('cmd')">       COMMAND    </button>
+      <button class="tab-btn"        data-tab="integrated" onclick="switchTab('integrated')">INTEGRATED </button>
+      <button class="tab-btn"        data-tab="archive"    onclick="switchTab('archive')">   ARCHIVE    </button>
     </div>
 
-    <!-- v0.15 ────────────────────────────────────────── -->
-    <div class="section-title">v0.15 — Integrated Multi-Model Scale Battlefield</div>
-    <div class="section-desc">
-      Merged accurate SVG terrain with individual model traction. Deterministic base-size schema (mm → px at 12px/inch). Glowing faction-coloured model bases. Working unit + model drag with overlap prevention.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v08a" href="v0.15.html">
-        <div class="card-version">v0.15</div>
-        <div class="card-codename">INTEGRATED FIELD</div>
-        <div class="card-title">Everything connected · Correct scale</div>
-        <ul class="card-features">
-          <li>32mm infantry = 8px radius · Dreadnought oval rect · 12px/inch</li>
-          <li>Glowing faction-coloured individual model bases</li>
-          <li>Working unit drag + individual model drag (overlap-safe)</li>
-          <li>Squad hull cohesion warnings · 50% initial zoom</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
+    <!-- ══════════════════════════════════════════════════════
+         MOVE PHASE
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-move" class="tab-pane">
 
-    <!-- ── ARCHIVE ──────────────────────────────────── -->
-    <div class="archive-divider">Archive</div>
-
-    <!-- v0.14 ────────────────────────────────────────── -->
-    <div class="section-title">v0.14 — Unified Model Traction</div>
-    <div class="section-desc">
-      Combined individual model UI mockups into full simulated battlefield state.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v08a" href="v0.14.html">
-         <div class="card-version">v0.14</div>
-         <div class="card-codename">UNIFIED PROTOTYPE</div>
-         <div class="card-title">Real battlefield interaction · Squad Selection</div>
-         <ul class="card-features">
-            <li>Select individual models vs entire units</li>
-            <li>Weapon profiling based on selection</li>
-            <li>Floating action bar</li>
-         </ul>
-         <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    <!-- v0.13 INTERACTION PROTOTYPES ─────────────────── -->
-    <div class="section-title" id="v013-prototypes">v0.13 — Group vs Individual Interaction</div>
-    <div class="section-desc">
-      Exploring how to transition from moving an entire formation vs micro-adjusting individual models within a unit bounds.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v08a" href="v0.13a-drilldown.html">
-        <span class="card-badge badge-new">PROTO</span>
-        <div class="card-version">v0.13a</div>
-        <div class="card-codename">DRILL-DOWN</div>
-        <div class="card-title">Figma-style Grouping</div>
-        <ul class="card-features">
-          <li>1st Click → Drag Whole Unit</li>
-          <li>2nd Click (on model) → Drag Single Model</li>
-          <li>Auto-calculates convex hull around bases</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08b" href="v0.13b-toolbar.html">
-        <span class="card-badge badge-new">PROTO</span>
-        <div class="card-version">v0.13b</div>
-        <div class="card-codename">TOOLBAR</div>
-        <div class="card-title">Explicit Action Toolbar</div>
-        <ul class="card-features">
-          <li>Selecting unit spawns floating toolbar</li>
-          <li>Click "Move Models" to toggle mode</li>
-          <li>Highly discoverable for tablet/touch</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08c" href="v0.13c-modifier.html">
-        <span class="card-badge badge-new">PROTO</span>
-        <div class="card-version">v0.13c</div>
-        <div class="card-codename">MODIFIER</div>
-        <div class="card-title">Keyboard Power User</div>
-        <ul class="card-features">
-          <li>Drag ANY model to move the formation</li>
-          <li>Hold SHIFT + Drag to break model off</li>
-          <li>Fastest execution, lowest discoverability</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    <!-- v0.12 ────────────────────────────────────────── -->
-    <div class="section-title">v0.12 — Accurate SVG Terrain from mapData</div>
-    <div class="section-desc">
-      Terrain completely replaced with accurate SVG paths from authoritative mapData JSON. viewBox changed to 720×528 to match mapData coordinate system exactly (60"×44" at 12px/inch). All 16 terrain pieces rendered with correct transforms. Objectives repositioned from mapData.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v08a" href="v0.12.html">
-        <div class="card-version">v0.12</div>
-        <div class="card-codename">ACCURATE TERRAIN · SVG PATHS</div>
-        <div class="card-title">mapData-driven terrain · exact transforms · hover tooltips</div>
-        <ul class="card-features">
-          <li>16 terrain pieces from official mapData JSON (exact SVG paths)</li>
-          <li>Complex transforms preserved: rotate, scale(-1,1), 45° angles</li>
-          <li>viewBox="0 0 720 528" matches mapData coordinate system exactly</li>
-          <li>Terrain hover shows type + rules via global tooltip</li>
-          <li>Accurate 5-objective positions from mapData</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08b" href="v0.11.html">
-        <div class="card-version">v0.11</div>
-        <div class="card-codename">HAMMER AND ANVIL · FIXED</div>
-        <div class="card-title">All v0.10 bugs fixed · CSS range circles · v0.8a header</div>
-        <ul class="card-features">
-          <li>Tokens z-index above objectives</li>
-          <li>CSS div range circles — perfectly circular at any zoom</li>
-          <li>v0.8a header: CP · VP centred · Reset · phase pill</li>
-          <li>[HAZARDOUS] inline pill styled orange with hover tip</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08b" href="v0.10.html">
-        <div class="card-version">v0.10</div>
-        <div class="card-codename">HAMMER AND ANVIL</div>
-        <div class="card-title">GW tournament layout · full terrain · range circles</div>
-        <ul class="card-features">
-          <li>60"×44" Hammer and Anvil board · 1" = 20px SVG</li>
-          <li>8 terrain pieces: ruins (L-shapes) + scatter (diagonals)</li>
-          <li>5 objectives with 5" area terrain aura circles</li>
-          <li>Terrain hover → type + rules tooltip</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    <!-- v0.9 ─────────────────────────────────────────── -->
-    <div class="section-title">v0.9 Refinement — Rajdhani · Locked Spec · Variant Experiments</div>
-    <div class="section-desc">
-      Three variants built on v0.8a. All share: Rajdhani font, locked colour palette, transparent top bar, compact phase pill, blue/amber/gold action bar, teal-highlighted phase stat, fixed-position tooltip JS.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v08a" href="v0.9a.html">
-        <div class="card-version">v0.9a</div>
-        <div class="card-codename">CLEAN ITERATION</div>
-        <div class="card-title">Direct refinement of v0.8a — locked spec applied precisely</div>
-        <ul class="card-features">
-          <li>Rajdhani everywhere — zero Cinzel, zero Oswald</li>
-          <li>Transparent top bar · compact phase pill</li>
-          <li>Teal phase-stat highlight · Share Tech Mono stats 18px</li>
-          <li>Fixed-position kw tooltips via getBoundingClientRect</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08b" href="v0.9b.html">
-        <div class="card-version">v0.9b</div>
-        <div class="card-codename">TERRAIN AS CONTEXT</div>
-        <div class="card-title">Named terrain pieces with type differentiation</div>
-        <ul class="card-features">
-          <li>Ruins: cross-hatch fill · Woods: radial gradient green</li>
-          <li>Cover hint icon on tokens in terrain</li>
-          <li>Terrain legend strip at bottom of roster panel</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08c" href="v0.9c.html">
-        <div class="card-version">v0.9c</div>
-        <div class="card-codename">COMBAT STATE FIRST</div>
-        <div class="card-title">Live game state as visual hero — overlays + anchored card</div>
-        <ul class="card-features">
-          <li>Unit card anchored above selected token (popover)</li>
-          <li>SVG movement range circle on selection</li>
-          <li>SVG charge threat ring (M + avg 7") amber dashed</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    <!-- v0.8 ─────────────────────────────────────────── -->
-    <div class="section-title">v0.8 Synthesis — Grimdark Palette + Full Unit Data</div>
-    <div class="section-desc">
-      Three variants built on the v0.7b layout winner. Shared foundation: #060504 background, gold/brass accent, deep blood red for Orks, teal only for selected state.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v08a" href="v0.8a.html">
-        <div class="card-version">v0.8a</div>
-        <div class="card-codename">GRIMDARK COMMAND</div>
-        <div class="card-title">v0.7b layout + v0.7a identity synthesis</div>
-        <ul class="card-features">
-          <li>Cinzel Decorative panel headers — gothic authority</li>
-          <li>Interactive wargear: checkbox swaps weapon row live</li>
-          <li>Abilities section: pill labels + inline keyword spans</li>
-          <li>Keyboard shortcuts appear on button hover as badge</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08b" href="v0.8b.html">
-        <div class="card-version">v0.8b</div>
-        <div class="card-codename">FIELD INTEL</div>
-        <div class="card-title">Contextual popover card · maximum density</div>
-        <ul class="card-features">
-          <li>Unit card: popover anchored ABOVE selected token</li>
-          <li>Stark white primary text — gold only for chrome</li>
-          <li>Orbitron large VP scoreboard numbers</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v08c" href="v0.8c.html">
-        <div class="card-version">v0.8c</div>
-        <div class="card-codename">IRON STRATEGIUM</div>
-        <div class="card-title">Slide-in drawer · battlefield fullscreen</div>
-        <ul class="card-features">
-          <li>40px roster tab — click to open 280px slide-in drawer</li>
-          <li>Battlefield truly fullscreen (minus 40px tab)</li>
-          <li>VP as HUD overlays in battlefield corners</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    <!-- v0.7 ─────────────────────────────────────────── -->
-    <div class="section-title">v0.7 Design Exploration</div>
-    <div class="section-desc">
-      Three radical redesigns exploring divergent UI directions. All variants include keyword pill tooltips, phase-aware stat highlighting, objective visual hierarchy.
-    </div>
-    <div class="card-grid featured">
-      <a class="card v07a" href="v0.7a.html">
-        <div class="card-version">v0.7a</div>
-        <div class="card-codename">TACTICAL COGITATOR</div>
-        <div class="card-title">Evolved Grimdark Data-Slate</div>
-        <ul class="card-features">
-          <li>Aged brass/gold Mechanicus terminal aesthetic</li>
-          <li>80px red objective markers, gold when controlled</li>
-          <li>Phase coaching card with cyan left border</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v07b" href="v0.7b.html">
-        <div class="card-version">v0.7b</div>
-        <div class="card-codename">TACTICAL OVERLAY</div>
-        <div class="card-title">HUD-First, Battlefield Dominant</div>
-        <ul class="card-features">
-          <li>Battlefield takes 80%+ width. Minimal panels.</li>
-          <li>Floating side-panel with faction colour bands</li>
-          <li>Gradient panel edges blend into battlefield</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card v07c" href="v0.7c.html">
-        <div class="card-version">v0.7c</div>
-        <div class="card-codename">IMPERIAL COMMAND DECK</div>
-        <div class="card-title">Maximalist, Premium Feel</div>
-        <ul class="card-features">
-          <li>Every panel has decorative CSS corner ornaments</li>
-          <li>CP circular gauge via CSS conic-gradient</li>
-          <li>VP progress bar with tick marks (0–30 scale)</li>
-        </ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    <!-- v0.1 – v0.6 ──────────────────────────────────── -->
-    <div class="section-title">Archive — Previous Versions</div>
-    <div class="section-desc">Earlier iterations showing the design evolution from initial mockup to current state.</div>
-    <div class="card-grid archive">
-      <a class="card" href="v0.1.html">
-        <div class="card-version" style="font-size:22px;">v0.1</div>
-        <div class="card-title">Initial Mockup</div>
-        <ul class="card-features"><li>3-panel grid layout</li><li>Army roster + unit stats</li><li>Basic battlefield tokens</li></ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card" href="v0.2.html">
-        <div class="card-version" style="font-size:22px;">v0.2</div>
-        <div class="card-title">Gemini-Assisted Revision</div>
-        <ul class="card-features"><li>Token sizes reflect model count</li><li>Pan &amp; zoom battlefield</li></ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card" href="v0.3.html">
-        <div class="card-version" style="font-size:22px;">v0.3</div>
-        <div class="card-title">Full Redesign — GW Datacard</div>
-        <ul class="card-features"><li>GW datacard-style stat block</li><li>USE STRATAGEM modal</li></ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card" href="v0.4.html">
-        <div class="card-version" style="font-size:22px;">v0.4</div>
-        <div class="card-title">High Contrast &amp; Terrain</div>
-        <ul class="card-features"><li>Realistic terrain overlay</li><li>Hover tooltips for abilities</li></ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card" href="v0.5.html">
-        <div class="card-version" style="font-size:22px;">v0.5</div>
-        <div class="card-title">Clean Terrain &amp; High Contrast</div>
-        <ul class="card-features"><li>Procedural noise terrain</li><li>Darker UI, higher contrast</li></ul>
-        <span class="card-link">Open →</span>
-      </a>
-      <a class="card" href="v0.6.html">
-        <div class="card-version" style="font-size:22px;">v0.6</div>
-        <div class="card-title">Phase-Aware + Floating HUD</div>
-        <ul class="card-features"><li>Floating phase pill (no solid bar)</li><li>AP colour-coded weapon tables</li></ul>
-        <span class="card-link">Open →</span>
-      </a>
-    </div>
-
-    </div><!-- /tab-completed -->
-
-    <!-- ════════════════════════════════════════════════ -->
-    <!--  TAB: PROTOTYPE BACKLOG                         -->
-    <!-- ════════════════════════════════════════════════ -->
-    <div id="tab-backlog" class="tab-pane hidden">
-
-    <div class="section-title">Prototype Backlog — Upcoming Mechanics</div>
-    <div class="section-desc">
-      Each slice prototypes one focused game mechanic on top of the shared/ library. Once validated, mechanics get extracted into <code style="font:400 11px/1 'Roboto Condensed',monospace;color:#5a4a28;background:rgba(201,163,82,0.06);padding:1px 4px;">packages/engine</code> + <code style="font:400 11px/1 'Roboto Condensed',monospace;color:#5a4a28;background:rgba(201,163,82,0.06);padding:1px 4px;">packages/ui</code>.
-    </div>
-    <div class="backlog-grid">
-
-      <div class="backlog-card">
-        <div class="bl-version">v0.17</div>
-        <div class="bl-mechanic">Target selection + range highlighting</div>
-        <div class="bl-desc">Select attacker, highlight valid targets within weapon range and LoS.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag shooting">SHOOTING</span>
-          <span class="status-pill next-up">NEXT UP</span>
-        </div>
+      <div class="section-title">Movement Phase — Prototypes</div>
+      <div class="section-desc">
+        How players move units and individual models. Covers normal move, advance, cohesion, and range enforcement.
+        Each version copies forward from the last — pick up any iteration and compare.
       </div>
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.18</div>
-        <div class="bl-mechanic">Dice roll UI (hit/wound/save pipeline)</div>
-        <div class="bl-desc">Animated dice rolls for hit → wound → save sequence with result tracking.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag shooting">SHOOTING</span>
-          <span class="status-pill planned">PLANNED</span>
-        </div>
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/move/v0.16/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.16</div>
+          <div class="card-codename">MOVEMENT ENFORCEMENT</div>
+          <div class="card-title">Hard range limits · ghost circles · zone overlay</div>
+          <ul class="card-features">
+            <li>NORMAL MOVE / ADVANCE enters enforced move mode</li>
+            <li>Ghost circles at model start positions</li>
+            <li>Shaded zone per model (M" or M+3.5" advance)</li>
+            <li>Snap-to-boundary when dragging beyond range</li>
+            <li>CONFIRM MOVE commits · CANCEL snaps back</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card v08a" href="phases/move/v0.15/index.html">
+          <div class="card-version">v0.15</div>
+          <div class="card-codename">INTEGRATED FIELD</div>
+          <div class="card-title">Individual model bases · glow · drag · overlap prevention</div>
+          <ul class="card-features">
+            <li>32mm infantry = 8px radius at 12px/inch (deterministic schema)</li>
+            <li>Glowing faction-coloured individual model bases</li>
+            <li>Dreadnought 90×52mm oval → SVG rect</li>
+            <li>Overlap prevention during drag · cohesion warnings</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card v08a" href="phases/move/v0.14/index.html">
+          <div class="card-version">v0.14</div>
+          <div class="card-codename">UNIFIED MODEL TRACTION</div>
+          <div class="card-title">Spline hulls · individual model adjustment · cohesion</div>
+          <ul class="card-features">
+            <li>D3 spline hull wraps formation</li>
+            <li>Drag hull = move unit · Drag base = move model</li>
+            <li>Shift+Drag = rotate formation</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
       </div>
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.19</div>
-        <div class="bl-mechanic">Line of Sight occlusion</div>
-        <div class="bl-desc">Terrain blocks LoS; highlight visible and hidden targets from attacker position.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag shooting">SHOOTING</span>
-          <span class="status-pill planned">PLANNED</span>
-        </div>
+      <div class="archive-divider">Earlier move iterations</div>
+      <div class="card-grid archive">
+        <a class="card" href="phases/move/v0.13c/index.html">
+          <div class="card-version" style="font-size:22px;">v0.13c</div>
+          <div class="card-title">Modifier — Keyboard Power User</div>
+          <ul class="card-features"><li>Drag ANY model = move formation</li><li>SHIFT+drag = break model off</li></ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card" href="phases/move/v0.13b/index.html">
+          <div class="card-version" style="font-size:22px;">v0.13b</div>
+          <div class="card-title">Toolbar — Explicit Action</div>
+          <ul class="card-features"><li>Floating toolbar spawns on select</li><li>Click "Move Models" to toggle</li></ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card" href="phases/move/v0.13a/index.html">
+          <div class="card-version" style="font-size:22px;">v0.13a</div>
+          <div class="card-title">Drill-Down — Figma-style Grouping</div>
+          <ul class="card-features"><li>1st click = drag whole unit</li><li>2nd click = drag single model</li></ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card" href="phases/move/v0.13/index.html">
+          <div class="card-version" style="font-size:22px;">v0.13</div>
+          <div class="card-title">Group vs Individual — Combined</div>
+          <ul class="card-features"><li>First full model formation prototype</li></ul>
+          <span class="card-link">Open →</span>
+        </a>
       </div>
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.20</div>
-        <div class="bl-mechanic">Declare charge + 2D6 roll</div>
-        <div class="bl-desc">Charge declaration UI with 2D6 distance roll and animated outcome.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag charge">CHARGE</span>
-          <span class="status-pill planned">PLANNED</span>
+      <div class="archive-divider">Move phase backlog</div>
+      <div class="backlog-grid">
+        <div class="backlog-card">
+          <div class="bl-version">next</div>
+          <div class="bl-mechanic">Advance D6 roll visualisation</div>
+          <div class="bl-desc">Animated D6 roll when entering Advance mode; display actual random bonus on ghost circle.</div>
+          <div class="bl-tags"><span class="phase-pill-tag movement">MOVEMENT</span><span class="status-pill next-up">NEXT UP</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">+1</div>
+          <div class="bl-mechanic">Difficult ground / terrain interaction</div>
+          <div class="bl-desc">Models moving through scatter terrain have halved remaining movement. Zone shrinks in real time.</div>
+          <div class="bl-tags"><span class="phase-pill-tag movement">MOVEMENT</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">+2</div>
+          <div class="bl-mechanic">Unit coherency enforcement</div>
+          <div class="bl-desc">Model cannot be placed if it would break 2" coherency from nearest squad member. Live validation.</div>
+          <div class="bl-tags"><span class="phase-pill-tag movement">MOVEMENT</span><span class="status-pill planned">PLANNED</span></div>
         </div>
       </div>
+    </div><!-- /tab-move -->
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.21</div>
-        <div class="bl-mechanic">Fight phase (pile-in, attacks, removal)</div>
-        <div class="bl-desc">Full fight phase: pile-in moves, attack resolution, model removal.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag fight">FIGHT</span>
-          <span class="status-pill planned">PLANNED</span>
+    <!-- ══════════════════════════════════════════════════════
+         SHOOT PHASE
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-shoot" class="tab-pane hidden">
+      <div class="section-title">Shooting Phase — Prototypes</div>
+      <div class="section-desc">
+        Target selection, range + LoS validation, dice roll pipeline. Copy <code class="code-inline">phases/move/v0.16/</code>
+        as the base canvas for the first shooting prototype.
+      </div>
+      <div class="backlog-grid">
+        <div class="backlog-card">
+          <div class="bl-version">v0.1</div>
+          <div class="bl-mechanic">Target selection + range highlighting</div>
+          <div class="bl-desc">Select attacker. Highlight valid targets within weapon range. Click to confirm.</div>
+          <div class="bl-tags"><span class="phase-pill-tag shooting">SHOOTING</span><span class="status-pill next-up">NEXT UP</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.2</div>
+          <div class="bl-mechanic">Dice roll UI (hit → wound → save)</div>
+          <div class="bl-desc">Animated D6 pool. Hit/wound/save pipeline with running totals. Wound counters on targets.</div>
+          <div class="bl-tags"><span class="phase-pill-tag shooting">SHOOTING</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.3</div>
+          <div class="bl-mechanic">Line of Sight occlusion</div>
+          <div class="bl-desc">Terrain blocks LoS. Highlight visible vs obscured targets from the attacker's position.</div>
+          <div class="bl-tags"><span class="phase-pill-tag shooting">SHOOTING</span><span class="status-pill planned">PLANNED</span></div>
         </div>
       </div>
+    </div><!-- /tab-shoot -->
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.22</div>
-        <div class="bl-mechanic">Stratagem picker (contextual, CP cost)</div>
-        <div class="bl-desc">Context-aware stratagem picker filtered by phase and unit; CP deducted.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag command">COMMAND</span>
-          <span class="status-pill planned">PLANNED</span>
+    <!-- ══════════════════════════════════════════════════════
+         CHARGE PHASE
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-charge" class="tab-pane hidden">
+      <div class="section-title">Charge Phase — Prototypes</div>
+      <div class="section-desc">
+        Declare charge, 2D6 roll, engagement range placement. Builds on shooting prototype canvas.
+      </div>
+      <div class="backlog-grid">
+        <div class="backlog-card">
+          <div class="bl-version">v0.1</div>
+          <div class="bl-mechanic">Declare charge + 2D6 roll</div>
+          <div class="bl-desc">Select charger, click target. 2D6 roll animation. Success = place within 1" engagement. Fail = stays put.</div>
+          <div class="bl-tags"><span class="phase-pill-tag charge">CHARGE</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.2</div>
+          <div class="bl-mechanic">Overwatch reaction</div>
+          <div class="bl-desc">Defending player fires overwatch before charge resolves. 1 CP stratagem trigger.</div>
+          <div class="bl-tags"><span class="phase-pill-tag charge">CHARGE</span><span class="status-pill planned">PLANNED</span></div>
         </div>
       </div>
+    </div><!-- /tab-charge -->
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.23</div>
-        <div class="bl-mechanic">Ability use + timing confirmation</div>
-        <div class="bl-desc">Triggered ability prompts with timing windows and player confirmation.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag command">COMMAND</span>
-          <span class="status-pill planned">PLANNED</span>
+    <!-- ══════════════════════════════════════════════════════
+         FIGHT PHASE
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-fight" class="tab-pane hidden">
+      <div class="section-title">Fight Phase — Prototypes</div>
+      <div class="section-desc">
+        Pile-in moves, attack sequence, model removal. The most visually complex phase — models physically fight.
+      </div>
+      <div class="backlog-grid">
+        <div class="backlog-card">
+          <div class="bl-version">v0.1</div>
+          <div class="bl-mechanic">Fight phase (pile-in, attacks, model removal)</div>
+          <div class="bl-desc">Pile-in movement. Attack sequence with dice. Destroyed models disappear from the board.</div>
+          <div class="bl-tags"><span class="phase-pill-tag fight">FIGHT</span><span class="status-pill planned">PLANNED</span></div>
         </div>
       </div>
+    </div><!-- /tab-fight -->
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.24</div>
-        <div class="bl-mechanic">Deep Strike (reserve pool + 9" rule)</div>
-        <div class="bl-desc">Reserve pool UI and deep strike placement with 9" exclusion zone enforcement.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag command">COMMAND</span>
-          <span class="status-pill planned">PLANNED</span>
+    <!-- ══════════════════════════════════════════════════════
+         COMMAND PHASE
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-cmd" class="tab-pane hidden">
+      <div class="section-title">Command Phase + Special Mechanics</div>
+      <div class="section-desc">
+        CP generation, stratagem use, ability triggers, deep strike, pre-game deployment.
+        These build on a full integrated battlefield — start from INTEGRATED/ canvas.
+      </div>
+      <div class="backlog-grid">
+        <div class="backlog-card">
+          <div class="bl-version">v0.1</div>
+          <div class="bl-mechanic">Stratagem picker (contextual, CP cost)</div>
+          <div class="bl-desc">Context-aware stratagem list filtered by current phase and selected unit. CP deducted on use.</div>
+          <div class="bl-tags"><span class="phase-pill-tag command">COMMAND</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.2</div>
+          <div class="bl-mechanic">Ability use + timing confirmation</div>
+          <div class="bl-desc">Triggered ability prompts with timing windows (e.g. "use before opponent attacks?") and confirmation.</div>
+          <div class="bl-tags"><span class="phase-pill-tag command">COMMAND</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.3</div>
+          <div class="bl-mechanic">Deep Strike placement</div>
+          <div class="bl-desc">Reserve pool UI. Drag units from reserve to board. 9" exclusion zone enforced visually.</div>
+          <div class="bl-tags"><span class="phase-pill-tag command">COMMAND</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.4</div>
+          <div class="bl-mechanic">Pre-game deployment</div>
+          <div class="bl-desc">Alternating unit placement into deployment zones. Points budget validation. Scouting moves.</div>
+          <div class="bl-tags"><span class="phase-pill-tag command">COMMAND</span><span class="status-pill planned">PLANNED</span></div>
         </div>
       </div>
+    </div><!-- /tab-cmd -->
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.25</div>
-        <div class="bl-mechanic">Pre-game deployment</div>
-        <div class="bl-desc">Full deployment phase: alternating unit placement, point validation, zone enforcement.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag command">COMMAND</span>
-          <span class="status-pill planned">PLANNED</span>
+    <!-- ══════════════════════════════════════════════════════
+         INTEGRATED
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-integrated" class="tab-pane hidden">
+      <div class="section-title">Integrated — Full Game Prototypes</div>
+      <div class="section-desc">
+        Once individual phase UX is approved, it gets merged here. INTEGRATED/v0.N is the closest thing to
+        "the current game" — all approved phases running together. This is the demo-able product.
+      </div>
+      <div class="section-desc" style="margin-top:8px;color:#3a2810;">
+        Not started yet. Start with: <code class="code-inline">cp -r phases/move/v0.16/ phases/INTEGRATED/v0.1/</code>
+        then layer in approved shoot/ and charge/ phases as they're validated.
+      </div>
+      <div class="backlog-grid" style="margin-top:24px;">
+        <div class="backlog-card">
+          <div class="bl-version">v0.1</div>
+          <div class="bl-mechanic">Movement + Shooting integrated</div>
+          <div class="bl-desc">Full movement phase (v0.16 approved) + shooting phase (shoot/v0.N approved) running together.</div>
+          <div class="bl-tags"><span class="phase-pill-tag game">GAME</span><span class="status-pill planned">PLANNED</span></div>
+        </div>
+        <div class="backlog-card">
+          <div class="bl-version">v0.2</div>
+          <div class="bl-mechanic">All combat phases</div>
+          <div class="bl-desc">Move + Shoot + Charge + Fight. Full round loop. Objective scoring. Victory condition display.</div>
+          <div class="bl-tags"><span class="phase-pill-tag game">GAME</span><span class="status-pill planned">PLANNED</span></div>
         </div>
       </div>
+    </div><!-- /tab-integrated -->
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.26</div>
-        <div class="bl-mechanic">Objective scoring + VP tally</div>
-        <div class="bl-desc">End-of-phase objective scoring with VP accumulation and round summary.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag game">GAME</span>
-          <span class="status-pill planned">PLANNED</span>
-        </div>
+    <!-- ══════════════════════════════════════════════════════
+         ARCHIVE
+    ══════════════════════════════════════════════════════ -->
+    <div id="tab-archive" class="tab-pane hidden">
+      <div class="section-title">Archive — Design Evolution v0.1–v0.12</div>
+      <div class="section-desc">
+        Early design exploration: layout, palette, typography, token styles, range circles, terrain. Historical reference only.
+      </div>
+      <div class="card-grid featured">
+        <a class="card v08a" href="archive/v0.12.html">
+          <div class="card-version">v0.12</div>
+          <div class="card-codename">ACCURATE SVG TERRAIN</div>
+          <div class="card-title">mapData-driven terrain · exact transforms · 12px/inch</div>
+          <ul class="card-features">
+            <li>16 terrain pieces from official mapData JSON</li>
+            <li>viewBox="0 0 720 528" matches mapData coordinate system</li>
+            <li>5 objectives from mapData positions</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card v08b" href="archive/v0.11.html">
+          <div class="card-version">v0.11</div>
+          <div class="card-codename">HAMMER AND ANVIL · FIXED</div>
+          <div class="card-title">Bug fixes · CSS range circles · v0.8a header</div>
+          <ul class="card-features">
+            <li>CSS range circles — circular at any zoom</li>
+            <li>v0.8a header: CP · VP · Reset · phase pill</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+        <a class="card v08b" href="archive/v0.10.html">
+          <div class="card-version">v0.10</div>
+          <div class="card-codename">HAMMER AND ANVIL</div>
+          <div class="card-title">GW tournament layout · terrain · range circles</div>
+          <ul class="card-features">
+            <li>60"×44" board · 8 terrain pieces · 5 objectives</li>
+            <li>First range toggle buttons (MOVE / ADV / CHARGE)</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
       </div>
 
-      <div class="backlog-card">
-        <div class="bl-version">v0.27</div>
-        <div class="bl-mechanic">Full 5-round game loop</div>
-        <div class="bl-desc">Complete turn-based game loop with all phase transitions and end-game summary.</div>
-        <div class="bl-tags">
-          <span class="phase-pill-tag game">GAME</span>
-          <span class="status-pill planned">PLANNED</span>
-        </div>
+      <div class="archive-divider">v0.7 – v0.9 design variants</div>
+      <div class="card-grid archive">
+        <a class="card v08a" href="archive/v0.9a.html"><div class="card-version" style="font-size:22px;">v0.9a</div><div class="card-title">Rajdhani · Clean Iteration</div><span class="card-link">Open →</span></a>
+        <a class="card v08b" href="archive/v0.9b.html"><div class="card-version" style="font-size:22px;">v0.9b</div><div class="card-title">Terrain as Context</div><span class="card-link">Open →</span></a>
+        <a class="card v08c" href="archive/v0.9c.html"><div class="card-version" style="font-size:22px;">v0.9c</div><div class="card-title">Combat State First</div><span class="card-link">Open →</span></a>
+        <a class="card v08a" href="archive/v0.8a.html"><div class="card-version" style="font-size:22px;">v0.8a</div><div class="card-title">Grimdark Command</div><span class="card-link">Open →</span></a>
+        <a class="card v08b" href="archive/v0.8b.html"><div class="card-version" style="font-size:22px;">v0.8b</div><div class="card-title">Field Intel</div><span class="card-link">Open →</span></a>
+        <a class="card v08c" href="archive/v0.8c.html"><div class="card-version" style="font-size:22px;">v0.8c</div><div class="card-title">Iron Strategium</div><span class="card-link">Open →</span></a>
+        <a class="card v07a" href="archive/v0.7a.html"><div class="card-version" style="font-size:22px;">v0.7a</div><div class="card-title">Tactical Cogitator</div><span class="card-link">Open →</span></a>
+        <a class="card v07b" href="archive/v0.7b.html"><div class="card-version" style="font-size:22px;">v0.7b</div><div class="card-title">Tactical Overlay</div><span class="card-link">Open →</span></a>
+        <a class="card v07c" href="archive/v0.7c.html"><div class="card-version" style="font-size:22px;">v0.7c</div><div class="card-title">Imperial Command Deck</div><span class="card-link">Open →</span></a>
       </div>
 
-    </div><!-- /backlog-grid -->
-    </div><!-- /tab-backlog -->
+      <div class="archive-divider">v0.1 – v0.6 earliest prototypes</div>
+      <div class="card-grid archive">
+        <a class="card" href="archive/v0.6.html"><div class="card-version" style="font-size:22px;">v0.6</div><div class="card-title">Phase-Aware + Floating HUD</div><span class="card-link">Open →</span></a>
+        <a class="card" href="archive/v0.5.html"><div class="card-version" style="font-size:22px;">v0.5</div><div class="card-title">Clean Terrain + High Contrast</div><span class="card-link">Open →</span></a>
+        <a class="card" href="archive/v0.4.html"><div class="card-version" style="font-size:22px;">v0.4</div><div class="card-title">High Contrast + Terrain</div><span class="card-link">Open →</span></a>
+        <a class="card" href="archive/v0.3.html"><div class="card-version" style="font-size:22px;">v0.3</div><div class="card-title">Full Redesign — GW Datacard</div><span class="card-link">Open →</span></a>
+        <a class="card" href="archive/v0.2.html"><div class="card-version" style="font-size:22px;">v0.2</div><div class="card-title">Gemini-Assisted Revision</div><span class="card-link">Open →</span></a>
+        <a class="card" href="archive/v0.1.html"><div class="card-version" style="font-size:22px;">v0.1</div><div class="card-title">Initial Mockup</div><span class="card-link">Open →</span></a>
+      </div>
+    </div><!-- /tab-archive -->
 
   </div><!-- /max-width wrapper -->
 
   <footer class="page-footer">
     <div class="aquila">⚜</div>
-    <div>WH40K Simulator · UI Mockup Archive · v0.1 – v0.16</div>
+    <div>WH40K Simulator · Phase Prototype Archive · move/v0.16 current</div>
   </footer>
 
   <script>
@@ -686,8 +543,20 @@
       document.querySelectorAll('.tab-pane').forEach(p =>
         p.classList.toggle('hidden', p.id !== 'tab-' + tab)
       );
+      // Update URL hash for bookmarkability
+      history.replaceState(null, '', '#' + tab);
     }
+    // Restore tab from URL hash on load
+    const hash = location.hash.replace('#', '');
+    if (hash && document.getElementById('tab-' + hash)) switchTab(hash);
   </script>
+  <style>
+    .code-inline {
+      font: 400 11px/1 'Roboto Condensed', monospace;
+      color: #5a4a28; background: rgba(201,163,82,0.06);
+      padding: 1px 5px; border-radius: 2px;
+    }
+  </style>
 
 </body>
 </html>
