@@ -24,14 +24,16 @@
               {id:'hb4',x:88,y:216,r:R32},{id:'hb5',x:105,y:216,r:R32}], broken:false },
     { id:'redemptor-dreadnought', rosterIndex:4, faction:'imp',
       models:[{id:'rd1',x:150,y:278,r:22,shape:'rect',w:43,h:25}], broken:false },
+    // Ork force holding OBJ 04 (SVG ≈ 600, 264) — models overlap the marker
     { id:'boss-nob', rosterIndex:6, faction:'ork',
-      models:[{id:'bn1',x:548,y:132,r:R32}], broken:false },
+      models:[{id:'bn1',x:600,y:242,r:R40}], broken:false },
     { id:'boyz-mob', rosterIndex:7, faction:'ork',
-      models:[{id:'bm1',x:518,y:195,r:R32},{id:'bm2',x:535,y:195,r:R32},{id:'bm3',x:552,y:195,r:R32},{id:'bm4',x:569,y:195,r:R32},
-              {id:'bm5',x:526,y:212,r:R32},{id:'bm6',x:543,y:212,r:R32},{id:'bm7',x:560,y:212,r:R32},
-              {id:'bm8',x:518,y:229,r:R32},{id:'bm9',x:535,y:229,r:R32},{id:'bm10',x:552,y:229,r:R32}], broken:false },
+      models:[{id:'bm1',x:572,y:258,r:R32},{id:'bm2',x:599,y:258,r:R32},{id:'bm3',x:626,y:258,r:R32},
+              {id:'bm4',x:572,y:280,r:R32},{id:'bm5',x:599,y:280,r:R32},{id:'bm6',x:626,y:280,r:R32},
+              {id:'bm7',x:572,y:302,r:R32},{id:'bm8',x:599,y:302,r:R32},{id:'bm9',x:626,y:302,r:R32},
+              {id:'bm10',x:599,y:322,r:R32}], broken:false },
     { id:'mekboy', rosterIndex:8, faction:'ork',
-      models:[{id:'mb1',x:480,y:272,r:R32}], broken:false }
+      models:[{id:'mb1',x:550,y:242,r:R32}], broken:false }
   ];
 
   // ── Initialise shared modules ────────────────────────────
