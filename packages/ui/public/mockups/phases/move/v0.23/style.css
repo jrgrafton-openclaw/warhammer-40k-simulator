@@ -682,7 +682,7 @@ html, body {
   background: var(--bg-raised);
   border: 1px solid rgba(0,212,255,.15);
   border-top: 2px solid var(--imp);
-  color: var(--text-muted); font: 400 12px/1.5 'Rajdhani', sans-serif;
+  color: var(--text-sec); font: 400 12px/1.5 'Rajdhani', sans-serif;
   padding: 7px 12px; pointer-events: none;
   box-shadow: 0 4px 16px rgba(0,0,0,.9); max-width: 260px;
   transition: opacity .15s;
