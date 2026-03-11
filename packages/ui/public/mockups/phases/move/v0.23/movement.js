@@ -347,6 +347,15 @@
   B.selectUnit = function(uid) {
     if (moveState.mode !== null && uid !== B.currentUnit) cancelMove();
     origSelectUnit(uid);
+
+    // Selection tone: friendly = cyan, enemy = red
+    document.querySelectorAll('.rail-unit').forEach(function(r) { r.classList.remove('active-enemy'); });
+    if (uid) {
+      var selected = simState.units.find(function(u) { return u.id === uid; });
+      var row = document.querySelector('.rail-unit[data-unit="' + uid + '"]');
+      if (row && selected && selected.faction !== ACTIVE_PLAYER_FACTION) row.classList.add('active-enemy');
+    }
+
     updateMoveButtons();
     if (uid) {
       var unit = simState.units.find(function(u) { return u.id === uid; });

@@ -136,6 +136,7 @@ html, body {
 }
 .rail-unit:hover { background: rgba(255,255,255,.04); border-left-color: var(--text-dis); }
 .rail-unit.active { background: var(--imp-tint); border-left-color: var(--imp); }
+.rail-unit.active.active-enemy { background: var(--ork-tint); border-left-color: var(--ork); }
 
 /* v3-A ri (roster icon) */
 .ri {
@@ -154,8 +155,10 @@ html, body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .rail-unit.active .rn { color: var(--imp); }
+.rail-unit.active.active-enemy .rn { color: var(--ork); }
 .rc { font-size: 10px; font-weight: 600; color: var(--text-dis); flex-shrink: 0; }
 .rail-unit.active .rc { color: var(--imp-dim); }
+.rail-unit.active.active-enemy .rc { color: var(--ork-dim); }
 
 /* Army abilities */
 .aa-section { border-top: 1px solid var(--border); }
