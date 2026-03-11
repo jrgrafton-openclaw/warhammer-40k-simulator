@@ -52,12 +52,13 @@ See `docs/mockup-prototype-strategy.md` for full workflow.
 **Mockup deploy checklist — ALL steps required before "done":**
 1. Create `phases/[phase]/v0.N/index.html`
 2. **Update `index.html`** — add the new version as LATEST in the correct phase tab
-3. Commit both files together
-4. Push + confirm CI passes
-5. Verify the version card appears at `https://.../mockups/#[phase]` — not just that the direct URL is 200
-6. **Verify core interaction works**: open the live page, select a unit, drag it — confirm it moves and rulers appear
+3. **Add a visible in-page backlink** in the new prototype page to `../../..` (`/mockups/`) so users can always return to the archive
+4. Commit all related files together
+5. Push + confirm CI passes
+6. Verify the version card appears at `https://.../mockups/#[phase]` — not just that the direct URL is 200
+7. **Verify core interaction works**: open the live page, select a unit, drag it — confirm it moves and rulers appear
 
-Step 2 is the most commonly missed. Step 6 catches init-time crashes that HTTP 200 does not.
+Step 2 is the most commonly missed. Step 3 prevents dead-end prototype pages. Step 7 catches init-time crashes that HTTP 200 does not.
 
 **Coding conventions for slice scripts:**
 - All BattleUI values used in functions MUST be either destructured at the top of the script (`const { UNITS, mapData, ... } = BattleUI`) OR referenced as `BattleUI.X` inline. Never assume a BattleUI value is in local scope without one of these.

@@ -7,7 +7,7 @@
 (function(B){
 
   // ── State ──────────────────────────────────────────────
-  B.simState = { units: [], drag: null };
+  B.simState = { units: [], drag: null, anim: { liftUnitId: null, settleUnitId: null, settleUntil: 0 } };
   B.COHESION_RANGE = 2 * B.PX_PER_INCH;
 
   // ── Unit icon type → SVG path data (normalised 0 0 24 24) ──
@@ -205,6 +205,9 @@
 
       var isSel = (window.activeUnitId === unit.id);
       var isImp = unit.faction === 'imp';
+      var now = Date.now();
+      var isLifted = B.simState.anim && B.simState.anim.liftUnitId === unit.id;
+      var isSettling = B.simState.anim && B.simState.anim.settleUnitId === unit.id && now < B.simState.anim.settleUntil;
 
       /* ── Hull ── */
       var hullStroke = unit.broken ? '#cc2020' : isSel ? '#00d4ff' : isImp ? '#00d4ff' : '#ff4020';
@@ -213,7 +216,7 @@
 
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', B.getCurvedHullPath(unit.models));
-      path.setAttribute('class', 'unit-hull' + (isSel ? ' selected' : '') + (unit.broken ? ' broken' : ''));
+      path.setAttribute('class', 'unit-hull' + (isSel ? ' selected' : '') + (unit.broken ? ' broken' : '') + (isLifted ? ' is-lifted' : '') + (isSettling ? ' is-settling' : ''));
       path.dataset.unitId = unit.id;
       path.style.fill            = hullFill;
       path.style.stroke          = hullStroke;
@@ -243,7 +246,7 @@
 
         var NS = 'http://www.w3.org/2000/svg';
         var g = document.createElementNS(NS, 'g');
-        g.setAttribute('class', 'model-base' + (model.broken ? ' broken-cohesion' : ''));
+        g.setAttribute('class', 'model-base' + (model.broken ? ' broken-cohesion' : '') + (isLifted ? ' is-lifted' : '') + (isSettling ? ' is-settling' : ''));
         g.dataset.unitId  = unit.id;
         g.dataset.modelId = model.id;
 
@@ -335,6 +338,9 @@
         } else {
           B.simState.drag = { type:'model', model:model, offsetX:model.x-pt.x, offsetY:model.y-pt.y };
         }
+        B.simState.anim.liftUnitId = unit.id;
+        B.simState.anim.settleUnitId = null;
+        B.simState.anim.settleUntil = 0;
         e.stopPropagation();
         B.renderModels();
       }
@@ -348,6 +354,9 @@
         } else {
           B.simState.drag = { type:'unit', unit:unit2, offsets:unit2.models.map(function(m){ return {m:m,dx:m.x-pt.x,dy:m.y-pt.y}; }) };
         }
+        B.simState.anim.liftUnitId = unit2.id;
+        B.simState.anim.settleUnitId = null;
+        B.simState.anim.settleUntil = 0;
         e.stopPropagation();
         B.renderModels();
       } else {
@@ -391,7 +400,23 @@
     });
 
     window.addEventListener('mouseup', function() {
-      if (B.simState.drag) { B.simState.drag = null; B.renderModels(); }
+      if (!B.simState.drag) return;
+      var draggedUnitId = (B.simState.drag.unit && B.simState.drag.unit.id) ||
+                          (B.simState.drag.model && B.simState.drag.model.id && B.simState.anim.liftUnitId) ||
+                          B.simState.anim.liftUnitId;
+      B.simState.drag = null;
+      B.simState.anim.liftUnitId = null;
+      if (draggedUnitId) {
+        B.simState.anim.settleUnitId = draggedUnitId;
+        B.simState.anim.settleUntil = Date.now() + 280;
+        setTimeout(function() {
+          if (Date.now() >= B.simState.anim.settleUntil) {
+            B.simState.anim.settleUnitId = null;
+            B.renderModels();
+          }
+        }, 300);
+      }
+      B.renderModels();
     });
 
     setTimeout(B.renderModels, 300);
