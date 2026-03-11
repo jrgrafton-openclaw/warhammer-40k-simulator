@@ -414,28 +414,46 @@
     <div id="tab-shoot" class="tab-pane hidden">
       <div class="section-title">Shooting Phase — Prototypes</div>
       <div class="section-desc">
-        Target selection, range + LoS validation, dice roll pipeline. Copy <code class="code-inline">phases/move/v0.16/</code>
-        as the base canvas for the first shooting prototype.
+        Target selection, range validation, dice pipeline, and terrain-aware line-of-sight for ranged combat.
       </div>
-      <div class="backlog-grid">
-        <div class="backlog-card">
-          <div class="bl-version">v0.1</div>
-          <div class="bl-mechanic">Target selection + range highlighting</div>
-          <div class="bl-desc">Select attacker. Highlight valid targets within weapon range. Click to confirm.</div>
-          <div class="bl-tags"><span class="phase-pill-tag shooting">SHOOTING</span><span class="status-pill next-up">NEXT UP</span></div>
-        </div>
-        <div class="backlog-card">
-          <div class="bl-version">v0.2</div>
-          <div class="bl-mechanic">Dice roll UI (hit → wound → save)</div>
-          <div class="bl-desc">Animated D6 pool. Hit/wound/save pipeline with running totals. Wound counters on targets.</div>
-          <div class="bl-tags"><span class="phase-pill-tag shooting">SHOOTING</span><span class="status-pill planned">PLANNED</span></div>
-        </div>
-        <div class="backlog-card">
-          <div class="bl-version">v0.3</div>
-          <div class="bl-mechanic">Line of Sight occlusion</div>
-          <div class="bl-desc">Terrain blocks LoS. Highlight visible vs obscured targets from the attacker's position.</div>
-          <div class="bl-tags"><span class="phase-pill-tag shooting">SHOOTING</span><span class="status-pill planned">PLANNED</span></div>
-        </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/shoot/v0.3/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">LOS + OCCLUSION</div>
+          <div class="card-title">Terrain-aware target validity with clear/partial/blocked signaling</div>
+          <ul class="card-features">
+            <li>Explicit invalid reasons: out-of-range vs no line-of-sight</li>
+            <li>Clear/partial/blocked LoS visuals on target hulls</li>
+            <li>Mixed battlefield fixture for targeting QA scenarios</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+
+        <a class="card v08a" href="phases/shoot/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DICE RESOLUTION UX</div>
+          <div class="card-title">Hit → Wound → Save staged feedback</div>
+          <ul class="card-features">
+            <li>Attack count + stage summaries in compact overlay</li>
+            <li>Fast target hit flash feedback</li>
+            <li>Readable turn-based combat pacing</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+
+        <a class="card v08a" href="phases/shoot/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">TARGETING FOUNDATION</div>
+          <div class="card-title">Attacker select + range-highlight + target lock</div>
+          <ul class="card-features">
+            <li>Friendly attacker selection workflow</li>
+            <li>Valid vs invalid enemy target states</li>
+            <li>Click-to-confirm target flow</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
       </div>
     </div><!-- /tab-shoot -->
 
