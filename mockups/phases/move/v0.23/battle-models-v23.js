@@ -210,9 +210,9 @@
       var isSettlingUnit = B.simState.anim && B.simState.anim.settleUnitId === unit.id && now < B.simState.anim.settleUntil;
 
       /* ── Hull ── */
-      var hullStroke = unit.broken ? '#cc2020' : isSel ? '#00d4ff' : isImp ? '#00d4ff' : '#ff4020';
+      var hullStroke = unit.broken ? '#cc2020' : isSel ? (isImp ? '#00d4ff' : '#ff4020') : isImp ? '#00d4ff' : '#ff4020';
       var hullOpacity = unit.broken ? 0.9 : isSel ? 0.9 : 0.5;
-      var hullFill    = unit.broken ? 'rgba(204,32,32,0.07)' : isSel ? 'rgba(0,212,255,0.1)' : isImp ? 'rgba(0,212,255,0.04)' : 'rgba(255,64,32,0.04)';
+      var hullFill    = unit.broken ? 'rgba(204,32,32,0.07)' : isSel ? (isImp ? 'rgba(0,212,255,0.1)' : 'rgba(255,64,32,0.1)') : isImp ? 'rgba(0,212,255,0.04)' : 'rgba(255,64,32,0.04)';
 
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', B.getCurvedHullPath(unit.models));
@@ -228,7 +228,7 @@
       /* ── Model bases ── */
       var iconType = getIconType(unit.id);
       var glyphColor = unit.broken ? '#cc2020'
-                     : isSel       ? '#00d4ff'
+                     : isSel       ? (isImp ? '#00d4ff' : '#ff4020')
                      : isImp       ? '#006688'
                                    : '#882010';
 
@@ -237,7 +237,9 @@
         if (model.broken) {
           glowFilter = 'url(#mf-broken)'; strokeCol = '#cc2020'; strokeW = '1.5';
         } else if (isSel) {
-          glowFilter = 'url(#mf-sel)';    strokeCol = '#00d4ff'; strokeW = '1.5';
+          glowFilter = isImp ? 'url(#mf-sel)' : 'url(#mf-ork)';
+          strokeCol = isImp ? '#00d4ff' : '#ff4020';
+          strokeW = '1.5';
         } else if (isImp) {
           glowFilter = 'url(#mf-imp)';    strokeCol = '#0088aa'; strokeW = '1.5';
         } else {
