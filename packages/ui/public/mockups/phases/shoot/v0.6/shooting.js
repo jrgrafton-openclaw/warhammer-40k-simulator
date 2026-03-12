@@ -305,6 +305,11 @@
     return elementCenterInBattlefieldInner(el);
   }
 
+  function modelLocalCenter(model){
+    if (!model) return { x: 0, y: 0, valid: false };
+    return { x: model.x, y: model.y, valid: Number.isFinite(model.x) && Number.isFinite(model.y) };
+  }
+
   function tokenVisual(model){
     return document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
   }
@@ -340,8 +345,8 @@
   async function playVolley(attacker, target){
     const pairs = attacker.models.map(m => ({ from: m, to: randomTargetModel(target) }));
     pairs.forEach((pair, ix) => {
-      const from = modelScreenCenter(pair.from);
-      const to = modelScreenCenter(pair.to);
+      const from = modelLocalCenter(pair.from);
+      const to = modelLocalCenter(pair.to);
       if (!from.valid || !to.valid) return;
       setTimeout(() => {
         fireProjectile('var(--imp)', from, to);
@@ -644,6 +649,7 @@
     paint,
     getUnitAnchor,
     modelScreenCenter,
+    modelLocalCenter,
     rollDiceStage,
     playVolley
   };
