@@ -231,7 +231,13 @@
       return `<button class="weapon-choice" data-ix="${opt.i}"><span class="weapon-choice-name">${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap !== 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div>${kws ? `<div class="weapon-kws">${kws}</div>` : ''}</button>`;
     }).join('');
     popup.classList.remove('hidden');
-    B.initAllTooltips?.();
+    if (B.initAllTooltips) B.initAllTooltips();
+    popup.querySelectorAll('[data-tip]').forEach(el => {
+      if (el._shootTipInit) return;
+      el._shootTipInit = true;
+      el.addEventListener('mouseenter', () => B.showTip(el, el.dataset.tip));
+      el.addEventListener('mouseleave', B.hideTip);
+    });
     popup.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => {
       state.selectedProfileIx = Number(btn.dataset.ix);
       closeWeaponPopup(); beginAttack(targetId);
