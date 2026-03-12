@@ -38,14 +38,21 @@
   text-transform: uppercase;
 }
 
-#weapon-popup { width: 218px; transform: translate(-50%, 0); }
+#weapon-popup { width: 232px; transform: translate(-50%, 0); }
 .weapon-choice {
-  width: calc(100% - 12px); margin: 0 6px 6px; padding: 8px;
-  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
-  background: rgba(0,212,255,.04); border: 1px solid rgba(0,212,255,.12);
+  width: calc(100% - 12px); margin: 0 6px 6px; padding: 9px 10px 8px;
+  display: flex; flex-direction: column; gap: 5px; align-items: flex-start;
+  background: rgba(0,212,255,.035); border: 1px solid rgba(0,212,255,.12);
   color: var(--text-primary); cursor: pointer; font: 600 12px/1.2 'Rajdhani', sans-serif;
+  transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
 }
-.weapon-choice:hover { border-color: rgba(0,212,255,.38); background: rgba(0,212,255,.1); }
+.weapon-choice:hover {
+  border-color: rgba(0,212,255,.42);
+  background: rgba(0,212,255,.09);
+  box-shadow: inset 0 0 0 1px rgba(0,212,255,.12), 0 0 18px rgba(0,212,255,.08);
+  transform: translateY(-1px);
+}
+.weapon-choice-name { font: 700 13px/1.15 'Rajdhani', sans-serif; letter-spacing: .4px; }
 .weapon-meta-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .weapon-meta { color: var(--text-muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
 .weapon-meta.ap-hot { color: #ff6b52; font-weight: 700; text-shadow: 0 0 8px rgba(255,64,32,.35); }
@@ -54,19 +61,38 @@
 
 /* ── Dice overlay (uses .die from shared phase-states.css) ── */
 #roll-overlay {
-  min-width: 300px; text-align: center; padding-bottom: 12px;
+  min-width: 720px; text-align: center; padding: 10px 0 24px;
   transform: translate(-50%, 0);
 }
-#roll-overlay .dice-row { justify-content: center; padding: 10px 14px 4px; }
-#roll-overlay .dice-summary { padding: 0 16px 4px; text-align: center; }
+#roll-overlay .overlay-title {
+  padding-top: 16px;
+  font-size: 20px;
+  letter-spacing: 4px;
+}
+#roll-overlay .dice-row { justify-content: center; padding: 22px 36px 10px; gap: 14px; }
+#roll-overlay .dice-summary {
+  padding: 0 24px 12px; text-align: center;
+  font: 700 18px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: #6e87b4;
+}
+#roll-overlay .die {
+  width: 76px; height: 76px; border-radius: 12px;
+  border-width: 2px; font-size: 42px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 10px 28px rgba(0,0,0,.34);
+}
+#roll-overlay .die.rolling {
+  color: var(--imp);
+  border-color: rgba(0,212,255,.42);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 24px rgba(0,212,255,.18), 0 10px 28px rgba(0,0,0,.34);
+}
+#roll-overlay .die.pre-roll { color: #6e87b4; }
 
 .roll-cta {
-  margin-top: 4px; min-width: 150px; height: 34px;
+  margin-top: 8px; min-width: 300px; height: 68px;
   background: var(--imp); border: 1px solid var(--imp);
   color: #081017; cursor: pointer;
-  font: 700 11px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+  font: 700 22px/1 'Rajdhani', sans-serif; letter-spacing: 4px; text-transform: uppercase;
 }
-.roll-cta:disabled { opacity: .7; cursor: default; }
+.roll-cta:disabled { opacity: .78; cursor: default; }
 
 /* ── Result panel ── */
 .result-main {
@@ -82,20 +108,25 @@
   background: rgba(204,32,32,.08); border-color: rgba(204,32,32,.22);
 }
 .result-icon {
-  font-size: 16px; color: var(--text-muted);
-  flex-shrink: 0; width: 22px; text-align: center;
+  font-size: 24px; color: #ff6060;
+  flex-shrink: 0; width: 28px; text-align: center;
 }
 .result-row.has-kills .result-icon { color: #ff5050; }
+.result-row.wounds .result-num {
+  color: #ff6060;
+  text-shadow: 0 0 16px rgba(255,64,32,.35);
+}
 .result-num {
-  font: 400 36px/1 'Anton', sans-serif;
+  font: 400 44px/1 'Anton', sans-serif;
   color: var(--text-primary); flex-shrink: 0;
 }
 .result-row.has-kills .result-num { color: #ff6060; text-shadow: 0 0 16px rgba(255,64,32,.35); }
 .result-label {
-  font: 700 10px/1.3 'Rajdhani', sans-serif;
-  letter-spacing: 2px; text-transform: uppercase;
+  font: 700 11px/1.3 'Rajdhani', sans-serif;
+  letter-spacing: 2.2px; text-transform: uppercase;
   color: var(--text-muted);
 }
+.result-row.wounds .result-label { color: #ff8080; }
 .result-row.has-kills .result-label { color: #ff8080; }
 
 /* ── Target sight lines ── */
@@ -106,20 +137,5 @@
 
 /* ── Wound pip overlay ── */
 .wound-pip { pointer-events: none; }
-#card-wound-track {
-  display: none; padding: 6px 14px;
-  background: rgba(204,32,32,.06);
-  border-bottom: 1px solid rgba(204,32,32,.15);
-  gap: 8px; align-items: center;
-}
-#card-wound-track.visible { display: flex; }
-.wound-label {
-  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px;
-  text-transform: uppercase; color: #cc4444;
-}
-.wound-val {
-  font: 700 18px/1 'Rajdhani', sans-serif; color: #ff6060;
-}
-.wound-sep { font-size: 12px; color: var(--text-muted); margin: 0 2px; }
 
 @media (max-width: 1200px) { #unit-card { width: 300px; } }
