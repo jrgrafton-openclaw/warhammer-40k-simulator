@@ -33,6 +33,7 @@
     unitsMoved: new Set(),
     unitsAdvanced: {}    // unitId → dieResult (persists across deselect/reselect)
   };
+  window.__movedUnitIds = moveState.unitsMoved;
 
   // ── Helpers ────────────────────────────────────────────
   function getMoveRangePx(unitId, isAdvance) {
@@ -55,6 +56,29 @@
 
   function resolveUnitDragCollisions(unit) {
     B.resolveUnitDragCollisions(unit, simState.units);
+  }
+
+  function ensureRosterStatePills() {
+    document.querySelectorAll('.rail-unit').forEach(function(row) {
+      if (row.querySelector('.roster-state-pill')) return;
+      var pill = document.createElement('span');
+      pill.className = 'roster-state-pill';
+      pill.textContent = '✓ Moved';
+      row.appendChild(pill);
+    });
+  }
+
+  function syncMovedUI() {
+    ensureRosterStatePills();
+    document.querySelectorAll('.rail-unit').forEach(function(row) {
+      row.classList.toggle('moved', moveState.unitsMoved.has(row.dataset.unit));
+    });
+
+    var badge = document.getElementById('unit-state-badge');
+    if (badge) {
+      var isMoved = B.currentUnit && moveState.unitsMoved.has(B.currentUnit);
+      badge.classList.toggle('visible', !!isMoved);
+    }
   }
 
   function getDragUnitId() {
@@ -358,6 +382,7 @@
     }
 
     updateMoveButtons();
+    syncMovedUI();
     if (uid) {
       var unit = simState.units.find(function(u) { return u.id === uid; });
       if (unit && unit.faction === ACTIVE_PLAYER_FACTION && moveState.mode === null && !moveState.unitsMoved.has(uid)) {
@@ -389,5 +414,6 @@
   captureTurnStarts();
   renderModels();
   updateMoveButtons();
+  syncMovedUI();
 
 })();
