@@ -128,10 +128,10 @@
     var btnConfirm = document.getElementById('btn-confirm-move');
     var btnCancel  = document.getElementById('btn-cancel-move');
     var modeLabel  = document.getElementById('move-mode-label');
+    var hasAdvanced = uid && moveState.unitsAdvanced[uid] !== undefined;
 
     if (btnMove)    { btnMove.classList.toggle('active', moveState.mode === 'move');
                       btnMove.disabled = isEnemy || alreadyMoved || hasAdvanced || (moveState.mode === 'advance'); }
-    var hasAdvanced = uid && moveState.unitsAdvanced[uid] !== undefined;
     if (btnAdvance) { btnAdvance.classList.toggle('active', moveState.mode === 'advance');
                       btnAdvance.disabled = isEnemy || alreadyMoved || hasAdvanced || moveState.mode === 'advance'; }
     if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode;
