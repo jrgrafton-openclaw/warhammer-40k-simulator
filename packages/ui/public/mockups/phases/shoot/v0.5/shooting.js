@@ -113,37 +113,38 @@
   }
 
   function updateWoundOverlays(){
+    const woundedModelByUnit = new Map();
+    simState.units.forEach(unit => {
+      if (!unit?.id || !unit.models?.length) return;
+      woundedModelByUnit.set(unit.id, unit.models[0].id);
+    });
+
     $$('#layer-models .model-base').forEach(g => {
       const uid = g.dataset.unitId;
       const unit = getUnit(uid);
-      if (!unit) return;
-      const existingPip = g.querySelector('.wound-pip');
-      if (existingPip) existingPip.remove();
-      const carry = unit._carryWounds || 0;
-      if (carry > 0) {
-        const wPer = Number(UNITS[uid]?.stats?.W || 1);
-        if (wPer > 1) {
-          const NS = 'http://www.w3.org/2000/svg';
-          const m = unit.models.find(m2 => m2.id === g.dataset.modelId);
-          if (!m) return;
-          const pip = document.createElementNS(NS, 'g');
-          pip.setAttribute('class', 'wound-pip');
-          const cx = m.x + (m.r || 12) * 0.52;
-          const cy = m.y - (m.r || 12) * 0.52;
-          const bg = document.createElementNS(NS, 'circle');
-          bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', '7');
-          bg.setAttribute('fill', '#1a0808'); bg.setAttribute('stroke', '#cc2020'); bg.setAttribute('stroke-width', '1.2');
-          pip.appendChild(bg);
-          const txt = document.createElementNS(NS, 'text');
-          txt.setAttribute('x', cx); txt.setAttribute('y', cy);
-          txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('dominant-baseline', 'central');
-          txt.setAttribute('font-size', '7'); txt.setAttribute('font-family', 'Anton');
-          txt.setAttribute('fill', '#ff6060'); txt.setAttribute('pointer-events', 'none');
-          txt.textContent = `${carry}/${wPer}`;
-          pip.appendChild(txt);
-          g.appendChild(pip);
-        }
+      const model = unit?.models?.find(m => m.id === g.dataset.modelId);
+      if (!uid || !unit || !model) return;
+
+      const wPer = Number(UNITS[uid]?.stats?.W || 1);
+      const woundsTaken = Number(unit._carryWounds || 0);
+      const isWoundedModel = woundedModelByUnit.get(uid) === model.id;
+
+      if (!window.BattleUI?.WoundIndicators) return;
+      if (!isWoundedModel || woundsTaken <= 0 || wPer <= 1) {
+        window.BattleUI.WoundIndicators.clearIndicator(g);
+        return;
       }
+
+      const factionColor = unit.faction === 'imp' ? '#00d4ff' : '#ff4020';
+      const showCenterLabel = uid === (state.targetId || state.hoveredTargetId || state.attackerId || window.activeUnitId);
+      window.BattleUI.WoundIndicators.renderSplitRing({
+        groupEl: g,
+        model,
+        woundsPerModel: wPer,
+        woundsTaken,
+        showCenterLabel,
+        factionColor,
+      });
     });
     updateCardWounds();
   }
@@ -154,14 +155,19 @@
     const unit = getUnit(uid);
     if (!unit) return;
     const wPer = Number(UNITS[uid]?.stats?.W || 1);
-    const maxW = wPer * unit.models.length;
-    const carry = unit._carryWounds || 0;
-    const taken = carry;
+    const carry = Number(unit._carryWounds || 0);
     const wEl = $('#card-wound-track');
     if (!wEl) return;
+
+    if (window.BattleUI?.WoundIndicators) {
+      window.BattleUI.WoundIndicators.updateCardTrack(wEl, carry, wPer);
+      return;
+    }
+
     if (wPer === 1) { wEl.style.display = 'none'; return; }
-    wEl.style.display = 'block';
-    wEl.innerHTML = `<span class="wound-label">WOUNDS</span><span class="wound-val">${taken}<span class="wound-sep">/</span>${wPer}</span>`;
+    const remaining = Math.max(1, wPer - carry);
+    wEl.style.display = 'flex';
+    wEl.innerHTML = `<span class="wound-label">Wounds Remaining</span><span class="wound-val">${remaining}<span class="wound-sep">/</span>${wPer}</span>`;
   }
 
   function clearLines(){ const g = $('#layer-target-lines'); if (g) g.innerHTML = ''; }
@@ -346,6 +352,7 @@
       if (uid === state.targetId || uid === state.hoveredTargetId) h.classList.add('shoot-target');
     });
     updateSpentIndicators();
+    updateWoundOverlays();
   }
 
   async function beginAttack(targetId){
@@ -467,7 +474,6 @@
     if (!wt) {
       wt = document.createElement('div');
       wt.id = 'card-wound-track';
-      wt.style.cssText = 'display:none;padding:6px 14px;background:rgba(204,32,32,.06);border-bottom:1px solid rgba(204,32,32,.15);display:flex;align-items:center;gap:8px;';
       const statsRow = document.getElementById('card-stats');
       if (statsRow) statsRow.after(wt);
     }

@@ -1,0 +1,64 @@
+/* Shared wound indicator visuals for mockup phases */
+.wound-indicator { pointer-events: none; }
+
+.wound-ring-track,
+.wound-ring-remaining,
+.wound-ring-lost {
+  fill: none;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.wound-ring-track {
+  stroke: rgba(8, 16, 24, 0.75);
+}
+
+.wound-ring-remaining {
+  filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.35));
+}
+
+.wound-ring-lost {
+  stroke: #ff4e3a;
+  filter: drop-shadow(0 0 5px rgba(255, 64, 32, 0.45));
+}
+
+.wound-center-bg {
+  fill: rgba(8, 12, 18, 0.88);
+  stroke: rgba(255, 78, 58, 0.55);
+  stroke-width: 1;
+}
+
+.wound-center-text {
+  fill: #ffd0ca;
+  font: 700 6.2px/1 'Rajdhani', sans-serif;
+  letter-spacing: .2px;
+}
+
+#card-wound-track {
+  display: none;
+  padding: 6px 14px;
+  background: rgba(255,78,58,.08);
+  border-bottom: 1px solid rgba(255,78,58,.2);
+  gap: 8px;
+  align-items: center;
+}
+
+#card-wound-track.visible { display: flex; }
+
+.wound-label {
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: #ff8f84;
+}
+
+.wound-val {
+  font: 700 18px/1 'Rajdhani', sans-serif;
+  color: #ffd0ca;
+}
+
+.wound-sep {
+  font-size: 12px;
+  color: rgba(255,255,255,.6);
+  margin: 0 2px;
+}
