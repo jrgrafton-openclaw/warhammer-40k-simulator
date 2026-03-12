@@ -203,26 +203,46 @@
     return best || center(targetUnit);
   }
 
-  function toBattlefieldCoords(svgX, svgY){
-    const svg = $('#bf-svg'), field = $('#battlefield-inner');
-    if (!Number.isFinite(svgX) || !Number.isFinite(svgY)) return { x: 0, y: 0, valid: false };
-    if (!svg || !field) return { x: svgX, y: svgY, valid: true };
-    const ctm = svg.getScreenCTM();
-    if (!ctm) return { x: 0, y: 0, valid: false };
-    const pt = svg.createSVGPoint();
-    pt.x = svgX; pt.y = svgY;
-    const screen = pt.matrixTransform(ctm);
-    const rect = field.getBoundingClientRect();
-    return { x: screen.x - rect.left, y: screen.y - rect.top, valid: true };
+  function battlefieldRect(){
+    return $('#battlefield')?.getBoundingClientRect() || null;
+  }
+
+  function elementCenterInBattlefield(el){
+    const rect = el?.getBoundingClientRect();
+    const bfRect = battlefieldRect();
+    if (!rect || !bfRect) return { x: 0, y: 0, valid: false };
+    return {
+      x: rect.left - bfRect.left + rect.width / 2,
+      y: rect.top - bfRect.top + rect.height / 2,
+      valid: true
+    };
+  }
+
+  function getUnitElements(unitId){
+    return $$(`#layer-models .model-base[data-unit-id="${unitId}"]`);
+  }
+
+  function getUnitAnchor(targetId, mode='popup'){
+    const els = getUnitElements(targetId);
+    const bfRect = battlefieldRect();
+    if (!els.length || !bfRect) return { x: 0, y: 0, valid: false };
+    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
+    els.forEach(el => {
+      const r = el.getBoundingClientRect();
+      left = Math.min(left, r.left);
+      right = Math.max(right, r.right);
+      top = Math.min(top, r.top);
+      bottom = Math.max(bottom, r.bottom);
+    });
+    return {
+      x: ((left + right) / 2) - bfRect.left,
+      y: (bottom - bfRect.top) + (mode === 'roll' ? 28 : 16),
+      valid: Number.isFinite(left)
+    };
   }
 
   function getTargetAnchor(targetId, mode='popup'){
-    const unit = getUnit(targetId); if (!unit) return { x: 0, y: 0, valid: false };
-    const c = center(unit);
-    if (!c.valid) return { x: 0, y: 0, valid: false };
-    const pos = toBattlefieldCoords(c.x, c.y);
-    if (!pos.valid) return { x: 0, y: 0, valid: false };
-    return { x: pos.x, y: pos.y + (mode === 'roll' ? 36 : 20), valid: true };
+    return getUnitAnchor(targetId, mode);
   }
 
   function ensureOverlayPinLoop(){
@@ -267,7 +287,12 @@
   }
 
   function modelScreenCenter(model){
-    return toBattlefieldCoords(model.x, model.y);
+    const el = document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
+    return elementCenterInBattlefield(el);
+  }
+
+  function tokenVisual(model){
+    return document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
   }
 
   function randomTargetModel(target){
@@ -275,20 +300,17 @@
   }
 
   function createHitMarker(model, extraClass=''){
-    const layer = $('#hit-flash-layer');
-    if (!layer || !model) return null;
-    const pos = modelScreenCenter(model);
-    if (!pos.valid) return null;
-    const el = document.createElement('div');
-    el.className = `hit-marker anim-hit ${extraClass}`.trim();
-    el.style.left = `${pos.x}px`;
-    el.style.top = `${pos.y}px`;
-    const size = Math.max(28, getModelRadius(model) * 2.4);
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    layer.appendChild(el);
-    setTimeout(() => el.remove(), 850);
-    return el;
+    const token = tokenVisual(model);
+    if (!token) return null;
+    token.classList.remove('anim-hit-token');
+    void token.getBoundingClientRect();
+    token.classList.add('anim-hit-token');
+    if (extraClass) token.classList.add(extraClass);
+    setTimeout(() => {
+      token.classList.remove('anim-hit-token');
+      if (extraClass) token.classList.remove(extraClass);
+    }, 820);
+    return token;
   }
 
   function fireProjectile(color, startPos, endPos){
@@ -309,7 +331,6 @@
       if (!from.valid || !to.valid) return;
       setTimeout(() => {
         fireProjectile('var(--imp)', from, to);
-        createHitMarker(pair.to);
       }, ix * 70);
     });
     await new Promise(r => setTimeout(r, Math.max(460, pairs.length * 70 + 420)));
@@ -375,14 +396,15 @@
     });
   }
 
-  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message='', stageKind='generic', ctaLabel='Click to roll', nextLabel='Continue'){
+  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message='', stageKind='generic', ctaLabel='Click to roll', nextLabel='Continue', onTrigger = null){
     return new Promise(resolve => {
       const overlay = $('#roll-overlay'); if (!overlay) return resolve({ rolls, successes: rolls.length, threshold });
       state.pinnedRollTargetId = targetId;
       const successes = threshold ? rolls.filter(r => r >= threshold).length : rolls.length;
       renderDiceStage(title, rolls.length, threshold, auto, message, ctaLabel);
       const cta = overlay.querySelector('.roll-cta');
-      const fire = () => {
+      const fire = async () => {
+        if (typeof onTrigger === 'function') await onTrigger();
         revealDice(rolls, threshold, stageKind);
         setTimeout(() => {
           if (auto) {
@@ -396,7 +418,7 @@
           }
         }, 480 + rolls.length * 40);
       };
-      if (auto) { cta.disabled = true; setTimeout(fire, 140); }
+      if (auto) { cta.disabled = true; setTimeout(() => { fire(); }, 140); }
       else cta.addEventListener('click', () => { cta.disabled = true; fire(); }, { once: true });
     });
   }
@@ -498,13 +520,11 @@
       paint();
     };
 
-    await playVolley(attacker, target);
-
     const thresholds = deriveThresholds(profile, attacker, target);
     const totalAttacks = attackCount(profile, attacker);
 
     const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
+    const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds', () => playVolley(attacker, target));
     if (!hit.successes) return finishAttack(0, 0);
 
     const woundRolls = Array.from({length: hit.successes}, d6);
@@ -607,7 +627,11 @@
     targetInfo,
     getValidProfilesForTarget,
     clearEffects,
-    paint
+    paint,
+    getUnitAnchor,
+    modelScreenCenter,
+    rollDiceStage,
+    playVolley
   };
 
   bindShootOverrides();

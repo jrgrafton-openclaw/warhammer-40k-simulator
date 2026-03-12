@@ -156,7 +156,7 @@
 
 /* ── FX layer ─────────────────────────────────────────── */
 #fx-layer {
-  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden;
 }
 .proj-container, .hit-flash-layer {
   position: absolute; inset: 0; pointer-events: none;
@@ -164,9 +164,6 @@
 .hit-marker {
   position: absolute; width: 32px; height: 32px; border-radius: 50%;
   transform: translate(-50%, -50%);
-  border: 2px solid rgba(255,64,32,.3);
-  background: radial-gradient(circle, rgba(255,180,120,.22) 0%, rgba(255,64,32,.14) 45%, rgba(255,64,32,0) 72%);
-  box-shadow: 0 0 8px #ff402030, 0 0 20px #ff402010;
 }
 
 /* exact import from design-system/v4-animations.html */
@@ -202,8 +199,26 @@
   60%    {transform:translateX(-2px);}
   80%    {transform:translateX(2px);}
 }
+@keyframes token-hit-flash-shape {
+  0%   { filter: brightness(1) drop-shadow(0 0 0 rgba(255,64,32,0)); }
+  20%  { filter: brightness(2.9) drop-shadow(0 0 8px rgba(255,64,32,.7)) drop-shadow(0 0 18px rgba(255,180,120,.35)); }
+  45%  { filter: brightness(1.5) drop-shadow(0 0 6px rgba(255,64,32,.38)); }
+  70%  { filter: brightness(.85) drop-shadow(0 0 2px rgba(255,64,32,.14)); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 rgba(255,64,32,0)); }
+}
+@keyframes token-hit-flash-icon {
+  0%   { opacity: 1; filter: brightness(1); }
+  20%  { opacity: 1; filter: brightness(2.1); }
+  100% { opacity: 1; filter: brightness(1); }
+}
 .anim-hit{animation:hit-flash .8s ease-out forwards;}
 .anim-badge-shake{animation:badge-shake .5s ease .15s;}
+.model-base.anim-hit-token > :first-child {
+  animation: token-hit-flash-shape .8s ease-out forwards;
+}
+.model-base.anim-hit-token > :nth-child(2) {
+  animation: token-hit-flash-icon .8s ease-out forwards;
+}
 
 @media (max-width: 1200px) {
   #roll-overlay { min-width: 390px; max-width: 460px; }
