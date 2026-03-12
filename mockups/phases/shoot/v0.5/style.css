@@ -1,9 +1,52 @@
 @import url('../v0.4/style.css');
 
+:root {
+  --spent: #8a98ab;
+  --spent-dim: #5f6d80;
+  --spent-tint: rgba(138,152,171,.12);
+  --spent-tint-2: rgba(138,152,171,.2);
+}
+
 .vshoot-badge { color: var(--imp); border-color: rgba(0,212,255,.18); }
 #shoot-tools, #combat-log-panel { display: none !important; }
-
 #unit-card { bottom: 62px; right: 10px; width: 330px; }
+
+.rail-unit.attacked {
+  background: linear-gradient(90deg, var(--spent-tint) 0%, rgba(8,12,16,.18) 100%);
+  border-left-color: var(--spent-dim);
+}
+.rail-unit.attacked:hover { background: linear-gradient(90deg, var(--spent-tint-2) 0%, rgba(8,12,16,.26) 100%); }
+.rail-unit.attacked .rn { color: #c2cedb; }
+.rail-unit.attacked .rc { color: var(--spent); }
+.rail-unit.attacked.active { background: linear-gradient(90deg, rgba(138,152,171,.18) 0%, rgba(8,12,16,.26) 100%); border-left-color: var(--spent); }
+.roster-state-pill {
+  flex-shrink: 0;
+  padding: 2px 6px 1px;
+  border: 1px solid var(--spent-dim);
+  background: rgba(18,24,34,.88);
+  color: var(--spent);
+  font: 700 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  display: none;
+}
+.rail-unit.attacked .roster-state-pill { display: inline-flex; align-items: center; }
+
+.card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.unit-state-badge {
+  display: none;
+  align-items: center;
+  padding: 4px 8px 3px;
+  border-radius: 999px;
+  border: 1px solid var(--spent-dim);
+  background: var(--spent-tint);
+  color: var(--spent);
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+.unit-state-badge.visible { display: inline-flex; }
 
 #action-bar {
   height: 48px;
@@ -37,14 +80,14 @@
   text-transform: uppercase;
 }
 
-#weapon-popup { width: 180px; }
+#weapon-popup { width: 206px; transform: translate(-50%, 0); }
 .weapon-choice {
   width: calc(100% - 12px);
   margin: 0 6px 6px;
   padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   align-items: flex-start;
   background: rgba(0,212,255,.04);
   border: 1px solid rgba(0,212,255,.12);
@@ -53,19 +96,27 @@
   font: 600 12px/1.2 'Rajdhani', sans-serif;
 }
 .weapon-choice:hover { border-color: rgba(0,212,255,.38); background: rgba(0,212,255,.1); }
-.weapon-meta { color: var(--text-muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+.weapon-meta-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.weapon-meta {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.weapon-meta.ap-hot { color: #ff6b52; font-weight: 700; text-shadow: 0 0 8px rgba(255,64,32,.35); }
+.weapon-meta.dmg-hot { color: var(--imp); font-weight: 700; }
 
 #roll-overlay {
-  left: 50%; top: 50%; transform: translate(-50%, -50%);
-  min-width: 320px;
+  min-width: 300px;
   text-align: center;
   padding-bottom: 12px;
+  transform: translate(-50%, 0);
 }
 #roll-overlay.rolling { animation: overlay-pop .52s cubic-bezier(.22,1,.36,1); }
 @keyframes overlay-pop {
-  0% { transform: translate(-50%, -50%) scale(.92); opacity: .35; }
-  35% { transform: translate(-50%, -50%) scale(1.04); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  0% { transform: translate(-50%, 0) scale(.92); opacity: .35; }
+  35% { transform: translate(-50%, 0) scale(1.04); opacity: 1; }
+  100% { transform: translate(-50%, 0) scale(1); opacity: 1; }
 }
 .roll-cluster {
   display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
@@ -74,11 +125,22 @@
 .die-chip {
   width: 42px; height: 42px; display: inline-flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
-  border: 1px solid rgba(0,212,255,.2);
-  color: var(--text-primary);
+  border: 1px solid rgba(0,212,255,.14);
+  color: transparent;
   font: 400 24px/1 'Anton', sans-serif;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.4);
+  position: relative;
 }
+.die-chip::after {
+  content: '—';
+  color: rgba(128,144,160,.55);
+  font: 400 20px/1 'Anton', sans-serif;
+}
+.die-chip.revealed { color: var(--text-primary); border-color: rgba(0,212,255,.34); }
+.die-chip.revealed::after { content: ''; }
+.die-chip.success { color: #7cf2cf; border-color: rgba(0,212,255,.5); box-shadow: 0 0 18px rgba(0,212,255,.22), inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.4); }
+.die-chip.fail { color: #ff7358; border-color: rgba(255,64,32,.35); box-shadow: 0 0 16px rgba(255,64,32,.18), inset 0 1px 0 rgba(255,255,255,.05), 0 8px 20px rgba(0,0,0,.4); }
+.die-chip.neutral { color: #dce6f2; }
 .roll-summary {
   padding: 8px 16px;
   color: var(--text-sec);
@@ -99,7 +161,7 @@
 .roll-cta:disabled { opacity: .7; cursor: default; }
 
 .target-line {
-  stroke: rgba(0,212,255,.7);
+  stroke: rgba(0,212,255,.72);
   stroke-width: 1.2;
   stroke-dasharray: 6 5;
   stroke-linecap: round;
@@ -108,6 +170,16 @@
 .unit-hull.shoot-spent {
   stroke: rgba(128,144,160,.8) !important;
   fill: rgba(128,144,160,.06) !important;
+}
+.model-base.token-destroyed,
+.unit-hull.token-destroyed {
+  animation: token-destroyed .42s cubic-bezier(.22,1,.36,1) forwards;
+  transform-origin: center;
+}
+@keyframes token-destroyed {
+  0% { opacity: 1; transform: scale(1); filter: drop-shadow(0 0 0 rgba(255,64,32,0)); }
+  40% { opacity: 1; transform: scale(1.08); filter: drop-shadow(0 0 14px rgba(255,64,32,.75)); }
+  100% { opacity: 0; transform: scale(.28); filter: drop-shadow(0 0 22px rgba(255,64,32,.2)); }
 }
 
 @media (max-width: 1200px) {
