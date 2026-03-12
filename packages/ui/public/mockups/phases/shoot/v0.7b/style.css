@@ -12,11 +12,12 @@
 .vshoot-badge { color: var(--imp); border-color: rgba(0,212,255,.18); }
 #shoot-tools, #combat-log-panel { display: none !important; }
 #unit-card { bottom: 62px; right: 10px; width: 330px; }
+#unit-card .card-close { display: none; }
 
 /* hull spent state is driven by JS (battle-models-v23.js isUsed branch) */
 /* roster + card badge done via shared phase-states.css */
 
-#action-bar { height: 48px; padding: 0 10px; gap: 10px; }
+#action-bar { height: 56px; padding: 0 10px; gap: 10px; }
 #move-mode-label { min-width: 0; flex: 1; text-align: left; color: transparent; font-size: 10px; }
 .phase-end-cluster { gap: 12px; }
 #btn-end-shoot { min-width: 154px; }
@@ -241,8 +242,9 @@
   z-index: 30;
   width: 320px;
   border: 1px solid rgba(201,163,82,0.28);
-  background: linear-gradient(180deg, rgba(11,10,8,0.96), rgba(7,7,6,0.93));
-  box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+  border-top: 2px solid rgba(201,163,82,0.62);
+  background: linear-gradient(180deg, rgba(16,12,7,0.97), rgba(8,7,5,0.95));
+  box-shadow: 0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
   backdrop-filter: blur(10px);
   padding: 14px;
 }
@@ -251,16 +253,16 @@
   bottom: 88px;
   top: auto;
   transform: translateX(-50%);
-  width: min(860px, calc(100% - 280px));
-  border-radius: 16px 16px 6px 6px;
-  border-color: rgba(0,212,255,0.28);
-  background: linear-gradient(180deg, rgba(7,13,18,0.96), rgba(9,10,12,0.96));
+  width: min(680px, calc(100% - 360px));
+  border-radius: 14px 14px 6px 6px;
+  border-color: rgba(201,163,82,0.34);
+  background: linear-gradient(180deg, rgba(18,13,8,0.97), rgba(9,8,6,0.95));
 }
 .variant-panel.stack-mode {
-  width: 312px;
+  width: 328px;
   border-radius: 14px;
-  border-color: rgba(111,255,211,0.25);
-  background: linear-gradient(180deg, rgba(7,18,16,0.96), rgba(9,10,11,0.94));
+  border-color: rgba(201,163,82,0.34);
+  background: linear-gradient(180deg, rgba(18,13,8,0.97), rgba(9,8,6,0.95));
 }
 .variant-eyebrow {
   font: 700 10px/1 'Anton', sans-serif;
@@ -427,4 +429,150 @@
 
 @media (max-width: 1100px) {
   .variant-panel.rail-mode { width: calc(100% - 40px); bottom: 96px; }
+}
+
+.variant-eyebrow {
+  font: 700 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2.4px;
+  color: rgba(201,163,82,0.88);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.variant-title { color: #f3ebda; }
+.variant-subtitle {
+  margin-top: 4px;
+  font: 600 10px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(166,155,129,0.88);
+}
+.ghost-btn,
+.solid-btn,
+.weapon-select-btn,
+.icon-btn {
+  border-radius: 8px;
+  font: 700 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.ghost-btn,
+.weapon-select-btn {
+  border: 1px solid rgba(201,163,82,0.18);
+  background: linear-gradient(180deg, rgba(28,24,14,0.92), rgba(16,13,7,0.96));
+  color: #e4dcc7;
+}
+.solid-btn {
+  background: linear-gradient(180deg, rgba(21,31,40,0.98), rgba(7,15,23,0.96));
+  color: #9fe8ff;
+  border: 1px solid rgba(0,212,255,0.34);
+  box-shadow: inset 0 0 0 1px rgba(0,212,255,0.08), 0 0 14px rgba(0,212,255,0.08);
+}
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(201,163,82,0.18);
+  background: linear-gradient(180deg, rgba(28,24,14,0.92), rgba(16,13,7,0.96));
+  color: #d7ccad;
+  cursor: pointer;
+}
+.target-summary {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(201,163,82,0.14);
+  background: rgba(0,0,0,0.18);
+  border-radius: 10px;
+}
+.target-summary-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+.target-summary-name {
+  font: 700 17px/1 'Rajdhani', sans-serif;
+  color: #f1e6cd;
+  letter-spacing: 0.03em;
+}
+.target-summary-faction {
+  font: 600 10px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(172,164,139,0.82);
+}
+.target-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+}
+.target-stat {
+  padding: 7px 4px 6px;
+  border: 1px solid rgba(255,255,255,0.06);
+  background: rgba(255,255,255,0.03);
+  border-radius: 8px;
+  text-align: center;
+}
+.target-stat label {
+  display: block;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(172,164,139,0.82);
+  margin-bottom: 4px;
+}
+.target-stat strong {
+  font: 700 15px/1 'Rajdhani', sans-serif;
+  color: #f4ead1;
+}
+.weapon-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+.weapon-card {
+  padding: 11px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(201,163,82,0.15);
+  background: linear-gradient(180deg, rgba(19,16,10,0.98), rgba(10,9,7,0.96));
+  display: grid;
+  gap: 8px;
+  cursor: pointer;
+}
+.weapon-card.selected {
+  border-color: rgba(0,212,255,0.42);
+  box-shadow: inset 0 0 0 1px rgba(0,212,255,0.12), 0 0 16px rgba(0,212,255,0.09);
+}
+.weapon-card-title {
+  font: 700 14px/1.15 'Rajdhani', sans-serif;
+  color: #f1e6cd;
+}
+.weapon-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.weapon-card-meta span,
+.profile-pill {
+  padding: 4px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.07);
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(224,221,210,0.78);
+}
+.profile-pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.helper-copy {
+  font: 500 12px/1.35 'Rajdhani', sans-serif;
+  color: rgba(214,220,224,0.72);
+}
+.stage-copy.compact { gap: 10px; }
+@media (max-width: 1100px) {
+  .variant-panel.rail-mode { width: calc(100% - 80px); }
+  .target-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .weapon-grid { grid-template-columns: 1fr; }
 }
