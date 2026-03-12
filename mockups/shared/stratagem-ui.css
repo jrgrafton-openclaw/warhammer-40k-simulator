@@ -1,5 +1,20 @@
 /* Shared stratagem trigger + modal UI for phase mockups */
 
+.phase-end-cluster {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.phase-end-cluster .btn-cta { margin-left: 0; }
+.phase-end-divider {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(180deg, rgba(204,136,0,0), rgba(204,136,0,.34), rgba(204,136,0,0));
+  box-shadow: 0 0 10px rgba(204,136,0,.12);
+}
+
 .btn-strat {
   height: 32px;
   min-width: 126px;
