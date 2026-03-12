@@ -415,5 +415,6 @@
   renderModels();
   updateMoveButtons();
   syncMovedUI();
+  B.selectUnit('assault-intercessors');
 
 })();
