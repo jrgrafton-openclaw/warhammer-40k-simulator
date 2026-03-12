@@ -49,6 +49,9 @@
   function keywordsFor(profile){
     return [].concat(profile?.keywords || profile?.kw || []).filter(Boolean).map(String);
   }
+  function kwTip(k){
+    return (B.KW_RULES && B.KW_RULES[k] && B.KW_RULES[k].tip) || 'Keyword ability.';
+  }
   function kwClass(k){
     const v = String(k).toLowerCase();
     if (v.includes('pistol')) return 'pistol';
@@ -145,23 +148,6 @@
         }
       }
     });
-    updateCardWounds();
-  }
-
-  function updateCardWounds(){
-    const uid = state.attackerId || window.activeUnitId;
-    if (!uid) return;
-    const unit = getUnit(uid);
-    if (!unit) return;
-    const wPer = Number(UNITS[uid]?.stats?.W || 1);
-    const maxW = wPer * unit.models.length;
-    const carry = unit._carryWounds || 0;
-    const taken = carry;
-    const wEl = $('#card-wound-track');
-    if (!wEl) return;
-    if (wPer === 1) { wEl.style.display = 'none'; return; }
-    wEl.style.display = 'block';
-    wEl.innerHTML = `<span class="wound-label">WOUNDS</span><span class="wound-val">${taken}<span class="wound-sep">/</span>${wPer}</span>`;
   }
 
   function clearLines(){ const g = $('#layer-target-lines'); if (g) g.innerHTML = ''; }
@@ -241,10 +227,11 @@
     state.pinnedPopupTargetId = targetId;
     popup.innerHTML = `<div class="overlay-title">SELECT WEAPON</div>` + options.map(opt => {
       const ap = Number(opt.profile.ap || 0);
-      const kws = keywordsFor(opt.profile).map(k => `<span class="kw-pill ${kwClass(k)}">${k}</span>`).join('');
-      return `<button class="weapon-choice" data-ix="${opt.i}"><span>${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap !== 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div>${kws ? `<div class="weapon-kws">${kws}</div>` : ''}</button>`;
+      const kws = keywordsFor(opt.profile).map(k => `<span class="kw-pill ${kwClass(k)}" data-tip="${kwTip(k).replace(/"/g, '&quot;')}">${k}</span>`).join('');
+      return `<button class="weapon-choice" data-ix="${opt.i}"><span class="weapon-choice-name">${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap !== 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div>${kws ? `<div class="weapon-kws">${kws}</div>` : ''}</button>`;
     }).join('');
     popup.classList.remove('hidden');
+    B.initAllTooltips?.();
     popup.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => {
       state.selectedProfileIx = Number(btn.dataset.ix);
       closeWeaponPopup(); beginAttack(targetId);
@@ -252,39 +239,46 @@
     ensureOverlayPinLoop();
   }
 
-  function renderDiceStage(title, count, threshold, auto, message=''){
+  function renderDiceStage(title, count, threshold, auto, message='', ctaLabel='Click to roll'){
     const overlay = $('#roll-overlay');
-    // dice start as blank .die chips (not .revealed yet) — exact v4 pattern
-    const chips = Array.from({length: Math.max(1, count)}, () => '<span class="die"></span>').join('');
-    overlay.innerHTML = `<div class="overlay-title">${title}</div><div class="dice-row" style="padding:10px 14px 4px;justify-content:center;">${chips}</div><div class="dice-summary" style="padding:0 16px 4px;">${message || (threshold ? `Target ${threshold}+` : 'Resolve damage')}</div><button class="roll-cta">${auto ? 'Resolving…' : 'Click to roll'}</button>`;
+    const chips = Array.from({length: Math.max(1, count)}, () => '<span class="die pre-roll">–</span>').join('');
+    overlay.innerHTML = `<div class="overlay-title">${title}</div><div class="dice-row">${chips}</div><div class="dice-summary">${message || (threshold ? `Target ${threshold}+` : 'Resolve damage')}</div><button class="roll-cta">${auto ? 'Resolving…' : ctaLabel}</button>`;
     overlay.classList.remove('hidden');
     ensureOverlayPinLoop();
   }
 
-  function revealDice(rolls, threshold){
+  function revealDice(rolls, threshold, stageKind){
     const chips = $$('#roll-overlay .die');
     rolls.forEach((r, i) => {
       const chip = chips[i]; if (!chip) return;
-      chip.textContent = r;
+      chip.textContent = '–';
+      chip.classList.remove('pre-roll');
       chip.classList.add('rolling');
       setTimeout(() => {
         chip.classList.remove('rolling');
-        if (threshold == null) { chip.classList.add('neutral'); }
-        else if (r >= threshold) { chip.classList.add('success'); setTimeout(() => chip.classList.add('flashing'), 20); }
-        else { chip.classList.add('enemy-fail'); setTimeout(() => chip.classList.add('flashing'), 20); }
+        chip.textContent = r;
+        if (threshold == null) {
+          chip.classList.add('success');
+        } else if (r >= threshold) {
+          if (stageKind === 'save') chip.classList.add('enemy-success');
+          else { chip.classList.add('success'); setTimeout(() => chip.classList.add('flashing'), 20); }
+        } else {
+          if (stageKind === 'save') { chip.classList.add('enemy-fail'); setTimeout(() => chip.classList.add('flashing'), 20); }
+          else chip.classList.add('fail');
+        }
       }, 80 + i * 40);
     });
   }
 
-  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message=''){
+  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message='', stageKind='generic', ctaLabel='Click to roll', nextLabel='Continue'){
     return new Promise(resolve => {
       const overlay = $('#roll-overlay'); if (!overlay) return resolve({ rolls, successes: rolls.length, threshold });
       state.pinnedRollTargetId = targetId;
       const successes = threshold ? rolls.filter(r => r >= threshold).length : rolls.length;
-      renderDiceStage(title, rolls.length, threshold, auto, message);
+      renderDiceStage(title, rolls.length, threshold, auto, message, ctaLabel);
       const cta = overlay.querySelector('.roll-cta');
       const fire = () => {
-        revealDice(rolls, threshold);
+        revealDice(rolls, threshold, stageKind);
         setTimeout(() => {
           if (auto) {
             setTimeout(() => {
@@ -292,7 +286,7 @@
               resolve({ rolls, successes, threshold });
             }, 260 + rolls.length * 40);
           } else {
-            cta.textContent = 'Continue'; cta.disabled = false;
+            cta.textContent = nextLabel; cta.disabled = false;
             cta.onclick = () => { overlay.classList.add('hidden'); state.pinnedRollTargetId = null; resolve({ rolls, successes, threshold }); };
           }
         }, 480 + rolls.length * 40);
@@ -360,17 +354,22 @@
     const totalAttacks = attackCount(profile, attacker);
 
     const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`);
+    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
     if (!hit.successes) {
       state.shotUnits.add(attacker.id); B.renderModels(); paint();
       await showResultPanel(targetId, 0, 0, UNITS[target.id]?.name);
-      closeWeaponPopup(); clearLines(); state.hoveredTargetId = null;
+      state.attackerId = null;
+      state.targetId = null;
+      state.hoveredTargetId = null;
+      closeWeaponPopup(); clearLines();
+      oldSelect(null);
+      paint();
       return;
     }
     const woundRolls = Array.from({length: hit.successes}, d6);
-    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false, targetId, `Wound on ${thresholds.wound}+`);
+    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false, targetId, `Wound on ${thresholds.wound}+`, 'wound', 'Roll Wounds', 'Roll Saves');
     const saveRolls = Array.from({length: wound.successes}, d6);
-    const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true, targetId, `Save on ${thresholds.save}+`);
+    const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true, targetId, `Save on ${thresholds.save}+`, 'save');
     const failedSaves = save.rolls.filter(r => r < thresholds.save).length;
 
     let totalDamage = 0;
@@ -379,7 +378,7 @@
       if (fixedDamage === 1) totalDamage = failedSaves;
       else {
         const damageRolls = Array.from({length: failedSaves}, () => pickDamage(profile.d));
-        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId, 'Damage per failed save');
+        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId, 'Damage per failed save', 'damage', 'Roll Damage', 'Show Result');
         totalDamage = damageStage.rolls.reduce((a,b)=>a+b,0);
       }
     }
@@ -398,7 +397,12 @@
 
     await showResultPanel(targetId, totalDamage, killCount, UNITS[target.id]?.name);
     setStatus('');
-    closeWeaponPopup(); clearLines(); state.hoveredTargetId = null;
+    state.attackerId = null;
+    state.targetId = null;
+    state.hoveredTargetId = null;
+    closeWeaponPopup(); clearLines();
+    oldSelect(null);
+    paint();
   }
 
   function onEnemyInteract(unitId){
@@ -456,23 +460,6 @@
     }
   };
   window.selectUnit = B.selectUnit;
-
-  /* inject wound track into card header on card build */
-  const origBuild = B.buildCard.bind(B);
-  B.buildCard = function(uid){
-    origBuild(uid);
-    const hdr = document.getElementById('unit-card');
-    if (!hdr) return;
-    let wt = document.getElementById('card-wound-track');
-    if (!wt) {
-      wt = document.createElement('div');
-      wt.id = 'card-wound-track';
-      wt.style.cssText = 'display:none;padding:6px 14px;background:rgba(204,32,32,.06);border-bottom:1px solid rgba(204,32,32,.15);display:flex;align-items:center;gap:8px;';
-      const statsRow = document.getElementById('card-stats');
-      if (statsRow) statsRow.after(wt);
-    }
-    updateCardWounds();
-  };
 
   $('#btn-end-shoot')?.addEventListener('click', () => setStatus('END SHOOTING NOT WIRED IN MOCKUP'));
   $('#card-close')?.addEventListener('click', () => $('#unit-card')?.classList.remove('visible'));
