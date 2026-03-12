@@ -222,23 +222,26 @@
     return $$(`#layer-models .model-base[data-unit-id="${unitId}"]`);
   }
 
+  function toBattlefieldCoords(svgX, svgY){
+    const svg = $('#bf-svg'), field = $('#battlefield');
+    if (!Number.isFinite(svgX) || !Number.isFinite(svgY)) return { x: 0, y: 0, valid: false };
+    if (!svg || !field) return { x: svgX, y: svgY, valid: true };
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0, valid: false };
+    const pt = svg.createSVGPoint();
+    pt.x = svgX; pt.y = svgY;
+    const screen = pt.matrixTransform(ctm);
+    const rect = field.getBoundingClientRect();
+    return { x: screen.x - rect.left, y: screen.y - rect.top, valid: true };
+  }
+
   function getUnitAnchor(targetId, mode='popup'){
-    const els = getUnitElements(targetId);
-    const bfRect = battlefieldRect();
-    if (!els.length || !bfRect) return { x: 0, y: 0, valid: false };
-    let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
-    els.forEach(el => {
-      const r = el.getBoundingClientRect();
-      left = Math.min(left, r.left);
-      right = Math.max(right, r.right);
-      top = Math.min(top, r.top);
-      bottom = Math.max(bottom, r.bottom);
-    });
-    return {
-      x: ((left + right) / 2) - bfRect.left,
-      y: (bottom - bfRect.top) + (mode === 'roll' ? 28 : 16),
-      valid: Number.isFinite(left)
-    };
+    const unit = getUnit(targetId); if (!unit) return { x: 0, y: 0, valid: false };
+    const c = center(unit);
+    if (!c.valid) return { x: 0, y: 0, valid: false };
+    const pos = toBattlefieldCoords(c.x, c.y);
+    if (!pos.valid) return { x: 0, y: 0, valid: false };
+    return { x: pos.x, y: pos.y + (mode === 'roll' ? 46 : 28), valid: true };
   }
 
   function getTargetAnchor(targetId, mode='popup'){
