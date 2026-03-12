@@ -16,7 +16,6 @@
     overlayRaf: null
   };
 
-  const history = [];
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
 
@@ -42,6 +41,23 @@
     const wg = B.wgState?.[uid] || {};
     (u.wargear || []).forEach((opt, i)=>{ if (wg[i] && opt.adds) w.push(opt.adds); });
     return w.filter(x => x.type === 'RANGED');
+  }
+
+  function keywordsFor(profile){
+    const raw = [].concat(profile?.keywords || profile?.kw || []);
+    return raw.filter(Boolean).map(k => String(k));
+  }
+
+  function kwClass(k){
+    const v = String(k).toLowerCase();
+    if (v.includes('pistol')) return 'pistol';
+    if (v.includes('assault')) return 'assault';
+    if (v.includes('heavy')) return 'heavy';
+    if (v.includes('hazard')) return 'hazardous';
+    if (v.includes('rapid')) return 'rapid';
+    if (v.includes('blast')) return 'blast';
+    if (v.includes('melta')) return 'melta';
+    return 'other';
   }
 
   function segIntersectsRect(x1,y1,x2,y2,r){
@@ -177,17 +193,18 @@
     state.pinnedPopupTargetId = targetId;
     popup.innerHTML = `<div class="overlay-title">SELECT WEAPON</div>` + options.map(opt => {
       const ap = Number(opt.profile.ap || 0);
-      return `<button class="weapon-choice" data-ix="${opt.i}"><span>${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap < 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div></button>`;
+      const kws = keywordsFor(opt.profile).map(k => `<span class="kw-pill ${kwClass(k)}" title="${k}">${k}</span>`).join('');
+      return `<button class="weapon-choice" data-ix="${opt.i}"><span>${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap !== 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div>${kws ? `<div class="weapon-kws">${kws}</div>` : ''}</button>`;
     }).join('');
     popup.classList.remove('hidden');
     popup.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => { state.selectedProfileIx = Number(btn.dataset.ix); closeWeaponPopup(); beginAttack(targetId); }));
     ensureOverlayPinLoop();
   }
 
-  function renderDiceStage(title, count, threshold, auto){
+  function renderDiceStage(title, count, threshold, auto, message=''){
     const overlay = $('#roll-overlay');
     const chips = Array.from({length: Math.max(1, count)}, () => '<span class="die-chip">0</span>').join('');
-    overlay.innerHTML = `<div class="overlay-title">${title}</div><div class="roll-cluster">${chips}</div><div class="roll-summary">${threshold ? `Target ${threshold}+` : 'Resolve damage'}</div><button class="roll-cta">${auto ? 'Resolving…' : 'Click to roll'}</button>`;
+    overlay.innerHTML = `<div class="overlay-title">${title}</div><div class="roll-cluster">${chips}</div><div class="roll-summary">${message || (threshold ? `Target ${threshold}+` : 'Resolve damage')}</div><button class="roll-cta">${auto ? 'Resolving…' : 'Click to roll'}</button>`;
     overlay.classList.remove('hidden');
     ensureOverlayPinLoop();
   }
@@ -204,16 +221,16 @@
     });
   }
 
-  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null){
+  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message=''){
     return new Promise(resolve => {
       const overlay = $('#roll-overlay'); if (!overlay) return resolve({ rolls, successes: rolls.length, threshold });
       state.pinnedRollTargetId = targetId;
       const successes = threshold ? rolls.filter(r => r >= threshold).length : rolls.length;
-      renderDiceStage(title, rolls.length, threshold, auto);
+      renderDiceStage(title, rolls.length, threshold, auto, message);
       const cta = overlay.querySelector('.roll-cta');
       const fire = () => {
         overlay.classList.add('rolling');
-        setTimeout(() => revealDice(rolls, threshold), 80);
+        setTimeout(() => revealDice(rolls, threshold), 90);
         setTimeout(() => {
           overlay.classList.remove('rolling');
           if (auto) {
@@ -221,7 +238,7 @@
               overlay.classList.add('hidden');
               state.pinnedRollTargetId = null;
               resolve({ rolls, successes, threshold });
-            }, 260);
+            }, 240);
           } else {
             cta.textContent = 'Continue';
             cta.disabled = false;
@@ -231,10 +248,25 @@
               resolve({ rolls, successes, threshold });
             };
           }
-        }, 520);
+        }, 500);
       };
-      if (auto) { cta.disabled = true; setTimeout(fire, 220); }
+      if (auto) { cta.disabled = true; setTimeout(fire, 140); }
       else cta.addEventListener('click', () => { cta.disabled = true; fire(); }, { once: true });
+    });
+  }
+
+  function showResultPanel(targetId, totalDamage, killCount){
+    return new Promise(resolve => {
+      const overlay = $('#roll-overlay');
+      state.pinnedRollTargetId = targetId;
+      overlay.innerHTML = `<div class="overlay-title">RESULTS</div><div class="result-panel"><div><strong>${totalDamage}</strong> wound${totalDamage===1?'':'s'} incurred</div><div><strong>${killCount}</strong> model${killCount===1?'':'s'} killed</div></div><button class="roll-cta">OK</button>`;
+      overlay.classList.remove('hidden');
+      ensureOverlayPinLoop();
+      overlay.querySelector('.roll-cta').addEventListener('click', () => {
+        overlay.classList.add('hidden');
+        state.pinnedRollTargetId = null;
+        resolve();
+      }, { once: true });
     });
   }
 
@@ -274,24 +306,22 @@
 
     const thresholds = deriveThresholds(profile, attacker, target);
     const totalAttacks = attackCount(profile, attacker);
-    const snapshot = { attackerId: state.attackerId, targetId: target.id, targetModels: target.models.map(m=>({...m})), targetCarry: target._carryWounds || 0 };
 
     const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId);
+    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`);
     const woundRolls = Array.from({length: hit.successes}, d6);
-    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false, targetId);
+    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false, targetId, `Wound on ${thresholds.wound}+`);
     const saveRolls = Array.from({length: wound.successes}, d6);
-    const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true, targetId);
+    const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true, targetId, `Save on ${thresholds.save}+`);
     const failedSaves = save.rolls.filter(r => r < thresholds.save).length;
 
     let totalDamage = 0;
     const fixedDamage = damageValue(profile.d);
     if (failedSaves > 0) {
-      if (fixedDamage === 1) {
-        totalDamage = failedSaves;
-      } else {
+      if (fixedDamage === 1) totalDamage = failedSaves;
+      else {
         const damageRolls = Array.from({length: failedSaves}, () => pickDamage(profile.d));
-        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId);
+        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId, 'Damage per failed save');
         totalDamage = damageStage.rolls.reduce((a,b)=>a+b,0);
       }
     }
@@ -301,13 +331,10 @@
     const killCount = Math.min(target.models.length, Math.floor(target._carryWounds / wPer));
     const remainingAfter = target.models.length - killCount;
 
-    if (remainingAfter <= 0 && target.models.length) {
-      await animateUnitDestroyed(target.id);
-    }
+    if (remainingAfter <= 0 && target.models.length) await animateUnitDestroyed(target.id);
 
     if (killCount) target.models.splice(target.models.length - killCount, killCount);
     target._carryWounds = target._carryWounds % wPer;
-    history.push(snapshot);
     state.shotUnits.add(attacker.id);
     B.renderModels();
     paint();
@@ -315,6 +342,7 @@
     const hull = document.querySelector(`#layer-hulls .unit-hull[data-unit-id="${target.id}"]`);
     if (hull) { hull.classList.add('shoot-hit'); setTimeout(()=>hull.classList.remove('shoot-hit'), 320); }
 
+    await showResultPanel(targetId, totalDamage, killCount);
     setStatus('');
     closeWeaponPopup(); clearLines(); state.hoveredTargetId = null;
   }
@@ -374,7 +402,10 @@
     oldSelect(uid);
     const u = getUnit(uid);
     if (!u) return;
-    if (u.faction === ACTIVE) selectAttacker(uid);
+    if (u.faction === ACTIVE) {
+      selectAttacker(uid);
+      requestAnimationFrame(() => paint());
+    }
   };
   window.selectUnit = B.selectUnit;
 
