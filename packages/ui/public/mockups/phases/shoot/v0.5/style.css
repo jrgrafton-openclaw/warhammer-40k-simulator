@@ -18,7 +18,7 @@
 
 #action-bar { height: 48px; padding: 0 10px; gap: 10px; }
 #move-mode-label { min-width: 0; flex: 1; text-align: left; color: transparent; font-size: 10px; }
-#btn-strat { margin-left: 0; }
+.phase-end-cluster { gap: 12px; }
 #btn-end-shoot { min-width: 154px; }
 
 /* ── Overlays ── */

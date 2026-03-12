@@ -262,12 +262,23 @@
     if (modalBg) modalBg.addEventListener('click', function(e){ if(e.target===modalBg) modalBg.classList.remove('open'); });
 
     // Keyboard shortcuts
-    var SHORTCUTS = { 'm':'btn-move', 'a':'btn-advance', 's':'btn-strat', 'e':'btn-end', 'r':'reset-btn' };
     document.addEventListener('keydown', function(e) {
       if (e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-      var btnId = SHORTCUTS[e.key.toLowerCase()];
-      if (btnId) { var b = document.getElementById(btnId); if(b) b.click(); }
+      var key = e.key.toLowerCase();
+      var shortcutTargets = {
+        'm': ['btn-move'],
+        'a': ['btn-advance'],
+        's': ['btn-strat'],
+        'e': ['btn-end', 'btn-end-shoot'],
+        'r': ['reset-btn']
+      };
+      var ids = shortcutTargets[key];
+      if (!ids) return;
+      for (var i = 0; i < ids.length; i++) {
+        var b = document.getElementById(ids[i]);
+        if (b) { b.click(); break; }
+      }
     });
 
     // Expose selectUnit globally

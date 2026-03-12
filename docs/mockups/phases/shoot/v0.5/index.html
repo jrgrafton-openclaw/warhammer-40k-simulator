@@ -6,7 +6,8 @@
   <title>WH40K Simulator — v0.5 · Shooting Phase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../../shared/stratagem-ui.css?v=20260312a">
+  <link rel="stylesheet" href="style.css?v=20260312a">
 </head>
 <body>
 <div id="app">
@@ -141,9 +142,40 @@
       </div>
       <div class="ab-sep"></div>
       <span id="move-mode-label"></span>
-      <button class="btn-cta" id="btn-end-shoot">END SHOOTING →</button>
+      <div class="phase-end-cluster">
+        <button class="btn-strat" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
+        <div class="phase-end-divider" aria-hidden="true"></div>
+        <button class="btn-cta" id="btn-end-shoot">END SHOOTING →</button>
+      </div>
     </div>
   </main>
+</div>
+
+<div id="modal-bg">
+  <div id="strat-modal">
+    <div class="modal-hdr">
+      <span class="modal-title">SELECT STRATAGEM</span>
+      <button class="modal-x" id="modal-close">×</button>
+    </div>
+    <div class="strat-list">
+      <div class="strat-item">
+        <div class="strat-top">
+          <span class="strat-name">COMMAND RE-ROLL</span>
+          <span class="strat-cp">1 CP</span>
+          <span class="strat-timing">ANY PHASE</span>
+        </div>
+        <p class="strat-desc">Re-roll one dice result.</p>
+      </div>
+      <div class="strat-item">
+        <div class="strat-top">
+          <span class="strat-name">INSANE BRAVERY</span>
+          <span class="strat-cp">1 CP</span>
+          <span class="strat-timing">COMMAND PHASE</span>
+        </div>
+        <p class="strat-desc">A unit automatically passes a Battle-shock test.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="global-tooltip"></div>
@@ -151,7 +183,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="../../../shared/battle-terrain.js"></script>
 <script src="../../../shared/battle-units.js"></script>
-<script src="../../../shared/battle-board.js"></script>
+<script src="../../../shared/battle-board.js?v=20260312a"></script>
 <script src="battle-models-v23.js"></script>
 <script src="../../../shared/collision.js"></script>
 <script src="scene.js"></script>
