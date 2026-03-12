@@ -141,9 +141,38 @@
       </div>
       <div class="ab-sep"></div>
       <span id="move-mode-label"></span>
+      <div class="ab-sep"></div>
+      <button class="btn-strat" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
       <button class="btn-cta" id="btn-end-shoot">END SHOOTING →</button>
     </div>
   </main>
+</div>
+
+<div id="modal-bg">
+  <div id="strat-modal">
+    <div class="modal-hdr">
+      <span class="modal-title">SELECT STRATAGEM</span>
+      <button class="modal-x" id="modal-close">×</button>
+    </div>
+    <div class="strat-list">
+      <div class="strat-item">
+        <div class="strat-top">
+          <span class="strat-name">COMMAND RE-ROLL</span>
+          <span class="strat-cp">1 CP</span>
+          <span class="strat-timing">ANY PHASE</span>
+        </div>
+        <p class="strat-desc">Re-roll one dice result.</p>
+      </div>
+      <div class="strat-item">
+        <div class="strat-top">
+          <span class="strat-name">INSANE BRAVERY</span>
+          <span class="strat-cp">1 CP</span>
+          <span class="strat-timing">COMMAND PHASE</span>
+        </div>
+        <p class="strat-desc">A unit automatically passes a Battle-shock test.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="global-tooltip"></div>
@@ -156,26 +185,6 @@
 <script src="../../../shared/collision.js"></script>
 <script src="scene.js"></script>
 <script src="shooting.js"></script>
-<script>
-(function() {
-  var PAD = 10;
-  var _orig = BattleUI.showTip;
-  BattleUI.showTip = function(el, content) {
-    _orig(el, content);
-    var tip = document.getElementById('global-tooltip');
-    if (!tip) return;
-    var tw = tip.offsetWidth;
-    var th = tip.offsetHeight;
-    var r  = el.getBoundingClientRect();
-    var left = r.left + r.width / 2 - tw / 2;
-    var top  = r.top - 8 - th;
-    left = Math.max(PAD, Math.min(left, window.innerWidth - tw - PAD));
-    if (top < PAD) top = r.bottom + 8;
-    tip.style.left = left + 'px';
-    tip.style.top = top + 'px';
-    tip.style.transform = 'none';
-  };
-})();
-</script>
+<script src="../../../shared/tooltip-clamp.js?v=20260312a"></script>
 </body>
 </html>

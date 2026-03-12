@@ -415,32 +415,6 @@
 <script src="advance-dice.js?v=20260311h"></script>
 <script src="movement.js?v=20260311h"></script>
 <!-- v0.23 local: viewport-safe tooltip positioning override -->
-<script>
-(function() {
-  var PAD = 10; // px clearance from viewport edges
-  var _orig = BattleUI.showTip;
-  BattleUI.showTip = function(el, content) {
-    // Run original (sets content + initial transform-based position)
-    _orig(el, content);
-    var tip = document.getElementById('global-tooltip');
-    if (!tip) return;
-    // Let browser lay out content so offsetWidth/Height are accurate
-    var tw = tip.offsetWidth;
-    var th = tip.offsetHeight;
-    var r  = el.getBoundingClientRect();
-    // Preferred: centred above element
-    var left = r.left + r.width / 2 - tw / 2;
-    var top  = r.top - 8 - th;
-    // Clamp horizontal: don't go off left or right edge
-    left = Math.max(PAD, Math.min(left, window.innerWidth - tw - PAD));
-    // Clamp vertical: if above viewport, flip below the element
-    if (top < PAD) top = r.bottom + 8;
-    // Apply (override the transform-based position)
-    tip.style.left      = left + 'px';
-    tip.style.top       = top  + 'px';
-    tip.style.transform = 'none';
-  };
-})();
-</script>
+<script src="../../../shared/tooltip-clamp.js?v=20260312a"></script>
 </body>
 </html>

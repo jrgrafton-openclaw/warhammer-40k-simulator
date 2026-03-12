@@ -1,5 +1,6 @@
 @import url('../v0.4/style.css');
 @import url('../../../shared/phase-states.css');
+@import url('../../../shared/stratagem-ui.css');
 
 /* ── Shared tokens (must match phase-states.css expectations) ── */
 :root {
@@ -18,6 +19,7 @@
 
 #action-bar { height: 48px; padding: 0 10px; gap: 10px; }
 #move-mode-label { min-width: 0; flex: 1; text-align: left; color: transparent; font-size: 10px; }
+#btn-strat { min-width: 148px; }
 #btn-end-shoot { min-width: 154px; }
 
 /* ── Overlays ── */
