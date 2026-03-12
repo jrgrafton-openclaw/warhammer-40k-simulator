@@ -36,6 +36,7 @@
     hoveredTargetId: null,
     shotUnits: new Set(),
     selectedProfileIx: 0,
+    pendingTargetId: null,
     flow: null,
     overlayRaf: null,
     seed: 0x7f4a7c15
@@ -43,7 +44,7 @@
 
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const stageOrder = ['target','hit','wound','save','result'];
+  const stageOrder = ['weapon','target','hit','wound','save','result'];
 
   function rng(){ state.seed = (state.seed * 1664525 + 1013904223) >>> 0; return state.seed / 0x100000000; }
   function d6(){ return 1 + Math.floor(rng() * 6); }
@@ -141,7 +142,10 @@
   }
 
   function computeFlow(targetId, profileIx){
-    const attacker = getUnit(state.attackerId), target = getUnit(targetId), profile = getProfiles(state.attackerId)[profileIx];
+    const attacker = getUnit(state.attackerId), target = getUnit(targetId);
+    const profileOptions = getValidProfilesForTarget(targetId);
+    const chosenIx = profileOptions.some(opt => opt.i === profileIx) ? profileIx : (profileOptions[0]?.i ?? profileIx);
+    const profile = getProfiles(state.attackerId)[chosenIx];
     if (!attacker || !target || !profile) return null;
     const thresholds = deriveThresholds(profile, attacker, target);
     const attacks = attackCount(profile, attacker);
@@ -160,8 +164,9 @@
       targetId: target.id,
       attackerName: UNITS[attacker.id]?.name || attacker.id,
       targetName: UNITS[target.id]?.name || target.id,
-      profileIx,
+      profileIx: chosenIx,
       profile,
+      profileOptions,
       thresholds,
       attacks,
       hitRolls,
@@ -174,8 +179,46 @@
       totalDamage,
       kills,
       step: 0,
-      info: targetInfo(targetId, profileIx)
+      info: targetInfo(targetId, chosenIx)
     };
+  }
+
+
+  function getUnitStats(uid){
+    return UNITS[uid]?.stats || {};
+  }
+
+  function targetStatSummary(targetId){
+    const stats = getUnitStats(targetId);
+    const info = targetInfo(targetId, state.selectedProfileIx);
+    const pairs = [['M', stats.M || '?'], ['T', stats.T || '?'], ['Sv', stats.Sv || '?'], ['W', stats.W || '?'], ['Ld', stats.Ld || '?'], ['OC', stats.OC || '?']];
+    return `
+      <div class="target-summary">
+        <div class="target-summary-top">
+          <div>
+            <div class="target-summary-name">${UNITS[targetId]?.name || targetId}</div>
+            <div class="target-summary-faction">${UNITS[targetId]?.faction || 'Enemy target'}</div>
+          </div>
+          <div class="profile-pill-row"><span class="profile-pill">${info.reason}</span></div>
+        </div>
+        <div class="target-stat-grid">
+          ${pairs.map(([k,v]) => `<div class="target-stat"><label>${k}</label><strong>${v}</strong></div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  function renderWeaponSelection(flow){
+    const options = flow.profileOptions || [];
+    return `
+      <div class="stage-copy compact">
+        <div class="stage-kicker">Weapon selection</div>
+        <div class="stage-head">Choose a weapon</div>
+        <div class="helper-copy">Pick the firing profile before resolving attacks.${options.length <= 1 ? ' Only one valid profile is available.' : ''}</div>
+        ${targetStatSummary(flow.targetId)}
+        <div class="weapon-grid">
+          ${options.map(opt => `<button class="weapon-card ${opt.i === flow.profileIx ? 'selected' : ''}" data-weapon-pick="${opt.i}"><span class="weapon-card-title">${opt.profile.name}</span><span class="weapon-card-meta"><span>Rng ${opt.profile.rng}</span><span>A ${opt.profile.a}</span><span>S ${opt.profile.s}</span><span>AP ${opt.profile.ap}</span><span>D ${opt.profile.d}</span></span><span class="helper-copy">${opt.info.reason}</span></button>`).join('')}
+        </div>
+      </div>`;
   }
 
   function renderStageList(flow){
@@ -185,7 +228,8 @@
   function stageBody(flow){
     const t = flow.thresholds;
     const rows = {
-      target: `<div class="stage-copy"><div class="stage-kicker">Target lock</div><div class="stage-head">${flow.targetName}</div><div class="stage-sub">${flow.info.reason}</div><div class="stat-strip"><span>${describeProfile(flow.profile)}</span><span>${flow.attackerName}</span></div></div>`,
+      weapon: renderWeaponSelection(flow),
+      target: `<div class="stage-copy compact"><div class="stage-kicker">Target lock</div><div class="stage-head">${flow.targetName}</div><div class="stage-sub">${flow.info.reason}</div>${targetStatSummary(flow.targetId)}<div class="stat-strip"><span>${describeProfile(flow.profile)}</span><span>${flow.attackerName}</span></div></div>`,
       hit: `<div class="stage-copy"><div class="stage-kicker">Hit roll</div><div class="stage-head">${flow.hits} / ${flow.attacks} hit</div><div class="dice-strip">${flow.hitRolls.map(r => `<span class="die-chip ${r >= t.hit ? 'good' : 'bad'}">${r}</span>`).join('')}</div><div class="stage-sub">BS ${t.hit}+ from ${flow.attackerName}</div></div>`,
       wound: `<div class="stage-copy"><div class="stage-kicker">Wound roll</div><div class="stage-head">${flow.wounds} wound${flow.wounds === 1 ? '' : 's'} stick</div><div class="dice-strip">${flow.woundRolls.slice(0, Math.max(1, flow.hits)).map(r => `<span class="die-chip ${r >= t.wound ? 'good' : 'bad'}">${r}</span>`).join('')}</div><div class="stage-sub">Strength ${flow.profile.s} vs Toughness ${UNITS[flow.targetId]?.stats?.T || '?' } → ${t.wound}+</div></div>`,
       save: `<div class="stage-copy"><div class="stage-kicker">Saving throws</div><div class="stage-head">${flow.failed} fail</div><div class="dice-strip enemy">${flow.saveRolls.slice(0, Math.max(1, flow.wounds)).map(r => `<span class="die-chip ${r < t.save ? 'bad' : 'enemy-good'}">${r}</span>`).join('')}</div><div class="stage-sub">${flow.targetName} saves on ${t.save}+ after AP</div></div>`,
@@ -217,13 +261,13 @@
           <div class="variant-title">${flow.attackerName} → ${flow.targetName}</div>
           <div class="variant-subtitle">${CONFIG.tagline}</div>
         </div>
-        <button class="ghost-btn" data-action="cancel">Cancel</button>
+        <button class="icon-btn" data-action="cancel" aria-label="Close">×</button>
       </div>
       <div class="stage-row">${renderStageList(flow)}</div>
       ${stageBody(flow)}
       <div class="control-row">
-        <button class="ghost-btn" data-action="back" ${flow.step === 0 ? 'disabled' : ''}>Back</button>
-        <button class="solid-btn" data-action="next">${flow.step === stageOrder.length - 1 ? 'Apply preview' : 'Advance'}</button>
+        <button class="ghost-btn" data-action="back" ${flow.step === 0 || (flow.step === 1 && (flow.profileOptions?.length || 0) <= 1) ? 'disabled' : ''}>Back</button>
+        <button class="solid-btn" data-action="next">${flow.step === stageOrder.length - 1 ? 'Apply preview' : (flow.step === 0 ? 'Confirm weapon' : 'Advance')}</button>
       </div>`;
 
     glyphs.className = 'shoot-glyphs' + (VARIANT === 'v0.7c' ? '' : ' hidden');
@@ -241,6 +285,7 @@
     }
 
     panel.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', handlePanelAction));
+    panel.querySelectorAll('[data-weapon-pick]').forEach(btn => btn.addEventListener('click', handleWeaponPick));
     controls.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', handlePanelAction));
     positionVariantUI();
     ensureOverlayPinLoop();
@@ -250,15 +295,24 @@
     const target = getTargetAnchor(flow.targetId);
     const attacker = getAttackerAnchor(flow.attackerId);
     const stages = [
-      { label:'TARGET', value:flow.targetName.split(' ')[0], active:flow.step === 0, done:flow.step > 0, x: target.x - 26, y: target.y - 88 },
-      { label:'HIT', value:`${flow.hits}`, active:flow.step === 1, done:flow.step > 1, x: (attacker.x + target.x)/2 - 82, y: (attacker.y + target.y)/2 - 56 },
-      { label:'WND', value:`${flow.wounds}`, active:flow.step === 2, done:flow.step > 2, x: (attacker.x + target.x)/2 - 18, y: (attacker.y + target.y)/2 - 96 },
-      { label:'SAVE', value:`${flow.failed}F`, active:flow.step === 3, done:flow.step > 3, x: target.x + 34, y: target.y - 34 },
-      { label:'DMG', value:`${flow.totalDamage}`, active:flow.step === 4, done:false, x: target.x + 12, y: target.y + 36 }
+      { label:'TARGET', value:flow.targetName.split(' ')[0], active:flow.step === 1, done:flow.step > 1, x: target.x - 26, y: target.y - 88 },
+      { label:'HIT', value:`${flow.hits}`, active:flow.step === 2, done:flow.step > 2, x: (attacker.x + target.x)/2 - 82, y: (attacker.y + target.y)/2 - 56 },
+      { label:'WND', value:`${flow.wounds}`, active:flow.step === 3, done:flow.step > 3, x: (attacker.x + target.x)/2 - 18, y: (attacker.y + target.y)/2 - 96 },
+      { label:'SAVE', value:`${flow.failed}F`, active:flow.step === 4, done:flow.step > 4, x: target.x + 34, y: target.y - 34 },
+      { label:'DMG', value:`${flow.totalDamage}`, active:flow.step === 5, done:false, x: target.x + 12, y: target.y + 36 }
     ];
     return `
       <div class="glyph-connector" style="left:${Math.min(attacker.x, target.x)}px; top:${Math.min(attacker.y, target.y)}px; width:${Math.abs(target.x-attacker.x)}px; height:${Math.abs(target.y-attacker.y)}px;"></div>
       ${stages.map(s => `<div class="combat-glyph ${s.active ? 'active' : ''} ${s.done ? 'done' : ''}" style="left:${s.x}px; top:${s.y}px;"><span>${s.label}</span><strong>${s.value}</strong></div>`).join('')}`;
+  }
+
+  function handleWeaponPick(e){
+    if (!state.flow) return;
+    const profileIx = Number(e.currentTarget.dataset.weaponPick);
+    state.selectedProfileIx = profileIx;
+    state.flow = computeFlow(state.flow.targetId, profileIx);
+    renderResolution(state.flow);
+    paint();
   }
 
   function handlePanelAction(e){
@@ -266,6 +320,7 @@
     if (!state.flow) return;
     if (action === 'cancel') {
       state.targetId = null;
+      state.pendingTargetId = null;
       state.hoveredTargetId = null;
       state.flow = null;
       clearLines();
@@ -275,7 +330,7 @@
       return;
     }
     if (action === 'back') {
-      state.flow.step = Math.max(0, state.flow.step - 1);
+      state.flow.step = Math.max((state.flow.profileOptions?.length || 0) > 1 ? 0 : 1, state.flow.step - 1);
       renderResolution(state.flow);
       paint();
       return;
@@ -283,6 +338,7 @@
     if (action === 'next') {
       if (state.flow.step < stageOrder.length - 1) {
         state.flow.step += 1;
+        if (state.flow.step === 0 && (state.flow.profileOptions?.length || 0) <= 1) state.flow.step = 1;
         renderResolution(state.flow);
         paint();
       } else {
@@ -367,6 +423,7 @@
     state.targetId = targetId;
     state.hoveredTargetId = targetId;
     state.flow = computeFlow(targetId, state.selectedProfileIx);
+    if (state.flow && (state.flow.profileOptions?.length || 0) <= 1) state.flow.step = 1;
     drawHoverLines(targetId);
     renderResolution(state.flow);
     paint();
@@ -389,7 +446,7 @@
     if (!panel || panel.classList.contains('hidden') || !state.flow) return;
     const target = getTargetAnchor(state.flow.targetId);
     if (VARIANT === 'v0.7b' && target.valid) {
-      panel.style.left = `${Math.min(window.innerWidth - 340, target.x + 82)}px`;
+      panel.style.left = `${Math.min(window.innerWidth - 356, target.x + 82)}px`;
       panel.style.top = `${Math.max(112, target.y - 130)}px`;
     } else if (VARIANT === 'v0.7a') {
       panel.style.left = '50%';
