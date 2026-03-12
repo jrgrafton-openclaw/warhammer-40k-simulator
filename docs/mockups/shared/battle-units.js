@@ -123,10 +123,8 @@
   B.apCls = function(ap) {
     var n = typeof ap==='string' ? parseInt(ap) : ap;
     if (isNaN(n)||n===0) return 'ap0';
-    if (n===-1) return 'ap1';
-    if (n===-2) return 'ap2';
-    if (n===-3) return 'ap3';
-    return 'ap4';
+    if (n < 0) return 'ap-neg';
+    return 'ap0';
   };
 
   B.kwPill = function(kw) {
@@ -189,11 +187,11 @@
     // Range toggle labels
     if (B.getRangeInches) {
       var radii = B.getRangeInches(u);
-      document.getElementById('rt-move').textContent    = 'MOVE ' + u.M + '"';
-      document.getElementById('rt-advance').textContent = 'AVG ADV ' + Math.round(radii.advance) + '"';
-      document.getElementById('rt-charge').textContent  = 'AVG CHRG ' + Math.round(radii.charge) + '"';
+      document.getElementById('rt-move').innerHTML    = 'MOVE<br>' + u.M + '"';
+      document.getElementById('rt-advance').innerHTML = 'AVG ADV<br>' + Math.round(radii.advance) + '"';
+      document.getElementById('rt-charge').innerHTML  = 'AVG CHRG<br>' + Math.round(radii.charge) + '"';
       var dsBtn = document.getElementById('rt-ds');
-      if (dsBtn) dsBtn.textContent = 'DS ' + Math.round(radii.ds) + '"';
+      if (dsBtn) dsBtn.innerHTML = 'DS<br>' + Math.round(radii.ds) + '"';
       // Sync active state on toggles
       ['move','advance','charge','ds'].forEach(function(t) {
         var btn = document.getElementById('rt-' + t);

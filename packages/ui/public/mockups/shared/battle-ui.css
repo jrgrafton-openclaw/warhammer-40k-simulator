@@ -279,10 +279,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .wt-name{flex:1;font:600 13px/1.2 'Rajdhani',sans-serif;color:var(--text);}
 .wt-val{font:500 12px/1 'Share Tech Mono',monospace;color:var(--text-dim);min-width:26px;text-align:center;}
 .wt-val.ap0{color:var(--text-dim);}
-.wt-val.ap1{color:var(--text);}
-.wt-val.ap2{color:#d4820a;}
-.wt-val.ap3{color:var(--red-alert);font-weight:700;}
-.wt-val.ap4{color:var(--red-alert);font-weight:700;text-shadow:0 0 6px rgba(204,34,34,.5);}
+.wt-val.ap-neg{color:var(--red-alert);font-weight:700;}
 .wt-val.dmg{color:var(--gold);font-weight:700;}
 .wt-kws{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
 /* abilities */

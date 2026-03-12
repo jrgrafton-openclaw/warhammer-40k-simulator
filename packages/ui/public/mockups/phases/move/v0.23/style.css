@@ -510,10 +510,12 @@ html, body {
 /* Range toggles */
 .card-ranges { display: flex; gap: 4px; padding: 6px 14px; border-bottom: 1px solid rgba(0,212,255,.05); background: var(--bg-surface); }
 .range-toggle {
-  flex: 1; padding: 5px 4px;
-  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+  flex: 1; padding: 5px 4px; min-height: 36px;
+  font: 600 9px/1.2 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase;
   background: transparent; border: 1px solid var(--text-dis);
   color: var(--text-muted); cursor: pointer; transition: all .15s;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center;
 }
 .range-toggle:hover { border-color: var(--text-muted); color: var(--text-sec); }
 .range-toggle.active.move    { background: var(--imp-tint); border-color: var(--imp-dim); color: var(--imp); }
@@ -559,11 +561,8 @@ html, body {
 .wt-name-row { display: flex; align-items: center; gap: 4px; }
 .wt-name { flex: 1; font: 500 13px/1.2 'Rajdhani', sans-serif; color: var(--text-primary); }
 .wt-val  { font: 500 12px/1 'Rajdhani', sans-serif; color: var(--text-muted); min-width: 26px; text-align: center; }
-.wt-val.ap0 { color: var(--text-muted); }
-.wt-val.ap1 { color: var(--text-sec); }
-.wt-val.ap2 { color: var(--strat); }
-.wt-val.ap3 { color: var(--ork); font-weight: 700; }
-.wt-val.ap4 { color: var(--bs); font-weight: 700; text-shadow: 0 0 6px rgba(204,32,32,.4); }
+.wt-val.ap0     { color: var(--text-muted); }
+.wt-val.ap-neg  { color: var(--bs); font-weight: 700; }
 .wt-val.dmg { color: var(--imp); font-weight: 700; }
 .wt-kws { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
 
