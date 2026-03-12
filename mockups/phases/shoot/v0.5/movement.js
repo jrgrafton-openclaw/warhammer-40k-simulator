@@ -91,7 +91,6 @@
       }
     }
     if (uid) moveState.unitsMoved.add(uid);
-    syncMovedUI();
     moveState.mode = null;
     moveState.advanceDie = null;
     clearMoveOverlays();
