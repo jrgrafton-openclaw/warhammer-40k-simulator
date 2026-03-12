@@ -203,8 +203,38 @@
     return best || center(targetUnit);
   }
 
+  function battlefieldRect(){
+    return $('#battlefield')?.getBoundingClientRect() || null;
+  }
+
+  function battlefieldInnerRect(){
+    return $('#battlefield-inner')?.getBoundingClientRect() || null;
+  }
+
+  function elementCenterRelativeTo(el, rect){
+    const elRect = el?.getBoundingClientRect();
+    if (!elRect || !rect) return { x: 0, y: 0, valid: false };
+    return {
+      x: elRect.left - rect.left + elRect.width / 2,
+      y: elRect.top - rect.top + elRect.height / 2,
+      valid: true
+    };
+  }
+
+  function elementCenterInBattlefield(el){
+    return elementCenterRelativeTo(el, battlefieldRect());
+  }
+
+  function elementCenterInBattlefieldInner(el){
+    return elementCenterRelativeTo(el, battlefieldInnerRect());
+  }
+
+  function getUnitElements(unitId){
+    return $$(`#layer-models .model-base[data-unit-id="${unitId}"]`);
+  }
+
   function toBattlefieldCoords(svgX, svgY){
-    const svg = $('#bf-svg'), field = $('#battlefield-inner');
+    const svg = $('#bf-svg'), field = $('#battlefield');
     if (!Number.isFinite(svgX) || !Number.isFinite(svgY)) return { x: 0, y: 0, valid: false };
     if (!svg || !field) return { x: svgX, y: svgY, valid: true };
     const ctm = svg.getScreenCTM();
@@ -216,13 +246,17 @@
     return { x: screen.x - rect.left, y: screen.y - rect.top, valid: true };
   }
 
-  function getTargetAnchor(targetId, mode='popup'){
+  function getUnitAnchor(targetId, mode='popup'){
     const unit = getUnit(targetId); if (!unit) return { x: 0, y: 0, valid: false };
     const c = center(unit);
     if (!c.valid) return { x: 0, y: 0, valid: false };
     const pos = toBattlefieldCoords(c.x, c.y);
     if (!pos.valid) return { x: 0, y: 0, valid: false };
-    return { x: pos.x, y: pos.y + (mode === 'roll' ? 36 : 20), valid: true };
+    return { x: pos.x, y: pos.y + (mode === 'roll' ? 46 : 28), valid: true };
+  }
+
+  function getTargetAnchor(targetId, mode='popup'){
+    return getUnitAnchor(targetId, mode);
   }
 
   function ensureOverlayPinLoop(){
@@ -267,7 +301,12 @@
   }
 
   function modelScreenCenter(model){
-    return toBattlefieldCoords(model.x, model.y);
+    const el = document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
+    return elementCenterInBattlefieldInner(el);
+  }
+
+  function tokenVisual(model){
+    return document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
   }
 
   function randomTargetModel(target){
@@ -275,20 +314,17 @@
   }
 
   function createHitMarker(model, extraClass=''){
-    const layer = $('#hit-flash-layer');
-    if (!layer || !model) return null;
-    const pos = modelScreenCenter(model);
-    if (!pos.valid) return null;
-    const el = document.createElement('div');
-    el.className = `hit-marker anim-hit ${extraClass}`.trim();
-    el.style.left = `${pos.x}px`;
-    el.style.top = `${pos.y}px`;
-    const size = Math.max(28, getModelRadius(model) * 2.4);
-    el.style.width = `${size}px`;
-    el.style.height = `${size}px`;
-    layer.appendChild(el);
-    setTimeout(() => el.remove(), 850);
-    return el;
+    const token = tokenVisual(model);
+    if (!token) return null;
+    token.classList.remove('anim-hit-token');
+    void token.getBoundingClientRect();
+    token.classList.add('anim-hit-token');
+    if (extraClass) token.classList.add(extraClass);
+    setTimeout(() => {
+      token.classList.remove('anim-hit-token');
+      if (extraClass) token.classList.remove(extraClass);
+    }, 820);
+    return token;
   }
 
   function fireProjectile(color, startPos, endPos){
@@ -309,7 +345,6 @@
       if (!from.valid || !to.valid) return;
       setTimeout(() => {
         fireProjectile('var(--imp)', from, to);
-        createHitMarker(pair.to);
       }, ix * 70);
     });
     await new Promise(r => setTimeout(r, Math.max(460, pairs.length * 70 + 420)));
@@ -375,14 +410,15 @@
     });
   }
 
-  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message='', stageKind='generic', ctaLabel='Click to roll', nextLabel='Continue'){
+  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, message='', stageKind='generic', ctaLabel='Click to roll', nextLabel='Continue', onTrigger = null){
     return new Promise(resolve => {
       const overlay = $('#roll-overlay'); if (!overlay) return resolve({ rolls, successes: rolls.length, threshold });
       state.pinnedRollTargetId = targetId;
       const successes = threshold ? rolls.filter(r => r >= threshold).length : rolls.length;
       renderDiceStage(title, rolls.length, threshold, auto, message, ctaLabel);
       const cta = overlay.querySelector('.roll-cta');
-      const fire = () => {
+      const fire = async () => {
+        if (typeof onTrigger === 'function') await onTrigger();
         revealDice(rolls, threshold, stageKind);
         setTimeout(() => {
           if (auto) {
@@ -396,7 +432,7 @@
           }
         }, 480 + rolls.length * 40);
       };
-      if (auto) { cta.disabled = true; setTimeout(fire, 140); }
+      if (auto) { cta.disabled = true; setTimeout(() => { fire(); }, 140); }
       else cta.addEventListener('click', () => { cta.disabled = true; fire(); }, { once: true });
     });
   }
@@ -498,13 +534,11 @@
       paint();
     };
 
-    await playVolley(attacker, target);
-
     const thresholds = deriveThresholds(profile, attacker, target);
     const totalAttacks = attackCount(profile, attacker);
 
     const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
+    const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds', () => playVolley(attacker, target));
     if (!hit.successes) return finishAttack(0, 0);
 
     const woundRolls = Array.from({length: hit.successes}, d6);
@@ -607,7 +641,11 @@
     targetInfo,
     getValidProfilesForTarget,
     clearEffects,
-    paint
+    paint,
+    getUnitAnchor,
+    modelScreenCenter,
+    rollDiceStage,
+    playVolley
   };
 
   bindShootOverrides();
