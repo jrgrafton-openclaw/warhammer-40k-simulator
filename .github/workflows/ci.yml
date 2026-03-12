@@ -68,12 +68,12 @@ jobs:
           GITHUB_PAGES: true
 
       - name: Add .nojekyll
-        run: touch docs/.nojekyll
+        run: touch dist/.nojekyll
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
+          publish_dir: ./dist
           publish_branch: gh-pages
           commit_message: 'chore: deploy ${{ github.sha }}'
