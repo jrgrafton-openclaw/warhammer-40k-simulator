@@ -94,8 +94,6 @@
       </svg>
     </div>
 
-    <aside id="combat-log-panel"><div class="log-header">COMBAT LOG</div><div id="combat-log"></div></aside>
-
     <div id="weapon-popup" class="overlay-panel hidden"></div>
     <div id="roll-overlay" class="overlay-panel hidden"></div>
 
@@ -120,7 +118,6 @@
         <button class="range-toggle advance" id="rt-advance" data-range-type="advance">ADV ~10"</button>
         <button class="range-toggle charge" id="rt-charge" data-range-type="charge">CHRG ~13"</button>
       </div>
-      <div id="shoot-summary" class="card-section"></div>
       <div id="card-wargear"></div>
       <div class="card-weapons" id="card-weapons"></div>
       <div class="card-abilities" id="card-abilities"></div>
@@ -139,9 +136,8 @@
         <div class="ph-item"><span class="ph-dot"></span>FIGHT</div>
       </div>
       <div class="ab-sep"></div>
-      <span id="move-mode-label">— PICK A FRIENDLY UNIT TO SHOOT —</span>
-      <button class="action-btn cancel-move" id="btn-clear-shot">CLEAR TARGETING</button>
-      <button class="btn-cta" id="btn-undo-shot">UNDO LAST SHOT</button>
+      <span id="move-mode-label"></span>
+      <button class="btn-cta" id="btn-end-shoot">END SHOOTING →</button>
     </div>
   </main>
 </div>
