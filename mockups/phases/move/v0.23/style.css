@@ -376,6 +376,7 @@ html, body {
 .rc-move    { border: 2px dashed rgba(0,212,255,.45); }
 .rc-advance { border: 1.5px dashed rgba(204,136,0,.45); }
 .rc-charge  { border: 1.5px dashed rgba(204,100,0,.4); }
+.rc-ds      { border: 1.5px dotted rgba(186,126,255,.6); }
 .range-label {
   position: absolute; pointer-events: none; display: none; z-index: 2;
   font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
@@ -385,6 +386,7 @@ html, body {
 .rl-move    { color: rgba(0,212,255,.8); }
 .rl-advance { color: rgba(204,136,0,.8); }
 .rl-charge  { color: rgba(204,100,0,.8); }
+.rl-ds      { color: rgba(186,126,255,.9); }
 
 /* ── Objectives — SVG hex approach for proper visible strokes ── */
 .obj-hex-wrap {
@@ -517,6 +519,7 @@ html, body {
 .range-toggle.active.move    { background: var(--imp-tint); border-color: var(--imp-dim); color: var(--imp); }
 .range-toggle.active.advance { background: var(--strat-tint); border-color: var(--strat-dim); color: var(--strat); }
 .range-toggle.active.charge  { background: rgba(204,100,0,.1); border-color: rgba(204,100,0,.4); color: #cc6400; }
+.range-toggle.active.ds      { background: rgba(186,126,255,.12); border-color: rgba(186,126,255,.4); color: #ba7eff; }
 
 /* Card sections */
 .card-section { padding: 8px 14px; border-bottom: 1px solid rgba(0,212,255,.05); background: var(--bg-surface); }
