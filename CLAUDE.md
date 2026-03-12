@@ -9,8 +9,8 @@ Read `architecture.md` and `rules_coverage.md` before making changes.
 
 **Mockups live in `packages/ui/public/mockups/`** — NOT in the repo root `mockups/`.
 
-Vite copies `packages/ui/public/` verbatim into `docs/` during `pnpm --filter @wh40k/ui build`.
-`docs/` is what GitHub Pages deploys (via `peaceiris/actions-gh-pages`, branch `gh-pages`).
+Vite copies `packages/ui/public/` verbatim into `dist/` during `pnpm --filter @wh40k/ui build`.
+`dist/` is the generated build artifact that CI deploys to GitHub Pages (via `peaceiris/actions-gh-pages`, branch `gh-pages`).
 
 ### Prototype structure (phase-organised)
 ```
@@ -44,10 +44,9 @@ cp -r packages/ui/public/mockups/phases/move/v0.16/ \
 | `packages/ui/public/mockups/phases/move/v0.16/index.html` | ✅ Yes |
 | `packages/ui/public/mockups/archive/v0.12.html` | ✅ Yes |
 | `mockups/v0.x.html` (repo root) | ❌ No — never deployed |
-| `docs/mockups/...` | ❌ No — wiped by Vite build (`emptyOutDir: true`) |
+| `dist/mockups/...` | ❌ No — generated build output only (`emptyOutDir: true`) |
 
 **shared/ policy:** Append-only once in use. Updated manually only at new-phase kickoff.
-See `docs/mockup-prototype-strategy.md` for full workflow.
 
 **Mockup deploy checklist — ALL steps required before "done":**
 1. Create `phases/[phase]/v0.N/index.html`

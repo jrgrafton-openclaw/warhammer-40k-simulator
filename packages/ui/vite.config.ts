@@ -22,7 +22,7 @@ export default defineConfig({
   // When deploying to Pages, set base to the repo name
   base: process.env['GITHUB_PAGES'] === 'true' ? '/warhammer-40k-simulator/' : '/',
   build: {
-    outDir: resolve(__dirname, '../../docs'),
+    outDir: resolve(__dirname, '../../dist'),
     emptyOutDir: true,
     target: 'es2022',
   },
