@@ -61,36 +61,43 @@
 
 /* ── Dice overlay (uses .die from shared phase-states.css) ── */
 #roll-overlay {
-  min-width: 720px; text-align: center; padding: 10px 0 24px;
+  min-width: 520px; max-width: 620px; text-align: center; padding: 8px 0 16px;
   transform: translate(-50%, 0);
 }
 #roll-overlay .overlay-title {
-  padding-top: 16px;
-  font-size: 20px;
-  letter-spacing: 4px;
+  padding-top: 12px;
+  font-size: 16px;
+  letter-spacing: 3px;
 }
-#roll-overlay .dice-row { justify-content: center; padding: 22px 36px 10px; gap: 14px; }
+#roll-overlay .dice-row { justify-content: center; padding: 14px 20px 8px; gap: 10px; }
 #roll-overlay .dice-summary {
-  padding: 0 24px 12px; text-align: center;
-  font: 700 18px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: #6e87b4;
+  padding: 0 20px 10px; text-align: center;
+  font: 700 15px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; color: #6e87b4;
 }
 #roll-overlay .die {
-  width: 76px; height: 76px; border-radius: 12px;
-  border-width: 2px; font-size: 42px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 10px 28px rgba(0,0,0,.34);
+  width: 56px; height: 56px; border-radius: 9px;
+  border-width: 2px; font-size: 30px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 7px 18px rgba(0,0,0,.28);
 }
 #roll-overlay .die.rolling {
   color: var(--imp);
   border-color: rgba(0,212,255,.42);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 24px rgba(0,212,255,.18), 0 10px 28px rgba(0,0,0,.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 18px rgba(0,212,255,.18), 0 7px 18px rgba(0,0,0,.28);
 }
 #roll-overlay .die.pre-roll { color: #6e87b4; }
+#roll-overlay .die.rolling::before {
+  content: '⚅';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--imp); opacity: .9;
+}
+#roll-overlay .die.rolling { color: transparent; }
 
 .roll-cta {
-  margin-top: 8px; min-width: 300px; height: 68px;
+  margin-top: 6px; min-width: 220px; height: 48px;
   background: var(--imp); border: 1px solid var(--imp);
   color: #081017; cursor: pointer;
-  font: 700 22px/1 'Rajdhani', sans-serif; letter-spacing: 4px; text-transform: uppercase;
+  font: 700 16px/1 'Rajdhani', sans-serif; letter-spacing: 3px; text-transform: uppercase;
 }
 .roll-cta:disabled { opacity: .78; cursor: default; }
 
@@ -135,7 +142,12 @@
   stroke-dasharray: 6 5; stroke-linecap: round; opacity: .95;
 }
 
-/* ── Wound pip overlay ── */
-.wound-pip { pointer-events: none; }
+/* ── Wound ring overlay ── */
+.wound-ring-layer { pointer-events: none; }
+.wound-ring-track { stroke: rgba(30,42,56,.9); stroke-width: 2.25; fill: none; }
+.wound-ring-remain { stroke: rgba(0,212,255,.92); stroke-width: 2.25; fill: none; stroke-linecap: round; }
+.wound-ring-lost { stroke: rgba(255,96,96,.95); stroke-width: 2.25; fill: none; stroke-linecap: round; }
+.wound-ring-label-bg { fill: rgba(8,12,16,.92); stroke: rgba(0,212,255,.18); stroke-width: .8; }
+.wound-ring-label { fill: #d7ecff; font: 700 7px/1 'Rajdhani', sans-serif; letter-spacing: .4px; }
 
 @media (max-width: 1200px) { #unit-card { width: 300px; } }
