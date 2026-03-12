@@ -10,7 +10,7 @@
     hoveredTargetId: null,
     selectedProfileIx: 0,
     shotUnits: new Set(),
-    seed: 5005,
+    seed: (Date.now() ^ 0x5f3759df) >>> 0,
     pinnedPopupTargetId: null,
     pinnedRollTargetId: null,
     overlayRaf: null
@@ -26,7 +26,11 @@
   function d6(){ return 1 + Math.floor(rng() * 6); }
   function getUnit(uid){ return simState.units.find(u=>u.id===uid); }
   function isEnemy(uid){ const u=getUnit(uid); return u && u.faction !== ACTIVE; }
-  function center(unit){ const p=unit.models.reduce((a,m)=>({x:a.x+m.x,y:a.y+m.y}),{x:0,y:0}); return {x:p.x/unit.models.length,y:p.y/unit.models.length}; }
+  function center(unit){
+    if (!unit || !Array.isArray(unit.models) || unit.models.length === 0) return { x: 0, y: 0, valid: false };
+    const p=unit.models.reduce((a,m)=>({x:a.x+m.x,y:a.y+m.y}),{x:0,y:0});
+    return {x:p.x/unit.models.length,y:p.y/unit.models.length, valid: true};
+  }
   function setStatus(msg){ const el = $('#move-mode-label'); if (el) el.textContent = msg || ''; }
   function distIn(a,b){ const ca=center(getUnit(a)), cb=center(getUnit(b)); return Math.hypot(ca.x-cb.x, ca.y-cb.y)/PX_PER_INCH; }
   function parseRange(weapon){ return parseInt(String(weapon?.rng || '').replace(/[^0-9]/g,'')) || 0; }
@@ -115,38 +119,72 @@
     if (badge) badge.classList.toggle('visible', !!state.attackerId && state.shotUnits.has(state.attackerId));
   }
 
+  function describeWoundState(uid){
+    const unit = getUnit(uid);
+    if (!unit) return null;
+    const wPer = Number(UNITS[uid]?.stats?.W || 1);
+    const carry = unit._carryWounds || 0;
+    if (wPer <= 1 || carry <= 0) return null;
+    return { unit, wPer, carry, remaining: Math.max(0, wPer - carry), lostFrac: carry / wPer };
+  }
+
+  function circleArcPath(cx, cy, r, startDeg, endDeg){
+    const toRad = (deg) => (deg - 90) * Math.PI / 180;
+    const sx = cx + r * Math.cos(toRad(startDeg));
+    const sy = cy + r * Math.sin(toRad(startDeg));
+    const ex = cx + r * Math.cos(toRad(endDeg));
+    const ey = cy + r * Math.sin(toRad(endDeg));
+    const largeArc = endDeg - startDeg > 180 ? 1 : 0;
+    return `M ${sx} ${sy} A ${r} ${r} 0 ${largeArc} 1 ${ex} ${ey}`;
+  }
+
   function updateWoundOverlays(){
+    const NS = 'http://www.w3.org/2000/svg';
     $$('#layer-models .model-base').forEach(g => {
       const uid = g.dataset.unitId;
-      const unit = getUnit(uid);
-      if (!unit) return;
-      const existingPip = g.querySelector('.wound-pip');
-      if (existingPip) existingPip.remove();
-      const carry = unit._carryWounds || 0;
-      if (carry > 0) {
-        const wPer = Number(UNITS[uid]?.stats?.W || 1);
-        if (wPer > 1) {
-          const NS = 'http://www.w3.org/2000/svg';
-          const m = unit.models.find(m2 => m2.id === g.dataset.modelId);
-          if (!m) return;
-          const pip = document.createElementNS(NS, 'g');
-          pip.setAttribute('class', 'wound-pip');
-          const cx = m.x + (m.r || 12) * 0.52;
-          const cy = m.y - (m.r || 12) * 0.52;
-          const bg = document.createElementNS(NS, 'circle');
-          bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', '7');
-          bg.setAttribute('fill', '#1a0808'); bg.setAttribute('stroke', '#cc2020'); bg.setAttribute('stroke-width', '1.2');
-          pip.appendChild(bg);
-          const txt = document.createElementNS(NS, 'text');
-          txt.setAttribute('x', cx); txt.setAttribute('y', cy);
-          txt.setAttribute('text-anchor', 'middle'); txt.setAttribute('dominant-baseline', 'central');
-          txt.setAttribute('font-size', '7'); txt.setAttribute('font-family', 'Anton');
-          txt.setAttribute('fill', '#ff6060'); txt.setAttribute('pointer-events', 'none');
-          txt.textContent = `${carry}/${wPer}`;
-          pip.appendChild(txt);
-          g.appendChild(pip);
-        }
+      const wound = describeWoundState(uid);
+      const existing = g.querySelector('.wound-ring-layer');
+      if (existing) existing.remove();
+      if (!wound) return;
+      const m = wound.unit.models.find(m2 => m2.id === g.dataset.modelId);
+      if (!m) return;
+      const ring = document.createElementNS(NS, 'g');
+      ring.setAttribute('class', 'wound-ring-layer');
+      const r = (m.r || 12) + 4.5;
+      const cx = m.x, cy = m.y;
+
+      const track = document.createElementNS(NS, 'circle');
+      track.setAttribute('class', 'wound-ring-track');
+      track.setAttribute('cx', cx); track.setAttribute('cy', cy); track.setAttribute('r', r);
+      ring.appendChild(track);
+
+      const lostSweep = Math.max(10, 360 * wound.lostFrac);
+      const remainSweep = Math.max(0, 360 - lostSweep - 8);
+      if (remainSweep > 6) {
+        const remain = document.createElementNS(NS, 'path');
+        remain.setAttribute('class', 'wound-ring-remain');
+        remain.setAttribute('d', circleArcPath(cx, cy, r, 0, remainSweep));
+        ring.appendChild(remain);
       }
+      const lost = document.createElementNS(NS, 'path');
+      lost.setAttribute('class', 'wound-ring-lost');
+      lost.setAttribute('d', circleArcPath(cx, cy, r, remainSweep + 8, 360));
+      ring.appendChild(lost);
+
+      if (window.activeUnitId === uid || state.hoveredTargetId === uid || state.targetId === uid) {
+        const bg = document.createElementNS(NS, 'rect');
+        bg.setAttribute('class', 'wound-ring-label-bg');
+        bg.setAttribute('x', cx - 10); bg.setAttribute('y', cy + r + 3); bg.setAttribute('rx', '4');
+        bg.setAttribute('width', '20'); bg.setAttribute('height', '10');
+        ring.appendChild(bg);
+        const txt = document.createElementNS(NS, 'text');
+        txt.setAttribute('class', 'wound-ring-label');
+        txt.setAttribute('x', cx); txt.setAttribute('y', cy + r + 10);
+        txt.setAttribute('text-anchor', 'middle');
+        txt.textContent = `${wound.remaining}W`;
+        ring.appendChild(txt);
+      }
+      g.appendChild(ring);
     });
   }
 
@@ -167,19 +205,24 @@
 
   function toBattlefieldCoords(svgX, svgY){
     const svg = $('#bf-svg'), field = $('#battlefield');
-    if (!svg || !field) return { x: svgX, y: svgY };
+    if (!Number.isFinite(svgX) || !Number.isFinite(svgY)) return { x: 0, y: 0, valid: false };
+    if (!svg || !field) return { x: svgX, y: svgY, valid: true };
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0, valid: false };
     const pt = svg.createSVGPoint();
     pt.x = svgX; pt.y = svgY;
-    const screen = pt.matrixTransform(svg.getScreenCTM());
+    const screen = pt.matrixTransform(ctm);
     const rect = field.getBoundingClientRect();
-    return { x: screen.x - rect.left, y: screen.y - rect.top };
+    return { x: screen.x - rect.left, y: screen.y - rect.top, valid: true };
   }
 
   function getTargetAnchor(targetId, mode='popup'){
-    const unit = getUnit(targetId); if (!unit) return { x: 0, y: 0 };
+    const unit = getUnit(targetId); if (!unit) return { x: 0, y: 0, valid: false };
     const c = center(unit);
+    if (!c.valid) return { x: 0, y: 0, valid: false };
     const pos = toBattlefieldCoords(c.x, c.y);
-    return { x: pos.x, y: pos.y + (mode === 'roll' ? 46 : 28) };
+    if (!pos.valid) return { x: 0, y: 0, valid: false };
+    return { x: pos.x, y: pos.y + (mode === 'roll' ? 46 : 28), valid: true };
   }
 
   function ensureOverlayPinLoop(){
@@ -188,11 +231,11 @@
       const popup = $('#weapon-popup'), roll = $('#roll-overlay');
       if (popup && !popup.classList.contains('hidden') && state.pinnedPopupTargetId) {
         const a = getTargetAnchor(state.pinnedPopupTargetId, 'popup');
-        popup.style.left = `${a.x}px`; popup.style.top = `${a.y}px`;
+        if (a.valid) { popup.style.left = `${a.x}px`; popup.style.top = `${a.y}px`; }
       }
       if (roll && !roll.classList.contains('hidden') && state.pinnedRollTargetId) {
         const a = getTargetAnchor(state.pinnedRollTargetId, 'roll');
-        roll.style.left = `${a.x}px`; roll.style.top = `${a.y}px`;
+        if (a.valid) { roll.style.left = `${a.x}px`; roll.style.top = `${a.y}px`; }
       }
       if ((popup && !popup.classList.contains('hidden')) || (roll && !roll.classList.contains('hidden')))
         state.overlayRaf = requestAnimationFrame(tick);
@@ -293,7 +336,7 @@
             }, 260 + rolls.length * 40);
           } else {
             cta.textContent = nextLabel; cta.disabled = false;
-            cta.onclick = () => { overlay.classList.add('hidden'); state.pinnedRollTargetId = null; resolve({ rolls, successes, threshold }); };
+            cta.onclick = () => resolve({ rolls, successes, threshold, advanceRequested: true });
           }
         }, 480 + rolls.length * 40);
       };
@@ -356,24 +399,29 @@
     const info = targetInfo(targetId, state.selectedProfileIx);
     if (!info.valid) return;
 
-    const thresholds = deriveThresholds(profile, attacker, target);
-    const totalAttacks = attackCount(profile, attacker);
-
-    const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
-    if (!hit.successes) {
-      state.shotUnits.add(attacker.id); B.renderModels(); paint();
-      await showResultPanel(targetId, 0, 0, UNITS[target.id]?.name);
+    const finishAttack = async (totalDamage, killCount) => {
+      state.shotUnits.add(attacker.id);
+      B.renderModels(); paint(); updateWoundOverlays();
+      await showResultPanel(targetId, totalDamage, killCount, UNITS[target.id]?.name);
+      setStatus('');
       state.attackerId = null;
       state.targetId = null;
       state.hoveredTargetId = null;
       closeWeaponPopup(); clearLines();
       oldSelect(null);
       paint();
-      return;
-    }
+    };
+
+    const thresholds = deriveThresholds(profile, attacker, target);
+    const totalAttacks = attackCount(profile, attacker);
+
+    const hitRolls = Array.from({length: totalAttacks}, d6);
+    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
+    if (!hit.successes) return finishAttack(0, 0);
+
     const woundRolls = Array.from({length: hit.successes}, d6);
-    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false, targetId, `Wound on ${thresholds.wound}+`, 'wound', 'Roll Wounds', 'Roll Saves');
+    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, true, targetId, `Wound on ${thresholds.wound}+`, 'wound', 'Rolling Wounds…', 'Roll Saves');
+
     const saveRolls = Array.from({length: wound.successes}, d6);
     const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true, targetId, `Save on ${thresholds.save}+`, 'save');
     const failedSaves = save.rolls.filter(r => r < thresholds.save).length;
@@ -384,7 +432,7 @@
       if (fixedDamage === 1) totalDamage = failedSaves;
       else {
         const damageRolls = Array.from({length: failedSaves}, () => pickDamage(profile.d));
-        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId, 'Damage per failed save', 'damage', 'Roll Damage', 'Show Result');
+        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId, 'Damage per failed save', 'damage', 'Rolling Damage…', 'Show Result');
         totalDamage = damageStage.rolls.reduce((a,b)=>a+b,0);
       }
     }
@@ -398,17 +446,7 @@
     if (killCount) target.models.splice(target.models.length - killCount, killCount);
     target._carryWounds = target._carryWounds % wPer;
 
-    state.shotUnits.add(attacker.id);
-    B.renderModels(); paint(); updateWoundOverlays();
-
-    await showResultPanel(targetId, totalDamage, killCount, UNITS[target.id]?.name);
-    setStatus('');
-    state.attackerId = null;
-    state.targetId = null;
-    state.hoveredTargetId = null;
-    closeWeaponPopup(); clearLines();
-    oldSelect(null);
-    paint();
+    return finishAttack(totalDamage, killCount);
   }
 
   function onEnemyInteract(unitId){
