@@ -17,11 +17,12 @@
       move:    unit.M,
       advance: unit.M + 3.5,
       charge:  unit.M + 7,
+      ds:      9,
     };
   };
 
   B.clearRangeCircles = function() {
-    ['move','advance','charge'].forEach(function(type) {
+    ['move','advance','charge','ds'].forEach(function(type) {
       var c = document.getElementById('range-' + type);
       var l = document.getElementById('range-' + type + '-label');
       if (c) c.style.display = 'none';
@@ -58,7 +59,7 @@
     var ppi = (bfRect.width / 60) * sc;
 
     var radii = B.getRangeInches(u);
-    ['move','advance','charge'].forEach(function(type) {
+    ['move','advance','charge','ds'].forEach(function(type) {
       var circle = document.getElementById('range-' + type);
       var label  = document.getElementById('range-' + type + '-label');
       var R_px   = radii[type] * ppi;
@@ -102,7 +103,7 @@
     var isDragging = false, startX, startY;
     var zoomEaseTimer = null;
     var zoomSettleTimer = null;
-    var RC_IDS = ['range-move','range-advance','range-charge','range-move-label','range-advance-label','range-charge-label'];
+    var RC_IDS = ['range-move','range-advance','range-charge','range-ds','range-move-label','range-advance-label','range-charge-label','range-ds-label'];
 
     function hideRangeCircles() {
       RC_IDS.forEach(function(id) {
@@ -201,7 +202,7 @@
         document.querySelectorAll('.rail-unit').forEach(function(e){ e.classList.remove('active'); });
         B.activeRangeTypes.clear();
         B.clearRangeCircles();
-        ['move','advance','charge'].forEach(function(t) {
+        ['move','advance','charge','ds'].forEach(function(t) {
           var btn = document.getElementById('rt-'+t);
           if (btn) btn.classList.remove('active');
         });
@@ -212,7 +213,7 @@
     }
 
     // Range toggles
-    ['move','advance','charge'].forEach(function(type) {
+    ['move','advance','charge','ds'].forEach(function(type) {
       var btn = document.getElementById('rt-' + type);
       if (!btn) return;
       btn.addEventListener('click', function() {

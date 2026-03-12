@@ -10,7 +10,10 @@
     hoveredTargetId: null,
     selectedProfileIx: 0,
     shotUnits: new Set(),
-    seed: 5005
+    seed: 5005,
+    pinnedPopupTargetId: null,
+    pinnedRollTargetId: null,
+    overlayRaf: null
   };
 
   const history = [];
@@ -28,6 +31,7 @@
   function getBallisticSkill(uid){ return ({'assault-intercessors':3,'intercessor-squad-a':3,'hellblasters':3,'primaris-lieutenant':3,'redemptor-dreadnought':3,'boyz-mob':5,'boss-nob':5,'mekboy':5}[uid] || 4); }
   function parseSave(sv){ const n = parseInt(String(sv || '').replace(/[^0-9]/g,'')); return n || 7; }
   function woundTarget(str, toughness){ if (str >= toughness * 2) return 2; if (str > toughness) return 3; if (str === toughness) return 4; if (str * 2 <= toughness) return 6; return 5; }
+  function damageValue(d){ if (typeof d === 'number') return d; const s = String(d || '1').trim().toUpperCase(); if (s === 'D3') return null; return Number(s) || 1; }
   function pickDamage(d){ if (typeof d === 'number') return d; const s = String(d || '1').trim().toUpperCase(); if (s === 'D3') return 1 + Math.floor(rng()*3); return Number(s) || 1; }
   function attackCount(profile, attacker){ return (Number(profile.a || 1) || 1) * Math.max(1, attacker.models.length); }
 
@@ -85,20 +89,66 @@
     return { hit, wound: woundTarget(Number(profile.s || 0), t), save };
   }
 
+  function updateSpentIndicators(){
+    $$('.rail-unit').forEach(row => row.classList.toggle('attacked', state.shotUnits.has(row.dataset.unit)));
+    $('#unit-state-badge')?.classList.toggle('visible', !!state.attackerId && state.shotUnits.has(state.attackerId));
+  }
+
   function clearLines(){ const g = $('#layer-target-lines'); if (g) g.innerHTML = ''; }
 
   function closestTargetEdgePoint(attackerModel, targetUnit){
     let best = null;
     targetUnit.models.forEach(m => {
+      const radius = m.r || Math.max(m.w || 20, m.h || 20) / 2;
       const dx = attackerModel.x - m.x;
       const dy = attackerModel.y - m.y;
       const len = Math.hypot(dx, dy) || 1;
-      const px = m.x + (dx / len) * (m.r || 12);
-      const py = m.y + (dy / len) * (m.r || 12);
+      const px = m.x + (dx / len) * radius;
+      const py = m.y + (dy / len) * radius;
       const dist = Math.hypot(attackerModel.x - px, attackerModel.y - py);
       if (!best || dist < best.dist) best = { x: px, y: py, dist };
     });
     return best || center(targetUnit);
+  }
+
+  function toBattlefieldCoords(svgX, svgY){
+    const svg = $('#bf-svg');
+    const field = $('#battlefield');
+    if (!svg || !field) return { x: svgX, y: svgY };
+    const pt = svg.createSVGPoint();
+    pt.x = svgX; pt.y = svgY;
+    const screen = pt.matrixTransform(svg.getScreenCTM());
+    const rect = field.getBoundingClientRect();
+    return { x: screen.x - rect.left, y: screen.y - rect.top };
+  }
+
+  function getTargetAnchor(targetId, mode='popup'){
+    const unit = getUnit(targetId); if (!unit) return { x: 0, y: 0 };
+    const c = center(unit);
+    const pos = toBattlefieldCoords(c.x, c.y);
+    return { x: pos.x, y: pos.y + (mode === 'roll' ? 46 : 28) };
+  }
+
+  function ensureOverlayPinLoop(){
+    if (state.overlayRaf) return;
+    const tick = () => {
+      const popup = $('#weapon-popup');
+      const roll = $('#roll-overlay');
+      if (popup && !popup.classList.contains('hidden') && state.pinnedPopupTargetId) {
+        const a = getTargetAnchor(state.pinnedPopupTargetId, 'popup');
+        popup.style.left = `${a.x}px`; popup.style.top = `${a.y}px`;
+      }
+      if (roll && !roll.classList.contains('hidden') && state.pinnedRollTargetId) {
+        const a = getTargetAnchor(state.pinnedRollTargetId, 'roll');
+        roll.style.left = `${a.x}px`; roll.style.top = `${a.y}px`;
+      }
+      if ((popup && !popup.classList.contains('hidden')) || (roll && !roll.classList.contains('hidden'))) {
+        state.overlayRaf = requestAnimationFrame(tick);
+      } else {
+        state.overlayRaf = null;
+      }
+    };
+    state.overlayRaf = requestAnimationFrame(tick);
   }
 
   function drawHoverLines(targetId){
@@ -116,35 +166,84 @@
     });
   }
 
-  function closeWeaponPopup(){ const el = $('#weapon-popup'); if (el) { el.classList.add('hidden'); el.innerHTML = ''; } }
+  function closeWeaponPopup(){
+    const el = $('#weapon-popup');
+    state.pinnedPopupTargetId = null;
+    if (el) { el.classList.add('hidden'); el.innerHTML = ''; }
+  }
 
   function openWeaponPopup(targetId, options){
     const popup = $('#weapon-popup'); if (!popup) return;
-    const target = getUnit(targetId); const c = center(target);
-    popup.style.left = `${c.x - 90}px`; popup.style.top = `${c.y + 26}px`;
-    popup.innerHTML = `<div class="overlay-title">SELECT WEAPON</div>` + options.map(opt => `<button class="weapon-choice" data-ix="${opt.i}"><span>${opt.profile.name}</span><span class="weapon-meta">${opt.profile.rng} · A${opt.profile.a} · S${opt.profile.s}</span></button>`).join('');
+    state.pinnedPopupTargetId = targetId;
+    popup.innerHTML = `<div class="overlay-title">SELECT WEAPON</div>` + options.map(opt => {
+      const ap = Number(opt.profile.ap || 0);
+      return `<button class="weapon-choice" data-ix="${opt.i}"><span>${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap < 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div></button>`;
+    }).join('');
     popup.classList.remove('hidden');
     popup.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => { state.selectedProfileIx = Number(btn.dataset.ix); closeWeaponPopup(); beginAttack(targetId); }));
+    ensureOverlayPinLoop();
   }
 
-  function rollDiceStage(title, rolls, threshold, auto = false){
+  function renderDiceStage(title, count, threshold, auto){
+    const overlay = $('#roll-overlay');
+    const chips = Array.from({length: Math.max(1, count)}, () => '<span class="die-chip">0</span>').join('');
+    overlay.innerHTML = `<div class="overlay-title">${title}</div><div class="roll-cluster">${chips}</div><div class="roll-summary">${threshold ? `Target ${threshold}+` : 'Resolve damage'}</div><button class="roll-cta">${auto ? 'Resolving…' : 'Click to roll'}</button>`;
+    overlay.classList.remove('hidden');
+    ensureOverlayPinLoop();
+  }
+
+  function revealDice(rolls, threshold){
+    const chips = $$('#roll-overlay .die-chip');
+    rolls.forEach((r, i) => {
+      const chip = chips[i];
+      if (!chip) return;
+      chip.textContent = r;
+      chip.classList.add('revealed');
+      if (threshold == null) chip.classList.add('neutral');
+      else chip.classList.add(r >= threshold ? 'success' : 'fail');
+    });
+  }
+
+  function rollDiceStage(title, rolls, threshold, auto = false, targetId = null){
     return new Promise(resolve => {
       const overlay = $('#roll-overlay'); if (!overlay) return resolve({ rolls, successes: rolls.length, threshold });
+      state.pinnedRollTargetId = targetId;
       const successes = threshold ? rolls.filter(r => r >= threshold).length : rolls.length;
-      overlay.innerHTML = `<div class="overlay-title">${title}</div><div class="roll-cluster">${rolls.map(r => `<span class="die-chip">${r}</span>`).join('')}</div><div class="roll-summary">${threshold ? `${successes} / ${rolls.length} at ${threshold}+` : `${rolls.length} roll${rolls.length===1?'':'s'}`}</div><button class="roll-cta">${auto ? 'Resolving…' : 'CLICK TO ROLL'}</button>`;
-      overlay.classList.remove('hidden');
+      renderDiceStage(title, rolls.length, threshold, auto);
       const cta = overlay.querySelector('.roll-cta');
       const fire = () => {
         overlay.classList.add('rolling');
+        setTimeout(() => revealDice(rolls, threshold), 80);
         setTimeout(() => {
           overlay.classList.remove('rolling');
-          overlay.classList.add('hidden');
-          resolve({ rolls, successes, threshold });
+          if (auto) {
+            setTimeout(() => {
+              overlay.classList.add('hidden');
+              state.pinnedRollTargetId = null;
+              resolve({ rolls, successes, threshold });
+            }, 260);
+          } else {
+            cta.textContent = 'Continue';
+            cta.disabled = false;
+            cta.onclick = () => {
+              overlay.classList.add('hidden');
+              state.pinnedRollTargetId = null;
+              resolve({ rolls, successes, threshold });
+            };
+          }
         }, 520);
       };
-      if (auto) { cta.disabled = true; setTimeout(fire, 350); }
-      else cta.addEventListener('click', fire, { once: true });
+      if (auto) { cta.disabled = true; setTimeout(fire, 220); }
+      else cta.addEventListener('click', () => { cta.disabled = true; fire(); }, { once: true });
     });
+  }
+
+  async function animateUnitDestroyed(unitId){
+    const hull = document.querySelector(`#layer-hulls .unit-hull[data-unit-id="${unitId}"]`);
+    const models = document.querySelectorAll(`#layer-models .model-base[data-unit-id="${unitId}"]`);
+    hull?.classList.add('token-destroyed');
+    models.forEach(m => m.classList.add('token-destroyed'));
+    await new Promise(r => setTimeout(r, 430));
   }
 
   function paint(){
@@ -162,6 +261,7 @@
       if (uid === state.targetId || uid === state.hoveredTargetId) h.classList.add('shoot-target');
       if (uid === state.attackerId && state.shotUnits.has(uid)) h.classList.add('shoot-spent');
     });
+    updateSpentIndicators();
   }
 
   async function beginAttack(targetId){
@@ -177,24 +277,40 @@
     const snapshot = { attackerId: state.attackerId, targetId: target.id, targetModels: target.models.map(m=>({...m})), targetCarry: target._carryWounds || 0 };
 
     const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false);
+    const hit = await rollDiceStage('HIT ROLL', hitRolls, thresholds.hit, false, targetId);
     const woundRolls = Array.from({length: hit.successes}, d6);
-    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false);
+    const wound = await rollDiceStage('WOUND ROLL', woundRolls, thresholds.wound, false, targetId);
     const saveRolls = Array.from({length: wound.successes}, d6);
-    const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true);
+    const save = await rollDiceStage('SAVE ROLL', saveRolls, thresholds.save, true, targetId);
     const failedSaves = save.rolls.filter(r => r < thresholds.save).length;
-    const damageRolls = Array.from({length: failedSaves}, () => pickDamage(profile.d));
-    const damageStage = failedSaves ? await rollDiceStage('DAMAGE', damageRolls, null, false) : { rolls: [] };
-    const totalDamage = damageStage.rolls.reduce((a,b)=>a+b,0);
+
+    let totalDamage = 0;
+    const fixedDamage = damageValue(profile.d);
+    if (failedSaves > 0) {
+      if (fixedDamage === 1) {
+        totalDamage = failedSaves;
+      } else {
+        const damageRolls = Array.from({length: failedSaves}, () => pickDamage(profile.d));
+        const damageStage = await rollDiceStage('DAMAGE', damageRolls, null, false, targetId);
+        totalDamage = damageStage.rolls.reduce((a,b)=>a+b,0);
+      }
+    }
 
     target._carryWounds = (target._carryWounds || 0) + totalDamage;
     const wPer = Number(UNITS[target.id]?.stats?.W || 1) || 1;
     const killCount = Math.min(target.models.length, Math.floor(target._carryWounds / wPer));
+    const remainingAfter = target.models.length - killCount;
+
+    if (remainingAfter <= 0 && target.models.length) {
+      await animateUnitDestroyed(target.id);
+    }
+
     if (killCount) target.models.splice(target.models.length - killCount, killCount);
     target._carryWounds = target._carryWounds % wPer;
     history.push(snapshot);
     state.shotUnits.add(attacker.id);
-    B.renderModels(); paint();
+    B.renderModels();
+    paint();
 
     const hull = document.querySelector(`#layer-hulls .unit-hull[data-unit-id="${target.id}"]`);
     if (hull) { hull.classList.add('shoot-hit'); setTimeout(()=>hull.classList.remove('shoot-hit'), 320); }

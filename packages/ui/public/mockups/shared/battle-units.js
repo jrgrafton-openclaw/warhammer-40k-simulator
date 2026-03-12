@@ -190,10 +190,12 @@
     if (B.getRangeInches) {
       var radii = B.getRangeInches(u);
       document.getElementById('rt-move').textContent    = 'MOVE ' + u.M + '"';
-      document.getElementById('rt-advance').textContent = 'ADV ~' + Math.round(radii.advance) + '"';
-      document.getElementById('rt-charge').textContent  = 'CHRG ~' + Math.round(radii.charge) + '"';
+      document.getElementById('rt-advance').textContent = 'AVG ADV ' + Math.round(radii.advance) + '"';
+      document.getElementById('rt-charge').textContent  = 'AVG CHRG ' + Math.round(radii.charge) + '"';
+      var dsBtn = document.getElementById('rt-ds');
+      if (dsBtn) dsBtn.textContent = 'DS ' + Math.round(radii.ds) + '"';
       // Sync active state on toggles
-      ['move','advance','charge'].forEach(function(t) {
+      ['move','advance','charge','ds'].forEach(function(t) {
         var btn = document.getElementById('rt-' + t);
         if (btn) btn.classList.toggle('active', B.activeRangeTypes && B.activeRangeTypes.has(t));
       });
