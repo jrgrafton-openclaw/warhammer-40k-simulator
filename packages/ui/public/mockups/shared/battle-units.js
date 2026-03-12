@@ -113,6 +113,16 @@
         {type:'MELEE',name:'Choppa',rng:'—',a:3,s:4,ap:-1,d:1,kw:['MELEE']}
       ],
       abilities:[{name:"MEK'S TOOLS",desc:'At the start of your Command phase, if this model is within 3" of a friendly VEHICLE, that vehicle regains up to D3 lost wounds.'}]
+    },
+    'nobz-mob': {
+      name:'NOBZ MOB', faction:'☠ ORKS · ELITES',
+      stats:{M:'5"',T:5,Sv:'4+',W:3,Ld:'7+',OC:2}, M:5, faction_side:'ork',
+      wargear:[],
+      weapons:[
+        {type:'MELEE',name:'Big Choppa',rng:'—',a:3,s:7,ap:-1,d:2,kw:['MELEE']},
+        {type:'RANGED',name:'Slugga',rng:'12"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}
+      ],
+      abilities:[{name:"'ERE WE GO",desc:"This unit can make a charge move after Advancing. Add 1 to charge rolls."}]
     }
   };
 
