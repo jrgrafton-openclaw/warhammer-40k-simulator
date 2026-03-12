@@ -207,15 +207,26 @@
     return $('#battlefield')?.getBoundingClientRect() || null;
   }
 
-  function elementCenterInBattlefield(el){
-    const rect = el?.getBoundingClientRect();
-    const bfRect = battlefieldRect();
-    if (!rect || !bfRect) return { x: 0, y: 0, valid: false };
+  function battlefieldInnerRect(){
+    return $('#battlefield-inner')?.getBoundingClientRect() || null;
+  }
+
+  function elementCenterRelativeTo(el, rect){
+    const elRect = el?.getBoundingClientRect();
+    if (!elRect || !rect) return { x: 0, y: 0, valid: false };
     return {
-      x: rect.left - bfRect.left + rect.width / 2,
-      y: rect.top - bfRect.top + rect.height / 2,
+      x: elRect.left - rect.left + elRect.width / 2,
+      y: elRect.top - rect.top + elRect.height / 2,
       valid: true
     };
+  }
+
+  function elementCenterInBattlefield(el){
+    return elementCenterRelativeTo(el, battlefieldRect());
+  }
+
+  function elementCenterInBattlefieldInner(el){
+    return elementCenterRelativeTo(el, battlefieldInnerRect());
   }
 
   function getUnitElements(unitId){
@@ -291,7 +302,7 @@
 
   function modelScreenCenter(model){
     const el = document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
-    return elementCenterInBattlefield(el);
+    return elementCenterInBattlefieldInner(el);
   }
 
   function tokenVisual(model){
