@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.9c · COMBAT STATE FIRST</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:#060504; --panel:#0d0c0a; --border:#2a2010;
+      --gold:#c9a352; --gold-dim:#5a4a28; --text:#e8e0d0; --text-dim:#8a7a60;
+      --teal:#00c8a8; --blue:#1e7acc; --red-enemy:#8b1a1a;
+      --red-alert:#cc2222; --amber-end:#d4820a; --white:#ffffff;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+    html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;}
+    #app{display:grid;grid-template-columns:230px 1fr;width:100vw;height:100vh;transition:grid-template-columns .3s;}
+    #app.collapsed{grid-template-columns:40px 1fr;}
+
+    /* ── ROSTER ── */
+    #roster{grid-column:1;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;z-index:20;}
+    .roster-header{height:36px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-bottom:1px solid var(--border);flex-shrink:0;}
+    .roster-title{font:700 10px/1 'Rajdhani';letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
+    #app.collapsed .roster-title{display:none;}
+    .roster-collapse-btn{background:none;border:none;cursor:pointer;color:var(--gold-dim);font-size:13px;transition:color .15s;padding:2px;}
+    .roster-collapse-btn:hover{color:var(--gold);}
+    #app.collapsed .roster-collapse-btn{margin:0 auto;}
+    .roster-scroll{flex:1;overflow-y:auto;overflow-x:hidden;}
+    .roster-scroll::-webkit-scrollbar{width:2px;}
+    .roster-scroll::-webkit-scrollbar-thumb{background:rgba(201,163,82,.1);}
+    #roster-icon-strip{display:none;flex-direction:column;align-items:center;padding-top:8px;gap:8px;}
+    #app.collapsed #roster-icon-strip{display:flex;}
+    #app.collapsed .roster-scroll .faction-section{display:none;}
+    .icon-strip-faction{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;}
+    .icon-strip-icon{font-size:14px;} .icon-strip-count{font:700 9px/1 'Share Tech Mono';color:var(--gold-dim);}
+    .faction-section{margin-bottom:2px;}
+    .faction-header{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);transition:background .15s;}
+    .faction-header:hover{background:rgba(201,163,82,.03);}
+    .faction-band{width:2px;height:16px;border-radius:1px;flex-shrink:0;}
+    .faction-band.imp{background:#1e55cc;} .faction-band.ork{background:#882222;}
+    .faction-icon{font-size:12px;}
+    .faction-label{flex:1;font:700 11px/1 'Rajdhani';letter-spacing:1.5px;text-transform:uppercase;}
+    .faction-label.imp{color:rgba(30,85,204,.9);} .faction-label.ork{color:rgba(136,34,34,.9);}
+    .faction-chevron{font-size:9px;color:var(--gold-dim);transition:transform .25s;}
+    .faction-body{overflow:hidden;max-height:600px;transition:max-height .3s ease;}
+    .faction-body.collapsed{max-height:0;}
+    .rail-unit{display:flex;align-items:center;height:40px;padding:0 8px;cursor:pointer;border-left:3px solid transparent;transition:background .1s;gap:8px;}
+    .rail-unit:hover{background:rgba(201,163,82,.03);}
+    .rail-unit.active{border-left-color:var(--teal);background:rgba(0,200,168,.05);}
+    .unit-icon{width:28px;height:28px;border-radius:50%;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;position:relative;flex-shrink:0;}
+    .unit-icon.imp{border:1.5px solid rgba(30,85,204,.4);}
+    .unit-icon.ork{border:1.5px solid rgba(136,34,34,.5);}
+    .unit-icon.char{border:1.5px solid rgba(201,163,82,.5);}
+    .rail-unit.active .unit-icon{border-color:var(--teal);}
+    .model-badge{position:absolute;top:-3px;right:-4px;min-width:16px;height:16px;border-radius:8px;padding:0 3px;background:#2a0a0a;border:1px solid rgba(204,68,68,.35);color:#cc4444;font:700 8px/16px 'Share Tech Mono';text-align:center;z-index:2;}
+    .unit-name{font:600 14px/1 'Rajdhani';color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+    .rail-unit.active .unit-name{color:var(--teal);}
+    .aa-section{margin:2px 0;}
+    .aa-header{display:flex;align-items:center;gap:5px;padding:5px 10px;cursor:pointer;user-select:none;background:rgba(201,163,82,.03);border-top:1px solid var(--border);border-bottom:1px solid var(--border);font:600 9px/1 'Rajdhani';letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
+    .aa-chev{font-size:8px;margin-left:auto;transition:transform .25s;}
+    .aa-body{overflow:hidden;max-height:0;transition:max-height .3s ease;}
+    .aa-body.open{max-height:300px;}
+    .aa-row{display:flex;align-items:center;padding:5px 10px 5px 14px;border-bottom:1px solid rgba(201,163,82,.04);gap:6px;}
+    .aa-name{font:600 11px/1 'Rajdhani';color:var(--gold);flex:1;text-transform:uppercase;}
+    .aa-timing{font:600 8px/1 'Rajdhani';letter-spacing:1px;padding:2px 5px;background:rgba(201,163,82,.08);border:1px solid var(--gold-dim);border-radius:2px;color:var(--text-dim);text-transform:uppercase;white-space:nowrap;}
+
+    /* ── BATTLEFIELD ── */
+    #battlefield{grid-column:2;position:relative;overflow:hidden;cursor:crosshair;
+      background-color:var(--bg);
+      background-image:
+        radial-gradient(ellipse 90% 85% at 50% 50%,transparent 45%,rgba(0,0,0,.7) 100%),
+        repeating-linear-gradient(0deg,transparent,transparent 49px,rgba(201,163,82,.04) 49px,rgba(201,163,82,.04) 50px),
+        repeating-linear-gradient(90deg,transparent,transparent 49px,rgba(201,163,82,.04) 49px,rgba(201,163,82,.04) 50px);
+    }
+    #bf-top-bar{position:absolute;top:0;left:0;right:0;height:32px;z-index:10;display:flex;align-items:center;padding:0 12px;pointer-events:none;background:transparent;}
+    .tb-cp{font:700 13px/1 'Share Tech Mono';color:var(--text-dim);}
+    .tb-cp span{color:var(--teal);}
+    .tb-centre{flex:1;text-align:center;font:600 11px/1 'Rajdhani';letter-spacing:2px;color:var(--gold);text-transform:uppercase;}
+    .tb-vp{font:600 11px/1 'Rajdhani';letter-spacing:1px;}
+    .tb-imp{color:var(--white);} .tb-vs{color:var(--text-dim);margin:0 4px;} .tb-ork{color:var(--red-enemy);}
+    #phase-pill-wrap{position:absolute;top:32px;left:0;right:0;display:flex;justify-content:center;z-index:10;pointer-events:none;}
+    .phase-pill{background:rgba(6,5,4,.85);border:1px solid var(--gold-dim);border-radius:4px;padding:5px 16px;font:600 11px/1 'Rajdhani';letter-spacing:2px;color:var(--gold);text-transform:uppercase;backdrop-filter:blur(4px);margin-top:8px;}
+    #bf-controls{position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:6px;z-index:11;}
+    #zoom-ind{font:400 10px/1 'Share Tech Mono';color:rgba(201,163,82,.2);}
+    .bf-ctrl{font:600 8px/1 'Rajdhani';letter-spacing:1.5px;text-transform:uppercase;background:rgba(6,5,4,.7);border:1px solid rgba(201,163,82,.1);color:rgba(201,163,82,.25);padding:4px 8px;cursor:pointer;border-radius:2px;transition:all .15s;}
+    .bf-ctrl:hover{border-color:rgba(201,163,82,.4);color:var(--gold);}
+    #battlefield-inner{position:absolute;top:0;left:0;right:0;bottom:0;transform-origin:center;}
+    #battlefield-inner.dragging{cursor:grabbing!important;}
+    #bf-svg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;}
+    .dz-label{font:500 9px/1 'Rajdhani';letter-spacing:2px;fill:rgba(201,163,82,.1);text-transform:uppercase;}
+
+    /* v0.9c: Combat state SVG overlays — hidden until unit selected */
+    #combat-overlays{pointer-events:none;}
+    .move-range{fill:none;stroke:rgba(0,200,168,.25);stroke-width:1.5;stroke-dasharray:6,3;opacity:0;transition:opacity .3s;}
+    .charge-range{fill:none;stroke:rgba(212,130,10,.2);stroke-width:1.5;stroke-dasharray:10,5;opacity:0;transition:opacity .3s;}
+    .move-range.visible,.charge-range.visible{opacity:1;}
+    .range-label{font:600 9px/1 'Rajdhani';letter-spacing:1px;text-transform:uppercase;opacity:0;transition:opacity .3s;}
+    .range-label.visible{opacity:1;}
+
+    /* Terrain — simple faint fills (v0.9c keeps terrain quiet so overlays dominate) */
+    .terrain-piece{position:absolute;pointer-events:none;z-index:2;background:rgba(55,50,42,.3);}
+
+    /* Objectives */
+    .obj-hex-wrap{position:absolute;transform:translate(-50%,-50%);width:84px;height:97px;z-index:4;cursor:default;transition:filter .3s;}
+    .obj-hex-wrap.scoring-imp{filter:drop-shadow(0 0 18px rgba(30,85,204,.5));}
+    .obj-hex-wrap.scoring-ork{filter:drop-shadow(0 0 18px rgba(136,34,34,.5));}
+    .obj-hex-outer{position:absolute;inset:0;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;}
+    .obj-hex-outer.neutral{background:rgba(180,30,30,.3);}
+    .obj-hex-outer.controlled{background:rgba(201,163,82,.45);filter:drop-shadow(0 0 14px rgba(201,163,82,.55));}
+    .obj-hex-outer.contested{background:rgba(139,26,26,.5);animation:hex-blink 1.2s ease-in-out infinite;}
+    @keyframes hex-blink{0%,100%{filter:drop-shadow(0 0 8px rgba(139,26,26,.4));}50%{filter:drop-shadow(0 0 24px rgba(139,26,26,.9));}}
+    .obj-hex-inner{width:76px;height:88px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:rgba(10,8,6,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .obj-num{font:700 22px/1 'Rajdhani';color:var(--white);}
+    .obj-lbl{font:600 7px/1 'Rajdhani';letter-spacing:2px;color:rgba(232,224,208,.4);text-transform:uppercase;margin-top:2px;}
+    .obj-ring{position:absolute;width:160px;height:160px;border-radius:50%;border:1.5px dashed rgba(201,163,82,.15);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;}
+    /* Scoring aura label */
+    .obj-score-aura{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font:700 8px/1 'Rajdhani';letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .3s;}
+    .obj-hex-wrap.scoring-imp .obj-score-aura{opacity:1;color:rgba(30,122,204,.8);}
+    .obj-hex-wrap.scoring-ork .obj-score-aura{opacity:1;color:rgba(204,68,68,.8);}
+
+    /* Tokens */
+    .token{position:absolute;transform:translate(-50%,-50%);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;cursor:pointer;z-index:3;user-select:none;transition:box-shadow .15s,border-color .15s;}
+    .token-s{width:46px;height:46px;} .token-m{width:58px;height:58px;} .token-l{width:74px;height:74px;}
+    .token-vehicle{width:80px;height:70px;border-radius:12px;}
+    .token-label{position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);font:500 9px/1 'Rajdhani';color:var(--text-dim);white-space:nowrap;pointer-events:none;letter-spacing:.5px;}
+    .token-icon{font-size:16px;line-height:1;}
+    .token-count{font:700 8px/1 'Share Tech Mono';color:rgba(232,224,208,.35);}
+    .token-badge{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;border-radius:9px;padding:0 3px;background:#2a1a0a;border:1px solid rgba(201,163,82,.25);color:var(--gold);font:700 8px/16px 'Share Tech Mono';text-align:center;z-index:4;}
+    .token-imp{border:2px solid rgba(30,85,204,.5);background:radial-gradient(circle,rgba(20,16,10,.95),rgba(8,6,3,.95));box-shadow:0 0 8px rgba(30,85,204,.15);}
+    .token-imp:hover{box-shadow:0 0 16px rgba(30,85,204,.35);}
+    .token-imp.selected{border-color:var(--teal);box-shadow:0 0 20px rgba(0,200,168,.7);}
+    .token-char-imp{border:2px solid rgba(201,163,82,.5);background:radial-gradient(circle,rgba(20,16,10,.95),rgba(8,6,3,.95));box-shadow:0 0 8px rgba(201,163,82,.15);}
+    .token-char-imp:hover{box-shadow:0 0 16px rgba(201,163,82,.3);}
+    .token-char-imp.selected{border-color:var(--teal);box-shadow:0 0 20px rgba(0,200,168,.7);}
+    .token-ork{border:2px solid rgba(136,34,34,.55);background:radial-gradient(circle,rgba(25,8,8,.95),rgba(10,3,3,.95));box-shadow:0 0 8px rgba(136,34,34,.2);}
+    .token-ork:hover{box-shadow:0 0 16px rgba(136,34,34,.45);}
+    .token-ork.selected{border-color:var(--teal);box-shadow:0 0 20px rgba(0,200,168,.7);}
+    .token-char-ork{border:2px solid rgba(201,163,82,.45);background:radial-gradient(circle,rgba(25,8,8,.95),rgba(10,3,3,.95));box-shadow:0 0 8px rgba(201,163,82,.1);}
+    .token-char-ork:hover{box-shadow:0 0 16px rgba(201,163,82,.25);}
+    .token-char-ork.selected{border-color:var(--teal);box-shadow:0 0 20px rgba(0,200,168,.7);}
+    .token .model-badge{background:#2a0a0a;border-color:rgba(204,68,68,.35);color:#cc4444;}
+
+    /* v0.9c: CONTEXTUAL CARD — position:fixed, near selected token */
+    #unit-card{position:fixed;width:290px;background:rgba(6,5,4,.97);border:1px solid rgba(201,163,82,.3);border-radius:3px;z-index:500;display:none;overflow:hidden;backdrop-filter:blur(12px);max-height:420px;overflow-y:auto;}
+    #unit-card::-webkit-scrollbar{width:2px;}
+    #unit-card::-webkit-scrollbar-thumb{background:rgba(201,163,82,.1);}
+    #unit-card.visible{display:block;}
+    /* Small arrow pointer at bottom of card (points toward token) */
+    #unit-card::after{content:'▼';position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);color:rgba(201,163,82,.3);font-size:10px;pointer-events:none;}
+    .card-hdr{background:rgba(201,163,82,.04);border-bottom:1px solid rgba(201,163,82,.1);padding:10px 14px;display:flex;align-items:flex-start;justify-content:space-between;}
+    .card-name{font:700 17px/1.1 'Rajdhani';color:var(--white);text-transform:uppercase;letter-spacing:.5px;}
+    .card-faction{font:600 9px/1 'Rajdhani';letter-spacing:1.5px;color:rgba(201,163,82,.5);text-transform:uppercase;margin-top:4px;}
+    .card-close{color:rgba(201,163,82,.35);cursor:pointer;font-size:18px;line-height:1;margin-left:8px;flex-shrink:0;transition:color .15s;background:none;border:none;}
+    .card-close:hover{color:var(--gold);}
+    .card-stats{display:flex;border-bottom:1px solid rgba(201,163,82,.08);}
+    .stat-cell{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 2px;}
+    .stat-key{font:600 9px/1 'Rajdhani';letter-spacing:1px;color:var(--gold-dim);text-transform:uppercase;}
+    .stat-val{font:700 17px/1 'Share Tech Mono';color:var(--white);margin-top:3px;}
+    .stat-cell.hl .stat-key{color:var(--teal);}
+    .stat-cell.hl .stat-val{color:var(--teal);text-shadow:0 0 8px rgba(0,200,168,.5);}
+    /* v0.9c: Inline range display in card (shows actual calculated ranges) */
+    .card-ranges{display:flex;gap:8px;padding:6px 14px;border-bottom:1px solid rgba(201,163,82,.06);background:rgba(0,0,0,.2);}
+    .range-badge{font:600 9px/1 'Rajdhani';letter-spacing:1px;padding:3px 8px;border-radius:2px;text-transform:uppercase;}
+    .range-move{background:rgba(0,200,168,.08);color:var(--teal);border:1px solid rgba(0,200,168,.2);}
+    .range-charge{background:rgba(212,130,10,.08);color:var(--amber-end);border:1px solid rgba(212,130,10,.2);}
+    .card-shocked{display:none;padding:5px 14px;border-bottom:1px solid rgba(201,163,82,.06);}
+    .card-shocked.visible{display:block;}
+    .shocked-indicator{font:700 10px/1 'Rajdhani';letter-spacing:2px;padding:4px 10px;background:rgba(212,130,10,.1);color:#d4820a;border:1px solid rgba(212,130,10,.3);border-radius:2px;text-transform:uppercase;}
+    .card-section{padding:8px 14px;border-bottom:1px solid rgba(201,163,82,.06);}
+    .sec-label{font:600 9px/1 'Rajdhani';letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;}
+    .wg-row{display:flex;align-items:center;gap:8px;padding:5px 6px;margin-bottom:3px;cursor:pointer;border:1px solid rgba(201,163,82,.08);border-radius:2px;font:600 11px/1 'Rajdhani';color:var(--text-dim);transition:all .15s;}
+    .wg-row:hover{border-color:rgba(201,163,82,.2);color:var(--text);}
+    .wg-row.active{border-color:rgba(201,163,82,.4);background:rgba(201,163,82,.06);color:var(--gold);}
+    .wg-circle{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--gold-dim);flex-shrink:0;transition:all .15s;}
+    .wg-row.active .wg-circle{background:var(--gold);border-color:var(--gold);}
+    .card-weapons{padding:0 14px 8px;}
+    .wt-hdr{display:flex;align-items:center;gap:4px;padding:8px 0 4px;border-bottom:1px solid rgba(201,163,82,.1);}
+    .wt-type{font:600 9px/1 'Rajdhani';letter-spacing:2px;color:var(--gold);text-transform:uppercase;flex:1;}
+    .wt-col{font:600 8px/1 'Rajdhani';letter-spacing:1px;color:var(--gold-dim);text-transform:uppercase;min-width:26px;text-align:center;}
+    .wt-row{padding:4px 0;border-bottom:1px solid rgba(201,163,82,.04);}
+    .wt-row:last-child{border-bottom:none;}
+    .wt-name-row{display:flex;align-items:center;gap:4px;}
+    .wt-name{flex:1;font:600 13px/1.2 'Rajdhani';color:var(--text);}
+    .wt-val{font:500 12px/1 'Share Tech Mono';color:var(--text-dim);min-width:26px;text-align:center;}
+    .wt-val.ap0{color:var(--text-dim);} .wt-val.ap1{color:var(--text);}
+    .wt-val.ap2{color:#d4820a;} .wt-val.ap3{color:var(--red-alert);font-weight:700;}
+    .wt-val.ap4{color:var(--red-alert);font-weight:700;text-shadow:0 0 6px rgba(204,34,34,.5);}
+    .wt-val.dmg{color:var(--gold);font-weight:700;}
+    .wt-kws{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px;}
+    .ability-row{margin-bottom:8px;}
+    .ability-pill{display:inline-block;cursor:default;font:700 10px/1 'Rajdhani';letter-spacing:1px;text-transform:uppercase;padding:4px 10px;background:rgba(201,163,82,.06);color:var(--gold);border:1px solid rgba(201,163,82,.25);border-radius:2px;margin-bottom:4px;}
+    .ability-desc{font:400 12px/1.5 'Rajdhani';color:var(--text-dim);padding-left:4px;}
+    .kw-pill{display:inline-block;font:600 8px/1 'Rajdhani';letter-spacing:.5px;padding:2px 5px;border-radius:8px;cursor:help;position:relative;text-transform:uppercase;transition:filter .15s;}
+    .kw-pill:hover{filter:brightness(1.4);}
+    .kw-pill.melee{background:rgba(204,51,51,.12);color:#cc3333;border:1px solid rgba(204,51,51,.3);}
+    .kw-pill.pistol{background:rgba(201,163,82,.12);color:var(--gold);border:1px solid rgba(201,163,82,.3);}
+    .kw-pill.assault{background:rgba(0,200,168,.12);color:var(--teal);border:1px solid rgba(0,200,168,.3);}
+    .kw-pill.heavy{background:rgba(85,136,204,.12);color:#5588cc;border:1px solid rgba(85,136,204,.3);}
+    .kw-pill.hazardous{background:rgba(255,104,32,.12);color:#ff6820;border:1px solid rgba(255,104,32,.3);}
+    .kw-pill.rapid{background:rgba(68,170,102,.12);color:#44aa66;border:1px solid rgba(68,170,102,.3);}
+    .kw-pill.blast{background:rgba(204,170,0,.12);color:#ccaa00;border:1px solid rgba(204,170,0,.3);}
+    .kw-pill.melta{background:rgba(255,64,16,.12);color:#ff4010;border:1px solid rgba(255,64,16,.3);}
+    .kw-pill.other{background:rgba(74,63,47,.2);color:var(--text-dim);border:1px solid var(--border);}
+    .kw-tooltip{visibility:hidden;opacity:0;position:fixed;transform:translate(-50%,-100%);background:var(--panel);border:1px solid rgba(201,163,82,.2);color:var(--text-dim);font:400 10px/1.5 'Rajdhani';padding:6px 10px;white-space:normal;z-index:9999;pointer-events:none;transition:opacity .15s;min-width:160px;max-width:220px;box-shadow:0 4px 16px rgba(0,0,0,.9);border-radius:2px;}
+
+    /* ── ACTION BAR ── */
+    #action-bar{position:absolute;bottom:0;left:0;right:0;height:52px;background:rgba(6,5,4,.97);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 12px;gap:8px;z-index:20;backdrop-filter:blur(4px);}
+    .ps-step{display:flex;align-items:center;gap:4px;padding:2px 6px;font:600 8px/1 'Rajdhani';letter-spacing:1.5px;text-transform:uppercase;}
+    .ps-dot{width:6px;height:6px;border-radius:50%;}
+    .ps-step.done{color:var(--border);} .ps-step.done .ps-dot{background:var(--border);}
+    .ps-step.active{color:var(--gold);} .ps-step.active .ps-dot{background:var(--gold);box-shadow:0 0 5px rgba(201,163,82,.5);}
+    .ps-step.upcoming{color:var(--border);} .ps-step.upcoming .ps-dot{background:var(--border);}
+    .ps-arr{color:var(--border);font-size:8px;}
+    .ab-sep{width:1px;height:34px;background:var(--border);margin:0 4px;}
+    .action-btn{height:36px;min-width:90px;padding:0 12px;position:relative;font:700 9px/1 'Rajdhani';letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:2px;transition:all .15s;background:#111;border:1px solid #222;color:#555;}
+    .action-btn.active{background:rgba(30,122,204,.15);border:1px solid #1e7acc;color:#4aa8ff;}
+    .action-btn.stratagem{background:transparent;border:1px solid var(--gold);color:var(--gold);}
+    .action-btn.stratagem:hover{background:rgba(201,163,82,.06);}
+    .action-btn.end-phase{background:rgba(212,130,10,.12);border:1px solid var(--amber-end);color:var(--amber-end);margin-left:auto;}
+    .action-btn.end-phase:hover{background:rgba(212,130,10,.2);}
+    .action-btn[data-shortcut]:hover::after{content:'[' attr(data-shortcut) ']';position:absolute;top:-18px;left:50%;transform:translateX(-50%);font:600 9px/1 'Share Tech Mono';color:var(--teal);background:rgba(0,0,0,.8);padding:2px 4px;border-radius:2px;white-space:nowrap;pointer-events:none;}
+    #modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+    #modal-bg.open{display:flex;}
+    #strat-modal{width:400px;max-height:70vh;background:rgba(8,6,4,.99);border:1px solid rgba(201,163,82,.25);display:flex;flex-direction:column;overflow:hidden;border-radius:3px;box-shadow:0 0 40px rgba(201,163,82,.1);}
+    .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(201,163,82,.04);border-bottom:1px solid rgba(201,163,82,.12);}
+    .modal-title{font:700 11px/1 'Rajdhani';letter-spacing:3px;text-transform:uppercase;color:var(--gold);}
+    .modal-x{font-size:18px;color:rgba(201,163,82,.35);cursor:pointer;background:none;border:none;transition:color .15s;}
+    .modal-x:hover{color:var(--gold);}
+    .strat-list{overflow-y:auto;flex:1;padding:6px 0;}
+    .strat-item{padding:10px 16px;border-bottom:1px solid rgba(201,163,82,.04);cursor:pointer;}
+    .strat-item:hover{background:rgba(201,163,82,.03);}
+    .strat-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+    .strat-name{font:700 12px/1 'Rajdhani';color:var(--text);flex:1;text-transform:uppercase;letter-spacing:.5px;}
+    .strat-cp{font:700 10px/1 'Share Tech Mono';background:rgba(139,26,26,.15);color:var(--red-enemy);padding:2px 6px;border-radius:2px;border:1px solid rgba(139,26,26,.25);}
+    .strat-timing{font:600 8px/1 'Rajdhani';color:var(--gold);background:rgba(201,163,82,.08);border:1px solid rgba(201,163,82,.2);padding:2px 5px;text-transform:uppercase;letter-spacing:1px;border-radius:2px;}
+    .strat-desc{font:400 11px/1.5 'Rajdhani';color:var(--text-dim);}
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ROSTER -->
+  <aside id="roster">
+    <div class="roster-header">
+      <span class="roster-title">ARMY ROSTER</span>
+      <button class="roster-collapse-btn" id="roster-btn">◄</button>
+    </div>
+    <div id="roster-icon-strip">
+      <div class="icon-strip-faction"><div class="icon-strip-icon">✠</div><div class="icon-strip-count">5</div></div>
+      <div class="icon-strip-faction"><div class="icon-strip-icon">☠</div><div class="icon-strip-count">3</div></div>
+    </div>
+    <div class="roster-scroll">
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band imp"></div><span class="faction-icon">✠</span>
+          <span class="faction-label imp">IMPERIUM</span><span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit active" data-unit="assault-intercessors" data-faction="imp"><div class="unit-icon imp">✠<div class="model-badge">5</div></div><div class="unit-name">Assault Intercessors</div></div>
+          <div class="rail-unit" data-unit="primaris-lieutenant" data-faction="imp"><div class="unit-icon char">★</div><div class="unit-name">Primaris Lieutenant</div></div>
+          <div class="rail-unit" data-unit="intercessor-squad-a" data-faction="imp"><div class="unit-icon imp">✠<div class="model-badge">5</div></div><div class="unit-name">Intercessor Squad A</div></div>
+          <div class="rail-unit" data-unit="hellblasters" data-faction="imp"><div class="unit-icon imp">✠<div class="model-badge">5</div></div><div class="unit-name">Hellblasters</div></div>
+          <div class="rail-unit" data-unit="redemptor-dreadnought" data-faction="imp"><div class="unit-icon imp" style="border-radius:4px;font-size:11px;">⬡</div><div class="unit-name">Redemptor Dreadnought</div></div>
+          <div class="aa-section">
+            <div class="aa-header" onclick="toggleAA(this)">ARMY ABILITIES<span class="aa-chev">▸</span></div>
+            <div class="aa-body">
+              <div class="aa-row"><span class="aa-name">AND THEY SHALL KNOW NO FEAR</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row"><span class="aa-name">OATH OF MOMENT</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row"><span class="aa-name">SHOCK ASSAULT</span><span class="aa-timing">FIGHT PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band ork"></div><span class="faction-icon">☠</span>
+          <span class="faction-label ork">ORKS</span><span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit" data-unit="boss-nob" data-faction="ork"><div class="unit-icon char" style="color:rgba(201,163,82,.7);">☠</div><div class="unit-name">Boss Nob</div></div>
+          <div class="rail-unit" data-unit="boyz-mob" data-faction="ork"><div class="unit-icon ork">☠<div class="model-badge">10</div></div><div class="unit-name">Boyz Mob</div></div>
+          <div class="rail-unit" data-unit="mekboy" data-faction="ork"><div class="unit-icon char" style="color:rgba(201,163,82,.7);">⚙</div><div class="unit-name">Mekboy</div></div>
+          <div class="aa-section">
+            <div class="aa-header" onclick="toggleAA(this)" style="color:var(--red-enemy);">ARMY ABILITIES<span class="aa-chev">▸</span></div>
+            <div class="aa-body">
+              <div class="aa-row"><span class="aa-name">'ERE WE GO</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row"><span class="aa-name">WAAAGH!</span><span class="aa-timing">ANY PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- BATTLEFIELD -->
+  <main id="battlefield">
+    <div id="bf-top-bar">
+      <div class="tb-cp">CP <span>5</span></div>
+      <div class="tb-centre">MOVEMENT · ROUND 2/5 · IMPERIUM</div>
+      <div class="tb-vp"><span class="tb-imp">IMPERIUM 10</span><span class="tb-vs">VS</span><span class="tb-ork">4 ORKS</span></div>
+    </div>
+    <div id="phase-pill-wrap"><div class="phase-pill">MOVEMENT PHASE · ROUND 2/5 · IMPERIUM ACTIVE</div></div>
+    <div id="bf-controls">
+      <span id="zoom-ind">100%</span>
+      <button class="bf-ctrl" id="reset-btn">↺ RESET</button>
+    </div>
+
+    <div id="battlefield-inner">
+      <svg id="bf-svg" viewBox="0 0 1000 700" preserveAspectRatio="none">
+        <!-- Deployment zones -->
+        <line x1="0" y1="490" x2="1000" y2="490" stroke="rgba(201,163,82,.07)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <line x1="0" y1="140" x2="1000" y2="140" stroke="rgba(139,26,26,.08)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <line x1="0" y1="315" x2="1000" y2="315" stroke="rgba(201,163,82,.04)" stroke-width="1" stroke-dasharray="4,8"/>
+        <text x="8" y="485" class="dz-label">IMPERIUM DEPLOYMENT</text>
+        <text x="8" y="155" class="dz-label" fill="rgba(139,26,26,.1)">ORK DEPLOYMENT</text>
+        <!-- v0.9c: Combat state overlay group — circles drawn by JS -->
+        <g id="combat-overlays">
+          <circle id="move-range-circle" class="move-range" cx="0" cy="0" r="0"/>
+          <circle id="charge-range-circle" class="charge-range" cx="0" cy="0" r="0"/>
+          <text id="move-range-label" class="range-label" fill="rgba(0,200,168,.5)" font-size="9" font-family="Rajdhani" letter-spacing="1" text-anchor="middle">MOVE</text>
+          <text id="charge-range-label" class="range-label" fill="rgba(212,130,10,.5)" font-size="9" font-family="Rajdhani" letter-spacing="1" text-anchor="middle">CHARGE THREAT</text>
+        </g>
+      </svg>
+
+      <!-- Terrain — simple quiet fills -->
+      <div class="terrain-piece" style="left:16%;top:8.5%;width:210px;height:120px;clip-path:polygon(0 0,100% 0,100% 50%,62% 50%,62% 100%,0 100%);"></div>
+      <div class="terrain-piece" style="left:60%;top:71%;width:200px;height:80px;clip-path:polygon(0 0,100% 0,100% 100%,50% 100%,50% 60%,0 60%);"></div>
+      <div class="terrain-piece" style="left:38%;top:37%;width:200px;height:140px;"></div>
+      <div class="terrain-piece" style="left:12%;top:41%;width:90px;height:80px;border-radius:40%;background:rgba(30,50,30,.35);"></div>
+      <div class="terrain-piece" style="left:76%;top:41%;width:90px;height:80px;border-radius:40%;background:rgba(30,50,30,.35);"></div>
+      <div class="terrain-piece" style="left:5%;top:14%;width:80px;height:60px;background:rgba(45,40,35,.5);"></div>
+      <div class="terrain-piece" style="left:83%;top:23%;width:80px;height:60px;background:rgba(45,40,35,.5);"></div>
+
+      <!-- Objectives (with scoring aura labels) -->
+      <div class="obj-hex-wrap" id="obj-01" style="left:14%;top:22%;">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">01</div><div class="obj-lbl">OBJ</div></div></div>
+        <div class="obj-ring"></div>
+        <div class="obj-score-aura">SCORING</div>
+      </div>
+      <div class="obj-hex-wrap" id="obj-02" style="left:50%;top:65%;">
+        <div class="obj-hex-outer controlled"><div class="obj-hex-inner"><div class="obj-num">02</div><div class="obj-lbl">OBJ</div></div></div>
+        <div class="obj-ring"></div>
+        <div class="obj-score-aura">SCORING</div>
+      </div>
+      <div class="obj-hex-wrap" id="obj-03" style="left:80%;top:32%;">
+        <div class="obj-hex-outer contested"><div class="obj-hex-inner"><div class="obj-num">03</div><div class="obj-lbl">OBJ</div></div></div>
+        <div class="obj-ring"></div>
+        <div class="obj-score-aura">SCORING</div>
+      </div>
+
+      <!-- IMPERIUM TOKENS — token positions as data attributes for range calculation -->
+      <div class="token token-m token-imp selected" data-unit="assault-intercessors" data-faction="imp" style="left:30%;top:42%;">
+        <div class="token-icon" style="color:rgba(30,85,204,.8);">✠</div>
+        <div class="token-count">×5</div>
+        <div class="model-badge">5</div>
+        <div class="token-label">Assault Int.</div>
+      </div>
+      <div class="token token-s token-char-imp" data-unit="primaris-lieutenant" data-faction="imp" style="left:34%;top:57%;">
+        <div class="token-icon" style="color:var(--gold);">★</div>
+        <div class="token-label">Lt.</div>
+      </div>
+      <div class="token token-m token-imp" data-unit="intercessor-squad-a" data-faction="imp" style="left:42%;top:47%;">
+        <div class="token-icon" style="color:rgba(30,85,204,.8);">✠</div>
+        <div class="token-count">×5</div>
+        <div class="model-badge">5</div>
+        <div class="token-label">Int. A</div>
+      </div>
+      <div class="token token-m token-imp" data-unit="hellblasters" data-faction="imp" style="left:24%;top:68%;">
+        <div class="token-icon" style="color:rgba(30,85,204,.8);">✠</div>
+        <div class="token-count">×5</div>
+        <div class="model-badge">5</div>
+        <div class="token-label">Hellblasters</div>
+      </div>
+      <div class="token token-vehicle token-imp" data-unit="redemptor-dreadnought" data-faction="imp" style="left:20%;top:52%;">
+        <div class="token-icon" style="font-size:20px;color:rgba(30,85,204,.7);">⬡</div>
+        <div class="token-label" style="margin-top:8px;">Dreadnought</div>
+      </div>
+
+      <!-- ORK TOKENS -->
+      <div class="token token-s token-char-ork" data-unit="boss-nob" data-faction="ork" style="left:70%;top:22%;">
+        <div class="token-icon" style="color:rgba(201,163,82,.8);">☠</div>
+        <div class="token-label">Boss Nob</div>
+      </div>
+      <div class="token token-l token-ork" data-unit="boyz-mob" data-faction="ork" style="left:72%;top:35%;">
+        <div class="token-icon" style="color:rgba(136,34,34,.9);">☠</div>
+        <div class="token-count" style="color:rgba(136,34,34,.5);">×10</div>
+        <div class="model-badge">10</div>
+        <div class="token-label">Boyz Mob</div>
+      </div>
+      <div class="token token-s token-char-ork" data-unit="mekboy" data-faction="ork" style="left:62%;top:45%;">
+        <div class="token-icon" style="color:rgba(201,163,82,.7);">⚙</div>
+        <div class="token-label">Mekboy</div>
+      </div>
+    </div>
+
+    <!-- CONTEXTUAL UNIT CARD (position set by JS) -->
+    <div id="unit-card" class="visible">
+      <div class="card-hdr">
+        <div style="min-width:0;flex:1;"><div class="card-name" id="card-name">ASSAULT INTERCESSORS</div><div class="card-faction" id="card-faction">✠ SPACE MARINES · ADEPTUS ASTARTES</div></div>
+        <button class="card-close" id="card-close">×</button>
+      </div>
+      <div class="card-stats" id="card-stats"></div>
+      <!-- v0.9c: Range display -->
+      <div class="card-ranges" id="card-ranges"></div>
+      <div class="card-shocked" id="card-shocked"><span class="shocked-indicator">⚠ BATTLESHOCKED</span></div>
+      <div id="card-wargear"></div>
+      <div class="card-weapons" id="card-weapons"></div>
+      <div class="card-section" id="card-abilities" style="border-bottom:none;"></div>
+    </div>
+
+    <!-- ACTION BAR -->
+    <div id="action-bar">
+      <div class="ps-step done"><div class="ps-dot"></div>CMD</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step active"><div class="ps-dot"></div>MOVE</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>SHOOT</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>CHARGE</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>FIGHT</div>
+      <div class="ab-sep"></div>
+      <button class="action-btn active" id="btn-move" data-shortcut="M">NORMAL MOVE</button>
+      <button class="action-btn" id="btn-advance" data-shortcut="A">ADVANCE</button>
+      <div class="ab-sep"></div>
+      <button class="action-btn stratagem" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
+      <button class="action-btn end-phase" id="btn-end" data-shortcut="E">END MOVEMENT →</button>
+    </div>
+  </main>
+</div>
+
+<!-- Stratagem Modal -->
+<div id="modal-bg">
+  <div id="strat-modal">
+    <div class="modal-hdr"><span class="modal-title">SELECT STRATAGEM</span><button class="modal-x" id="modal-close">×</button></div>
+    <div class="strat-list">
+      <div class="strat-item"><div class="strat-top"><span class="strat-name">COMMAND RE-ROLL</span><span class="strat-cp">1 CP</span><span class="strat-timing">ANY PHASE</span></div><p class="strat-desc">Re-roll one dice result.</p></div>
+      <div class="strat-item"><div class="strat-top"><span class="strat-name">INSANE BRAVERY</span><span class="strat-cp">1 CP</span><span class="strat-timing">COMMAND PHASE</span></div><p class="strat-desc">A unit automatically passes a Battle-shock test.</p></div>
+      <div class="strat-item"><div class="strat-top"><span class="strat-name">TANK SHOCK</span><span class="strat-cp">1 CP</span><span class="strat-timing">MOVEMENT PHASE</span></div><p class="strat-desc">A VEHICLE unit can move through enemy models.</p></div>
+      <div class="strat-item"><div class="strat-top"><span class="strat-name">FIRE OVERWATCH</span><span class="strat-cp">1 CP</span><span class="strat-timing">OPP. MOVEMENT</span></div><p class="strat-desc">When an enemy unit declares a charge, one of your units within 24" can shoot at it.</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KW_RULES={MELEE:{cls:'melee',tip:'Fight phase only.'},PISTOL:{cls:'pistol',tip:'Can fire within Engagement Range.'},ASSAULT:{cls:'assault',tip:'Fire after Advancing with no penalty.'},'ASSAULT 2':{cls:'assault',tip:'ASSAULT — fire after Advancing. 2 shots.'},'ASSAULT 3':{cls:'assault',tip:'ASSAULT — fire after Advancing. 3 shots.'},HEAVY:{cls:'heavy',tip:'-1 to hit if bearer moved this turn.'},HAZARDOUS:{cls:'hazardous',tip:'After firing: roll D6 per model. On 1, suffer 1 mortal wound.'},'RAPID FIRE 1':{cls:'rapid',tip:'Extra attack if target is within half range.'},BLAST:{cls:'blast',tip:'+1 attack per 5 models in target unit.'},'MELTA 2':{cls:'melta',tip:'+2 Damage if target is within half range.'}};
+
+const UNITS={
+  'assault-intercessors':{name:'ASSAULT INTERCESSORS',faction:'✠ SPACE MARINES · ADEPTUS ASTARTES',stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2},M:6,phaseHl:'M',faction_side:'imp',wargear:[],weapons:[{type:'MELEE',name:'Astartes Chainsword',rng:'—',a:4,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Heavy Bolt Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}],abilities:[{name:'SHOCK ASSAULT',desc:'On a turn this unit makes a charge move, until end of turn its models get +1 Attack.'},{name:'AND THEY SHALL KNOW NO FEAR',desc:'Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.'}]},
+  'primaris-lieutenant':{name:'PRIMARIS LIEUTENANT',faction:'★ SPACE MARINES · CHARACTER',stats:{M:'6"',T:4,Sv:'3+',W:5,Ld:6,OC:1},M:6,phaseHl:'M',faction_side:'imp',wargear:[],weapons:[{type:'RANGED',name:'Master-crafted Auto Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']},{type:'MELEE',name:'Paired Combat Blades',rng:'—',a:6,s:4,ap:-1,d:1,kw:['MELEE']}],abilities:[{name:'TACTICAL PRECISION',desc:'Friendly [ADEPTUS ASTARTES] units within 6" can re-roll wound rolls of 1.'}]},
+  'intercessor-squad-a':{name:'INTERCESSOR SQUAD A',faction:'✠ SPACE MARINES · INFANTRY',stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2},M:6,phaseHl:'M',faction_side:'imp',wargear:[{id:'sgt-plasma',label:"Sergeant's bolt pistol → plasma pistol",adds:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],weapons:[{type:'RANGED',name:'Bolt Rifle',rng:'30"',a:2,s:4,ap:-1,d:1,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Bolt Pistol',rng:'12"',a:1,s:4,ap:0,d:1,kw:['PISTOL']}],abilities:[{name:'AND THEY SHALL KNOW NO FEAR',desc:'Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.'}]},
+  'hellblasters':{name:'HELLBLASTERS',faction:'✠ SPACE MARINES · INFANTRY',stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2},M:6,phaseHl:'M',faction_side:'imp',wargear:[{id:'sgt-plasma',label:"Sergeant's bolt pistol → plasma pistol",adds:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],weapons:[{type:'RANGED',name:'Plasma Incinerator (std)',rng:'30"',a:2,s:7,ap:-3,d:2,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Plasma Incinerator (sup)',rng:'30"',a:2,s:8,ap:-3,d:3,kw:['RAPID FIRE 1','HAZARDOUS']}],abilities:[{name:'AND THEY SHALL KNOW NO FEAR',desc:'Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.'},{name:'FOR THE CHAPTER!',desc:'Each time a model in this unit is destroyed, roll D6: on 3+, do not remove it yet. It can shoot after the attacking unit finishes, then it is removed.'}]},
+  'redemptor-dreadnought':{name:'REDEMPTOR DREADNOUGHT',faction:'⬡ SPACE MARINES · VEHICLE',stats:{M:'8"',T:10,Sv:'2+',W:12,Ld:6,OC:3},M:8,phaseHl:'M',faction_side:'imp',wargear:[],weapons:[{type:'MELEE',name:'Redemptor Fist',rng:'—',a:5,s:12,ap:-3,d:3,kw:['MELEE']},{type:'RANGED',name:'Macro Plasma Incinerator',rng:'36"',a:3,s:8,ap:-4,d:2,kw:['HEAVY','BLAST']}],abilities:[{name:'DUTY ETERNAL',desc:'Each time this model suffers a wound, roll D6: on 5+, that wound is ignored.'},{name:'GUARDIAN OF THE CHAPTER',desc:'While this model is within 3" of a friendly INFANTRY unit, it has a 4+ invulnerable save.'}]},
+  'boss-nob':{name:'BOSS NOB',faction:'☠ ORKS · CHARACTER',stats:{M:'5"',T:5,Sv:'4+',W:5,Ld:7,OC:1},M:5,phaseHl:'M',faction_side:'ork',wargear:[],weapons:[{type:'MELEE',name:'Power Klaw',rng:'—',a:4,s:8,ap:-3,d:2,kw:['MELEE']},{type:'RANGED',name:'Slugga',rng:'12"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}],abilities:[{name:"'ERE WE GO",desc:"This unit can make a charge move after Advancing. Add 1 to charge rolls."}]},
+  'boyz-mob':{name:'BOYZ MOB',faction:'☠ ORKS · INFANTRY',stats:{M:'5"',T:4,Sv:'5+',W:1,Ld:'7+',OC:2},M:5,phaseHl:'M',faction_side:'ork',wargear:[{id:'big-shoota',label:'1 Boy can replace Shoota with Big Shoota',adds:{type:'RANGED',name:'Big Shoota',rng:'24"',a:3,s:5,ap:0,d:1,kw:['ASSAULT 3']}}],weapons:[{type:'MELEE',name:'Choppa',rng:'—',a:2,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Shoota',rng:'12"',a:2,s:4,ap:0,d:1,kw:['ASSAULT 2']}],abilities:[{name:"'ERE WE GO",desc:"This unit can make a charge move after Advancing. Add 1 to charge rolls."}]},
+  'mekboy':{name:'MEKBOY',faction:'⚙ ORKS · CHARACTER',stats:{M:'5"',T:4,Sv:'5+',W:4,Ld:7,OC:1},M:5,phaseHl:'M',faction_side:'ork',wargear:[],weapons:[{type:'RANGED',name:'Kustom Mega-blasta',rng:'24"',a:3,s:8,ap:-3,d:'D3',kw:['MELTA 2']},{type:'MELEE',name:'Choppa',rng:'—',a:3,s:4,ap:-1,d:1,kw:['MELEE']}],abilities:[{name:"MEK'S TOOLS",desc:'At the start of your Command phase, if this model is within 3" of a friendly VEHICLE, that vehicle regains up to D3 lost wounds.'}]}
+};
+
+const wgState={};
+function apCls(ap){const n=typeof ap==='string'?parseInt(ap):ap;if(isNaN(n)||n===0)return 'ap0';if(n===-1)return 'ap1';if(n===-2)return 'ap2';if(n===-3)return 'ap3';return 'ap4';}
+function kwPill(kw){const d=KW_RULES[kw]||{cls:'other',tip:'Keyword ability.'};return `<span class="kw-pill ${d.cls}">${kw}<span class="kw-tooltip">${d.tip}</span></span>`;}
+
+function initTooltips(){
+  document.querySelectorAll('.kw-pill').forEach(pill=>{
+    const tip=pill.querySelector('.kw-tooltip');
+    if(!tip)return;
+    pill.addEventListener('mouseenter',()=>{
+      const r=pill.getBoundingClientRect();
+      tip.style.position='fixed';
+      tip.style.left=(r.left+r.width/2)+'px';
+      tip.style.top=(r.top-8)+'px';
+      tip.style.transform='translate(-50%,-100%)';
+      tip.style.zIndex='9999';
+      tip.style.visibility='visible';
+      tip.style.opacity='1';
+      document.body.appendChild(tip);
+    });
+    pill.addEventListener('mouseleave',()=>{
+      tip.style.visibility='hidden';
+      tip.style.opacity='0';
+      pill.appendChild(tip);
+    });
+  });
+}
+
+/* v0.9c: Position card near the selected token */
+function positionCardNearToken(tokenEl){
+  const card=document.getElementById('unit-card');
+  const bf=document.getElementById('battlefield');
+  const bfRect=bf.getBoundingClientRect();
+  const tokenRect=tokenEl.getBoundingClientRect();
+  const cardW=290, cardH=Math.min(420, card.scrollHeight+20);
+  // Try to place card above the token, centred
+  let x=tokenRect.left+tokenRect.width/2-cardW/2;
+  let y=tokenRect.top-cardH-20;
+  // Clamp to battlefield bounds
+  x=Math.max(bfRect.left+8, Math.min(bfRect.right-cardW-8, x));
+  y=Math.max(bfRect.top+40, y);
+  // If too high, place below token
+  if(y<bfRect.top+40){y=tokenRect.bottom+20;}
+  card.style.left=x+'px';
+  card.style.top=y+'px';
+}
+
+/* v0.9c: Draw combat state circles on SVG when unit selected */
+// SVG viewBox 0 0 1000 700, battlefield fits this
+function drawCombatOverlays(uid, tokenEl){
+  const u=UNITS[uid];
+  if(!u)return;
+  const bf=document.getElementById('battlefield');
+  const inner=document.getElementById('battlefield-inner');
+  const bfRect=bf.getBoundingClientRect();
+  const tokenRect=tokenEl.getBoundingClientRect();
+  // Get scale from current transform
+  const style=window.getComputedStyle(inner);
+  const matrix=new DOMMatrixReadOnly(style.transform);
+  const sc=matrix.a||1;
+  // Token centre in battlefield px (unscaled from the transform)
+  const bfW=bfRect.width; const bfH=bfRect.height;
+  // Token position relative to battlefield
+  const tokenCX=(tokenRect.left+tokenRect.width/2-bfRect.left-matrix.e)/sc;
+  const tokenCY=(tokenRect.top+tokenRect.height/2-bfRect.top-matrix.f)/sc;
+  // Convert to SVG coords (viewBox 1000x700)
+  const svgX=(tokenCX/bfW)*1000;
+  const svgY=(tokenCY/bfH)*700;
+  // Scale: 1 inch = ~20 SVG units (1000 SVG units / 50" board width)
+  const inchPx=20;
+  const moveR=u.M*inchPx;
+  const chargeR=(u.M+7)*inchPx; // M + avg 7" charge
+  const mc=document.getElementById('move-range-circle');
+  const cc=document.getElementById('charge-range-circle');
+  const ml=document.getElementById('move-range-label');
+  const cl=document.getElementById('charge-range-label');
+  mc.setAttribute('cx',svgX); mc.setAttribute('cy',svgY); mc.setAttribute('r',moveR);
+  cc.setAttribute('cx',svgX); cc.setAttribute('cy',svgY); cc.setAttribute('r',chargeR);
+  ml.setAttribute('x',svgX); ml.setAttribute('y',svgY-moveR-4);
+  cl.setAttribute('x',svgX+chargeR-40); cl.setAttribute('y',svgY-10);
+  mc.classList.add('visible'); cc.classList.add('visible');
+  ml.classList.add('visible'); cl.classList.add('visible');
+  // Update range badges in card
+  document.getElementById('card-ranges').innerHTML=
+    `<span class="range-badge range-move">MOVE ${u.M}"</span>`+
+    `<span class="range-badge range-charge">CHARGE THREAT ~${u.M+7}"</span>`;
+  // Check objective proximity (scoring aura)
+  updateObjectiveAuras(uid, u.faction_side, svgX, svgY);
+}
+
+function clearCombatOverlays(){
+  ['move-range-circle','charge-range-circle'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.classList.remove('visible');
+  });
+  ['move-range-label','charge-range-label'].forEach(id=>{
+    document.getElementById(id).classList.remove('visible');
+  });
+  document.querySelectorAll('.obj-hex-wrap').forEach(o=>{
+    o.classList.remove('scoring-imp','scoring-ork');
+  });
+}
+
+/* Check if unit is within 3" (60 SVG units) of any objective */
+function updateObjectiveAuras(uid, side, svgX, svgY){
+  const objPositions={
+    'obj-01':{x:0.14*1000, y:0.22*700},
+    'obj-02':{x:0.50*1000, y:0.65*700},
+    'obj-03':{x:0.80*1000, y:0.32*700},
+  };
+  const controlRange=60; // 3" in SVG units
+  Object.entries(objPositions).forEach(([id,pos])=>{
+    const dist=Math.sqrt(Math.pow(svgX-pos.x,2)+Math.pow(svgY-pos.y,2));
+    const el=document.getElementById(id);
+    if(!el)return;
+    el.classList.remove('scoring-imp','scoring-ork');
+    if(dist<=controlRange){
+      el.classList.add(side==='imp'?'scoring-imp':'scoring-ork');
+    }
+  });
+}
+
+function buildCard(uid, tokenEl){
+  const u=UNITS[uid];
+  if(!u)return;
+  const card=document.getElementById('unit-card');
+  document.getElementById('card-name').textContent=u.name;
+  document.getElementById('card-faction').textContent=u.faction;
+  const sk=['M','T','Sv','W','Ld','OC'];
+  document.getElementById('card-stats').innerHTML=sk.map(k=>`<div class="stat-cell${k===u.phaseHl?' hl':''}"><div class="stat-key">${k}</div><div class="stat-val">${u.stats[k]??'—'}</div></div>`).join('');
+  // Range badges placeholder (will be set by drawCombatOverlays)
+  document.getElementById('card-ranges').innerHTML=`<span class="range-badge range-move">MOVE ${u.M}"</span><span class="range-badge range-charge">CHARGE THREAT ~${u.M+7}"</span>`;
+  const wgEl=document.getElementById('card-wargear');
+  if(u.wargear&&u.wargear.length){
+    if(!wgState[uid])wgState[uid]={};
+    let h=`<div class="card-section"><div class="sec-label">WARGEAR OPTIONS</div>`;
+    u.wargear.forEach((wg,i)=>{const on=!!wgState[uid][i];h+=`<div class="wg-row${on?' active':''}" data-uid="${uid}" data-i="${i}"><div class="wg-circle"></div><span>${wg.label}</span></div>`;});
+    h+='</div>';wgEl.innerHTML=h;
+    wgEl.querySelectorAll('.wg-row').forEach(r=>{r.addEventListener('click',()=>{const i=+r.dataset.i;if(!wgState[uid])wgState[uid]={};wgState[uid][i]=!wgState[uid][i];buildCard(uid,tokenEl);});});
+  }else{wgEl.innerHTML='';}
+  let weapons=[...u.weapons];
+  if(u.wargear&&wgState[uid])u.wargear.forEach((wg,i)=>{if(wgState[uid][i]&&wg.adds)weapons.push(wg.adds);});
+  const types=[...new Set(weapons.map(w=>w.type))];
+  let wHtml='';
+  types.forEach(type=>{
+    wHtml+=`<div class="wt-hdr"><div class="wt-type">${type} WEAPONS</div><div class="wt-col">RNG</div><div class="wt-col">A</div><div class="wt-col">S</div><div class="wt-col">AP</div><div class="wt-col">D</div></div>`;
+    weapons.filter(w=>w.type===type).forEach(w=>{wHtml+=`<div class="wt-row"><div class="wt-name-row"><span class="wt-name">${w.name}</span><span class="wt-val">${w.rng}</span><span class="wt-val">${w.a}</span><span class="wt-val">${w.s}</span><span class="wt-val ${apCls(w.ap)}">${w.ap}</span><span class="wt-val dmg">${w.d}</span></div><div class="wt-kws">${(w.kw||[]).map(kwPill).join('')}</div></div>`;});
+  });
+  document.getElementById('card-weapons').innerHTML=wHtml;
+  let aHtml=`<div class="sec-label">ABILITIES</div>`;
+  (u.abilities||[]).forEach(a=>{aHtml+=`<div class="ability-row"><div class="ability-pill">${a.name}</div><div class="ability-desc">${a.desc}</div></div>`;});
+  document.getElementById('card-abilities').innerHTML=aHtml;
+  card.classList.add('visible');
+  // Position near token
+  requestAnimationFrame(()=>{
+    positionCardNearToken(tokenEl);
+    drawCombatOverlays(uid, tokenEl);
+    initTooltips();
+  });
+}
+
+function selectUnit(uid, tokenEl){
+  document.querySelectorAll('.rail-unit').forEach(r=>r.classList.toggle('active',r.dataset.unit===uid));
+  document.querySelectorAll('.token').forEach(t=>t.classList.toggle('selected',t.dataset.unit===uid));
+  clearCombatOverlays();
+  buildCard(uid, tokenEl);
+}
+
+document.querySelectorAll('.rail-unit').forEach(r=>{
+  r.addEventListener('click',()=>{
+    const tokenEl=document.querySelector(`.token[data-unit="${r.dataset.unit}"]`);
+    selectUnit(r.dataset.unit, tokenEl||r);
+  });
+});
+document.querySelectorAll('.token').forEach(t=>{
+  t.addEventListener('click',e=>{e.stopPropagation();selectUnit(t.dataset.unit,t);});
+});
+document.getElementById('card-close').addEventListener('click',()=>{
+  document.getElementById('unit-card').classList.remove('visible');
+  document.querySelectorAll('.rail-unit,.token').forEach(e=>e.classList.remove('active','selected'));
+  clearCombatOverlays();
+});
+document.getElementById('roster-btn').addEventListener('click',()=>{
+  const app=document.getElementById('app');
+  const btn=document.getElementById('roster-btn');
+  const col=app.classList.toggle('collapsed');
+  btn.textContent=col?'►':'◄';
+});
+function toggleFaction(hdr){const body=hdr.nextElementSibling;const chev=hdr.querySelector('.faction-chevron');const col=body.classList.toggle('collapsed');chev.style.transform=col?'rotate(-90deg)':'';}
+function toggleAA(hdr){const body=hdr.nextElementSibling;const chev=hdr.querySelector('.aa-chev');const op=body.classList.toggle('open');chev.style.transform=op?'rotate(90deg)':'';}
+document.getElementById('btn-move').addEventListener('click',()=>{document.getElementById('btn-move').classList.add('active');document.getElementById('btn-advance').classList.remove('active');});
+document.getElementById('btn-advance').addEventListener('click',()=>{document.getElementById('btn-advance').classList.add('active');document.getElementById('btn-move').classList.remove('active');});
+const modalBg=document.getElementById('modal-bg');
+document.getElementById('btn-strat').addEventListener('click',()=>modalBg.classList.add('open'));
+document.getElementById('modal-close').addEventListener('click',()=>modalBg.classList.remove('open'));
+modalBg.addEventListener('click',e=>{if(e.target===modalBg)modalBg.classList.remove('open');});
+
+let scale=1,tx=0,ty=0,isDragging=false,startX,startY;
+const inner=document.getElementById('battlefield-inner');
+const bf=document.getElementById('battlefield');
+function applyTx(){inner.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;document.getElementById('zoom-ind').textContent=Math.round(scale*100)+'%';}
+bf.addEventListener('wheel',e=>{e.preventDefault();scale=Math.min(3,Math.max(.4,scale*(e.deltaY>0?.9:1.1)));applyTx();if(selectedToken)drawCombatOverlays(selectedUid,selectedToken);},{passive:false});
+bf.addEventListener('mousedown',e=>{if(e.target.closest('.token,.obj-hex-wrap,#unit-card,#bf-top-bar,#phase-pill-wrap,#bf-controls,#action-bar'))return;isDragging=true;startX=e.clientX-tx;startY=e.clientY-ty;inner.classList.add('dragging');bf.style.cursor='grabbing';});
+document.addEventListener('mousemove',e=>{if(!isDragging)return;tx=e.clientX-startX;ty=e.clientY-startY;applyTx();});
+document.addEventListener('mouseup',()=>{isDragging=false;inner.classList.remove('dragging');bf.style.cursor='';});
+document.getElementById('reset-btn').addEventListener('click',()=>{scale=1;tx=0;ty=0;applyTx();if(selectedToken)drawCombatOverlays(selectedUid,selectedToken);});
+
+// Track selection for re-draw on zoom/pan
+let selectedUid='assault-intercessors';
+let selectedToken=document.querySelector('.token[data-unit="assault-intercessors"]');
+const origSelectUnit=selectUnit;
+window.selectUnit=(uid,tok)=>{selectedUid=uid;selectedToken=tok;origSelectUnit(uid,tok);};
+document.querySelectorAll('.rail-unit').forEach(r=>{r.onclick=()=>{const t=document.querySelector(`.token[data-unit="${r.dataset.unit}"]`);window.selectUnit(r.dataset.unit,t||r);};});
+document.querySelectorAll('.token').forEach(t=>{t.onclick=e=>{e.stopPropagation();window.selectUnit(t.dataset.unit,t);};});
+
+// Initial render
+buildCard('assault-intercessors', selectedToken);
+</script>
+</body>
+</html>

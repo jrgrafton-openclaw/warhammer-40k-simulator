@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — UI Mockup v0.7b · Tactical Overlay</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Oswald:wght@400;600&family=Share+Tech+Mono&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       v0.7b — TACTICAL OVERLAY
+       Modern RTS HUD. Battlefield takes 80%+ width. Minimal panels.
+       Palette: #050505 bg, #00ffcc neon-teal, #ff3333 red, #ffaa00 amber
+       ============================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #050505; color: #ccc; font-family: 'Rajdhani', sans-serif; }
+
+    /* ROOT GRID: thin icon-only left rail | battlefield | (no right panel by default) */
+    #app {
+      display: grid;
+      grid-template-columns: 160px 1fr;
+      grid-template-rows: 1fr 60px;
+      width: 100vw; height: 100vh;
+    }
+
+    /* ── TOP VP SCOREBOARD BAR ─────────────────────────────── */
+    #vp-bar {
+      position: fixed; top: 0; left: 160px; right: 0; height: 32px;
+      background: rgba(5,5,5,0.92);
+      border-bottom: 1px solid rgba(0,255,204,0.12);
+      display: flex; align-items: center; justify-content: center;
+      gap: 20px; z-index: 50; backdrop-filter: blur(8px);
+    }
+    .vp-faction {
+      display: flex; align-items: center; gap: 8px;
+      font: 600 11px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .vp-name-imp { color: #4a90d9; }
+    .vp-name-ork { color: #cc4444; }
+    .vp-score {
+      font: 700 18px/1 'Orbitron', sans-serif;
+    }
+    .vp-score.imp { color: #00ffcc; text-shadow: 0 0 10px rgba(0,255,204,0.5); }
+    .vp-score.ork { color: #ff3333; text-shadow: 0 0 10px rgba(255,51,51,0.4); }
+    .vp-vs { font: 700 10px/1 'Orbitron', sans-serif; color: #333; letter-spacing: 3px; }
+    .vp-round {
+      font: 600 9px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px; color: #444; text-transform: uppercase;
+      position: absolute; right: 12px;
+    }
+
+    /* ── LEFT RAIL (icon strip) ────────────────────────────── */
+    #sidebar-left {
+      grid-column: 1; grid-row: 1 / 3;
+      background: linear-gradient(180deg, rgba(5,5,5,0.98) 0%, rgba(8,8,8,0.96) 100%);
+      border-right: 1px solid rgba(0,255,204,0.06);
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      z-index: 40;
+      /* Gradient blend into battlefield on right edge */
+      box-shadow: 4px 0 20px rgba(0,0,0,0.7);
+    }
+    .rail-header {
+      height: 32px; padding: 0 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(0,255,204,0.08);
+      margin-top: 32px; /* below VP bar */
+    }
+    .rail-title { font: 700 8px/1 'Orbitron', sans-serif; letter-spacing: 2px; color: rgba(0,255,204,0.3); text-transform: uppercase; }
+
+    .rail-faction-sep {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 8px 4px;
+      font: 600 7px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(255,255,255,0.2);
+    }
+    .rail-faction-sep::before, .rail-faction-sep::after {
+      content: ''; flex: 1; height: 1px; background: currentColor; opacity: 0.3;
+    }
+
+    .rail-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .rail-scroll::-webkit-scrollbar { width: 2px; }
+    .rail-scroll::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.1); }
+
+    /* Unit icon tiles — icon + status dot, no text */
+    .rail-unit {
+      display: flex; align-items: center; justify-content: center;
+      padding: 4px 6px; cursor: pointer;
+      position: relative; height: 48px;
+      transition: background 0.1s;
+      border-left: 2px solid transparent;
+    }
+    .rail-unit:hover { background: rgba(0,255,204,0.04); }
+    .rail-unit.active {
+      border-left-color: #00ffcc;
+      background: rgba(0,255,204,0.06);
+    }
+    .rail-unit-inner { display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 4px; }
+    .rail-icon {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; position: relative; flex-shrink: 0;
+      background: #0a0a0a;
+    }
+    .rail-icon.imp { border: 1.5px solid rgba(74,144,217,0.4); }
+    .rail-icon.ork { border: 1.5px solid rgba(204,68,68,0.4); }
+    .rail-icon.char-imp { border: 1.5px solid rgba(255,170,0,0.5); }
+    .rail-icon.char-ork { border: 1.5px solid rgba(255,170,0,0.4); }
+    .rail-unit.active .rail-icon { box-shadow: 0 0 10px rgba(0,255,204,0.3); border-color: rgba(0,255,204,0.5); }
+
+    .rail-count-badge {
+      position: absolute; top: -3px; right: -4px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: #991111; color: #fff;
+      font: 700 9px/16px 'Share Tech Mono', monospace;
+      text-align: center; z-index: 2;
+    }
+    .rail-unit-info { flex: 1; min-width: 0; }
+    .rail-unit-name {
+      font: 600 11px/1.2 'Rajdhani', sans-serif; color: #aaa;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rail-unit.active .rail-unit-name { color: #00ffcc; }
+    .rail-status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .rail-status-dot.ready { background: #2ed573; box-shadow: 0 0 4px rgba(46,213,115,0.5); }
+    .rail-status-dot.moving { background: #ffaa00; box-shadow: 0 0 4px rgba(255,170,0,0.5); }
+    .rail-status-dot.fought { background: #444; }
+
+    /* Rail footer */
+    .rail-footer {
+      border-top: 1px solid rgba(0,255,204,0.06);
+      padding: 8px;
+    }
+    .rail-cp {
+      text-align: center;
+      font: 700 20px/1 'Orbitron', sans-serif;
+      color: #00ffcc;
+      text-shadow: 0 0 12px rgba(0,255,204,0.4);
+    }
+    .rail-cp-label { font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(0,255,204,0.4); text-transform: uppercase; text-align: center; margin-top: 2px; }
+
+    /* ── BATTLEFIELD ───────────────────────────────────────── */
+    #battlefield {
+      grid-column: 2; grid-row: 1 / 3;
+      position: relative; overflow: hidden; cursor: default;
+      background-color: #050607;
+      background-image:
+        radial-gradient(ellipse 95% 90% at 50% 50%, transparent 50%, rgba(0,0,0,0.9) 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0,255,204,0.025) 49px, rgba(0,255,204,0.025) 50px),
+        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0,255,204,0.025) 49px, rgba(0,255,204,0.025) 50px);
+      margin-top: 32px; /* below VP bar */
+    }
+
+    /* Floating phase pill — top-center */
+    #phase-header {
+      position: absolute; top: 0; left: 0; right: 0; height: 50px;
+      background: transparent; display: flex; align-items: flex-start; justify-content: center; z-index: 10; pointer-events: none;
+    }
+    .phase-pill {
+      margin-top: 8px;
+      background: rgba(5,5,5,0.88);
+      border: 1px solid rgba(0,255,204,0.2);
+      border-radius: 20px;
+      padding: 7px 24px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+      pointer-events: auto;
+      box-shadow: 0 0 20px rgba(0,255,204,0.08), 0 2px 20px rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+    }
+    .phase-title { font: 700 13px/1 'Rajdhani', sans-serif; letter-spacing: 4px; color: #00ffcc; text-transform: uppercase; }
+    .phase-subtitle { font: 500 8px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(0,255,204,0.4); text-transform: uppercase; }
+
+    #bf-controls {
+      position: absolute; top: 8px; right: 8px;
+      display: flex; align-items: center; gap: 6px; z-index: 11;
+    }
+    #zoom-indicator { font: 400 10px/1 'Share Tech Mono', monospace; color: rgba(0,255,204,0.2); }
+    .bf-ctrl-btn {
+      font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+      background: rgba(5,5,5,0.7); border: 1px solid rgba(0,255,204,0.08); color: rgba(0,255,204,0.2);
+      padding: 4px 8px; cursor: pointer; transition: all 0.15s; border-radius: 2px;
+    }
+    .bf-ctrl-btn:hover { border-color: rgba(0,255,204,0.4); color: #00ffcc; }
+    .bf-ctrl-btn.demo { color: rgba(255,170,0,0.3); border-color: rgba(255,170,0,0.1); }
+    .bf-ctrl-btn.demo:hover { border-color: rgba(255,170,0,0.5); color: #ffaa00; }
+
+    #battlefield-inner { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform-origin: center; cursor: grab; }
+    #battlefield-inner.dragging { cursor: grabbing; }
+    #bf-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+    /* OBJECTIVE MARKERS — HEXAGONAL via clip-path */
+    .obj-marker {
+      position: absolute; transform: translate(-50%, -50%);
+      width: 76px; height: 88px;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 4; cursor: default;
+      background: rgba(255,51,51,0.18);
+      border: none; /* clip-path excludes border, use outline workaround */
+      position: absolute;
+      transition: all 0.3s;
+    }
+    /* Hex wrapper with border effect */
+    .obj-hex-wrap {
+      position: absolute; transform: translate(-50%, -50%);
+      width: 84px; height: 97px; z-index: 4; cursor: default;
+    }
+    .obj-hex-outer {
+      position: absolute; inset: 0;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      background: rgba(255,51,51,0.35);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .obj-hex-inner {
+      width: 76px; height: 88px;
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      background: rgba(15,6,6,0.9);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .obj-hex-outer.controlled {
+      background: rgba(255,170,0,0.5);
+      filter: drop-shadow(0 0 12px rgba(255,170,0,0.6));
+    }
+    .obj-hex-outer.contested {
+      background: rgba(255,51,51,0.5);
+      animation: hex-contested 1.2s ease-in-out infinite;
+    }
+    @keyframes hex-contested {
+      0%,100% { filter: drop-shadow(0 0 8px rgba(255,51,51,0.4)); }
+      50% { filter: drop-shadow(0 0 20px rgba(255,51,51,0.9)); }
+    }
+    .obj-control-ring {
+      position: absolute; width: 170px; height: 170px; border-radius: 50%;
+      border: 1.5px dashed rgba(255,170,0,0.2);
+      top: 50%; left: 50%; transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .obj-number { font: 700 20px/1 'Orbitron', sans-serif; color: #fff; }
+    .obj-label-text { font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(255,255,255,0.5); text-transform: uppercase; margin-top: 2px; }
+
+    /* TOKENS */
+    .token {
+      position: absolute; transform: translate(-50%, -50%);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 3;
+      transition: box-shadow 0.15s, border-color 0.15s; user-select: none;
+      flex-direction: column; gap: 1px;
+    }
+    .token-label {
+      position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      margin-top: 5px; font: 500 9px/1 'Rajdhani', sans-serif; color: rgba(0,255,204,0.4);
+      white-space: nowrap; pointer-events: none; letter-spacing: 0.5px;
+    }
+    .token-size-s { width: 46px; height: 46px; }
+    .token-size-m { width: 58px; height: 58px; }
+    .token-size-l { width: 74px; height: 74px; }
+    .token-vehicle { width: 80px; height: 70px; border-radius: 14px; }
+
+    /* Unit class icon inside token */
+    .token-class-icon { font-size: 16px; line-height: 1; }
+    .token-count { font: 700 9px/1 'Share Tech Mono', monospace; color: rgba(255,255,255,0.5); }
+
+    .token-imperium {
+      border: 2px solid rgba(74,144,217,0.5);
+      background: radial-gradient(circle, rgba(20,40,80,0.95) 0%, rgba(8,16,36,0.95) 100%);
+      box-shadow: 0 0 12px rgba(30,100,220,0.3);
+    }
+    .token-imperium:hover { box-shadow: 0 0 20px rgba(30,100,220,0.6); }
+    .token-imperium.selected { border-color: #00ffcc; box-shadow: 0 0 24px rgba(0,255,204,0.7), 0 0 8px rgba(0,255,204,0.4); }
+    .token-imperium-char {
+      border: 2px solid rgba(255,170,0,0.5);
+      background: radial-gradient(circle, rgba(20,40,80,0.95) 0%, rgba(8,16,36,0.95) 100%);
+      box-shadow: 0 0 12px rgba(255,170,0,0.25);
+    }
+    .token-imperium-char:hover { box-shadow: 0 0 20px rgba(255,170,0,0.5); }
+    .token-imperium-char.selected { border-color: #00ffcc; box-shadow: 0 0 24px rgba(0,255,204,0.7); }
+    .token-ork {
+      border: 2px solid rgba(204,68,68,0.5);
+      background: radial-gradient(circle, rgba(50,12,12,0.95) 0%, rgba(22,5,5,0.95) 100%);
+      box-shadow: 0 0 12px rgba(180,30,30,0.35);
+    }
+    .token-ork:hover { box-shadow: 0 0 20px rgba(180,30,30,0.6); }
+    .token-ork.selected { border-color: #00ffcc; box-shadow: 0 0 24px rgba(0,255,204,0.7); }
+    .token-ork-char {
+      border: 2px solid rgba(255,170,0,0.4);
+      background: radial-gradient(circle, rgba(50,12,12,0.95) 0%, rgba(22,5,5,0.95) 100%);
+      box-shadow: 0 0 12px rgba(255,170,0,0.2);
+    }
+    .token-ork-char:hover { box-shadow: 0 0 20px rgba(255,170,0,0.4); }
+    .token-ork-char.selected { border-color: #00ffcc; box-shadow: 0 0 24px rgba(0,255,204,0.7); }
+
+    .token-badge {
+      position: absolute; top: -5px; right: -5px;
+      min-width: 18px; height: 18px; border-radius: 9px; padding: 0 3px;
+      background: #991111; color: #fff;
+      font: 700 9px/18px 'Share Tech Mono', monospace;
+      text-align: center; z-index: 4;
+    }
+
+    /* Ability banner */
+    #ability-banner {
+      position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
+      width: min(500px, 85%); background: rgba(5,10,20,0.95); border: 1px solid #00ffcc;
+      box-shadow: 0 0 20px rgba(0,255,204,0.15); padding: 12px 16px; z-index: 20; display: none;
+      backdrop-filter: blur(8px); border-radius: 4px;
+    }
+    #ability-banner.visible { display: block; }
+    .banner-title { font: 700 11px/1 'Rajdhani', sans-serif; letter-spacing: 3px; text-transform: uppercase; color: #ffaa00; margin-bottom: 6px; }
+    .banner-icon { color: #00ffcc; margin-right: 4px; }
+    .banner-body { font: 400 12px/1.5 'Rajdhani', sans-serif; color: #888; margin-bottom: 10px; }
+    .banner-actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .banner-btn { font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; padding: 5px 14px; border: 1px solid; cursor: pointer; background: transparent; transition: all 0.15s; border-radius: 2px; }
+    .banner-btn.use { color: #00ffcc; border-color: rgba(0,255,204,0.3); }
+    .banner-btn.use:hover { background: rgba(0,255,204,0.1); border-color: #00ffcc; }
+    .banner-btn.dismiss { color: #555; border-color: #222; }
+    .banner-btn.dismiss:hover { color: #888; border-color: #444; }
+
+    /* ── UNIT DETAIL OVERLAY CARD ──────────────────────────── */
+    /* Floats over bottom-right of battlefield when a unit is selected */
+    #unit-detail-card {
+      position: absolute; bottom: 70px; right: 10px;
+      width: 300px;
+      background: rgba(5,5,5,0.94);
+      border: 1px solid rgba(0,255,204,0.15);
+      z-index: 30; display: none;
+      backdrop-filter: blur(10px);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #unit-detail-card.visible { display: block; }
+    .card-header {
+      background: rgba(0,255,204,0.04);
+      border-bottom: 1px solid rgba(0,255,204,0.1);
+      padding: 10px 14px;
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .card-unit-name { font: 700 16px/1.1 'Rajdhani', sans-serif; color: #fff; letter-spacing: 2px; text-transform: uppercase; }
+    .card-faction { font: 500 9px/1 'Rajdhani', sans-serif; letter-spacing: 1px; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-top: 3px; }
+    .card-close { color: rgba(0,255,204,0.3); cursor: pointer; font-size: 16px; line-height: 1; }
+    .card-close:hover { color: #00ffcc; }
+
+    /* Simplified stat row */
+    .card-stats {
+      display: flex; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .card-stat { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 4px 2px; }
+    .card-stat-key { font: 500 8px/1 'Rajdhani', sans-serif; letter-spacing: 1px; color: rgba(0,255,204,0.4); text-transform: uppercase; }
+    .card-stat-val { font: 700 16px/1 'Share Tech Mono', monospace; color: #fff; margin-top: 2px; }
+    .card-stat.hl .card-stat-val { color: #00ffcc; text-shadow: 0 0 6px rgba(0,255,204,0.4); }
+
+    /* Weapon rows */
+    .card-weapons { padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .card-weapon-type { font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(255,255,255,0.25); text-transform: uppercase; margin-bottom: 5px; }
+    .card-weapon-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .card-weapon-row:last-child { border-bottom: none; }
+    .cwname { flex: 1; font: 600 12px/1.2 'Rajdhani', sans-serif; color: #ddd; }
+    .cwval { font: 600 11px/1 'Share Tech Mono', monospace; color: #888; min-width: 28px; text-align: center; }
+    .cwval.ap-0 { color: #555; } .cwval.ap-1 { color: #aaa; } .cwval.ap-2 { color: #d8a040; font-weight: 700; } .cwval.ap-3 { color: #d84040; font-weight: 700; } .cwval.ap-4plus { color: #ff2020; font-weight: 700; }
+    .cwval.dmg { color: #ffaa00; font-weight: 700; }
+    .card-kws { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px; }
+
+    /* Keyword pills in card */
+    .kw-pill {
+      display: inline-block; font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+      padding: 2px 5px; border-radius: 8px; cursor: help; position: relative;
+      text-transform: uppercase; transition: filter 0.15s;
+    }
+    .kw-pill:hover { filter: brightness(1.3); }
+    .kw-pill.assault { background: rgba(0,255,204,0.1); color: #00ffcc; border: 1px solid rgba(0,255,204,0.25); }
+    .kw-pill.melee   { background: rgba(255,51,51,0.1); color: #ff5555; border: 1px solid rgba(255,51,51,0.25); }
+    .kw-pill.pistol  { background: rgba(255,170,0,0.1); color: #ffaa00; border: 1px solid rgba(255,170,0,0.25); }
+    .kw-pill.hazardous { background: rgba(255,100,0,0.1); color: #ff7020; border: 1px solid rgba(255,100,0,0.25); }
+    .kw-pill.heavy   { background: rgba(100,140,255,0.1); color: #7090ff; border: 1px solid rgba(100,140,255,0.25); }
+    .kw-pill.rapid   { background: rgba(80,220,120,0.1); color: #50dc78; border: 1px solid rgba(80,220,120,0.25); }
+    .kw-pill.blast   { background: rgba(220,200,0,0.1); color: #dcc800; border: 1px solid rgba(220,200,0,0.25); }
+    .kw-pill.melta   { background: rgba(255,60,0,0.1); color: #ff4020; border: 1px solid rgba(255,60,0,0.25); }
+    .kw-pill.other   { background: rgba(100,100,100,0.1); color: #666; border: 1px solid #333; }
+    .kw-tooltip {
+      visibility: hidden; opacity: 0;
+      position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
+      background: #0a0a0a; border: 1px solid rgba(0,255,204,0.2); color: #ccc;
+      font: 400 10px/1.5 'Rajdhani', sans-serif;
+      padding: 6px 10px; white-space: normal; z-index: 200;
+      pointer-events: none; transition: opacity 0.15s;
+      min-width: 180px; max-width: 240px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.8); border-radius: 3px;
+    }
+    .kw-pill:hover .kw-tooltip { visibility: visible; opacity: 1; }
+
+    /* Coaching card in overlay */
+    .card-coaching {
+      padding: 8px 14px; background: rgba(0,255,204,0.02);
+      border-top: 1px solid rgba(0,255,204,0.08);
+      border-left: 3px solid rgba(0,255,204,0.4);
+    }
+    .card-coaching-title { font: 700 8px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(0,255,204,0.6); text-transform: uppercase; margin-bottom: 5px; }
+    .card-coaching-body { font: 400 11px/1.5 'Rajdhani', sans-serif; color: #666; }
+    .card-coaching-body em { color: #00ffcc; font-style: normal; }
+
+    /* Toggles */
+    .card-toggles { display: flex; gap: 6px; padding: 8px 14px 10px; }
+    .card-toggle-btn { flex: 1; padding: 5px 6px; border: 1px solid rgba(255,255,255,0.08); background: transparent; font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase; color: #444; cursor: pointer; transition: all 0.15s; border-radius: 2px; text-align: center; }
+    .card-toggle-btn:hover { border-color: #444; color: #888; }
+    .card-toggle-btn.active { border-color: rgba(0,255,204,0.4); color: #00ffcc; background: rgba(0,255,204,0.06); }
+
+    /* ── BOTTOM ACTION BAR ─────────────────────────────────── */
+    #action-bar {
+      grid-column: 2; grid-row: 2;
+      height: 60px;
+      background: rgba(5,5,5,0.96);
+      border-top: 1px solid rgba(0,255,204,0.08);
+      display: flex; align-items: center; padding: 0 12px; gap: 8px;
+      backdrop-filter: blur(4px);
+    }
+    .phase-step-mini {
+      display: flex; align-items: center; gap: 4px;
+      padding: 4px 8px; border-radius: 2px;
+      font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .phase-step-mini.done { color: #333; }
+    .phase-step-mini.done .ps-dot { width: 8px; height: 8px; border-radius: 50%; background: #222; }
+    .phase-step-mini.active { color: #00ffcc; }
+    .phase-step-mini.active .ps-dot { width: 8px; height: 8px; border-radius: 50%; background: #00ffcc; box-shadow: 0 0 6px rgba(0,255,204,0.6); }
+    .phase-step-mini.upcoming { color: #2a2a2a; }
+    .phase-step-mini.upcoming .ps-dot { width: 8px; height: 8px; border-radius: 50%; background: #1a1a1a; }
+    .ps-sep { color: #1a1a1a; font-size: 8px; }
+
+    .ab-divider { width: 1px; height: 36px; background: rgba(255,255,255,0.06); margin: 0 4px; }
+    .ab-action-btn { height: 40px; min-width: 100px; padding: 0 14px; font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; background: rgba(0,255,204,0.04); border: 1px solid rgba(0,255,204,0.1); color: rgba(0,255,204,0.3); cursor: pointer; transition: all 0.15s; border-radius: 2px; }
+    .ab-action-btn:hover { border-color: rgba(0,255,204,0.3); color: rgba(0,255,204,0.7); }
+    .ab-action-btn.primary { background: rgba(0,255,204,0.08); border-color: rgba(0,255,204,0.3); color: #00ffcc; }
+    .ab-action-btn.primary:hover { background: rgba(0,255,204,0.15); border-color: #00ffcc; box-shadow: 0 0 14px rgba(0,255,204,0.15); }
+    .ab-end-btn { height: 40px; min-width: 150px; padding: 0 14px; font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; background: rgba(255,170,0,0.06); border: 1px solid rgba(255,170,0,0.25); color: #ffaa00; cursor: pointer; transition: all 0.15s; border-radius: 2px; margin-left: auto; }
+    .ab-end-btn:hover { border-color: #ffaa00; box-shadow: 0 0 14px rgba(255,170,0,0.15); }
+    .ab-stratagem-btn { height: 40px; min-width: 130px; padding: 0 14px; font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; background: transparent; border: 1px solid rgba(255,170,0,0.15); color: rgba(255,170,0,0.4); cursor: pointer; transition: all 0.15s; border-radius: 2px; }
+    .ab-stratagem-btn:hover { border-color: rgba(255,170,0,0.4); color: #ffaa00; }
+    #zone-actions { display: flex; gap: 6px; }
+    #zone-actions .ab-action-btn.active { background: rgba(0,255,204,0.1); border-color: rgba(0,255,204,0.4); color: #00ffcc; }
+
+    /* STRATAGEM MODAL */
+    #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #modal-overlay.visible { display: flex; }
+    #stratagem-modal { width: 400px; max-height: 70vh; background: rgba(8,8,10,0.98); border: 1px solid rgba(0,255,204,0.2); box-shadow: 0 0 40px rgba(0,255,204,0.1); display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(0,255,204,0.04); border-bottom: 1px solid rgba(0,255,204,0.1); font: 700 11px/1 'Rajdhani', sans-serif; letter-spacing: 3px; text-transform: uppercase; color: #00ffcc; }
+    .modal-close { font-size: 16px; color: rgba(0,255,204,0.3); cursor: pointer; }
+    .modal-close:hover { color: #00ffcc; }
+    .stratagem-list { overflow-y: auto; flex: 1; padding: 6px 0; }
+    .stratagem-item { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); cursor: pointer; }
+    .stratagem-item:hover { background: rgba(0,255,204,0.03); }
+    .stratagem-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .stratagem-name { font: 700 12px/1 'Rajdhani', sans-serif; color: #ddd; flex: 1; letter-spacing: 1px; }
+    .stratagem-cost { font: 700 10px/1 'Share Tech Mono', monospace; background: rgba(255,51,51,0.15); color: #ff5555; padding: 2px 6px; border-radius: 2px; }
+    .stratagem-timing { font: 600 8px/1 'Rajdhani', sans-serif; color: #ffaa00; background: rgba(255,170,0,0.08); border: 1px solid rgba(255,170,0,0.2); padding: 2px 5px; text-transform: uppercase; letter-spacing: 1px; border-radius: 2px; }
+    .stratagem-desc { font: 400 11px/1.5 'Rajdhani', sans-serif; color: #555; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LEFT RAIL — icon strip -->
+  <aside id="sidebar-left">
+    <div class="rail-header">
+      <span class="rail-title">Units</span>
+    </div>
+    <div class="rail-scroll">
+
+      <div class="rail-faction-sep" style="color:rgba(74,144,217,0.5);">IMP</div>
+      <div class="rail-unit active" data-unit="assault-intercessors" title="Assault Intercessors">
+        <div class="rail-unit-inner">
+          <div class="rail-icon imp" style="font-size:15px;">✠<div class="rail-count-badge">5</div></div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Assault Int.</div></div>
+          <div class="rail-status-dot moving"></div>
+        </div>
+      </div>
+      <div class="rail-unit" data-unit="primaris-lieutenant" title="Primaris Lieutenant">
+        <div class="rail-unit-inner">
+          <div class="rail-icon char-imp" style="font-size:14px;">★</div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Primaris Lt.</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+      <div class="rail-unit" data-unit="intercessor-squad-a" title="Intercessor Squad A">
+        <div class="rail-unit-inner">
+          <div class="rail-icon imp" style="font-size:15px;">✠<div class="rail-count-badge">5</div></div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Intercessors A</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+      <div class="rail-unit" data-unit="hellblasters" title="Hellblasters">
+        <div class="rail-unit-inner">
+          <div class="rail-icon imp" style="font-size:15px;">✠<div class="rail-count-badge">5</div></div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Hellblasters</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+      <div class="rail-unit" data-unit="redemptor-dreadnought" title="Redemptor Dreadnought">
+        <div class="rail-unit-inner">
+          <div class="rail-icon imp" style="font-size:15px; border-radius:4px;">⬡</div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Dreadnought</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+
+      <div class="rail-faction-sep" style="color:rgba(204,68,68,0.5);">ORK</div>
+      <div class="rail-unit" data-unit="boss-nob" title="Boss Nob">
+        <div class="rail-unit-inner">
+          <div class="rail-icon char-ork" style="font-size:14px; color:rgba(200,80,80,0.7);">☠</div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Boss Nob</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+      <div class="rail-unit" data-unit="boyz-mob" title="Boyz Mob">
+        <div class="rail-unit-inner">
+          <div class="rail-icon ork" style="font-size:13px; color:rgba(200,80,80,0.6);">☠<div class="rail-count-badge" style="background:#6a1010;">10</div></div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Boyz Mob</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+      <div class="rail-unit" data-unit="mekboy" title="Mekboy">
+        <div class="rail-unit-inner">
+          <div class="rail-icon char-ork" style="font-size:14px; color:rgba(200,80,80,0.7);">⚙</div>
+          <div class="rail-unit-info"><div class="rail-unit-name">Mekboy</div></div>
+          <div class="rail-status-dot ready"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rail footer — CP -->
+    <div class="rail-footer">
+      <div class="rail-cp">5</div>
+      <div class="rail-cp-label">CMD PTS</div>
+    </div>
+  </aside>
+
+  <!-- BATTLEFIELD -->
+  <main id="battlefield">
+    <!-- VP scoreboard -->
+    <div id="vp-bar" style="left:160px;">
+      <div class="vp-faction"><span class="vp-name-imp">IMPERIUM</span><span class="vp-score imp">10</span></div>
+      <span class="vp-vs">VS</span>
+      <div class="vp-faction"><span class="vp-score ork">4</span><span class="vp-name-ork">ORKS</span></div>
+      <span class="vp-round">RND 2 / 5</span>
+    </div>
+
+    <!-- Floating phase pill -->
+    <div id="phase-header">
+      <div class="phase-pill">
+        <div class="phase-title">MOVEMENT PHASE</div>
+        <div class="phase-subtitle">Imperium Active · Round 2</div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div id="bf-controls">
+      <span id="zoom-indicator">100%</span>
+      <button class="bf-ctrl-btn" id="reset-view">↺ Reset</button>
+      <button class="bf-ctrl-btn demo" id="demo-ability-btn">⚡ Demo</button>
+    </div>
+
+    <!-- Ability banner -->
+    <div id="ability-banner">
+      <div class="banner-title"><span class="banner-icon">⚡</span>ARMY ABILITY: SHOCK ASSAULT</div>
+      <div class="banner-body">After this unit fights, it can consolidate an extra 3".</div>
+      <div class="banner-actions">
+        <button class="banner-btn use" id="banner-use">USE</button>
+        <button class="banner-btn dismiss" id="banner-dismiss">DISMISS</button>
+      </div>
+    </div>
+
+    <div id="battlefield-inner">
+      <svg id="bf-svg" viewBox="0 0 1000 600" preserveAspectRatio="none">
+        <defs>
+          <marker id="arrow-head" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#00ffcc"/>
+          </marker>
+        </defs>
+        <!-- Deployment zones — teal tint for HUD feel -->
+        <line x1="0" y1="450" x2="1000" y2="450" stroke="rgba(0,255,204,0.08)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <line x1="0" y1="150" x2="1000" y2="150" stroke="rgba(255,51,51,0.1)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <line x1="0" y1="300" x2="1000" y2="300" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="4,8"/>
+        <!-- Terrain -->
+        <polygon points="200,300 200,450 350,450 350,400 250,400 250,300" fill="rgba(0,255,204,0.02)" stroke="rgba(0,255,204,0.08)" stroke-width="1" stroke-dasharray="4,4"/>
+        <polygon points="600,100 800,100 800,250 750,250 750,150 600,150" fill="rgba(0,255,204,0.02)" stroke="rgba(0,255,204,0.08)" stroke-width="1" stroke-dasharray="4,4"/>
+        <!-- Movement path -->
+        <line x1="300" y1="240" x2="460" y2="130" stroke="#00ffcc" stroke-width="2" stroke-dasharray="8,5" marker-end="url(#arrow-head)" opacity="0.6"/>
+        <!-- LOS -->
+        <line x1="300" y1="240" x2="700" y2="108" stroke="rgba(0,255,100,0.5)" stroke-width="1.5" opacity="0.8"/>
+        <!-- Boyz footprint -->
+        <rect x="665" y="150" width="120" height="90" rx="8" fill="none" stroke="rgba(255,51,51,0.4)" stroke-width="1.5" stroke-dasharray="6,4"/>
+        <circle cx="725" cy="192" r="22" fill="none" stroke="rgba(255,51,51,0.5)" stroke-width="1.5"/>
+        <circle cx="725" cy="192" r="115" fill="none" stroke="rgba(255,170,0,0.35)" stroke-width="1.5" stroke-dasharray="8,5"/>
+        <text x="828" y="185" fill="rgba(255,170,0,0.5)" font-family="Rajdhani, sans-serif" font-size="9" letter-spacing="1">CHARGE THREAT</text>
+      </svg>
+
+      <!-- Hex objective markers -->
+      <div class="obj-hex-wrap contested" style="left:15%;top:20%;">
+        <div class="obj-hex-outer contested">
+          <div class="obj-hex-inner">
+            <div class="obj-number">01</div>
+            <div class="obj-label-text">OBJ</div>
+          </div>
+        </div>
+        <div class="obj-control-ring"></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:50%;top:65%;">
+        <div class="obj-hex-outer controlled">
+          <div class="obj-hex-inner">
+            <div class="obj-number">02</div>
+            <div class="obj-label-text">OBJ</div>
+          </div>
+        </div>
+        <div class="obj-control-ring"></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:80%;top:30%;">
+        <div class="obj-hex-outer">
+          <div class="obj-hex-inner">
+            <div class="obj-number">03</div>
+            <div class="obj-label-text">OBJ</div>
+          </div>
+        </div>
+        <div class="obj-control-ring"></div>
+      </div>
+
+      <!-- IMPERIUM TOKENS — with unit class icons (cross=infantry, hex=vehicle) -->
+      <div class="token token-size-m token-imperium selected" data-unit="assault-intercessors" style="left:30%;top:40%;">
+        <div class="token-class-icon">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Assault Int.</div>
+      </div>
+      <div class="token token-size-s token-imperium-char" data-unit="primaris-lieutenant" style="left:35%;top:55%;">
+        <div class="token-class-icon" style="color:#ffaa00;">★</div>
+        <div class="token-label">Lt.</div>
+      </div>
+      <div class="token token-size-m token-imperium" data-unit="intercessor-squad-a" style="left:42%;top:45%;">
+        <div class="token-class-icon">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Int. A</div>
+      </div>
+      <div class="token token-size-m token-imperium" data-unit="hellblasters" style="left:50%;top:38%;">
+        <div class="token-class-icon">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Hellblasters</div>
+      </div>
+      <div class="token token-vehicle token-imperium" data-unit="redemptor-dreadnought" style="left:28%;top:58%;">
+        <div class="token-class-icon" style="font-size:20px;">⬡</div>
+        <div class="token-label" style="margin-top:8px;">Dreadnought</div>
+      </div>
+      <!-- ORK TOKENS — skull icons -->
+      <div class="token token-size-s token-ork-char" data-unit="boss-nob" style="left:70%;top:18%;">
+        <div class="token-class-icon" style="color:rgba(255,100,100,0.7);">☠</div>
+        <div class="token-label">Boss Nob</div>
+      </div>
+      <div class="token token-size-l token-ork" data-unit="boyz-mob" style="left:72%;top:32%;">
+        <div class="token-class-icon" style="color:rgba(255,80,80,0.6);">☠</div>
+        <div class="token-count" style="color:rgba(255,80,80,0.5);">×10</div>
+        <div class="token-badge" style="background:#6a1010;">10</div>
+        <div class="token-label">Boyz</div>
+      </div>
+      <div class="token token-size-s token-ork-char" data-unit="mekboy" style="left:62%;top:45%;">
+        <div class="token-class-icon" style="color:rgba(255,100,100,0.7);">⚙</div>
+        <div class="token-label">Mekboy</div>
+      </div>
+    </div>
+
+    <!-- Unit detail card (floats bottom-right of battlefield) -->
+    <div id="unit-detail-card" class="visible">
+      <div class="card-header">
+        <div>
+          <div class="card-unit-name" id="card-unit-name">ASSAULT INTERCESSORS</div>
+          <div class="card-faction" id="card-faction">SPACE MARINES · ADEPTUS ASTARTES</div>
+        </div>
+        <span class="card-close" id="card-close">×</span>
+      </div>
+      <div class="card-stats" id="card-stats">
+        <!-- Populated by JS -->
+      </div>
+      <div class="card-toggles">
+        <button class="card-toggle-btn" onclick="this.classList.toggle('active')">COVER</button>
+        <button class="card-toggle-btn" onclick="this.classList.toggle('active')">BATTLESHOCKED</button>
+      </div>
+      <div class="card-weapons" id="card-weapons">
+        <!-- Populated by JS -->
+      </div>
+      <div class="card-coaching">
+        <div class="card-coaching-title" id="card-coaching-title">⊕ MOVEMENT NOTES</div>
+        <div class="card-coaching-body" id="card-coaching-body">Loading...</div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ACTION BAR -->
+  <footer id="action-bar">
+    <div class="phase-step-mini done"><div class="ps-dot"></div>Command</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini active"><div class="ps-dot"></div>Movement</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Shooting</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Charge</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Fight</div>
+    <div class="ab-divider"></div>
+    <div id="zone-actions">
+      <button class="ab-action-btn primary active">NORMAL MOVE</button>
+      <button class="ab-action-btn">ADVANCE</button>
+    </div>
+    <div class="ab-divider"></div>
+    <button class="ab-stratagem-btn" id="btn-stratagem">USE STRATAGEM</button>
+    <button class="ab-end-btn" id="btn-end-phase">END MOVEMENT →</button>
+  </footer>
+</div>
+
+<!-- Stratagem Modal -->
+<div id="modal-overlay">
+  <div id="stratagem-modal">
+    <div class="modal-header">Select Stratagem<span class="modal-close" id="modal-close">×</span></div>
+    <div class="stratagem-list">
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">COMMAND RE-ROLL</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">ANY PHASE</span></div><p class="stratagem-desc">Re-roll one dice result.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">INSANE BRAVERY</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">COMMAND PHASE</span></div><p class="stratagem-desc">A unit automatically passes a Battle-shock test.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">TANK SHOCK</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">MOVEMENT PHASE</span></div><p class="stratagem-desc">A VEHICLE unit can move through enemy units.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">FIRE OVERWATCH</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">OPP. MOVEMENT</span></div><p class="stratagem-desc">When an enemy unit declares a charge, one of your units within 24" can shoot at it.</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KW_RULES = {
+  'MELEE':     { cls: 'melee',     tip: 'Fight phase only. Add to model\'s Attacks characteristic.' },
+  'PISTOL':    { cls: 'pistol',    tip: 'Can shoot in Fight phase even within Engagement Range.' },
+  'ASSAULT':   { cls: 'assault',   tip: 'Fire after Advancing. No penalty to hit.' },
+  'ASSAULT 2': { cls: 'assault',   tip: 'ASSAULT: Fire after Advancing. 2 shots.' },
+  'HEAVY':     { cls: 'heavy',     tip: '-1 to hit if bearer moved this turn.' },
+  'HAZARDOUS': { cls: 'hazardous', tip: 'Roll D6 per model after shooting. On 1: 1 mortal wound.' },
+  'RAPID FIRE 1': { cls: 'rapid',  tip: 'Extra attack at half range.' },
+  'BLAST':     { cls: 'blast',     tip: '+1 Attack per 5 models in target (round down).' },
+  'MELTA 2':   { cls: 'melta',     tip: '+2 to Damage at half range.' },
+};
+function kwPill(kw) {
+  const d = KW_RULES[kw] || { cls: 'other', tip: 'Keyword ability.' };
+  return `<span class="kw-pill ${d.cls}">${kw}<span class="kw-tooltip">${d.tip}</span></span>`;
+}
+
+const UNITS = {
+  'assault-intercessors': {
+    name:'ASSAULT INTERCESSORS',faction:'SPACE MARINES · ADEPTUS ASTARTES',factionColor:'#4a90d9',
+    stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2,WS:'3+',BS:'3+'},
+    weapons:[
+      {type:'MELEE',name:'Astartes Chainsword',rng:'—',a:4,s:4,ap:-1,d:1,kw:['MELEE']},
+      {type:'RANGED',name:'Heavy Bolt Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}
+    ],
+    coaching:{MOVEMENT:'Can <em>Normal Move</em> 6" or <em>Advance</em> (add D6", no shoot/charge). Push for objectives.',SHOOTING:'Pistol can fire within Engagement Range. BS 3+.',FIGHT:'4 Chainsword attacks per model after charging. WS 3+.'},
+    count:5
+  },
+  'primaris-lieutenant': {
+    name:'PRIMARIS LIEUTENANT',faction:'SPACE MARINES · CHARACTER',factionColor:'#c9a352',
+    stats:{M:'6"',T:4,Sv:'3+',W:5,Ld:6,OC:1,WS:'2+',BS:'2+'},
+    weapons:[{type:'RANGED',name:'Auto Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']},{type:'MELEE',name:'Paired Blades',rng:'—',a:6,s:4,ap:-1,d:1,kw:['MELEE']}],
+    coaching:{MOVEMENT:'Move with your troops. CHARACTER buff aura: stay within 6".',SHOOTING:'BS 2+ — reliable pistol hits.',FIGHT:'6 attacks at WS 2+ AP-1. Re-roll wound 1s nearby.'},
+    count:1
+  },
+  'intercessor-squad-a': {
+    name:'INTERCESSOR SQUAD A',faction:'SPACE MARINES · INFANTRY',factionColor:'#4a90d9',
+    stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2,WS:'3+',BS:'3+'},
+    weapons:[{type:'RANGED',name:'Bolt Rifle',rng:'30"',a:2,s:4,ap:-1,d:1,kw:['RAPID FIRE 1']},{type:'MELEE',name:'Bolt Pistol',rng:'12"',a:1,s:4,ap:0,d:1,kw:['PISTOL']}],
+    coaching:{MOVEMENT:'Stay in cover. 30" Bolt Rifles can fire from safety.',SHOOTING:'RAPID FIRE 1 at 15" = 3 attacks per model. Punishing at mid range.',FIGHT:'Bolt Pistol only — avoid melee.'},
+    count:5
+  },
+  'hellblasters': {
+    name:'HELLBLASTERS',faction:'SPACE MARINES · INFANTRY',factionColor:'#4a90d9',
+    stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2,WS:'3+',BS:'3+'},
+    weapons:[{type:'RANGED',name:'Plasma (std)',rng:'30"',a:2,s:7,ap:-3,d:2,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Plasma (sup)',rng:'30"',a:2,s:8,ap:-3,d:3,kw:['RAPID FIRE 1','HAZARDOUS']}],
+    coaching:{MOVEMENT:'Stay far back. 30" range means you can fire from deployment.',SHOOTING:'Supercharge = AP-3 D3. Devastating vs MEQ/TEQ. Risk HAZARDOUS on 1s.',FIGHT:'Stay away from melee — fragile.'},
+    count:5
+  },
+  'redemptor-dreadnought': {
+    name:'REDEMPTOR DREADNOUGHT',faction:'SPACE MARINES · VEHICLE',factionColor:'#5a8acc',
+    stats:{M:'8"',T:10,Sv:'2+',W:12,Ld:6,OC:3,WS:'3+',BS:'3+'},
+    weapons:[{type:'MELEE',name:'Redemptor Fist',rng:'—',a:5,s:12,ap:-3,d:3,kw:['MELEE']},{type:'RANGED',name:'Macro Plasma',rng:'36"',a:3,s:8,ap:-4,d:2,kw:['HEAVY','BLAST']}],
+    coaching:{MOVEMENT:'Advance aggressively. 8" lets you contest midfield fast.',SHOOTING:'BLAST vs hordes + AP-4 vs hard targets. -1 to hit if moved (HEAVY).',FIGHT:'S12 AP-3 D3 per Fist attack. Kills characters in one round.'},
+    count:1
+  },
+  'boss-nob': {
+    name:'BOSS NOB',faction:'ORKS · CHARACTER',factionColor:'#cc4444',
+    stats:{M:'5"',T:5,Sv:'4+',W:5,Ld:7,OC:1,WS:'3+',BS:'5+'},
+    weapons:[{type:'MELEE',name:'Power Klaw',rng:'—',a:4,s:8,ap:-3,d:2,kw:['MELEE']},{type:'RANGED',name:'Slugga',rng:'12"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}],
+    coaching:{MOVEMENT:'Charge toward the enemy. Boss Nob belongs in melee.',SHOOTING:'BS 5+ — shooting is unreliable. Focus on closing.',FIGHT:'S8 AP-3 D2 Power Klaw: 4 attacks. Crushes vehicles.'},
+    count:1
+  },
+  'boyz-mob': {
+    name:'BOYZ MOB',faction:'ORKS · INFANTRY',factionColor:'#cc4444',
+    stats:{M:'5"',T:4,Sv:'5+',W:1,Ld:'7+',OC:2,WS:'3+',BS:'5+'},
+    weapons:[{type:'MELEE',name:'Choppa',rng:'—',a:2,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Shoota',rng:'12"',a:2,s:4,ap:0,d:1,kw:['ASSAULT 2']}],
+    coaching:{MOVEMENT:'Advance! <em>ASSAULT 2</em> Shootas fire even after Advancing. Flood midfield.',SHOOTING:'20 ASSAULT shots at BS 5+. Quantity wins.',FIGHT:'20 Choppa attacks at WS 3+ AP-1. Overwhelm with bodies.'},
+    count:10
+  },
+  'mekboy': {
+    name:'MEKBOY',faction:'ORKS · CHARACTER',factionColor:'#cc4444',
+    stats:{M:'5"',T:4,Sv:'5+',W:4,Ld:7,OC:1,WS:'3+',BS:'5+'},
+    weapons:[{type:'RANGED',name:'Kustom Mega-blasta',rng:'24"',a:3,s:8,ap:-3,d:'D3',kw:['MELTA 2']},{type:'MELEE',name:'Choppa',rng:'—',a:3,s:4,ap:-1,d:1,kw:['MELEE']}],
+    coaching:{MOVEMENT:'Stay near vehicles (12") to use Mek\'s Tools repair ability.',SHOOTING:'MELTA 2 within 12" = D3+2 damage. Devastating at close range.',FIGHT:'3 Choppa attacks — serviceable but avoid dedicated melee.'},
+    count:1
+  }
+};
+
+function apClass(ap) {
+  if (ap === 0) return 'ap-0'; if (ap === -1) return 'ap-1';
+  if (ap === -2) return 'ap-2'; if (ap === -3) return 'ap-3';
+  return 'ap-4plus';
+}
+
+const CURRENT_PHASE = 'MOVEMENT';
+const PHASE_HL = { MOVEMENT:['M'], SHOOTING:['BS'], FIGHT:['WS'] };
+
+function updateCard(unitId) {
+  const u = UNITS[unitId];
+  if (!u) return;
+  const card = document.getElementById('unit-detail-card');
+  card.classList.add('visible');
+  document.getElementById('card-unit-name').textContent = u.name;
+  document.getElementById('card-faction').textContent = u.faction;
+
+  const hl = PHASE_HL[CURRENT_PHASE] || [];
+  const statKeys = ['M','T','Sv','W','Ld','OC'];
+  const statsEl = document.getElementById('card-stats');
+  statsEl.innerHTML = statKeys.map(k => {
+    const isHl = hl.includes(k);
+    return `<div class="card-stat${isHl?' hl':''}"><div class="card-stat-key">${k}</div><div class="card-stat-val">${u.stats[k]??'—'}</div></div>`;
+  }).join('');
+
+  const wEl = document.getElementById('card-weapons');
+  wEl.innerHTML = '';
+  const types = [...new Set(u.weapons.map(w => w.type))];
+  types.forEach(type => {
+    const tDiv = document.createElement('div');
+    tDiv.className = 'card-weapon-type';
+    tDiv.textContent = type + ' WEAPONS';
+    wEl.appendChild(tDiv);
+    u.weapons.filter(w => w.type === type).forEach(w => {
+      const apV = typeof w.ap === 'number' ? w.ap : 0;
+      const div = document.createElement('div');
+      div.innerHTML = `
+        <div class="card-weapon-row">
+          <div class="cwname">${w.name}</div>
+          <div class="cwval">${w.rng}</div>
+          <div class="cwval">${w.a}</div>
+          <div class="cwval">${w.s}</div>
+          <div class="cwval ${apClass(apV)}">${w.ap}</div>
+          <div class="cwval dmg">${w.d}</div>
+        </div>
+        <div class="card-kws">${(w.kw||[]).map(kwPill).join('')}</div>
+      `;
+      wEl.appendChild(div);
+    });
+  });
+
+  const cc = u.coaching && u.coaching[CURRENT_PHASE];
+  document.getElementById('card-coaching-title').textContent = '⊕ ' + CURRENT_PHASE + ' NOTES';
+  document.getElementById('card-coaching-body').innerHTML = cc || 'No specific coaching available.';
+}
+
+/* Selection */
+document.querySelectorAll('.rail-unit').forEach(row => {
+  row.addEventListener('click', () => {
+    document.querySelectorAll('.rail-unit').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+    const uid = row.dataset.unit;
+    updateCard(uid);
+    document.querySelectorAll('.token').forEach(t => t.classList.remove('selected'));
+    document.querySelector(`.token[data-unit="${uid}"]`)?.classList.add('selected');
+  });
+});
+
+document.querySelectorAll('.token').forEach(t => {
+  t.addEventListener('click', e => {
+    e.stopPropagation();
+    document.querySelector(`.rail-unit[data-unit="${t.dataset.unit}"]`)?.click();
+  });
+});
+
+document.getElementById('card-close').addEventListener('click', () => {
+  document.getElementById('unit-detail-card').classList.remove('visible');
+});
+
+/* Action buttons */
+document.querySelectorAll('#zone-actions .ab-action-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#zone-actions .ab-action-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+
+/* Stratagem modal */
+const overlay = document.getElementById('modal-overlay');
+document.getElementById('btn-stratagem').addEventListener('click', () => overlay.classList.add('visible'));
+document.getElementById('modal-close').addEventListener('click', () => overlay.classList.remove('visible'));
+overlay.addEventListener('click', e => { if(e.target===overlay) overlay.classList.remove('visible'); });
+
+/* Ability banner */
+const banner = document.getElementById('ability-banner');
+document.getElementById('demo-ability-btn').addEventListener('click', () => banner.classList.add('visible'));
+document.getElementById('banner-use').addEventListener('click', () => banner.classList.remove('visible'));
+document.getElementById('banner-dismiss').addEventListener('click', () => banner.classList.remove('visible'));
+
+/* Pan & Zoom */
+let scale=1,tx=0,ty=0,isDragging=false,startX,startY;
+const inner = document.getElementById('battlefield-inner');
+const bf = document.getElementById('battlefield');
+function applyTransform() { inner.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`; document.getElementById('zoom-indicator').textContent=Math.round(scale*100)+'%'; }
+bf.addEventListener('wheel', e => { e.preventDefault(); scale=Math.min(3,Math.max(0.4,scale*(e.deltaY>0?0.9:1.1))); applyTransform(); },{passive:false});
+bf.addEventListener('mousedown', e => { if(e.target.closest('.token,.obj-hex-wrap,#ability-banner,#phase-header,#bf-controls,#unit-detail-card')) return; isDragging=true; startX=e.clientX-tx; startY=e.clientY-ty; inner.classList.add('dragging'); });
+document.addEventListener('mousemove', e => { if(!isDragging) return; tx=e.clientX-startX; ty=e.clientY-startY; applyTransform(); });
+document.addEventListener('mouseup', () => { isDragging=false; inner.classList.remove('dragging'); });
+document.getElementById('reset-view').addEventListener('click', () => { scale=1;tx=0;ty=0;applyTransform(); });
+
+/* Init */
+updateCard('assault-intercessors');
+</script>
+</body>
+</html>
