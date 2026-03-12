@@ -42,6 +42,7 @@
   initAllTooltips();
   initBoard({ initialScale: 0.5 });
   initBattleControls();
+  BattleUI.selectUnit('assault-intercessors');
   initModelInteraction();
 
   // ── Build terrain collision AABBs ────────────────────────
