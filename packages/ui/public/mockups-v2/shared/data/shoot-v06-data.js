@@ -2,22 +2,22 @@ export const BOARD = { width: 720, height: 528, inchesWide: 60, inchesHigh: 44 }
 export const PX_PER_INCH = BOARD.width / BOARD.inchesWide;
 
 export const TERRAIN = [
-  { id:'t1', kind:'ruin', x:144, y:60,  w:144, h:72,  rot:0 },
-  { id:'t2', kind:'ruin', x:264, y:336, w:144, h:72,  rot:0 },
-  { id:'t3', kind:'ruin', x:192, y:264, w:96,  h:72,  rot:0 },
+  { id:'t1', kind:'ruin', x:144, y:60,  w:144, h:72,  rot:90 },
+  { id:'t2', kind:'ruin', x:264, y:336, w:144, h:72,  rot:90 },
+  { id:'t3', kind:'ruin', x:192, y:264, w:96,  h:72,  rot:0, flipX:true },
   { id:'t4', kind:'scatter', x:48,  y:264, w:48,  h:72,  rot:0 },
   { id:'t5', kind:'scatter', x:336, y:0,   w:48,  h:72,  rot:0 },
-  { id:'t6', kind:'ruin', x:360, y:204, w:78,  h:60,  rot:0 },
-  { id:'t7', kind:'scatter', x:305, y:149, w:42,  h:60,  rot:0 },
-  { id:'t8', kind:'scatter', x:318, y:247, w:48,  h:72,  rot:0 },
-  { id:'t9', kind:'ruin', x:576, y:468, w:144, h:72,  rot:0 },
-  { id:'t10',kind:'ruin', x:456, y:192, w:144, h:72,  rot:0 },
-  { id:'t11',kind:'ruin', x:528, y:264, w:96,  h:72,  rot:0 },
-  { id:'t12',kind:'scatter', x:672, y:264, w:48,  h:72,  rot:0 },
-  { id:'t13',kind:'scatter', x:384, y:528, w:48,  h:72,  rot:0 },
-  { id:'t14',kind:'ruin', x:360, y:324, w:78,  h:60,  rot:0 },
-  { id:'t15',kind:'scatter', x:415, y:379, w:42,  h:60,  rot:0 },
-  { id:'t16',kind:'scatter', x:402, y:281, w:48,  h:72,  rot:0 }
+  { id:'t6', kind:'ruin', x:360, y:204, w:78,  h:60,  rot:-45, flipX:true },
+  { id:'t7', kind:'scatter', x:305, y:149, w:42,  h:60,  rot:-45, flipX:true },
+  { id:'t8', kind:'scatter', x:318, y:247, w:48,  h:72,  rot:-45, flipX:true },
+  { id:'t9', kind:'ruin', x:576, y:468, w:144, h:72,  rot:-90 },
+  { id:'t10',kind:'ruin', x:456, y:192, w:144, h:72,  rot:-90 },
+  { id:'t11',kind:'ruin', x:528, y:264, w:96,  h:72,  rot:-180, flipX:true },
+  { id:'t12',kind:'scatter', x:672, y:264, w:48,  h:72,  rot:-180 },
+  { id:'t13',kind:'scatter', x:384, y:528, w:48,  h:72,  rot:-180 },
+  { id:'t14',kind:'ruin', x:360, y:324, w:78,  h:60,  rot:-225, flipX:true },
+  { id:'t15',kind:'scatter', x:415, y:379, w:42,  h:60,  rot:-225, flipX:true },
+  { id:'t16',kind:'scatter', x:402, y:281, w:48,  h:72,  rot:-225, flipX:true }
 ];
 
 export const OBJECTIVES = [
@@ -34,45 +34,45 @@ export const UNIT_DEFS = {
     weapons:[
       { type:'RANGED', name:'Heavy Bolt Pistol', rng:18, a:2, s:4, ap:0, d:1, kw:['PISTOL'] },
       { type:'MELEE', name:'Astartes Chainsword', rng:0, a:4, s:4, ap:-1, d:1, kw:['MELEE'] }
-    ], abilities:['Shock Assault','And They Shall Know No Fear']
+    ], abilities:[{name:'SHOCK ASSAULT',desc:'On a turn this unit makes a charge move, until end of turn its models get +1 Attack.'},{name:'AND THEY SHALL KNOW NO FEAR',desc:'Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.'}]
   },
   'primaris-lieutenant': {
     name:'Primaris Lieutenant', faction:'SPACE MARINES · CHARACTER', side:'imp', icon:'character', stats:{ M:'6"', T:4, Sv:'3+', W:5, Ld:6, OC:1 },
     weapons:[
       { type:'RANGED', name:'Master-crafted Auto Pistol', rng:18, a:2, s:4, ap:0, d:1, kw:['PISTOL'] }
-    ], abilities:['Tactical Precision']
+    ], abilities:[{name:'TACTICAL PRECISION',desc:'Each time a friendly model within 6" shoots, improve AP by 1 if target is within half range.'}]
   },
   'intercessor-squad-a': {
     name:'Intercessor Squad A', faction:'SPACE MARINES', side:'imp', icon:'infantry', stats:{ M:'6"', T:4, Sv:'3+', W:2, Ld:7, OC:2 },
     weapons:[
       { type:'RANGED', name:'Bolt Rifle', rng:30, a:2, s:4, ap:-1, d:1, kw:['RAPID FIRE 1'] },
       { type:'RANGED', name:'Bolt Pistol', rng:12, a:1, s:4, ap:0, d:1, kw:['PISTOL'] }
-    ], abilities:['And They Shall Know No Fear']
+    ], abilities:[{name:'AND THEY SHALL KNOW NO FEAR',desc:'Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.'}]
   },
   'hellblasters': {
     name:'Hellblasters', faction:'SPACE MARINES', side:'imp', icon:'elite', stats:{ M:'6"', T:4, Sv:'3+', W:2, Ld:7, OC:2 },
     weapons:[
       { type:'RANGED', name:'Plasma Incinerator (std)', rng:30, a:2, s:7, ap:-3, d:2, kw:['RAPID FIRE 1'] },
       { type:'RANGED', name:'Plasma Incinerator (sup)', rng:30, a:2, s:8, ap:-3, d:3, kw:['RAPID FIRE 1','HAZARDOUS'] }
-    ], abilities:['For the Chapter!']
+    ], abilities:[{name:'FOR THE CHAPTER!',desc:'Each time this unit is selected to shoot, you can re-roll one Hit roll.'}]
   },
   'redemptor-dreadnought': {
     name:'Redemptor Dreadnought', faction:'SPACE MARINES · VEHICLE', side:'imp', icon:'vehicle', stats:{ M:'8"', T:10, Sv:'2+', W:12, Ld:6, OC:3 },
     weapons:[
       { type:'RANGED', name:'Macro Plasma Incinerator', rng:36, a:3, s:8, ap:-4, d:2, kw:['HEAVY','BLAST'] }
-    ], abilities:['Duty Eternal']
+    ], abilities:[{name:'DUTY ETERNAL',desc:'Each time an attack is allocated to this model, subtract 1 from the Damage characteristic.'}]
   },
   'boss-nob': {
     name:'Boss Nob', faction:'ORKS · CHARACTER', side:'ork', icon:'character', stats:{ M:'5"', T:5, Sv:'4+', W:5, Ld:7, OC:1 },
-    weapons:[{ type:'RANGED', name:'Slugga', rng:12, a:2, s:4, ap:0, d:1, kw:['PISTOL'] }], abilities:["'Ere We Go"]
+    weapons:[{ type:'RANGED', name:'Slugga', rng:12, a:2, s:4, ap:0, d:1, kw:['PISTOL'] }], abilities:[{name:"'ERE WE GO",desc:'This unit can make a charge move after Advancing. Add 1 to charge rolls.'}]
   },
   'nobz-mob': {
     name:'Nobz Mob', faction:'ORKS · ELITES', side:'ork', icon:'elite', stats:{ M:'5"', T:5, Sv:'4+', W:3, Ld:'7+', OC:2 },
-    weapons:[{ type:'RANGED', name:'Slugga', rng:12, a:2, s:4, ap:0, d:1, kw:['PISTOL'] }], abilities:["'Ere We Go"]
+    weapons:[{ type:'RANGED', name:'Slugga', rng:12, a:2, s:4, ap:0, d:1, kw:['PISTOL'] }], abilities:[{name:"'ERE WE GO",desc:'This unit can make a charge move after Advancing. Add 1 to charge rolls.'}]
   },
   'mekboy': {
     name:'Mekboy', faction:'ORKS · CHARACTER', side:'ork', icon:'elite', stats:{ M:'5"', T:4, Sv:'5+', W:4, Ld:7, OC:1 },
-    weapons:[{ type:'RANGED', name:'Kustom Mega-blasta', rng:24, a:3, s:8, ap:-3, d:'D3', kw:['MELTA 2'] }], abilities:["Mek's Tools"]
+    weapons:[{ type:'RANGED', name:'Kustom Mega-blasta', rng:24, a:3, s:8, ap:-3, d:'D3', kw:['MELTA 2'] }], abilities:[{name:"MEK'S TOOLS",desc:'At the start of your Command phase, select one friendly VEHICLE model within 3". That model regains 1 lost wound.'}]
   }
 };
 
