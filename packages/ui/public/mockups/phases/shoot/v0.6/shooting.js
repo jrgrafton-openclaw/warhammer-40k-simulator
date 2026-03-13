@@ -535,6 +535,8 @@
   async function beginAttack(targetId){
     if (!state.attackerId || state.shotUnits.has(state.attackerId)) return;
     state.targetId = targetId;
+    state.hoveredTargetId = null;
+    clearLines();
     const attacker = getUnit(state.attackerId), target = getUnit(targetId), profile = getProfiles(state.attackerId)[state.selectedProfileIx];
     if (!attacker || !target || !profile) return;
     const info = targetInfo(targetId, state.selectedProfileIx);
