@@ -1,5 +1,5 @@
 /**
- * advance-dice.js — D6 advance roll animation.
+ * advance-dice.js — D6 advance roll animation (ES module).
  *
  * WH40K 10th edition advance rules:
  *   - Declared BEFORE moving any models (click ADVANCE button)
@@ -7,36 +7,32 @@
  *   - All models get M + D6" movement budget
  *   - Unit cannot charge that turn
  *   - Unit cannot shoot except ASSAULT weapons
- *
- * Exports: window.rollAdvanceDie(unitId, onComplete)
  */
-(function() {
-  'use strict';
-  var UNITS = BattleUI.UNITS;
 
-  window.rollAdvanceDie = function(unitId, onComplete) {
-    var u = UNITS[unitId];
-    var result = Math.floor(Math.random() * 6) + 1;
+import { UNITS } from '../../../shared/state/units.js';
 
-    var overlay = document.getElementById('advance-dice-overlay');
-    var face    = document.getElementById('advance-die-face');
-    var num     = document.getElementById('advance-die-num');
-    var lbl     = document.getElementById('advance-die-label');
-    var tot     = document.getElementById('advance-die-total');
+export function rollAdvanceDie(unitId, onComplete) {
+  var u = UNITS[unitId];
+  var result = Math.floor(Math.random() * 6) + 1;
 
-    num.textContent = result;
-    lbl.textContent = '+' + result + '" ADVANCE BONUS';
-    tot.textContent = u ? 'TOTAL MOVE: ' + (u.M + result) + '"' : '';
+  var overlay = document.getElementById('advance-dice-overlay');
+  var face    = document.getElementById('advance-die-face');
+  var num     = document.getElementById('advance-die-num');
+  var lbl     = document.getElementById('advance-die-label');
+  var tot     = document.getElementById('advance-die-total');
 
-    // Trigger spring animation
-    face.classList.remove('rolling');
-    void face.offsetWidth; // reflow to restart animation
-    face.classList.add('rolling');
+  num.textContent = result;
+  lbl.textContent = '+' + result + '" ADVANCE BONUS';
+  tot.textContent = u ? 'TOTAL MOVE: ' + (u.M + result) + '"' : '';
 
-    overlay.classList.add('visible');
-    setTimeout(function() {
-      overlay.classList.remove('visible');
-      onComplete(result);
-    }, 1600);
-  };
-})();
+  // Trigger spring animation
+  face.classList.remove('rolling');
+  void face.offsetWidth; // reflow to restart animation
+  face.classList.add('rolling');
+
+  overlay.classList.add('visible');
+  setTimeout(function() {
+    overlay.classList.remove('visible');
+    onComplete(result);
+  }, 1600);
+}

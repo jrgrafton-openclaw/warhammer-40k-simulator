@@ -93,6 +93,9 @@
   pointer-events: none; z-index: 3;
 }
 
+/* ── SVG Range rings (per-model, shared component) ── */
+.range-ring { vector-effect: non-scaling-stroke; mix-blend-mode: screen; }
+
 /* ── CSS Range circles ── */
 .range-circle {
   position: absolute; border-radius: 50%; pointer-events: none;

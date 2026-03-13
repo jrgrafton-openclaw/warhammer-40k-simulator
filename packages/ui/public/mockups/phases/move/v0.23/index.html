@@ -4,29 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WH40K Simulator — v0.23 · Movement Phase</title>
-  <!-- v1-D typography: Anton (display) + Rajdhani (UI data) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../../../shared/stratagem-ui.css?v=20260312a">
-  <link rel="stylesheet" href="style.css?v=20260312a">
-  <style>
-    /* inline override: ensures ap-neg and range toggle layout survive CDN cache */
-    .wt-val.ap-neg { color: #cc2020 !important; font-weight: 700 !important; }
-    .range-toggle {
-      min-height: 36px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      text-align: center !important;
-      line-height: 1.2 !important;
-    }
-  </style>
+  <!-- Component CSS (shared split) -->
+  <link rel="stylesheet" href="../../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../../shared/tokens/typography.css">
+  <link rel="stylesheet" href="../../../shared/components/roster.css">
+  <link rel="stylesheet" href="../../../shared/components/unit-card.css">
+  <link rel="stylesheet" href="../../../shared/components/action-bar.css">
+  <link rel="stylesheet" href="../../../shared/components/vp-bar.css">
+  <link rel="stylesheet" href="../../../shared/components/overlays.css">
+  <link rel="stylesheet" href="../../../shared/components/stratagem-modal.css">
+  <link rel="stylesheet" href="../../../shared/components/fx.css">
+  <link rel="stylesheet" href="../../../shared/components/battlefield.css">
+  <link rel="stylesheet" href="../../../shared/components/phase-states.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div id="app">
 
   <!-- ═══════════════════ ROSTER ═══════════════════ -->
-  <!-- v3-A roster rows. .rail-unit kept for battle-board.js selectUnit() compat -->
   <aside id="roster">
     <div class="roster-header">
       <span class="roster-title">ARMY ROSTER</span>
@@ -42,50 +39,30 @@
           <span class="faction-chevron">▾</span>
         </div>
         <div class="faction-body">
-
-          <!-- Infantry: + cross icon -->
           <div class="rail-unit active" data-unit="assault-intercessors">
-            <div class="ri pl">
-              <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg>
-            </div>
-            <span class="rn">Assault Intercessors</span>
-            <span class="rc">5</span>
+            <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div>
+            <span class="rn">Assault Intercessors</span><span class="rc">5</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
-
-          <!-- Character: star icon -->
           <div class="rail-unit" data-unit="primaris-lieutenant">
-            <div class="ri pl">
-              <svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg>
-            </div>
-            <span class="rn">Primaris Lieutenant</span>
-            <span class="rc">1</span>
+            <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <span class="rn">Primaris Lieutenant</span><span class="rc">1</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
-
-          <!-- Infantry: + cross icon -->
           <div class="rail-unit" data-unit="intercessor-squad-a">
-            <div class="ri pl">
-              <svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg>
-            </div>
-            <span class="rn">Intercessor Squad A</span>
-            <span class="rc">5</span>
+            <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div>
+            <span class="rn">Intercessor Squad A</span><span class="rc">5</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
-
-          <!-- Elite (plasma): diamond icon -->
           <div class="rail-unit" data-unit="hellblasters">
-            <div class="ri pl">
-              <svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg>
-            </div>
-            <span class="rn">Hellblasters</span>
-            <span class="rc">5</span>
+            <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div>
+            <span class="rn">Hellblasters</span><span class="rc">5</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
-
-          <!-- Vehicle: square with divider icon -->
           <div class="rail-unit" data-unit="redemptor-dreadnought">
-            <div class="ri pl" style="border-radius:4px">
-              <svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg>
-            </div>
-            <span class="rn">Redemptor Dreadnought</span>
-            <span class="rc">1</span>
+            <div class="ri pl" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div>
+            <span class="rn">Redemptor Dreadnought</span><span class="rc">1</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
 
           <!-- Army Abilities -->
@@ -120,32 +97,20 @@
           <span class="faction-chevron">▾</span>
         </div>
         <div class="faction-body">
-
-          <!-- Ork character: skull-ish → use star with ork color -->
           <div class="rail-unit" data-unit="boss-nob">
-            <div class="ri en">
-              <svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg>
-            </div>
-            <span class="rn">Boss Nob</span>
-            <span class="rc">1</span>
+            <div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <span class="rn">Boss Nob</span><span class="rc">1</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
-
-          <!-- Ork infantry: person silhouette -->
           <div class="rail-unit" data-unit="boyz-mob">
-            <div class="ri en">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg>
-            </div>
-            <span class="rn">Boyz Mob</span>
-            <span class="rc">10</span>
+            <div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg></div>
+            <span class="rn">Boyz Mob</span><span class="rc">10</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
-
-          <!-- Ork character mek: gear-ish → diamond -->
           <div class="rail-unit" data-unit="mekboy">
-            <div class="ri en">
-              <svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg>
-            </div>
-            <span class="rn">Mekboy</span>
-            <span class="rc">1</span>
+            <div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div>
+            <span class="rn">Mekboy</span><span class="rc">1</span>
+            <span class="roster-state-pill">✓ Moved</span>
           </div>
 
           <!-- Army Abilities -->
@@ -192,7 +157,7 @@
       <button id="reset-btn" title="Reset view [R]">↺ RESET</button>
     </div>
 
-    <!-- Phase header pill — Anton phase title -->
+    <!-- Phase header pill -->
     <div id="phase-header">
       <div class="phase-pill">
         <div class="phase-title">MOVEMENT PHASE</div>
@@ -203,22 +168,14 @@
     <div class="v23-badge">v0.23 · MOVEMENT</div>
 
     <div id="battlefield-inner">
-      <!-- SVG 1: terrain + deployment zones (z-index:1, below objectives) -->
+      <!-- SVG 1: terrain + deployment zones -->
       <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
-        <path d="M 0,0 L 216,0 L 216,528 L 0,528 Z"
-              fill="rgba(0,80,160,0.06)" stroke="rgba(0,212,255,0.15)" stroke-width="1"
-              vector-effect="non-scaling-stroke" pointer-events="none"/>
-        <path d="M 504,0 L 720,0 L 720,528 L 504,528 Z"
-              fill="rgba(255,64,32,0.06)" stroke="rgba(255,64,32,0.15)" stroke-width="1"
-              vector-effect="non-scaling-stroke" pointer-events="none"/>
+        <path d="M 0,0 L 216,0 L 216,528 L 0,528 Z" fill="rgba(0,80,160,0.06)" stroke="rgba(0,212,255,0.15)" stroke-width="1" vector-effect="non-scaling-stroke" pointer-events="none"/>
+        <path d="M 504,0 L 720,0 L 720,528 L 504,528 Z" fill="rgba(255,64,32,0.06)" stroke="rgba(255,64,32,0.15)" stroke-width="1" vector-effect="non-scaling-stroke" pointer-events="none"/>
         <line x1="360" y1="0" x2="360" y2="528" stroke="rgba(201,163,82,.05)" stroke-width="1" stroke-dasharray="8,8" pointer-events="none"/>
         <line x1="0" y1="264" x2="720" y2="264" stroke="rgba(201,163,82,.03)" stroke-width="1" stroke-dasharray="4,12" pointer-events="none"/>
-        <text x="108" y="264" font-size="18" font-family="Anton" font-weight="400"
-              fill="rgba(0,212,255,0.07)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
-              pointer-events="none">IMPERIUM</text>
-        <text x="612" y="264" font-size="18" font-family="Anton" font-weight="400"
-              fill="rgba(255,64,32,0.07)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
-              pointer-events="none">ORKS</text>
+        <text x="108" y="264" font-size="18" font-family="Anton" font-weight="400" fill="rgba(0,212,255,0.07)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle" pointer-events="none">IMPERIUM</text>
+        <text x="612" y="264" font-size="18" font-family="Anton" font-weight="400" fill="rgba(255,64,32,0.07)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle" pointer-events="none">ORKS</text>
         <g id="terrain-layer"></g>
       </svg>
 
@@ -229,79 +186,42 @@
       <div class="obj-area-ring" style="left:83.33%;top:50%;"></div>
       <div class="obj-area-ring" style="left:50%;top:86.36%;"></div>
 
-      <!-- Objectives — SVG hex for crisp visible stroke borders -->
-      <!-- Points: 42,3  81,25.5  81,71.5  42,94  3,71.5  3,25.5  (84×97 box, 3px inset) -->
-      <div class="obj-hex-wrap neutral" style="left:50%;top:13.64%;">
-        <svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97">
-          <polygon class="obj-bg"   points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <text x="42" y="44" class="obj-n">01</text>
-          <text x="42" y="62" class="obj-l">OBJ</text>
-        </svg>
-      </div>
-      <!-- OBJ 02 — Player held (left) -->
-      <div class="obj-hex-wrap controlled" style="left:16.67%;top:50%;">
-        <svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97">
-          <polygon class="obj-bg"   points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <text x="42" y="44" class="obj-n">02</text>
-          <text x="42" y="62" class="obj-l">OBJ</text>
-        </svg>
-      </div>
-      <!-- OBJ 03 — Neutral (centre) -->
-      <div class="obj-hex-wrap neutral" style="left:50%;top:50%;">
-        <svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97">
-          <polygon class="obj-bg"   points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <text x="42" y="44" class="obj-n">03</text>
-          <text x="42" y="62" class="obj-l">OBJ</text>
-        </svg>
-      </div>
-      <!-- OBJ 04 — Enemy held (right, Ork models overlap) -->
-      <div class="obj-hex-wrap enemy" style="left:83.33%;top:50%;">
-        <svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97">
-          <polygon class="obj-bg"   points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <text x="42" y="44" class="obj-n">04</text>
-          <text x="42" y="62" class="obj-l">OBJ</text>
-        </svg>
-      </div>
-      <!-- OBJ 05 — Neutral (bottom) -->
-      <div class="obj-hex-wrap neutral" style="left:50%;top:86.36%;">
-        <svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97">
-          <polygon class="obj-bg"   points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
-          <text x="42" y="44" class="obj-n">05</text>
-          <text x="42" y="62" class="obj-l">OBJ</text>
-        </svg>
-      </div>
+      <!-- Objectives -->
+      <div class="obj-hex-wrap neutral" style="left:50%;top:13.64%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">01</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap controlled" style="left:16.67%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">02</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" style="left:50%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">03</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap enemy" style="left:83.33%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">04</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" style="left:50%;top:86.36%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">05</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
 
-      <!-- SVG 2: movement overlays + model hulls + bases (z-index:6) -->
+      <!-- SVG 2: movement overlays + model hulls + bases -->
       <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
         <g id="layer-move-zones"></g>
         <g id="layer-move-ghosts"></g>
+        <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
         <g id="layer-models"></g>
         <g id="layer-move-rulers"></g>
       </svg>
-
     </div><!-- /battlefield-inner -->
 
-    <!-- Range circles -->
-    <div id="range-move"    class="range-circle rc-move"   ></div>
-    <div id="range-advance" class="range-circle rc-advance"></div>
-    <div id="range-charge"  class="range-circle rc-charge" ></div>
-    <div id="range-ds"      class="range-circle rc-ds"     ></div>
-    <div id="range-move-label"    class="range-label rl-move"   >MOVE</div>
-    <div id="range-advance-label" class="range-label rl-advance">AVG ADV</div>
-    <div id="range-charge-label"  class="range-label rl-charge" >AVG CHRG</div>
-    <div id="range-ds-label"      class="range-label rl-ds"     >• DS 9</div>
+    <!-- Range circles (deprecated — replaced by SVG per-model rings) -->
+    <div id="range-move"    class="range-circle rc-move" style="display:none"></div>
+    <div id="range-advance" class="range-circle rc-advance" style="display:none"></div>
+    <div id="range-charge"  class="range-circle rc-charge" style="display:none"></div>
+    <div id="range-ds"      class="range-circle rc-ds" style="display:none"></div>
+    <div id="range-move-label"    class="range-label rl-move" style="display:none">MOVE</div>
+    <div id="range-advance-label" class="range-label rl-advance" style="display:none">ADV</div>
+    <div id="range-charge-label"  class="range-label rl-charge" style="display:none">CHRG</div>
+    <div id="range-ds-label"      class="range-label rl-ds" style="display:none">DS</div>
 
-    <!-- ═══ Unit Card — v2-B Panel Chrome + Anton title ═══ -->
+    <!-- Unit Card -->
     <div id="unit-card" class="visible">
       <div class="card-hdr">
         <div style="min-width:0;flex:1;">
-          <div class="card-name" id="card-name">ASSAULT INTERCESSORS</div>
+          <div class="card-title-row">
+            <div class="card-name" id="card-name">ASSAULT INTERCESSORS</div>
+            <div class="unit-state-badge" id="unit-state-badge">MOVED</div>
+          </div>
           <div class="card-faction" id="card-faction">✠ SPACE MARINES · ADEPTUS ASTARTES</div>
         </div>
         <button class="card-close" id="card-close">×</button>
@@ -318,10 +238,8 @@
       <div class="card-abilities" id="card-abilities"></div>
     </div>
 
-    <!-- ═══ Action Bar — v3-A ═══ -->
+    <!-- ═══ Action Bar ═══ -->
     <div id="action-bar">
-
-      <!-- v3-A Phase indicator (dots + separators) -->
       <div class="phase-row">
         <div class="ph-item done"><span class="ph-dot"></span>CMD</div>
         <span class="ph-sep">·</span>
@@ -336,9 +254,9 @@
 
       <div class="ab-sep"></div>
 
-      <!-- v3-A Mode group: NORMAL MOVE / ADVANCE radio toggle -->
+      <!-- Mode group: NORMAL MOVE / ADVANCE radio toggle -->
       <div class="mode-group">
-        <button class="mode-btn" id="btn-move"    data-shortcut="M">NORMAL MOVE</button>
+        <button class="mode-btn" id="btn-move" data-shortcut="M">NORMAL MOVE</button>
         <button class="mode-btn" id="btn-advance" data-shortcut="A">ADVANCE</button>
       </div>
 
@@ -346,25 +264,24 @@
 
       <div class="ab-sep"></div>
 
-      <!-- Confirm / Cancel (action-btn sub-classes kept for movement.js compat) -->
+      <!-- Confirm / Cancel -->
       <button class="action-btn confirm-move" id="btn-confirm-move" disabled>✓ CONFIRM</button>
       <button class="action-btn cancel-move"  id="btn-cancel-move"  disabled>✕ CANCEL</button>
 
       <div class="ab-sep"></div>
 
-      <!-- v3-A right-aligned end-of-phase cluster -->
+      <!-- End-of-phase cluster -->
       <div class="phase-end-cluster">
         <button class="btn-strat" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
         <div class="phase-end-divider" aria-hidden="true"></div>
         <button class="btn-cta" id="btn-end" data-shortcut="E">END MOVEMENT →</button>
       </div>
-
     </div>
 
   </main>
 </div><!-- /app -->
 
-<!-- Stratagem Modal — v2-B chrome -->
+<!-- Stratagem Modal -->
 <div id="modal-bg">
   <div id="strat-modal">
     <div class="modal-hdr">
@@ -406,44 +323,6 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<!-- Shared data/logic modules (unchanged) -->
-<script src="../../../shared/battle-terrain.js?v=20260311h"></script>
-<script src="../../../shared/battle-units.js?v=20260311h"></script>
-<script src="../../../shared/battle-board.js?v=20260311h"></script>
-<!-- Local battle-models with v0.23 color palette -->
-<script src="battle-models-v23.js?v=20260311h"></script>
-<script src="../../../shared/collision.js?v=20260311h"></script>
-<!-- Phase-specific scripts (unchanged from v0.22) -->
-<script src="scene.js?v=20260311h"></script>
-<script src="advance-dice.js?v=20260311h"></script>
-<script src="movement.js?v=20260311h"></script>
-<!-- v0.23 local: viewport-safe tooltip positioning override -->
-<script>
-(function() {
-  var PAD = 10; // px clearance from viewport edges
-  var _orig = BattleUI.showTip;
-  BattleUI.showTip = function(el, content) {
-    // Run original (sets content + initial transform-based position)
-    _orig(el, content);
-    var tip = document.getElementById('global-tooltip');
-    if (!tip) return;
-    // Let browser lay out content so offsetWidth/Height are accurate
-    var tw = tip.offsetWidth;
-    var th = tip.offsetHeight;
-    var r  = el.getBoundingClientRect();
-    // Preferred: centred above element
-    var left = r.left + r.width / 2 - tw / 2;
-    var top  = r.top - 8 - th;
-    // Clamp horizontal: don't go off left or right edge
-    left = Math.max(PAD, Math.min(left, window.innerWidth - tw - PAD));
-    // Clamp vertical: if above viewport, flip below the element
-    if (top < PAD) top = r.bottom + 8;
-    // Apply (override the transform-based position)
-    tip.style.left      = left + 'px';
-    tip.style.top       = top  + 'px';
-    tip.style.transform = 'none';
-  };
-})();
-</script>
+<script type="module" src="scene.js"></script>
 </body>
 </html>

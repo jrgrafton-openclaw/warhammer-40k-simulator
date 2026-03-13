@@ -1,4 +1,4 @@
-# mockups-v2 — Agent Guide
+# mockups — Agent Guide
 
 ## Architecture
 
