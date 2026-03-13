@@ -39,7 +39,13 @@
   text-transform: uppercase;
 }
 
-#weapon-popup { width: 224px; transform: translate(-50%, 0); }
+#weapon-popup {
+  width: 224px;
+  transform: translateX(-50%);
+  bottom: 68px;
+  left: 50%;
+  top: auto !important;
+}
 .weapon-choice {
   width: calc(100% - 12px); margin: 0 6px 6px; padding: 9px 10px 8px;
   display: flex; flex-direction: column; gap: 5px; align-items: flex-start;
