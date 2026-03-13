@@ -269,13 +269,41 @@
     return getProfiles(state.attackerId).map((p, i)=>({profile:p, i, info:targetInfo(targetId, i)})).filter(x=>x.info.valid);
   }
 
+  // Check if a unit has Benefit of Cover (any model wholly within a ruin footprint)
+  function unitHasCover(unitId) {
+    const unit = getUnit(unitId);
+    if (!unit) return false;
+    const blockers = window._losBlockers || [];
+    if (!blockers.length) return false;
+    // A unit has cover if ANY of its models is wholly within a ruin footprint
+    return unit.models.some(m => {
+      return blockers.some(b => {
+        // Transform model center to local space
+        const lx = b.iA * m.x + b.iC * m.y + b.iE;
+        const ly = b.iB * m.x + b.iD * m.y + b.iF;
+        return pointInPolygon(lx, ly, b.polygon);
+      });
+    });
+  }
+
   function deriveThresholds(profile, attacker, target){
     const bs = getBallisticSkill(attacker.id);
     const hit = Math.min(6, Math.max(2, bs));
     const t = Number(UNITS[target.id]?.stats?.T || 4);
     const rawSave = parseSave(UNITS[target.id]?.stats?.Sv);
-    const save = Math.min(7, Math.max(2, rawSave - Number(profile.ap || 0)));
-    return { hit, wound: woundTarget(Number(profile.s || 0), t), save };
+    const ap = Number(profile.ap || 0);
+    const inCover = unitHasCover(target.id);
+
+    // Benefit of Cover: +1 to save roll (i.e. save threshold improves by 1)
+    // Exception: if base save is 3+ or better AND AP is 0, no cover bonus
+    let coverBonus = 0;
+    if (inCover) {
+      const skipCover = (rawSave <= 3 && ap === 0);
+      if (!skipCover) coverBonus = 1;
+    }
+
+    const save = Math.min(7, Math.max(2, rawSave - ap - coverBonus));
+    return { hit, wound: woundTarget(Number(profile.s || 0), t), save, inCover, coverBonus };
   }
 
   function updateSpentIndicators(){
@@ -798,7 +826,8 @@
     }
 
     const saveRolls = Array.from({length: wound.successes}, d6);
-    const save = await rollDiceStage('Save Roll', saveRolls, thresholds.save, true, targetId, `Save on ${thresholds.save}+`, 'save');
+    const coverLabel = thresholds.coverBonus ? ' 🛡 COVER' : '';
+    const save = await rollDiceStage('Save Roll', saveRolls, thresholds.save, true, targetId, `Save on ${thresholds.save}+${coverLabel}`, 'save');
     const failedSaves = save.rolls.filter(r => r < thresholds.save).length;
 
     let totalDamage = 0;
