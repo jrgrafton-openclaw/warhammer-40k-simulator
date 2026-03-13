@@ -44,7 +44,7 @@
 
   const $ = (s) => document.querySelector(s);
   const $$ = (s) => Array.from(document.querySelectorAll(s));
-  const stageOrder = ['weapon','target','hit','wound','save','result'];
+  const stageOrder = ['weapon','hit','wound','save','result'];
 
   function rng(){ state.seed = (state.seed * 1664525 + 1013904223) >>> 0; return state.seed / 0x100000000; }
   function d6(){ return 1 + Math.floor(rng() * 6); }
@@ -229,7 +229,6 @@
     const t = flow.thresholds;
     const rows = {
       weapon: renderWeaponSelection(flow),
-      target: `<div class="stage-copy compact"><div class="stage-kicker">Target lock</div><div class="stage-head">${flow.targetName}</div><div class="stage-sub">${flow.info.reason}</div>${targetStatSummary(flow.targetId)}<div class="stat-strip"><span>${describeProfile(flow.profile)}</span><span>${flow.attackerName}</span></div></div>`,
       hit: `<div class="stage-copy"><div class="stage-kicker">Hit roll</div><div class="stage-head">${flow.hits} / ${flow.attacks} hit</div><div class="dice-strip">${flow.hitRolls.map(r => `<span class="die-chip ${r >= t.hit ? 'good' : 'bad'}">${r}</span>`).join('')}</div><div class="stage-sub">BS ${t.hit}+ from ${flow.attackerName}</div></div>`,
       wound: `<div class="stage-copy"><div class="stage-kicker">Wound roll</div><div class="stage-head">${flow.wounds} wound${flow.wounds === 1 ? '' : 's'} stick</div><div class="dice-strip">${flow.woundRolls.slice(0, Math.max(1, flow.hits)).map(r => `<span class="die-chip ${r >= t.wound ? 'good' : 'bad'}">${r}</span>`).join('')}</div><div class="stage-sub">Strength ${flow.profile.s} vs Toughness ${UNITS[flow.targetId]?.stats?.T || '?' } → ${t.wound}+</div></div>`,
       save: `<div class="stage-copy"><div class="stage-kicker">Saving throws</div><div class="stage-head">${flow.failed} fail</div><div class="dice-strip enemy">${flow.saveRolls.slice(0, Math.max(1, flow.wounds)).map(r => `<span class="die-chip ${r < t.save ? 'bad' : 'enemy-good'}">${r}</span>`).join('')}</div><div class="stage-sub">${flow.targetName} saves on ${t.save}+ after AP</div></div>`,
@@ -261,13 +260,12 @@
           <div class="variant-title">${flow.attackerName} → ${flow.targetName}</div>
           <div class="variant-subtitle">${CONFIG.tagline}</div>
         </div>
-        <button class="icon-btn" data-action="cancel" aria-label="Close">×</button>
+        <button class="card-close" data-action="cancel" aria-label="Close">×</button>
       </div>
       <div class="stage-row">${renderStageList(flow)}</div>
       ${stageBody(flow)}
       <div class="control-row">
-        <button class="ghost-btn" data-action="back" ${flow.step === 0 || (flow.step === 1 && (flow.profileOptions?.length || 0) <= 1) ? 'disabled' : ''}>Back</button>
-        <button class="solid-btn" data-action="next">${flow.step === stageOrder.length - 1 ? 'Apply preview' : (flow.step === 0 ? 'Confirm weapon' : 'Advance')}</button>
+        <button class="solid-btn" data-action="next">${flow.step === stageOrder.length - 1 ? 'Apply preview' : 'Roll'}</button>
       </div>`;
 
     glyphs.className = 'shoot-glyphs' + (VARIANT === 'v0.7c' ? '' : ' hidden');
@@ -278,8 +276,7 @@
         <div class="floating-head">${flow.attackerName}</div>
         <div class="floating-sub">${describeProfile(flow.profile)}</div>
         <div class="floating-actions">
-          <button class="ghost-btn" data-action="back" ${flow.step === 0 ? 'disabled' : ''}>◀</button>
-          <button class="solid-btn" data-action="next">${flow.step === stageOrder.length - 1 ? 'Commit' : 'Step'}</button>
+          <button class="solid-btn" data-action="next">${flow.step === stageOrder.length - 1 ? 'Commit' : 'Roll'}</button>
           <button class="ghost-btn" data-action="cancel">✕</button>
         </div>`;
     }
@@ -329,16 +326,9 @@
       setStatus(CONFIG.prompt);
       return;
     }
-    if (action === 'back') {
-      state.flow.step = Math.max((state.flow.profileOptions?.length || 0) > 1 ? 0 : 1, state.flow.step - 1);
-      renderResolution(state.flow);
-      paint();
-      return;
-    }
     if (action === 'next') {
       if (state.flow.step < stageOrder.length - 1) {
         state.flow.step += 1;
-        if (state.flow.step === 0 && (state.flow.profileOptions?.length || 0) <= 1) state.flow.step = 1;
         renderResolution(state.flow);
         paint();
       } else {
