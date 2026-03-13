@@ -1,4 +1,4 @@
-import { UNIT_DEFS } from '../data/shoot-v06-data.js';
+import { OBJECTIVES, UNIT_DEFS } from '../data/shoot-v06-data.js';
 
 function iconSvg(icon = 'infantry') {
   if (icon === 'character') return '<svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg>';
@@ -7,44 +7,89 @@ function iconSvg(icon = 'infantry') {
   return '<svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg>';
 }
 
+function apClass(ap) {
+  if (ap === 0) return 'ap-0';
+  if (ap === -1) return 'ap-1';
+  if (ap === -2) return 'ap-2';
+  if (ap === -3) return 'ap-3';
+  return 'ap-4plus';
+}
+
 function objectiveMarkup() {
-  const objectives = [
-    ['neutral', '50%', '13.64%', '01'],
-    ['controlled', '16.67%', '50%', '02'],
-    ['neutral', '50%', '50%', '03'],
-    ['enemy', '83.33%', '50%', '04'],
-    ['neutral', '50%', '86.36%', '05'],
-  ];
-  return objectives.map(([state, left, top, label]) => `
-    <div class="obj-area-ring" style="left:${left};top:${top};"></div>
-    <div class="obj-hex-wrap ${state}" style="left:${left};top:${top};"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">${label}</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+  return OBJECTIVES.map((objective, index) => `
+    <div class="obj-marker ${objective.state}" style="left:${((objective.x / 720) * 100).toFixed(2)}%;top:${((objective.y / 528) * 100).toFixed(2)}%;">
+      <div class="obj-label">${String(index + 1).padStart(2, '0')}<br><span class="obj-label-sub">OBJ</span></div>
+    </div>
   `).join('');
+}
+
+function weaponTableMarkup(title, weapons) {
+  if (!weapons.length) return '';
+  return `
+    <div class="section-header">${title}</div>
+    <table class="weapon-table">
+      <thead>
+        <tr><th>Weapon</th><th>Rng</th><th>A</th><th>S</th><th>AP</th><th>D</th><th>Keywords</th></tr>
+      </thead>
+      <tbody>
+        ${weapons.map((weapon) => `
+          <tr>
+            <td>${weapon.name}</td>
+            <td>${weapon.type === 'MELEE' ? '—' : `${weapon.rng}"`}</td>
+            <td>${weapon.a}</td>
+            <td>${weapon.s}</td>
+            <td class="${apClass(weapon.ap)}">${weapon.ap}</td>
+            <td class="td-damage">${weapon.d}</td>
+            <td>${(weapon.kw || []).map((kw) => `<span class="kw-tag">${kw}</span>`).join('')}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function abilityRows(def) {
+  return (def.abilities || []).map((ability) => {
+    const name = typeof ability === 'string' ? ability : ability.name;
+    const timing = typeof ability === 'string' ? 'PASSIVE' : (ability.timing || 'PASSIVE');
+    const active = timing === 'PASSIVE' || timing === 'SHOOTING PHASE';
+    const tagClass = timing === 'PASSIVE' ? 'passive' : active ? 'active-now' : 'phase';
+    return `
+      <div class="right-ability-row${active ? ' phase-active' : ''}">
+        <span>${name}</span>
+        <span class="ability-tag ${tagClass}">${timing}</span>
+      </div>
+      ${typeof ability === 'object' && ability.desc ? `<div class="ability-desc-block">${ability.desc}</div>` : ''}
+    `;
+  }).join('');
 }
 
 function unitCardMarkup(unitId) {
   const def = UNIT_DEFS[unitId];
-  const ranged = def.weapons.filter((weapon) => weapon.type === 'RANGED');
-  const melee = def.weapons.filter((weapon) => weapon.type === 'MELEE');
+  const stats = def.stats;
   return `
-    <div class="card-hdr">
-      <div style="min-width:0;flex:1;">
-        <div class="card-title-row">
-          <div class="card-name" id="card-name">${def.name.toUpperCase()}</div>
-          <div class="unit-state-badge ${def.side === 'imp' ? 'visible' : ''}" id="unit-state-badge">${unitId === 'hellblasters' ? 'READY' : 'ATTACKED'}</div>
-        </div>
-        <div class="card-faction" id="card-faction">★ ${def.faction}</div>
-      </div>
-      <button class="card-close" id="card-close">×</button>
+    <div class="right-header"><span class="right-header-title">Selected Unit</span><button class="card-close" id="card-close">×</button></div>
+    <div id="unit-name-display" class="unit-name-display">${def.name.toUpperCase()}</div>
+    <div id="faction-tag" class="faction-tag">
+      <span class="faction-diamond" style="color:${def.factionColor};">◆</span>
+      <span id="faction-tag-text">${def.factionSubtitle || def.faction}</span>
     </div>
-    <div class="card-stats" id="card-stats">${Object.entries(def.stats).map(([key, value]) => `<div class="stat-cell"><div class="stat-key">${key}</div><div class="stat-val">${value}</div></div>`).join('')}</div>
-    <div class="card-ranges" id="card-ranges">
-      <button class="range-toggle move" id="rt-move">MOVE<br>${def.stats.M}</button>
-      <button class="range-toggle advance" id="rt-advance">AVG ADV<br>10&quot;</button>
-      <button class="range-toggle charge" id="rt-charge">AVG CHRG<br>13&quot;</button>
-    </div>
-    ${melee.length ? `<div class="card-section"><div class="sec-label">MELEE WEAPONS</div>${melee.map((weapon) => `<div class="wt-row"><div class="wt-name-row"><span class="wt-name">${weapon.name}</span><span class="wt-val">—</span><span class="wt-val">${weapon.a}</span><span class="wt-val">${weapon.s}</span><span class="wt-val ap-neg">${weapon.ap}</span><span class="wt-val dmg">${weapon.d}</span></div><div class="wt-kws">${(weapon.kw||[]).map(k => `<span class="kw-pill">${k}</span>`).join('')}</div></div>`).join('')}</div>` : ''}
-    <div class="card-section"><div class="sec-label">RANGED WEAPONS</div>${ranged.map((weapon) => `<div class="wt-row"><div class="wt-name-row"><span class="wt-name">${weapon.name}</span><span class="wt-val">${weapon.rng}&quot;</span><span class="wt-val">${weapon.a}</span><span class="wt-val">${weapon.s}</span><span class="wt-val ${weapon.ap < 0 ? 'ap-neg' : 'ap0'}">${weapon.ap}</span><span class="wt-val dmg">${weapon.d}</span></div><div class="wt-kws">${(weapon.kw||[]).map(k => `<span class="kw-pill">${k}</span>`).join('')}</div></div>`).join('')}</div>
-    <div class="card-section"><div class="sec-label">ABILITIES</div>${def.abilities.map((ab) => `<div class="ability-row"><div class="ability-pill">${typeof ab === 'string' ? ab.toUpperCase() : ab.name}</div>${typeof ab === 'object' && ab.desc ? `<div class="ability-desc">${ab.desc}</div>` : ''}</div>`).join('')}</div>
+    <div class="section-header">Characteristics</div>
+    <table class="stat-table">
+      <thead>
+        <tr><th>M</th><th>T</th><th>Sv</th><th>W</th><th>Ld</th><th>OC</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${stats.M}</td><td>${stats.T}</td><td>${stats.Sv}</td><td>${stats.W}</td><td>${stats.Ld}</td><td>${stats.OC}</td>
+        </tr>
+      </tbody>
+    </table>
+    ${weaponTableMarkup('Ranged Weapons', def.weapons.filter((weapon) => weapon.type === 'RANGED'))}
+    ${weaponTableMarkup('Melee Weapons', def.weapons.filter((weapon) => weapon.type === 'MELEE'))}
+    <div class="section-header">Unit Abilities</div>
+    <div id="abilities-list">${abilityRows(def)}</div>
+    <div id="aquila">⚜</div>
   `;
 }
 
@@ -94,23 +139,26 @@ export function mountShootHud({ root, store, actions }) {
       <div id="range-charge-label" class="range-label rl-charge">CHARGE</div>
       <div id="unit-card" class="visible"></div>
       <div id="action-bar">
-        <div class="phase-row">
-          <div class="ph-item done"><span class="ph-dot"></span>CMD</div>
-          <span class="ph-sep">·</span>
-          <div class="ph-item"><span class="ph-dot"></span>MOVE</div>
-          <span class="ph-sep">·</span>
-          <div class="ph-item active"><span class="ph-dot"></span>SHOOT</div>
-          <span class="ph-sep">·</span>
-          <div class="ph-item"><span class="ph-dot"></span>CHARGE</div>
-          <span class="ph-sep">·</span>
-          <div class="ph-item"><span class="ph-dot"></span>FIGHT</div>
+        <div id="zone-phase">
+          <div class="phase-step done"><div class="phase-num-done">①</div><span class="phase-name-done">Command</span></div>
+          <span class="phase-sep">➜</span>
+          <div class="phase-step done"><div class="phase-num-done">②</div><span class="phase-name-done">Movement</span></div>
+          <span class="phase-sep">➜</span>
+          <div class="phase-step active"><div class="phase-num-active">③</div><span class="phase-name-active">Shooting</span></div>
+          <span class="phase-sep">➜</span>
+          <div class="phase-step upcoming"><div class="phase-num-upcoming">④</div><span class="phase-name-upcoming">Charge</span></div>
+          <span class="phase-sep">➜</span>
+          <div class="phase-step upcoming"><div class="phase-num-upcoming">⑤</div><span class="phase-name-upcoming">Fight</span></div>
         </div>
-        <div class="ab-sep"></div>
-        <span id="move-mode-label"></span>
-        <div class="phase-end-cluster">
-          <button class="btn-strat" id="btn-strat">USE STRATAGEM</button>
-          <div class="phase-end-divider" aria-hidden="true"></div>
-          <button class="btn-cta" id="btn-end-shoot">END SHOOTING →</button>
+        <div class="zone-sep"></div>
+        <div id="zone-actions">
+          <button class="action-btn active" id="btn-normal-move">SELECT TARGET</button>
+          <button class="action-btn" id="btn-advance">FIRE WEAPON</button>
+        </div>
+        <div class="zone-sep"></div>
+        <div id="zone-global">
+          <button class="stratagem-btn" id="btn-strat">USE STRATAGEM ⚙</button>
+          <button class="end-phase-btn" id="btn-end-shoot">END SHOOTING PHASE →</button>
         </div>
       </div>
     </main>
@@ -128,13 +176,9 @@ export function mountShootHud({ root, store, actions }) {
 
   let lastRosterKey = '';
   function renderRoster(state) {
-    // Only re-render if roster-relevant state changed (avoids DOM thrashing / event loops)
     const key = state.units.map(u => `${u.id}:${u.shot}:${u.models.length}`).join(',') + '|' + (state.attackerId || '');
     if (key === lastRosterKey) {
-      // Just update active class without destroying DOM
-      root.querySelectorAll('.rail-unit').forEach((row) => {
-        row.classList.toggle('active', row.dataset.unitId === state.attackerId);
-      });
+      root.querySelectorAll('.rail-unit').forEach((row) => row.classList.toggle('active', row.dataset.unitId === state.attackerId));
       return;
     }
     lastRosterKey = key;
@@ -156,7 +200,7 @@ export function mountShootHud({ root, store, actions }) {
 
   let lastCardUnitId = '';
   function renderCard(state) {
-    const unitId = state.attackerId || 'assault-intercessors';
+    const unitId = state.attackerId || 'hellblasters';
     if (unitId === lastCardUnitId) return;
     lastCardUnitId = unitId;
     unitCard.innerHTML = unitCardMarkup(unitId);
@@ -175,7 +219,7 @@ export function mountShootHud({ root, store, actions }) {
       return;
     }
     weaponPopup.classList.remove('hidden');
-    weaponPopup.innerHTML = `<div class="overlay-title">Choose weapon</div>${state.weaponChoices.map((weapon, index) => `<button class="weapon-choice" data-weapon-ix="${index}"><div class="weapon-choice-name">${weapon.name}</div><div class="weapon-meta-row"><span class="weapon-meta">RNG ${weapon.rng}&quot;</span><span class="weapon-meta">A ${weapon.a}</span><span class="weapon-meta">S ${weapon.s}</span><span class="weapon-meta ap-hot">AP ${weapon.ap}</span><span class="weapon-meta dmg-hot">D ${weapon.d}</span></div></button>`).join('')}`;
+    weaponPopup.innerHTML = `<div class="overlay-title">Choose weapon</div>${state.weaponChoices.map((weapon, index) => `<button class="weapon-choice" data-weapon-ix="${index}"><div class="weapon-choice-name">${weapon.name}</div><div class="weapon-meta-row"><span class="weapon-meta">RNG ${weapon.rng}\"</span><span class="weapon-meta">A ${weapon.a}</span><span class="weapon-meta">S ${weapon.s}</span><span class="weapon-meta ap-hot">AP ${weapon.ap}</span><span class="weapon-meta dmg-hot">D ${weapon.d}</span></div></button>`).join('')}`;
     weaponPopup.querySelectorAll('.weapon-choice').forEach((button) => button.addEventListener('click', () => actions.pickWeapon(Number(button.dataset.weaponIx))));
     positionOverlay(weaponPopup, state.popupAnchor, 28);
   }
@@ -194,7 +238,7 @@ export function mountShootHud({ root, store, actions }) {
   store.subscribe((state) => {
     renderRoster(state);
     renderCard(state);
-    status.textContent = state.targetId ? `${UNIT_DEFS[state.attackerId].name} → ${UNIT_DEFS[state.targetId].name}` : '';
+    if (status) status.textContent = state.targetId ? `${UNIT_DEFS[state.attackerId].name} → ${UNIT_DEFS[state.targetId].name}` : '';
     renderWeaponPopup(state);
     renderRollOverlay(state);
   });

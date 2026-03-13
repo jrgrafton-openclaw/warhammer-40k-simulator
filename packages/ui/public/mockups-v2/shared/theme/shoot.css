@@ -35,3 +35,97 @@
 #move-mode-label {
   color: var(--text-muted) !important;
 }
+
+
+#unit-card {
+  bottom: 98px;
+  right: 10px;
+  width: 350px;
+  background: #08070a;
+  border: 1px solid #1a1420;
+  box-shadow: 0 18px 50px rgba(0,0,0,.42);
+  overflow: hidden;
+}
+
+#unit-card .right-header {
+  display: flex;
+  justify-content: space-between;
+}
+
+#unit-card .card-close {
+  border: 0;
+  background: transparent;
+  color: #c9a352;
+  font: 400 24px/1 Georgia, serif;
+  cursor: pointer;
+}
+
+#unit-card .ability-desc-block {
+  padding: 0 14px 10px;
+  color: #777;
+  font: 400 11px/1.45 'Roboto Condensed', sans-serif;
+}
+
+.obj-marker {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 2.5px solid #c9a352;
+  background: rgba(201,163,82,0.12);
+  box-shadow: 0 0 16px rgba(201,163,82,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  pointer-events: none;
+}
+
+.obj-label {
+  font: 600 9px/1 'Oswald', sans-serif;
+  letter-spacing: 1px;
+  color: #c9a352;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.obj-label-sub {
+  font-size: 7px;
+  letter-spacing: .5px;
+}
+
+#action-bar {
+  height: 80px;
+  padding: 0;
+  gap: 0;
+}
+
+#zone-phase {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+  height: 100%;
+  width: 38%;
+  min-width: 0;
+}
+
+.phase-step { display: flex; align-items: center; gap: 5px; padding: 6px 9px; border-radius: 3px; white-space: nowrap; }
+.phase-step.done { background: #1c1408; color: #555; }
+.phase-num-done, .phase-num-active, .phase-num-upcoming { width: 16px; height: 16px; border-radius: 50%; font: 600 9px/16px 'Oswald', sans-serif; text-align: center; }
+.phase-num-done { background: #3d2e10; color: #555; }
+.phase-name-done { font: 600 10px/1 'Oswald', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #555; }
+.phase-step.active { background: #001a28; border: 1px solid #004a6a; box-shadow: 0 0 10px rgba(0,212,255,0.15); }
+.phase-num-active { background: #003a50; color: #00d4ff; }
+.phase-name-active { font: 600 10px/1 'Oswald', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #00d4ff; }
+.phase-step.upcoming { background: transparent; }
+.phase-num-upcoming { background: #191919; color: #666; }
+.phase-name-upcoming { font: 600 10px/1 'Oswald', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #666; }
+.phase-sep { color: #3d2e10; font-size: 11px; }
+.zone-sep { width: 1px; height: 42px; background: linear-gradient(180deg, transparent, #3d2e10 20%, #3d2e10 80%, transparent); }
+#zone-actions, #zone-global { display: flex; align-items: center; gap: 10px; height: 100%; padding: 0 14px; }
+#zone-actions { flex: 1; }
+#zone-global { margin-left: auto; }
+.action-btn, .stratagem-btn, .end-phase-btn { height: 38px; }
+#move-mode-label { min-width: 0; flex: 1; text-align: left; color: var(--text-muted) !important; font-size: 10px; }
