@@ -264,8 +264,9 @@
     const tick = () => {
       const popup = $('#weapon-popup'), roll = $('#roll-overlay');
       if (popup && !popup.classList.contains('hidden') && state.pinnedPopupTargetId) {
-        const a = getTargetAnchor(state.pinnedPopupTargetId, 'popup');
-        if (a.valid) { popup.style.left = `${a.x}px`; popup.style.top = `${a.y}px`; }
+        popup.style.left = '50%';
+        popup.style.top = 'auto';
+        popup.style.bottom = '68px';
       }
       if (roll && !roll.classList.contains('hidden') && state.pinnedRollTargetId) {
         roll.style.left = '50%';
@@ -319,9 +320,12 @@
     pt.y = model.y;
     const screen = pt.matrixTransform(ctm);
     const rect = layer.getBoundingClientRect();
+    // Account for CSS transform scale on #battlefield-inner
+    const inner = $('#battlefield-inner');
+    const scale = inner ? new DOMMatrixReadOnly(window.getComputedStyle(inner).transform).a || 1 : 1;
     return {
-      x: screen.x - rect.left,
-      y: screen.y - rect.top,
+      x: (screen.x - rect.left) / scale,
+      y: (screen.y - rect.top) / scale,
       valid: true
     };
   }
