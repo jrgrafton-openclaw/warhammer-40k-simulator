@@ -79,7 +79,7 @@
   bottom: 68px;
   left: 50%;
   top: auto !important;
-  min-width: 430px; max-width: 500px; text-align: center; padding: 6px 0 12px;
+  min-width: 430px; max-width: 720px; text-align: center; padding: 6px 0 12px;
   transform: translateX(-50%);
 }
 #roll-overlay .overlay-title {
