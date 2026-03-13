@@ -844,7 +844,7 @@ function buildWeaponRangeToggles(uid) {
 
   rangesEl.innerHTML = unique.map((p, i) => {
     const rng = parseRange(p);
-    return `<button class="range-toggle weapon-range" data-wpn-ix="${i}">${p.name} ${rng}"</button>`;
+    return `<button class="range-toggle weapon-range" data-wpn-ix="${i}">${p.name}<br>${rng}"</button>`;
   }).join('');
 
   rangesEl.querySelectorAll('.weapon-range').forEach(btn => {
