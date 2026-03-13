@@ -53,12 +53,13 @@ initBoard({ initialScale: 0.5 });
 initBattleControls();
 initModelInteraction();
 
-// ── Initialise movement interaction ──────────────────────
-initMovement();
-
 // ── Build terrain collision AABBs ────────────────────────
+// Must be before initMovement so AABBs exist when drag handlers fire
 const svgEl = document.getElementById('bf-svg');
 window._terrainAABBs = buildTerrainAABBs(mapData, svgEl);
+
+// ── Initialise movement interaction ──────────────────────
+initMovement();
 
 // ── Visible error handler ────────────────────────────────
 window.onerror = function(msg, src, line) {
