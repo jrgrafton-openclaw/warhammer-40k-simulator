@@ -1,0 +1,58 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.9 Shoot Phase — Overrides
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY v0.9-specific overrides.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Wider roll overlay for weapon picker ── */
+#roll-overlay { max-width: 720px; }
+
+/* ── LoS aiming lines ── */
+.target-line-blocked {
+  stroke: rgba(255, 60, 60, 0.3);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+  pointer-events: none;
+  opacity: .7;
+}
+.target-line-clear {
+  stroke: rgba(0,212,255,.3);
+  stroke-width: 1;
+  stroke-dasharray: 6 5;
+  stroke-linecap: round;
+  pointer-events: none;
+  opacity: .7;
+}
+
+/* ── Advance D6 Dice Overlay (movement-phase only, unused in shoot) ── */
+#advance-dice-overlay {
+  position: fixed; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  z-index: 500; background: rgba(8,12,16,0.75); backdrop-filter: blur(4px);
+}
+#advance-dice-overlay.visible { display: flex; }
+.dice-panel { text-align: center; }
+.dice-d6 {
+  width: 72px; height: 72px; margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  border: 2px solid var(--text-dis);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 20px rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  font: normal 400 38px/1 'Anton', sans-serif;
+  color: var(--text-dis); position: relative;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.dice-d6.rolling {
+  animation: die-roll-in .4s cubic-bezier(.34,1.56,.64,1) both;
+  color: var(--imp); border-color: var(--imp);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 24px rgba(0,212,255,.35), 0 6px 20px rgba(0,0,0,.6);
+}
+.dice-result-label {
+  font: 700 12px/1 'Rajdhani', sans-serif; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--imp);
+}
+.dice-total-label {
+  font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 2px;
+  color: var(--text-muted); margin-top: 6px;
+}
