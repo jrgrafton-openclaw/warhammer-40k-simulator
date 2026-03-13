@@ -1,0 +1,144 @@
+/* ══════════════════════════════════════════════════════════════
+   Component — Phase States
+   Copied from shared/phase-states.css (verbatim)
+   Spent/moved/attacked roster rows, dice, token destroyed
+══════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════
+   SPENT / MOVED / ATTACKED roster row
+══════════════════════════════════════════════════════════════ */
+.rail-unit.moved,
+.rail-unit.attacked {
+  background: linear-gradient(90deg, var(--spent-tint) 0%, rgba(8,12,16,.18) 100%);
+  border-left-color: var(--spent-dim);
+}
+.rail-unit.moved:hover,
+.rail-unit.attacked:hover {
+  background: linear-gradient(90deg, var(--spent-tint-2) 0%, rgba(8,12,16,.26) 100%);
+}
+.rail-unit.moved .rn,
+.rail-unit.attacked .rn { color: #c2cedb; }
+.rail-unit.moved .rc,
+.rail-unit.attacked .rc  { color: var(--spent); }
+.rail-unit.moved.active,
+.rail-unit.attacked.active {
+  background: linear-gradient(90deg, rgba(138,152,171,.18) 0%, rgba(8,12,16,.26) 100%);
+  border-left-color: var(--spent);
+}
+
+/* Roster state pill (moved/ATTACKED label) */
+.roster-state-pill {
+  flex-shrink: 0;
+  padding: 2px 6px 1px;
+  border: 1px solid var(--spent-dim);
+  background: rgba(18,24,34,.88);
+  color: var(--spent);
+  font: 700 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  border-radius: 999px;
+  display: none;
+}
+.rail-unit.moved .roster-state-pill,
+.rail-unit.attacked .roster-state-pill { display: inline-flex; align-items: center; }
+
+/* Unit card title badge */
+.card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.unit-state-badge {
+  display: none;
+  align-items: center;
+  padding: 4px 8px 3px;
+  border-radius: 999px;
+  border: 1px solid var(--spent-dim);
+  background: var(--spent-tint);
+  color: var(--spent);
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+}
+.unit-state-badge.visible { display: inline-flex; }
+
+/* ══════════════════════════════════════════════════════════════
+   DICE
+══════════════════════════════════════════════════════════════ */
+.die {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  border: 1.5px solid #2a3a4a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 4px 6px rgba(0,0,0,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 22px/1 'Anton', sans-serif;
+  color: var(--text-muted);
+  position: relative;
+  transition: .3s cubic-bezier(.34,1.56,.64,1);
+}
+.die.success {
+  border-color: var(--imp);
+  color: var(--imp);
+  background: linear-gradient(135deg, #101c24, var(--bg-surface));
+  box-shadow: inset 0 1px 0 rgba(0,212,255,.19);
+  transform: translateY(-2px);
+}
+.die.fail {
+  border-color: #1c1a20;
+  color: #4a3a3a;
+  opacity: .4;
+  box-shadow: none;
+}
+.die.enemy-success {
+  border-color: var(--text-dis);
+  color: var(--ork-dim);
+  background: var(--bg-surface);
+  opacity: .3;
+  box-shadow: none;
+}
+.die.enemy-fail {
+  border-color: #e03030;
+  color: #ff5050;
+  background: linear-gradient(135deg, #240808, var(--bg-surface));
+  box-shadow: inset 0 1px 0 rgba(255,64,64,.125);
+  transform: translateY(-2px);
+}
+
+@keyframes die-roll-in {
+  0%   { transform: scale(.5) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(4deg);  opacity: 1; }
+  100% { transform: scale(1)   rotate(0deg); }
+}
+@keyframes die-flash-success {
+  0%   { filter: brightness(1); }
+  40%  { filter: brightness(1.5); box-shadow: 0 0 8px rgba(0,212,255,.25); }
+  100% { filter: brightness(1); }
+}
+@keyframes die-flash-enemy-fail {
+  0%   { filter: brightness(1); }
+  20%  { filter: brightness(1.8); box-shadow: 0 0 8px rgba(204,32,32,.314); }
+  100% { filter: brightness(1); }
+}
+.die.rolling           { animation: die-roll-in .4s cubic-bezier(.34,1.56,.64,1) both; }
+.die.success.flashing  { animation: die-flash-success .5s ease forwards; }
+.die.enemy-fail.flashing { animation: die-flash-enemy-fail .6s ease forwards; }
+
+/* Dice group / stage / summary layout */
+.dice-group       { display: flex; flex-direction: column; gap: .75rem; align-items: flex-start; width: 100%; }
+.dice-stage       { display: flex; flex-direction: column; gap: .4rem; }
+.dice-stage-label { font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: .2em; text-transform: uppercase; color: var(--text-dis); }
+.dice-row         { display: flex; gap: .4rem; flex-wrap: wrap; }
+.dice-summary     { font: 600 12px/1 'Rajdhani', sans-serif; letter-spacing: .1em; color: var(--text-muted); margin-top: .1rem; }
+.dice-summary .hi { color: var(--imp); }
+.dice-summary .lo { color: var(--bs); }
+
+/* ══════════════════════════════════════════════════════════════
+   TOKEN DESTROYED
+══════════════════════════════════════════════════════════════ */
+@keyframes token-die {
+  0%   { opacity: 1; transform: scale(1);   filter: brightness(1); }
+  25%  { opacity: 1; transform: scale(1.1); filter: brightness(2) saturate(0); }
+  60%  { opacity: .4; transform: scale(.7); }
+  100% { opacity: 0; transform: scale(.3); }
+}
+.anim-die { animation: token-die .7s ease-out forwards; }

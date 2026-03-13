@@ -1,0 +1,115 @@
+/* ══════════════════════════════════════════════════════════════
+   Component — FX Layer & Animations
+   Extracted from v0.8a/style.css + v0.4/style.css
+══════════════════════════════════════════════════════════════ */
+
+/* ── FX layer ── */
+#fx-layer {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden;
+}
+.proj-container, .hit-flash-layer {
+  position: absolute; inset: 0; pointer-events: none;
+}
+.hit-marker {
+  position: absolute; width: 32px; height: 32px; border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* ── Projectile travel ── */
+@keyframes proj-travel{
+  0%  {offset-distance:0%;opacity:0;transform:scaleX(1.4);}
+  8%  {opacity:1;}
+  88% {opacity:1;}
+  100%{offset-distance:100%;opacity:0;}
+}
+.projectile{
+  width:18px;height:5px;border-radius:3px;
+  background:var(--proj-color,var(--imp));
+  box-shadow:0 0 5px var(--proj-color,var(--imp)),0 0 14px var(--proj-color,var(--imp));
+  position:absolute;
+  offset-path:path('M 28 44 L 292 44');
+  offset-rotate:auto;
+  animation:proj-travel .45s cubic-bezier(.4,0,.8,1) forwards;
+  pointer-events:none;
+}
+
+/* ── Hit flash ── */
+@keyframes hit-flash{
+  0%  {filter:brightness(1);box-shadow:0 0 0 #ff402000;}
+  20% {filter:brightness(3.5);box-shadow:0 0 30px #ff402099,0 0 60px #ff402044;}
+  45% {filter:brightness(1.5);}
+  70% {filter:brightness(.7);}
+  100%{filter:brightness(1);box-shadow:0 0 8px #ff402030,0 0 20px #ff402010;}
+}
+.anim-hit{animation:hit-flash .8s ease-out forwards;}
+
+/* ── Badge shake ── */
+@keyframes badge-shake{
+  0%,100%{transform:translateX(0);}
+  20%    {transform:translateX(-3px);}
+  40%    {transform:translateX(3px);}
+  60%    {transform:translateX(-2px);}
+  80%    {transform:translateX(2px);}
+}
+.anim-badge-shake{animation:badge-shake .5s ease .15s;}
+
+/* ── Token hit flash (model shapes) ── */
+@keyframes token-hit-flash-shape {
+  0%   { filter: brightness(1) drop-shadow(0 0 0 rgba(255,64,32,0)); }
+  20%  { filter: brightness(2.9) drop-shadow(0 0 8px rgba(255,64,32,.7)) drop-shadow(0 0 18px rgba(255,180,120,.35)); }
+  45%  { filter: brightness(1.5) drop-shadow(0 0 6px rgba(255,64,32,.38)); }
+  70%  { filter: brightness(.85) drop-shadow(0 0 2px rgba(255,64,32,.14)); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 rgba(255,64,32,0)); }
+}
+@keyframes token-hit-flash-icon {
+  0%   { opacity: 1; filter: brightness(1); }
+  20%  { opacity: 1; filter: brightness(2.1); }
+  100% { opacity: 1; filter: brightness(1); }
+}
+.model-base.anim-hit-token > :first-child {
+  animation: token-hit-flash-shape .8s ease-out forwards;
+}
+.model-base.anim-hit-token > :nth-child(2) {
+  animation: token-hit-flash-icon .8s ease-out forwards;
+}
+
+/* ── Shooting hull hit flash ── */
+.unit-hull.shoot-hit { animation: shoot-hit-flash 260ms ease; }
+@keyframes shoot-hit-flash {
+  0% { filter: drop-shadow(0 0 0 rgba(255,64,32,.0)); }
+  45% { filter: drop-shadow(0 0 12px rgba(255,64,32,.9)); }
+  100% { filter: drop-shadow(0 0 0 rgba(255,64,32,.0)); }
+}
+
+/* ── Target sight lines ── */
+.target-line {
+  stroke: rgba(0,212,255,.72); stroke-width: 1.2;
+  stroke-dasharray: 6 5; stroke-linecap: round; opacity: .95;
+}
+
+/* ── Wound ring overlay ── */
+.wound-ring-layer { pointer-events: none; }
+.wound-ring-track { stroke: rgba(30,42,56,.9); stroke-width: 2.25; fill: none; }
+.wound-ring-remain { stroke: rgba(0,212,255,.92); stroke-width: 2.25; fill: none; stroke-linecap: round; }
+.wound-ring-lost { stroke: rgba(255,96,96,.95); stroke-width: 2.25; fill: none; stroke-linecap: round; }
+.wound-ring-label-bg { fill: rgba(8,12,16,.94); stroke: rgba(0,212,255,.22); stroke-width: .8; }
+.wound-ring-label { fill: #d7ecff; font: 700 8px/1 'Rajdhani', sans-serif; letter-spacing: .45px; }
+
+/* ── Drag lift + drop settle ── */
+.is-lifted {
+  transform: translateY(-6px) scale(1.18);
+  transition: transform 120ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.is-settling {
+  animation: token-drop-settle 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes token-drop-settle {
+  0%   { transform: translateY(-6px) scale(1.18); }
+  45%  { transform: translateY(1px) scale(0.97); }
+  75%  { transform: translateY(0px) scale(1.03); }
+  100% { transform: translateY(0px) scale(1); }
+}
+
+/* ── Shake on blocked confirm ── */
+@keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.shake-error { animation: shake-err 0.4s ease; }
