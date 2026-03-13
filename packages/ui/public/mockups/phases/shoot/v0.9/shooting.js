@@ -703,14 +703,19 @@
     target._carryWounds = target._carryWounds || 0;
 
     while (remainingDamage > 0 && target.models.length > 0) {
-      const focus = target.models[target.models.length - 1];
-      if (!focus) break;
-
-      // Kill cap: if visibleTargetModelIds is provided, only allocate to visible models
-      if (visibleTargetModelIds && !visibleTargetModelIds.has(focus.id)) {
-        // Current focus model is not visible — damage is wasted
-        break;
+      // Find the best focus model: prefer back-of-array (normal 40K allocation order),
+      // but skip hidden models and pick the next visible one instead.
+      let focusIdx = target.models.length - 1;
+      if (visibleTargetModelIds) {
+        // Walk backwards to find a visible model to allocate wounds to
+        focusIdx = -1;
+        for (let i = target.models.length - 1; i >= 0; i--) {
+          if (visibleTargetModelIds.has(target.models[i].id)) { focusIdx = i; break; }
+        }
+        if (focusIdx === -1) break; // No visible models remain — waste remaining damage
       }
+      const focus = target.models[focusIdx];
+      if (!focus) break;
 
       flashedModels.push(focus);
       const woundsNeeded = perModelW - target._carryWounds;
@@ -719,13 +724,8 @@
       remainingDamage -= applied;
       if (target._carryWounds >= perModelW) {
         removedModelIds.push(focus.id);
-        target.models.pop();
+        target.models.splice(focusIdx, 1);
         target._carryWounds = 0;
-        // Check if any remaining visible models exist
-        if (visibleTargetModelIds) {
-          const hasVisibleRemaining = target.models.some(m => visibleTargetModelIds.has(m.id));
-          if (!hasVisibleRemaining) break; // No more visible targets — waste remaining damage
-        }
       }
     }
 
