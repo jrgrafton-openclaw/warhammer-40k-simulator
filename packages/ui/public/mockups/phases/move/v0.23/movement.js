@@ -104,14 +104,13 @@ function getDragUnitId() {
 }
 
 // ── Enter / Confirm / Cancel ───────────────────────────
-function enterMoveMode(mode) {
-  console.trace('enterMoveMode called with:', mode);
+function enterMoveMode(mode, quiet) {
   var uid = currentUnit;
   if (!uid || moveState.unitsMoved.has(uid)) return;
   clearMoveOverlays();
   moveState.mode = mode;
   updateMoveButtons();
-  renderMoveOverlays(uid);
+  if (!quiet) renderMoveOverlays(uid);
   clearRangeRings();
   renderModels();
 }
@@ -382,8 +381,10 @@ function movementSelectUnit(uid) {
         moveState.advanceDie = moveState.unitsAdvanced[uid];
         enterMoveMode('advance');
       }
-      // Otherwise: do NOT auto-enter move mode. Wait for user to click NORMAL MOVE.
-    }
+      } else {
+        // Auto-enter move mode for drag enforcement, but without zone overlays
+        enterMoveMode('move', true);
+      }
   }
 }
 
