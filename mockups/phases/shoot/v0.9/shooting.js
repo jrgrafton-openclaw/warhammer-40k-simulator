@@ -71,8 +71,22 @@
     return 'other';
   }
 
+  // ── Point-in-polygon (ray casting) for local-space polygons ──
+  function pointInPolygon(px, py, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i].x, yi = poly[i].y;
+      const xj = poly[j].x, yj = poly[j].y;
+      if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+
   // ── Ray-polygon intersection for tall ruin LoS blocking ──
   // Tests a line segment (in SVG space) against all tall ruin footprint blockers.
+  // Per 40K rules: a ruin does NOT block LoS if the attacker or target is inside it.
   // Returns { blocked: bool, hitPoint: {x,y}|null, t: number (0-1, parametric along ray) }
   function rayIntersectsTallRuins(x1, y1, x2, y2, blockers) {
     let bestT = Infinity;
@@ -86,6 +100,10 @@
       const ly1 = b.iB * x1 + b.iD * y1 + b.iF;
       const lx2 = b.iA * x2 + b.iC * y2 + b.iE;
       const ly2 = b.iB * x2 + b.iD * y2 + b.iF;
+
+      // Skip this ruin if attacker or target is INSIDE its footprint
+      // (units within a ruin can see out; units can shoot into ruins)
+      if (pointInPolygon(lx1, ly1, b.polygon) || pointInPolygon(lx2, ly2, b.polygon)) continue;
 
       const poly = b.polygon;
       const n = poly.length;
