@@ -105,6 +105,7 @@ function getDragUnitId() {
 
 // ── Enter / Confirm / Cancel ───────────────────────────
 function enterMoveMode(mode) {
+  console.trace('enterMoveMode called with:', mode);
   var uid = currentUnit;
   if (!uid || moveState.unitsMoved.has(uid)) return;
   clearMoveOverlays();
