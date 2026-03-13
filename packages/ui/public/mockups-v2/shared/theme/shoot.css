@@ -38,13 +38,17 @@
 
 
 #unit-card {
+  position: absolute;
   bottom: 98px;
   right: 10px;
   width: 350px;
+  max-height: calc(100vh - 180px);
   background: #08070a;
   border: 1px solid #1a1420;
   box-shadow: 0 18px 50px rgba(0,0,0,.42);
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 20;
 }
 
 #unit-card .right-header {
@@ -65,6 +69,185 @@
   color: #777;
   font: 400 11px/1.45 'Roboto Condensed', sans-serif;
 }
+
+/* ── Card styles (from original v0.6.html inline CSS) ── */
+.right-header {
+  height: 32px;
+  min-height: 32px;
+  background: linear-gradient(180deg, #1c1408 0%, #0e0a04 100%);
+  border-bottom: 1px solid #3d2e10;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+}
+.right-header-title {
+  font: 700 9px/1 'Cinzel Decorative', serif;
+  letter-spacing: 3px;
+  color: #c9a352;
+  text-transform: uppercase;
+}
+
+.unit-name-display {
+  font: 700 26px/1.1 'Cinzel', serif;
+  color: #ffffff;
+  text-shadow: 0 0 30px rgba(201,163,82,0.4), 0 1px 3px rgba(0,0,0,0.8);
+  padding: 14px 14px 8px;
+  letter-spacing: 1px;
+}
+
+.faction-tag {
+  font: 400 9px/1 'Oswald', sans-serif;
+  letter-spacing: 2px;
+  color: #888;
+  padding: 0 14px 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  text-transform: uppercase;
+}
+.faction-diamond { font-size: 9px; }
+
+.section-header {
+  font: 700 9px/1 'Cinzel', serif;
+  letter-spacing: 3px;
+  color: #c9a352;
+  text-transform: uppercase;
+  padding: 10px 14px 6px;
+  border-left: 2px solid #3d2e10;
+  background: rgba(201,163,82,0.04);
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.stat-table {
+  width: calc(100% - 28px);
+  margin: 8px 14px 12px;
+  border-collapse: collapse;
+  border: 1px solid #3d2e10;
+}
+.stat-table thead tr {
+  background: linear-gradient(180deg, #1e1608 0%, #140e04 100%);
+  border-bottom: 1px solid #3d2e10;
+}
+.stat-table thead th {
+  font: 600 9px/1 'Oswald', sans-serif;
+  letter-spacing: 2px;
+  color: #c9a352;
+  padding: 6px 4px;
+  text-align: center;
+  border-right: 1px solid #1c1c1c;
+}
+.stat-table thead th:last-child { border-right: none; }
+.stat-table tbody tr { background: #11141c; }
+.stat-table tbody td {
+  font: 700 20px/1 'Share Tech Mono', monospace;
+  color: #ffffff;
+  padding: 10px 4px;
+  text-align: center;
+  border-right: 1px solid #1c1c1c;
+}
+.stat-table tbody td:last-child { border-right: none; }
+
+.weapon-table {
+  width: calc(100% - 28px);
+  margin: 6px 14px 12px;
+  border-collapse: collapse;
+  border: 1px solid #3d2e10;
+  font-size: 13px;
+}
+.weapon-table thead tr {
+  background: linear-gradient(180deg, #1e1608 0%, #140e04 100%);
+  border-bottom: 1px solid #3d2e10;
+}
+.weapon-table thead th {
+  font: 600 9px/1 'Oswald', sans-serif;
+  letter-spacing: 1.5px;
+  color: #c9a352;
+  padding: 5px 4px;
+  text-align: center;
+  border-right: 1px solid #1c1c1c;
+}
+.weapon-table thead th:first-child { text-align: left; padding-left: 7px; }
+.weapon-table thead th:last-child { border-right: none; }
+.weapon-table tbody tr:nth-child(odd)  { background: #0e0e12; }
+.weapon-table tbody tr:nth-child(even) { background: #111116; }
+.weapon-table tbody td {
+  font: 400 13px/1 'Roboto Condensed', sans-serif;
+  color: #c8c4bc;
+  padding: 6px 4px;
+  text-align: center;
+  border-right: 1px solid #1a1a1a;
+}
+.weapon-table tbody td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: #e8c060;
+  padding-left: 7px;
+}
+.weapon-table tbody td:last-child { border-right: none; }
+
+.ap-0 { color: #777; }
+.ap-1 { color: #c8c4bc; }
+.ap-2 { color: #e8b040; font-weight: 700; }
+.ap-3 { color: #e85030; font-weight: 700; }
+.ap-4plus { color: #ff2020; font-weight: 700; text-shadow: 0 0 6px rgba(255,40,20,0.5); }
+
+.td-damage {
+  font: 700 14px/1 'Share Tech Mono', monospace !important;
+  color: #e8c060 !important;
+}
+
+.kw-tag {
+  display: inline-block;
+  font: 600 8px/1 'Oswald', sans-serif;
+  letter-spacing: 0.5px;
+  color: #c9a352;
+  background: rgba(201,163,82,0.08);
+  border: 1px solid #3d2e10;
+  padding: 2px 4px;
+  text-transform: uppercase;
+  border-radius: 2px;
+  margin: 1px;
+}
+
+.right-ability-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px;
+  font: 400 12px/1.4 'Roboto Condensed', sans-serif;
+  color: #aaa;
+  border-bottom: 1px solid #111;
+  transition: background 0.2s;
+}
+.right-ability-row:last-child { border-bottom: none; }
+.right-ability-row.phase-active {
+  background: rgba(0,212,255,0.05);
+  color: #e8c060;
+}
+
+.ability-tag {
+  font: 600 8px/1 'Oswald', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.ability-tag.passive { color: #666; background: rgba(255,255,255,0.04); }
+.ability-tag.active-now { color: #00d4ff; background: rgba(0,212,255,0.08); border: 1px solid rgba(0,212,255,0.2); }
+.ability-tag.phase { color: #888; background: rgba(255,255,255,0.04); }
+
+#aquila {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 64px;
+  color: rgba(201,163,82,0.08);
+  pointer-events: none;
+  user-select: none;
+  line-height: 1;
+}
+
+/* unit-card scroll handled above */
 
 .obj-marker {
   position: absolute;
