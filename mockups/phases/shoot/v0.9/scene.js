@@ -33,7 +33,9 @@
     { id:'nobz-mob', rosterIndex:7, faction:'ork',
       models:[{id:'nm1',x:430,y:128,r:R40},{id:'nm2',x:462,y:136,r:R40},{id:'nm3',x:446,y:166,r:R40}], broken:false },
     { id:'mekboy', rosterIndex:8, faction:'ork',
-      models:[{id:'mb1',x:338,y:258,r:R32}], broken:false }
+      models:[{id:'mb1',x:338,y:258,r:R32}], broken:false },
+    { id:'gretchin', rosterIndex:9, faction:'ork',
+      models:[{id:'gr1',x:400,y:220,r:R32},{id:'gr2',x:418,y:215,r:R32},{id:'gr3',x:436,y:220,r:R32}], broken:false }
   ];
 
   // ── Initialise shared modules ────────────────────────────

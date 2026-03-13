@@ -123,6 +123,15 @@
         {type:'RANGED',name:'Slugga',rng:'12"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}
       ],
       abilities:[{name:"'ERE WE GO",desc:"This unit can make a charge move after Advancing. Add 1 to charge rolls."}]
+    },
+    'gretchin': {
+      name:'GRETCHIN', faction:'☠ ORKS · BATTLELINE',
+      stats:{M:'5"',T:2,Sv:'7+',W:1,Ld:8,OC:2}, M:5, faction_side:'ork',
+      wargear:[],
+      weapons:[
+        {type:'RANGED',name:'Grot Blasta',rng:'12"',a:1,s:3,ap:0,d:1,kw:['PISTOL']}
+      ],
+      abilities:['Cowardly']
     }
   };
 

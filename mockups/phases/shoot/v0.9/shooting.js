@@ -33,7 +33,7 @@
   function setStatus(msg){ const el = $('#move-mode-label'); if (el) el.textContent = msg || ''; }
   function distIn(a, b){ const ca = center(getUnit(a)), cb = center(getUnit(b)); return Math.hypot(ca.x - cb.x, ca.y - cb.y) / PX_PER_INCH; }
   function parseRange(weapon){ return parseInt(String(weapon?.rng || '').replace(/[^0-9]/g, '')) || 0; }
-  function getBallisticSkill(uid){ return ({'assault-intercessors':3,'intercessor-squad-a':3,'hellblasters':3,'primaris-lieutenant':3,'redemptor-dreadnought':3,'boyz-mob':5,'boss-nob':5,'mekboy':5,'nobz-mob':5}[uid] || 4); }
+  function getBallisticSkill(uid){ return ({'assault-intercessors':3,'intercessor-squad-a':3,'hellblasters':3,'primaris-lieutenant':3,'redemptor-dreadnought':3,'boyz-mob':5,'boss-nob':5,'mekboy':5,'nobz-mob':5,'gretchin':5}[uid] || 4); }
   function parseSave(sv){ const n = parseInt(String(sv || '').replace(/[^0-9]/g, '')); return n || 7; }
   function woundTarget(str, toughness){ if (str >= toughness * 2) return 2; if (str > toughness) return 3; if (str === toughness) return 4; if (str * 2 <= toughness) return 6; return 5; }
   function damageValue(d){ if (typeof d === 'number') return d; const s = String(d || '1').trim().toUpperCase(); if (s === 'D3') return null; return Number(s) || 1; }
@@ -122,46 +122,92 @@
     return { blocked: false, hitPoint: null, t: 1 };
   }
 
+  // ── Edge-to-edge LoS helpers ────────────────────────────
+  // Generate 8 edge points around a circular model base (compass directions)
+  function modelEdgePoints(model) {
+    const r = getModelRadius(model);
+    const cx = model.x, cy = model.y;
+    const pts = [];
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI * 2) / 8;
+      pts.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) });
+    }
+    return pts;
+  }
+
+  // Test edge-to-edge visibility between two models.
+  // Returns { canSee, bestRay: { from, to, dist } | null }
+  function canModelSeeModel(attackerModel, targetModel, blockers) {
+    const aPts = modelEdgePoints(attackerModel);
+    const tPts = modelEdgePoints(targetModel);
+    let bestClearRay = null;
+
+    for (let ai = 0; ai < aPts.length; ai++) {
+      const ap = aPts[ai];
+      for (let ti = 0; ti < tPts.length; ti++) {
+        const tp = tPts[ti];
+        const result = rayIntersectsTallRuins(ap.x, ap.y, tp.x, tp.y, blockers);
+        if (!result.blocked) {
+          const dist = Math.hypot(ap.x - tp.x, ap.y - tp.y);
+          if (!bestClearRay || dist < bestClearRay.dist) {
+            bestClearRay = { from: ap, to: tp, dist };
+          }
+          // Early exit: one clear ray is enough to confirm visibility
+          // but keep looking for a shorter ray for better visualization
+        }
+      }
+    }
+    return { canSee: !!bestClearRay, bestRay: bestClearRay };
+  }
+
   // ── Per-model line-of-sight ──────────────────────────────
-  // Returns { state, visibleAttackerCount, totalAttackerCount, perModel }
+  // Returns { state, visibleAttackerCount, totalAttackerCount, perModel, visibleTargetModelIds }
   function losState(attackerId, targetId) {
     const a = getUnit(attackerId), t = getUnit(targetId);
-    if (!a || !t) return { state: 'blocked', visibleAttackerCount: 0, totalAttackerCount: 0, perModel: new Map() };
+    if (!a || !t) return { state: 'blocked', visibleAttackerCount: 0, totalAttackerCount: 0, perModel: new Map(), visibleTargetModelIds: new Set() };
 
     const blockers = window._losBlockers || [];
     const perModel = new Map();
+    const visibleTargetModelIds = new Set();
     let visibleCount = 0;
     const totalCount = a.models.length;
 
     if (!blockers.length) {
       // No blockers → all clear
+      t.models.forEach(tm => visibleTargetModelIds.add(tm.id));
       a.models.forEach(am => {
         const closest = t.models.reduce((best, tm) => {
           const d = Math.hypot(am.x - tm.x, am.y - tm.y);
           return (!best || d < best.dist) ? { model: tm, dist: d, hitPoint: null } : best;
         }, null);
-        perModel.set(am.id, { canSee: true, bestTarget: closest });
+        perModel.set(am.id, { canSee: true, bestTarget: closest, bestRay: null });
       });
-      return { state: 'clear', visibleAttackerCount: totalCount, totalAttackerCount: totalCount, perModel };
+      return { state: 'clear', visibleAttackerCount: totalCount, totalAttackerCount: totalCount, perModel, visibleTargetModelIds };
     }
 
     a.models.forEach(am => {
       let canSee = false;
       let bestVisibleTarget = null;
+      let bestVisibleRay = null;
       let bestBlockedTarget = null;
 
       t.models.forEach(tm => {
-        const result = rayIntersectsTallRuins(am.x, am.y, tm.x, tm.y, blockers);
-        const dist = Math.hypot(am.x - tm.x, am.y - tm.y);
+        const edgeResult = canModelSeeModel(am, tm, blockers);
 
-        if (!result.blocked) {
+        if (edgeResult.canSee) {
           canSee = true;
+          visibleTargetModelIds.add(tm.id);
+          const dist = Math.hypot(am.x - tm.x, am.y - tm.y);
           if (!bestVisibleTarget || dist < bestVisibleTarget.dist) {
             bestVisibleTarget = { model: tm, dist, hitPoint: null };
+            bestVisibleRay = edgeResult.bestRay;
           }
         } else {
+          // All 64 rays blocked — find best blocked ray via center-to-center for visualization
+          const ccResult = rayIntersectsTallRuins(am.x, am.y, tm.x, tm.y, blockers);
+          const dist = Math.hypot(am.x - tm.x, am.y - tm.y);
           if (!bestBlockedTarget || dist < bestBlockedTarget.dist) {
-            bestBlockedTarget = { model: tm, dist, hitPoint: result.hitPoint };
+            bestBlockedTarget = { model: tm, dist, hitPoint: ccResult.hitPoint };
           }
         }
       });
@@ -169,7 +215,8 @@
       if (canSee) visibleCount++;
       perModel.set(am.id, {
         canSee,
-        bestTarget: canSee ? bestVisibleTarget : bestBlockedTarget
+        bestTarget: canSee ? bestVisibleTarget : bestBlockedTarget,
+        bestRay: canSee ? bestVisibleRay : null
       });
     });
 
@@ -178,7 +225,7 @@
     else if (visibleCount === totalCount) state = 'clear';
     else state = 'partial';
 
-    return { state, visibleAttackerCount: visibleCount, totalAttackerCount: totalCount, perModel };
+    return { state, visibleAttackerCount: visibleCount, totalAttackerCount: totalCount, perModel, visibleTargetModelIds };
   }
 
   function targetInfo(enemyId, profileIx = state.selectedProfileIx){
@@ -386,35 +433,40 @@
       const modelLos = losResult.perModel.get(m.id);
       if (!modelLos || !modelLos.bestTarget) return;
 
-      const tm = modelLos.bestTarget.model;
-      const edge = closestTargetEdgePoint(m, { models: [tm] });
-
-      if (modelLos.canSee) {
-        // Solid blue line — clear LoS
+      if (modelLos.canSee && modelLos.bestRay) {
+        // Edge-to-edge clear ray
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', modelLos.bestRay.from.x); line.setAttribute('y1', modelLos.bestRay.from.y);
+        line.setAttribute('x2', modelLos.bestRay.to.x); line.setAttribute('y2', modelLos.bestRay.to.y);
+        line.setAttribute('class', 'target-line-clear');
+        g.appendChild(line);
+      } else if (modelLos.canSee) {
+        // Clear but no bestRay (no blockers case) — center to edge
+        const tm = modelLos.bestTarget.model;
+        const edge = closestTargetEdgePoint(m, { models: [tm] });
         const line = document.createElementNS(NS, 'line');
         line.setAttribute('x1', m.x); line.setAttribute('y1', m.y);
         line.setAttribute('x2', edge.x); line.setAttribute('y2', edge.y);
         line.setAttribute('class', 'target-line-clear');
         g.appendChild(line);
       } else {
-        // Blocked: blue to hit point, then red/dashed to target
+        // Blocked: blue to hit point, then red/dashed to target (center-to-center)
+        const tm = modelLos.bestTarget.model;
+        const edge = closestTargetEdgePoint(m, { models: [tm] });
         const hp = modelLos.bestTarget.hitPoint;
         if (hp) {
-          // Blue solid: attacker → hit point
           const blueLine = document.createElementNS(NS, 'line');
           blueLine.setAttribute('x1', m.x); blueLine.setAttribute('y1', m.y);
           blueLine.setAttribute('x2', hp.x); blueLine.setAttribute('y2', hp.y);
           blueLine.setAttribute('class', 'target-line-clear');
           g.appendChild(blueLine);
 
-          // Red dashed: hit point → target
           const redLine = document.createElementNS(NS, 'line');
           redLine.setAttribute('x1', hp.x); redLine.setAttribute('y1', hp.y);
           redLine.setAttribute('x2', edge.x); redLine.setAttribute('y2', edge.y);
           redLine.setAttribute('class', 'target-line-blocked');
           g.appendChild(redLine);
         } else {
-          // Fallback: just draw dashed red the whole way
           const line = document.createElementNS(NS, 'line');
           line.setAttribute('x1', m.x); line.setAttribute('y1', m.y);
           line.setAttribute('x2', edge.x); line.setAttribute('y2', edge.y);
@@ -492,8 +544,13 @@
     setTimeout(() => p.remove(), 500);
   }
 
-  async function playVolley(attacker, target){
-    const pairs = attacker.models.map(m => ({ from: m, to: randomTargetModel(target) }));
+  async function playVolley(attacker, target, losResult){
+    // Only fire from models that can see the target
+    const firingModels = attacker.models.filter(m => {
+      const info = losResult?.perModel?.get(m.id);
+      return !info || info.canSee;  // if no LoS data, default to firing (fallback)
+    });
+    const pairs = firingModels.map(m => ({ from: m, to: randomTargetModel(target) }));
     pairs.forEach((pair, ix) => {
       const from = projectileAnchor(pair.from);
       const to = projectileAnchor(pair.to);
@@ -638,7 +695,7 @@
     updateWoundOverlays();
   }
 
-  function allocateWoundsToModels(target, totalDamage){
+  function allocateWoundsToModels(target, totalDamage, visibleTargetModelIds){
     let remainingDamage = totalDamage;
     const removedModelIds = [];
     const flashedModels = [];
@@ -648,6 +705,13 @@
     while (remainingDamage > 0 && target.models.length > 0) {
       const focus = target.models[target.models.length - 1];
       if (!focus) break;
+
+      // Kill cap: if visibleTargetModelIds is provided, only allocate to visible models
+      if (visibleTargetModelIds && !visibleTargetModelIds.has(focus.id)) {
+        // Current focus model is not visible — damage is wasted
+        break;
+      }
+
       flashedModels.push(focus);
       const woundsNeeded = perModelW - target._carryWounds;
       const applied = Math.min(remainingDamage, woundsNeeded);
@@ -657,6 +721,11 @@
         removedModelIds.push(focus.id);
         target.models.pop();
         target._carryWounds = 0;
+        // Check if any remaining visible models exist
+        if (visibleTargetModelIds) {
+          const hasVisibleRemaining = target.models.some(m => visibleTargetModelIds.has(m.id));
+          if (!hasVisibleRemaining) break; // No more visible targets — waste remaining damage
+        }
       }
     }
 
@@ -699,7 +768,7 @@
     if (totalAttacks <= 0) return;
 
     const hitRolls = Array.from({length: totalAttacks}, d6);
-    const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds', () => playVolley(attacker, target));
+    const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds', () => playVolley(attacker, target, losResult));
     if (!hit.successes) return finishAttack(0, 0);
 
     const woundRolls = Array.from({length: hit.successes}, d6);
@@ -726,7 +795,7 @@
     }
 
     const originalModels = target.models.slice();
-    const allocation = allocateWoundsToModels(target, totalDamage);
+    const allocation = allocateWoundsToModels(target, totalDamage, losResult.visibleTargetModelIds);
     const flashedModels = allocation.flashedModels.length ? allocation.flashedModels : originalModels.slice(-Math.min(originalModels.length, totalDamage || 0));
     if (flashedModels.length) await playWoundFlashes(flashedModels);
 
