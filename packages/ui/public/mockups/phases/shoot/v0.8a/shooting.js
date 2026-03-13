@@ -443,7 +443,8 @@
         setTimeout(() => {
           if (auto) {
             setTimeout(() => {
-              overlay.classList.add('hidden'); state.pinnedRollTargetId = null;
+              // Don't hide the overlay between auto stages — next renderDiceStage
+              // will replace content in-place, preventing flicker
               resolve({ rolls, successes, threshold });
             }, 260 + rolls.length * 40);
           } else {
