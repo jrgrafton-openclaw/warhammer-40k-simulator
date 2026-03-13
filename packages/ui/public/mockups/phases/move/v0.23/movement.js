@@ -380,9 +380,8 @@ function movementSelectUnit(uid) {
       if (moveState.unitsAdvanced[uid] !== undefined) {
         moveState.advanceDie = moveState.unitsAdvanced[uid];
         enterMoveMode('advance');
-      } else {
-        enterMoveMode('move');
       }
+      // Otherwise: do NOT auto-enter move mode. Wait for user to click NORMAL MOVE.
     }
   }
 }
