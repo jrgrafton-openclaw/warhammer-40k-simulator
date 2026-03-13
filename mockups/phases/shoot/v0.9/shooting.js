@@ -825,7 +825,11 @@
       const options = getValidProfilesForTarget(uid); if (!options.length) return;
       state.hoveredTargetId = uid; drawHoverLines(uid); paint();
     }, true);
-    svg.addEventListener('mouseleave', () => { state.hoveredTargetId = null; clearLines(); paint(); }, true);
+    svg.addEventListener('mouseleave', () => {
+      // Don't clear lines if an attack is in progress (targetId is set)
+      if (state.targetId) return;
+      state.hoveredTargetId = null; clearLines(); paint();
+    }, true);
     const intercept = (e) => {
       if (!state.attackerId || state.shotUnits.has(state.attackerId)) return;
       let node = e.target;
