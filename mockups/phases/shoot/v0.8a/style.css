@@ -39,12 +39,19 @@
   text-transform: uppercase;
 }
 
-#weapon-popup {
-  width: 224px;
-  transform: translateX(-50%);
-  bottom: 68px;
-  left: 50%;
-  top: auto !important;
+#weapon-popup { display: none !important; }
+
+/* Weapon grid inside unified roll-overlay */
+.weapon-grid {
+  display: flex;
+  gap: 8px;
+  padding: 8px 14px 6px;
+  justify-content: center;
+}
+.weapon-grid .weapon-choice {
+  flex: 1;
+  min-width: 0;
+  max-width: 220px;
 }
 .weapon-choice {
   width: calc(100% - 12px); margin: 0 6px 6px; padding: 9px 10px 8px;
