@@ -1,164 +1,13 @@
-@import url('../v0.4/style.css');
-@import url('../../../shared/phase-states.css');
+/* ══════════════════════════════════════════════════════════════
+   v0.9 Shoot Phase — Overrides
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY v0.9-specific overrides.
+══════════════════════════════════════════════════════════════ */
 
-/* ── Shared tokens (must match phase-states.css expectations) ── */
-:root {
-  --spent:        #8a98ab;
-  --spent-dim:    #5f6d80;
-  --spent-tint:   rgba(138,152,171,.12);
-  --spent-tint-2: rgba(138,152,171,.2);
-}
+/* ── Wider roll overlay for weapon picker ── */
+#roll-overlay { max-width: 720px; }
 
-.vshoot-badge { color: var(--imp); border-color: rgba(0,212,255,.18); }
-#shoot-tools, #combat-log-panel { display: none !important; }
-#unit-card { bottom: 62px; right: 10px; width: 330px; }
-
-/* hull spent state is driven by JS (battle-models-v23.js isUsed branch) */
-/* roster + card badge done via shared phase-states.css */
-
-#action-bar { height: 48px; padding: 0 10px; gap: 10px; }
-#move-mode-label { min-width: 0; flex: 1; text-align: left; color: transparent; font-size: 10px; }
-.phase-end-cluster { gap: 12px; }
-#btn-end-shoot { min-width: 154px; }
-
-/* ── Overlays ── */
-.overlay-panel {
-  position: absolute; z-index: 70;
-  background: rgba(10,16,22,.96);
-  border: 1px solid rgba(0,212,255,.22);
-  border-top: 2px solid var(--imp);
-  box-shadow: 0 12px 40px rgba(0,0,0,.45);
-  backdrop-filter: blur(10px);
-}
-.overlay-panel.hidden { display: none; }
-.overlay-title {
-  padding: 8px 10px 6px;
-  color: var(--imp);
-  font: 700 10px/1 'Rajdhani', sans-serif;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-}
-
-#weapon-popup { display: none !important; }
-
-/* Weapon grid inside unified roll-overlay */
-.weapon-grid {
-  display: flex;
-  gap: 8px;
-  padding: 8px 14px 6px;
-  justify-content: center;
-}
-.weapon-grid .weapon-choice {
-  flex: 1;
-  min-width: 0;
-  max-width: 220px;
-}
-.weapon-choice {
-  width: calc(100% - 12px); margin: 0 6px 6px; padding: 9px 10px 8px;
-  display: flex; flex-direction: column; gap: 5px; align-items: flex-start;
-  background: rgba(0,212,255,.035); border: 1px solid rgba(0,212,255,.12);
-  color: var(--text-primary); cursor: pointer; font: 600 12px/1.2 'Rajdhani', sans-serif;
-  transition: background .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease;
-}
-.weapon-choice:hover {
-  border-color: rgba(0,212,255,.42);
-  background: rgba(0,212,255,.09);
-  box-shadow: inset 0 0 0 1px rgba(0,212,255,.12), 0 0 18px rgba(0,212,255,.08);
-  transform: translateY(-1px);
-}
-.weapon-choice-name { font: 700 13px/1.15 'Rajdhani', sans-serif; letter-spacing: .4px; }
-.weapon-meta-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.weapon-meta { color: var(--text-muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
-.weapon-meta.ap-hot { color: #ff6b52; font-weight: 700; text-shadow: 0 0 8px rgba(255,64,32,.35); }
-.weapon-meta.dmg-hot { color: var(--imp); font-weight: 700; }
-.weapon-kws { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
-
-/* ── Dice overlay (uses .die from shared phase-states.css) ── */
-#roll-overlay {
-  position: absolute;
-  bottom: 68px;
-  left: 50%;
-  top: auto !important;
-  min-width: 430px; max-width: 720px; text-align: center; padding: 6px 0 12px;
-  transform: translateX(-50%);
-}
-#roll-overlay .overlay-title {
-  padding-top: 10px;
-  font-size: 12px;
-  letter-spacing: 2.6px;
-}
-#roll-overlay .dice-row { justify-content: center; padding: 10px 14px 6px; gap: 8px; }
-#roll-overlay .dice-summary {
-  padding: 0 14px 8px; text-align: center;
-  font: 700 12px/1.1 'Rajdhani', sans-serif; letter-spacing: 1.2px; color: #88a2d1;
-}
-#roll-overlay .die {
-  width: 44px; height: 44px; border-radius: 8px;
-  border-width: 2px; font-size: 24px;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 14px rgba(0,0,0,.26);
-}
-#roll-overlay .die.rolling {
-  color: var(--imp);
-  border-color: rgba(0,212,255,.42);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 18px rgba(0,212,255,.18), 0 7px 18px rgba(0,0,0,.28);
-}
-#roll-overlay .die.pre-roll { color: #6e87b4; }
-#roll-overlay .die.rolling::before {
-  content: '⚅';
-  position: absolute; inset: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; color: var(--imp); opacity: .9;
-}
-#roll-overlay .die.rolling { color: transparent; }
-
-.roll-cta {
-  margin-top: 4px; min-width: 186px; height: 40px;
-  background: var(--imp); border: 1px solid var(--imp);
-  color: #081017; cursor: pointer;
-  font: 700 13px/1 'Rajdhani', sans-serif; letter-spacing: 2.4px; text-transform: uppercase;
-}
-.roll-cta:disabled { opacity: .78; cursor: default; }
-
-/* ── Result panel ── */
-.result-main {
-  display: flex; flex-direction: column; gap: 5px;
-  padding: 8px 12px 2px;
-}
-.result-row {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; border-radius: 4px;
-  background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06);
-}
-.result-row.has-kills {
-  background: rgba(204,32,32,.08); border-color: rgba(204,32,32,.22);
-}
-.result-icon {
-  font-size: 20px; color: #ff6060;
-  flex-shrink: 0; width: 24px; text-align: center;
-}
-.result-row.has-kills .result-icon { color: #ff5050; }
-.result-row.wounds .result-num {
-  color: #ff6060;
-  text-shadow: 0 0 16px rgba(255,64,32,.35);
-}
-.result-num {
-  font: 400 34px/1 'Anton', sans-serif;
-  color: var(--text-primary); flex-shrink: 0;
-}
-.result-row.has-kills .result-num { color: #ff6060; text-shadow: 0 0 16px rgba(255,64,32,.35); }
-.result-label {
-  font: 700 10px/1.25 'Rajdhani', sans-serif;
-  letter-spacing: 1.8px; text-transform: uppercase;
-  color: var(--text-muted);
-}
-.result-row.wounds .result-label { color: #ff8080; }
-.result-row.has-kills .result-label { color: #ff8080; }
-
-/* ── Target sight lines ── */
-.target-line {
-  stroke: rgba(0,212,255,.72); stroke-width: 1.2;
-  stroke-dasharray: 6 5; stroke-linecap: round; opacity: .95;
-}
+/* ── LoS aiming lines ── */
 .target-line-blocked {
   stroke: rgba(255, 60, 60, 0.3);
   stroke-width: 1.2;
@@ -176,121 +25,45 @@
   opacity: .7;
 }
 
-/* ── Wound ring overlay ── */
-.wound-ring-layer { pointer-events: none; }
-.wound-ring-track { stroke: rgba(30,42,56,.9); stroke-width: 2.25; fill: none; }
-.wound-ring-remain { stroke: rgba(0,212,255,.92); stroke-width: 2.25; fill: none; stroke-linecap: round; }
-.wound-ring-lost { stroke: rgba(255,96,96,.95); stroke-width: 2.25; fill: none; stroke-linecap: round; }
-.wound-ring-label-bg { fill: rgba(8,12,16,.94); stroke: rgba(0,212,255,.22); stroke-width: .8; }
-.wound-ring-label { fill: #d7ecff; font: 700 8px/1 'Rajdhani', sans-serif; letter-spacing: .45px; }
-
-@media (max-width: 1200px) { #unit-card { width: 300px; } }
-
-
-/* ── FX layer ─────────────────────────────────────────── */
-#fx-layer {
-  position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden;
-}
-.proj-container, .hit-flash-layer {
-  position: absolute; inset: 0; pointer-events: none;
-}
-.hit-marker {
-  position: absolute; width: 32px; height: 32px; border-radius: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* exact import from design-system/v4-animations.html */
-@keyframes proj-travel{
-  0%  {offset-distance:0%;opacity:0;transform:scaleX(1.4);}
-  8%  {opacity:1;}
-  88% {opacity:1;}
-  100%{offset-distance:100%;opacity:0;}
-}
-.projectile{
-  width:18px;height:5px;border-radius:3px;
-  background:var(--proj-color,var(--imp));
-  box-shadow:0 0 5px var(--proj-color,var(--imp)),0 0 14px var(--proj-color,var(--imp));
-  position:absolute;
-  offset-path:path('M 28 44 L 292 44');
-  offset-rotate:auto;
-  animation:proj-travel .45s cubic-bezier(.4,0,.8,1) forwards;
-  pointer-events:none;
-}
-
-/* exact import from design-system/v4-animations.html */
-@keyframes hit-flash{
-  0%  {filter:brightness(1);box-shadow:0 0 0 #ff402000;}
-  20% {filter:brightness(3.5);box-shadow:0 0 30px #ff402099,0 0 60px #ff402044;}
-  45% {filter:brightness(1.5);}
-  70% {filter:brightness(.7);}
-  100%{filter:brightness(1);box-shadow:0 0 8px #ff402030,0 0 20px #ff402010;}
-}
-@keyframes badge-shake{
-  0%,100%{transform:translateX(0);}
-  20%    {transform:translateX(-3px);}
-  40%    {transform:translateX(3px);}
-  60%    {transform:translateX(-2px);}
-  80%    {transform:translateX(2px);}
-}
-@keyframes token-hit-flash-shape {
-  0%   { filter: brightness(1) drop-shadow(0 0 0 rgba(255,64,32,0)); }
-  20%  { filter: brightness(2.9) drop-shadow(0 0 8px rgba(255,64,32,.7)) drop-shadow(0 0 18px rgba(255,180,120,.35)); }
-  45%  { filter: brightness(1.5) drop-shadow(0 0 6px rgba(255,64,32,.38)); }
-  70%  { filter: brightness(.85) drop-shadow(0 0 2px rgba(255,64,32,.14)); }
-  100% { filter: brightness(1) drop-shadow(0 0 0 rgba(255,64,32,0)); }
-}
-@keyframes token-hit-flash-icon {
-  0%   { opacity: 1; filter: brightness(1); }
-  20%  { opacity: 1; filter: brightness(2.1); }
-  100% { opacity: 1; filter: brightness(1); }
-}
-.anim-hit{animation:hit-flash .8s ease-out forwards;}
-.anim-badge-shake{animation:badge-shake .5s ease .15s;}
-.model-base.anim-hit-token > :first-child {
-  animation: token-hit-flash-shape .8s ease-out forwards;
-}
-.model-base.anim-hit-token > :nth-child(2) {
-  animation: token-hit-flash-icon .8s ease-out forwards;
-}
-
 /* ── Weapon range toggles ── */
 #card-ranges { flex-wrap: wrap; }
 .range-toggle.weapon-range {
-  flex: 0 1 auto;
-  background: rgba(0,180,255,0.06);
-  border: 1px solid rgba(0,212,255,0.18);
-  color: rgba(200,220,240,0.7);
-  font: 600 10px/1.2 'Rajdhani', sans-serif;
-  letter-spacing: 0.6px;
-  padding: 4px 8px;
-  cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
-  text-transform: none;
+  flex: 0 1 auto; padding: 5px 8px;
+  font: 600 9px/1.2 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+  background: transparent; border: 1px solid var(--text-dis);
+  color: var(--text-muted); cursor: pointer; transition: all .15s;
 }
-.range-toggle.weapon-range:hover {
-  border-color: rgba(0,212,255,0.38);
-  background: rgba(0,180,255,0.1);
-  color: rgba(210,230,250,0.9);
-}
-.range-toggle.weapon-range.active {
-  background: rgba(0,212,255,0.12);
-  border-color: rgba(0,212,255,0.5);
-  color: #d7ecff;
-  box-shadow: 0 0 10px rgba(0,212,255,0.12), inset 0 0 0 1px rgba(0,212,255,0.08);
-}
-.no-ranged-label {
-  color: rgba(200,220,240,0.3);
-  font: 600 10px/1.2 'Rajdhani', sans-serif;
-  letter-spacing: 1px;
-  padding: 4px 0;
-}
+.range-toggle.weapon-range:hover { border-color: var(--text-muted); color: var(--text-sec); }
+.range-toggle.weapon-range.active { background: var(--imp-tint); border-color: var(--imp-dim); color: var(--imp); }
 
-/* ── SVG weapon range rings ── */
-.weapon-range-ring {
-  vector-effect: non-scaling-stroke;
-  mix-blend-mode: screen;
+/* ── Advance D6 Dice Overlay (movement-phase only, unused in shoot) ── */
+#advance-dice-overlay {
+  position: fixed; inset: 0; display: none;
+  align-items: center; justify-content: center;
+  z-index: 500; background: rgba(8,12,16,0.75); backdrop-filter: blur(4px);
 }
-
-@media (max-width: 1200px) {
-  #roll-overlay { min-width: 390px; max-width: 460px; }
+#advance-dice-overlay.visible { display: flex; }
+.dice-panel { text-align: center; }
+.dice-d6 {
+  width: 72px; height: 72px; margin: 0 auto 16px;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  border: 2px solid var(--text-dis);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 20px rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  font: normal 400 38px/1 'Anton', sans-serif;
+  color: var(--text-dis); position: relative;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.dice-d6.rolling {
+  animation: die-roll-in .4s cubic-bezier(.34,1.56,.64,1) both;
+  color: var(--imp); border-color: var(--imp);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 24px rgba(0,212,255,.35), 0 6px 20px rgba(0,0,0,.6);
+}
+.dice-result-label {
+  font: 700 12px/1 'Rajdhani', sans-serif; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--imp);
+}
+.dice-total-label {
+  font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 2px;
+  color: var(--text-muted); margin-top: 6px;
 }

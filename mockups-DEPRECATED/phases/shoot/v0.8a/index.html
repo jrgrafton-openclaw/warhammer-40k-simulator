@@ -3,22 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — v0.9 · Shooting Phase</title>
+  <title>WH40K Simulator — v0.8a · Shooting Phase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Component CSS (shared split) -->
-  <link rel="stylesheet" href="../../../shared/tokens/colors.css">
-  <link rel="stylesheet" href="../../../shared/tokens/typography.css">
-  <link rel="stylesheet" href="../../../shared/components/roster.css">
-  <link rel="stylesheet" href="../../../shared/components/unit-card.css">
-  <link rel="stylesheet" href="../../../shared/components/action-bar.css">
-  <link rel="stylesheet" href="../../../shared/components/vp-bar.css">
-  <link rel="stylesheet" href="../../../shared/components/overlays.css">
-  <link rel="stylesheet" href="../../../shared/components/stratagem-modal.css">
-  <link rel="stylesheet" href="../../../shared/components/fx.css">
-  <link rel="stylesheet" href="../../../shared/components/battlefield.css">
-  <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../../shared/stratagem-ui.css?v=20260312a">
+  <link rel="stylesheet" href="style.css?v=20260312b">
 </head>
 <body>
 <div id="app">
@@ -33,7 +22,7 @@
           <div class="faction-band imp"></div><span class="faction-label imp">IMPERIUM</span><span class="faction-chevron">▾</span>
         </div>
         <div class="faction-body">
-          <div class="rail-unit" data-unit="assault-intercessors"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Assault Intercessors</span><span class="rc">5</span><span class="roster-state-pill">ATTACKED</span></div>
+          <div class="rail-unit active" data-unit="assault-intercessors"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Assault Intercessors</span><span class="rc">5</span><span class="roster-state-pill">ATTACKED</span></div>
           <div class="rail-unit" data-unit="primaris-lieutenant"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Primaris Lieutenant</span><span class="rc">1</span><span class="roster-state-pill">ATTACKED</span></div>
           <div class="rail-unit" data-unit="intercessor-squad-a"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Intercessor Squad A</span><span class="rc">5</span><span class="roster-state-pill">ATTACKED</span></div>
           <div class="rail-unit" data-unit="hellblasters"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Hellblasters</span><span class="rc">5</span><span class="roster-state-pill">ATTACKED</span></div>
@@ -48,7 +37,6 @@
           <div class="rail-unit" data-unit="boss-nob"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boss Nob</span><span class="rc">1</span><span class="roster-state-pill">ATTACKED</span></div>
           <div class="rail-unit" data-unit="nobz-mob"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Nobz Mob</span><span class="rc">3</span><span class="roster-state-pill">ATTACKED</span></div>
           <div class="rail-unit" data-unit="mekboy"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Mekboy</span><span class="rc">1</span><span class="roster-state-pill">ATTACKED</span></div>
-          <div class="rail-unit" data-unit="gretchin"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Gretchin</span><span class="rc">3</span><span class="roster-state-pill">ATTACKED</span></div>
         </div>
       </div>
     </div>
@@ -69,11 +57,11 @@
     <div id="phase-header">
       <div class="phase-pill">
         <div class="phase-title">SHOOTING PHASE</div>
-        <div class="phase-subtitle">Per-model LoS through tall ruins · v0.9</div>
+        <div class="phase-subtitle">Bottom-docked dice overlay · v0.8a</div>
       </div>
     </div>
 
-    <div class="vshoot-badge">v0.9 · TALL RUIN LoS</div>
+    <div class="vshoot-badge">v0.8a · BOTTOM DOCK</div>
 
     <div id="battlefield-inner">
       <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
@@ -101,7 +89,6 @@
         <g id="layer-move-zones"></g>
         <g id="layer-move-ghosts"></g>
         <g id="layer-target-lines"></g>
-        <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
         <g id="layer-models"></g>
         <g id="layer-move-rulers"></g>
@@ -115,12 +102,12 @@
     <div id="weapon-popup" class="overlay-panel hidden"></div>
     <div id="roll-overlay" class="overlay-panel hidden"></div>
 
-    <div id="range-move" class="range-circle rc-move" style="display:none"></div>
-    <div id="range-advance" class="range-circle rc-advance" style="display:none"></div>
-    <div id="range-charge" class="range-circle rc-charge" style="display:none"></div>
-    <div id="range-move-label" class="range-label rl-move" style="display:none">MOVE</div>
-    <div id="range-advance-label" class="range-label rl-advance" style="display:none">ADV</div>
-    <div id="range-charge-label" class="range-label rl-charge" style="display:none">CHARGE</div>
+    <div id="range-move" class="range-circle rc-move"></div>
+    <div id="range-advance" class="range-circle rc-advance"></div>
+    <div id="range-charge" class="range-circle rc-charge"></div>
+    <div id="range-move-label" class="range-label rl-move">MOVE</div>
+    <div id="range-advance-label" class="range-label rl-advance">ADV</div>
+    <div id="range-charge-label" class="range-label rl-charge">CHARGE</div>
 
     <div id="unit-card" class="visible">
       <div class="card-hdr">
@@ -197,6 +184,33 @@
 <div id="global-tooltip"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script type="module" src="scene.js"></script>
+<script src="../../../shared/battle-terrain.js"></script>
+<script src="../../../shared/battle-units.js"></script>
+<script src="../../../shared/battle-board.js?v=20260312a"></script>
+<script src="battle-models-v23.js"></script>
+<script src="../../../shared/collision.js"></script>
+<script src="scene.js"></script>
+<script src="shooting.js"></script>
+<script>
+(function() {
+  var PAD = 10;
+  var _orig = BattleUI.showTip;
+  BattleUI.showTip = function(el, content) {
+    _orig(el, content);
+    var tip = document.getElementById('global-tooltip');
+    if (!tip) return;
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var r  = el.getBoundingClientRect();
+    var left = r.left + r.width / 2 - tw / 2;
+    var top  = r.top - 8 - th;
+    left = Math.max(PAD, Math.min(left, window.innerWidth - tw - PAD));
+    if (top < PAD) top = r.bottom + 8;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.transform = 'none';
+  };
+})();
+</script>
 </body>
 </html>

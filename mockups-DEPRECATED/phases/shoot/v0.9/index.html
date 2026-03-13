@@ -6,19 +6,8 @@
   <title>WH40K Simulator — v0.9 · Shooting Phase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Component CSS (shared split) -->
-  <link rel="stylesheet" href="../../../shared/tokens/colors.css">
-  <link rel="stylesheet" href="../../../shared/tokens/typography.css">
-  <link rel="stylesheet" href="../../../shared/components/roster.css">
-  <link rel="stylesheet" href="../../../shared/components/unit-card.css">
-  <link rel="stylesheet" href="../../../shared/components/action-bar.css">
-  <link rel="stylesheet" href="../../../shared/components/vp-bar.css">
-  <link rel="stylesheet" href="../../../shared/components/overlays.css">
-  <link rel="stylesheet" href="../../../shared/components/stratagem-modal.css">
-  <link rel="stylesheet" href="../../../shared/components/fx.css">
-  <link rel="stylesheet" href="../../../shared/components/battlefield.css">
-  <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="../../../shared/stratagem-ui.css?v=20260312a">
+  <link rel="stylesheet" href="style.css?v=20260312b">
 </head>
 <body>
 <div id="app">
@@ -115,12 +104,13 @@
     <div id="weapon-popup" class="overlay-panel hidden"></div>
     <div id="roll-overlay" class="overlay-panel hidden"></div>
 
+    <!-- Movement range circles hidden in shooting phase -->
     <div id="range-move" class="range-circle rc-move" style="display:none"></div>
     <div id="range-advance" class="range-circle rc-advance" style="display:none"></div>
     <div id="range-charge" class="range-circle rc-charge" style="display:none"></div>
-    <div id="range-move-label" class="range-label rl-move" style="display:none">MOVE</div>
-    <div id="range-advance-label" class="range-label rl-advance" style="display:none">ADV</div>
-    <div id="range-charge-label" class="range-label rl-charge" style="display:none">CHARGE</div>
+    <div id="range-move-label" class="range-label rl-move" style="display:none"></div>
+    <div id="range-advance-label" class="range-label rl-advance" style="display:none"></div>
+    <div id="range-charge-label" class="range-label rl-charge" style="display:none"></div>
 
     <div id="unit-card" class="visible">
       <div class="card-hdr">
@@ -197,6 +187,33 @@
 <div id="global-tooltip"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script type="module" src="scene.js"></script>
+<script src="../../../shared/battle-terrain.js"></script>
+<script src="../../../shared/battle-units.js"></script>
+<script src="../../../shared/battle-board.js?v=20260312a"></script>
+<script src="battle-models-v23.js"></script>
+<script src="../../../shared/collision.js"></script>
+<script src="scene.js"></script>
+<script src="shooting.js"></script>
+<script>
+(function() {
+  var PAD = 10;
+  var _orig = BattleUI.showTip;
+  BattleUI.showTip = function(el, content) {
+    _orig(el, content);
+    var tip = document.getElementById('global-tooltip');
+    if (!tip) return;
+    var tw = tip.offsetWidth;
+    var th = tip.offsetHeight;
+    var r  = el.getBoundingClientRect();
+    var left = r.left + r.width / 2 - tw / 2;
+    var top  = r.top - 8 - th;
+    left = Math.max(PAD, Math.min(left, window.innerWidth - tw - PAD));
+    if (top < PAD) top = r.bottom + 8;
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+    tip.style.transform = 'none';
+  };
+})();
+</script>
 </body>
 </html>
