@@ -262,18 +262,13 @@
   function ensureOverlayPinLoop(){
     if (state.overlayRaf) return;
     const tick = () => {
-      const popup = $('#weapon-popup'), roll = $('#roll-overlay');
-      if (popup && !popup.classList.contains('hidden') && state.pinnedPopupTargetId) {
-        popup.style.left = '50%';
-        popup.style.top = 'auto';
-        popup.style.bottom = '68px';
-      }
-      if (roll && !roll.classList.contains('hidden') && state.pinnedRollTargetId) {
+      const roll = $('#roll-overlay');
+      if (roll && !roll.classList.contains('hidden')) {
         roll.style.left = '50%';
         roll.style.top = 'auto';
         roll.style.bottom = '68px';
       }
-      if ((popup && !popup.classList.contains('hidden')) || (roll && !roll.classList.contains('hidden')))
+      if (roll && !roll.classList.contains('hidden'))
         state.overlayRaf = requestAnimationFrame(tick);
       else state.overlayRaf = null;
     };
@@ -376,28 +371,28 @@
   }
 
   function closeWeaponPopup(){
-    const el = $('#weapon-popup');
+    const el = $('#roll-overlay');
     state.pinnedPopupTargetId = null;
     if (el) { el.classList.add('hidden'); el.innerHTML = ''; }
   }
 
   function openWeaponPopup(targetId, options){
-    const popup = $('#weapon-popup'); if (!popup) return;
+    const overlay = $('#roll-overlay'); if (!overlay) return;
     state.pinnedPopupTargetId = targetId;
-    popup.innerHTML = `<div class="overlay-title">Select Weapon</div>` + options.map(opt => {
+    overlay.innerHTML = `<div class="overlay-title">Select Weapon</div><div class="weapon-grid">${options.map(opt => {
       const ap = Number(opt.profile.ap || 0);
       const kws = keywordsFor(opt.profile).map(k => `<span class="kw-pill ${kwClass(k)}" data-tip="${kwTip(k).replace(/"/g, '&quot;')}">${k}</span>`).join('');
       return `<button class="weapon-choice" data-ix="${opt.i}"><span class="weapon-choice-name">${opt.profile.name}</span><div class="weapon-meta-row"><span class="weapon-meta">${opt.profile.rng}</span><span class="weapon-meta">A${opt.profile.a}</span><span class="weapon-meta">S${opt.profile.s}</span><span class="weapon-meta ${ap !== 0 ? 'ap-hot' : ''}">AP ${opt.profile.ap}</span><span class="weapon-meta dmg-hot">D ${opt.profile.d}</span></div>${kws ? `<div class="weapon-kws">${kws}</div>` : ''}</button>`;
-    }).join('');
-    popup.classList.remove('hidden');
+    }).join('')}</div>`;
+    overlay.classList.remove('hidden');
     if (B.initAllTooltips) B.initAllTooltips();
-    popup.querySelectorAll('[data-tip]').forEach(el => {
+    overlay.querySelectorAll('[data-tip]').forEach(el => {
       if (el._shootTipInit) return;
       el._shootTipInit = true;
       el.addEventListener('mouseenter', () => B.showTip(el, el.dataset.tip));
       el.addEventListener('mouseleave', B.hideTip);
     });
-    popup.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => {
+    overlay.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => {
       state.selectedProfileIx = Number(btn.dataset.ix);
       closeWeaponPopup(); beginAttack(targetId);
     }));
