@@ -40,11 +40,13 @@
 
   // ── Initialise shared modules ────────────────────────────
   renderTerrain();
-  buildCard('assault-intercessors');
   initAllTooltips();
   initBoard({ initialScale: 0.5 });
   initBattleControls();
   initModelInteraction();
+  // Start with no unit selected — card hidden
+  const unitCard = document.getElementById('unit-card');
+  if (unitCard) unitCard.classList.remove('visible');
 
   // ── Build terrain collision AABBs ────────────────────────
   const svgEl = document.getElementById('bf-svg');
