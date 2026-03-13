@@ -1,0 +1,57 @@
+/* ══════════════════════════════════════════════════════════════
+   Design Tokens — Colours
+   Extracted from shoot/v0.4/style.css :root + v0.8a additions
+══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Backgrounds */
+  --bg-primary:   #080c10;
+  --bg-surface:   #0f1520;
+  --bg-raised:    #162030;
+  --bg-selected:  #1e2d44;
+
+  /* Imperium */
+  --imp:          #00d4ff;
+  --imp-dim:      #0088aa;
+  --imp-tint:     #00d4ff14;
+  --imp-tint2:    #00d4ff22;
+
+  /* Orks */
+  --ork:          #ff4020;
+  --ork-dim:      #aa2810;
+  --ork-tint:     #ff402012;
+
+  /* Text hierarchy */
+  --text-primary: #e0e8f0;
+  --text-sec:     #8090a0;
+  --text-muted:   #4a6080;
+  --text-dis:     #2a3a4a;
+
+  /* States */
+  --bs:           #cc2020;
+  --bs-tint:      #cc202015;
+  --strat:        #cc8800;
+  --strat-tint:   #cc880015;
+  --strat-dim:    #886000;
+
+  /* Compat aliases used by shared JS */
+  --bg:           #080c10;
+  --panel:        #0f1520;
+  --border:       #1a2535;
+  --gold:         #c9a352;
+  --gold-dim:     #5a4a28;
+  --text:         #e0e8f0;
+  --text-dim:     #8090a0;
+  --teal:         #00d4ff;
+  --blue:         #1e7acc;
+  --red-enemy:    #ff4020;
+  --red-alert:    #cc2020;
+  --amber-end:    #cc8800;
+  --white:        #ffffff;
+
+  /* v0.8a spent-state tokens */
+  --spent:        #8a98ab;
+  --spent-dim:    #5f6d80;
+  --spent-tint:   rgba(138,152,171,.12);
+  --spent-tint-2: rgba(138,152,171,.2);
+}
