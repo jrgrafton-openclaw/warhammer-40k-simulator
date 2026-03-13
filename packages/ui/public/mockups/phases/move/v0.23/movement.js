@@ -4,13 +4,13 @@
  * Imports shared modules instead of using BattleUI global.
  */
 
-import { PX_PER_INCH, simState, callbacks, currentUnit } from '../../../shared/state/store.js';
+import { PX_PER_INCH, simState, callbacks, currentUnit, activeRangeTypes } from '../../../shared/state/store.js';
 import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion } from '../../../shared/world/svg-renderer.js';
 import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
 import { rollAdvanceDie } from './advance-dice.js';
-import { drawPerModelRangeRings, clearRangeRings } from '../../../shared/world/range-rings.js';
+import { clearRangeRings, drawPerModelRangeRings } from '../../../shared/world/range-rings.js';
 
 var ACTIVE_PLAYER_FACTION = 'imp';
 
@@ -18,12 +18,32 @@ var MOVE_RING_COLOR   = { fill: 'rgba(0,212,255,0.04)', stroke: 'rgba(0,212,255,
 var ADVANCE_RING_COLOR = { fill: 'rgba(204,136,0,0.04)', stroke: 'rgba(204,136,0,0.2)' };
 
 function drawMoveRangeRings(uid, mode) {
-  var u = UNITS[uid]; if (!u) return;
+  var unit = simState.units.find(function(u) { return u.id === uid; });
+  if (!unit) return;
+  var layer = document.getElementById('layer-range-rings');
+  if (!layer) return;
+  layer.innerHTML = '';
+
+  var NS = 'http://www.w3.org/2000/svg';
   var isAdvance = mode === 'advance';
   var bonus = isAdvance ? ((moveState.advanceDie !== null) ? moveState.advanceDie : 3.5) : 0;
-  var radiusInches = u.M + bonus;
+  var radiusPx = (UNITS[uid].M + bonus) * PX_PER_INCH;
   var color = isAdvance ? ADVANCE_RING_COLOR : MOVE_RING_COLOR;
-  drawPerModelRangeRings(uid, [{ radiusInches: radiusInches, fill: color.fill, stroke: color.stroke }]);
+
+  unit.models.forEach(function(m) {
+    var start = phaseTurnStarts[m.id];
+    if (!start) return;
+    var circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', start.x);
+    circle.setAttribute('cy', start.y);
+    circle.setAttribute('r', radiusPx);
+    circle.setAttribute('fill', color.fill);
+    circle.setAttribute('stroke', color.stroke);
+    circle.setAttribute('stroke-width', '1.5');
+    circle.setAttribute('class', 'range-ring');
+    circle.setAttribute('pointer-events', 'none');
+    layer.appendChild(circle);
+  });
 }
 
 // ── Phase turn-start positions ─────────────────────────
@@ -104,14 +124,14 @@ function getDragUnitId() {
 }
 
 // ── Enter / Confirm / Cancel ───────────────────────────
-function enterMoveMode(mode, quiet) {
+function enterMoveMode(mode) {
   var uid = currentUnit;
   if (!uid || moveState.unitsMoved.has(uid)) return;
   clearMoveOverlays();
   moveState.mode = mode;
   updateMoveButtons();
-  if (!quiet) renderMoveOverlays(uid);
-  clearRangeRings();
+  drawMoveRangeRings(uid, mode);
+  renderMoveOverlays(uid);
   renderModels();
 }
 
@@ -195,28 +215,18 @@ function updateMoveButtons() {
 
 // ── Render overlays (zones, ghosts, rulers) ────────────
 function renderMoveOverlays(uid) {
-  var layerZones  = document.getElementById('layer-move-zones');
   var layerGhosts = document.getElementById('layer-move-ghosts');
-  if (!layerZones || !layerGhosts) return;
-  layerZones.innerHTML = ''; layerGhosts.innerHTML = '';
+  if (!layerGhosts) return;
+  layerGhosts.innerHTML = '';
   if (!moveState.mode || !uid) return;
   var unit = simState.units.find(function(u) { return u.id === uid; });
   if (!unit || unit.faction !== ACTIVE_PLAYER_FACTION) return;
 
   var NS = 'http://www.w3.org/2000/svg';
-  var isAdvance = moveState.mode === 'advance';
-  var rangePx = getMoveRangePx(uid, isAdvance);
   var color = getFactionColor(uid);
 
   unit.models.forEach(function(m) {
     var start = phaseTurnStarts[m.id]; if (!start) return;
-
-    // Zone circle
-    var zone = document.createElementNS(NS, 'circle');
-    zone.setAttribute('cx', start.x); zone.setAttribute('cy', start.y); zone.setAttribute('r', rangePx);
-    zone.setAttribute('class', isAdvance ? 'move-zone zone-advance' : 'move-zone zone-move');
-    zone.style.pointerEvents = 'none';
-    layerZones.appendChild(zone);
 
     // Ghost circle at start
     var ghost;
@@ -270,8 +280,64 @@ function renderMoveRulers(uid) {
 }
 
 function clearMoveOverlays() {
-  ['layer-move-zones', 'layer-move-ghosts', 'layer-move-rulers'].forEach(function(id) {
+  ['layer-move-ghosts', 'layer-move-rulers'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.innerHTML = '';
+  });
+}
+
+function renderCardRangeRings(uid) {
+  if (!uid) {
+    clearRangeRings();
+    return;
+  }
+  var u = UNITS[uid];
+  if (!u) {
+    clearRangeRings();
+    return;
+  }
+
+  if (moveState.mode) {
+    drawMoveRangeRings(uid, moveState.mode);
+    return;
+  }
+
+  if (activeRangeTypes.size === 0) {
+    clearRangeRings();
+    return;
+  }
+
+  var RANGE_COLORS = {
+    move:    { fill: 'rgba(0,212,255,0.04)', stroke: 'rgba(0,212,255,0.2)' },
+    advance: { fill: 'rgba(204,136,0,0.04)', stroke: 'rgba(204,136,0,0.2)' },
+    charge:  { fill: 'rgba(204,100,0,0.04)', stroke: 'rgba(204,100,0,0.2)' },
+    ds:      { fill: 'rgba(186,126,255,0.04)', stroke: 'rgba(186,126,255,0.2)' }
+  };
+
+  var ranges = [];
+  activeRangeTypes.forEach(function(type) {
+    var radiusInches;
+    if (type === 'move') radiusInches = u.M;
+    else if (type === 'advance') radiusInches = u.M + 3.5;
+    else if (type === 'charge') radiusInches = u.M + 7;
+    else if (type === 'ds') radiusInches = 9;
+    else return;
+    var col = RANGE_COLORS[type] || RANGE_COLORS.move;
+    ranges.push({ radiusInches: radiusInches, fill: col.fill, stroke: col.stroke });
+  });
+
+  if (ranges.length) drawPerModelRangeRings(uid, ranges);
+  else clearRangeRings();
+}
+
+function wireCardRangeButtons() {
+  ['move','advance','charge','ds'].forEach(function(type) {
+    var btn = document.getElementById('rt-' + type);
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      setTimeout(function() {
+        renderCardRangeRings(currentUnit);
+      }, 0);
+    });
   });
 }
 
@@ -343,6 +409,7 @@ function installDragEnforcement() {
 
     // Re-render: models first, then overlays, then z-lift (matches v1 patched renderModels order)
     renderModels();
+    renderCardRangeRings(uid);
     renderMoveOverlays(uid);
     // Lift dragged unit to z-top
     var dragUnitId = getDragUnitId();
@@ -373,18 +440,18 @@ function movementSelectUnit(uid) {
 
   updateMoveButtons();
   syncMovedUI();
+  renderCardRangeRings(uid);
   if (uid) {
     var unit = simState.units.find(function(u) { return u.id === uid; });
     if (unit && unit.faction === ACTIVE_PLAYER_FACTION && moveState.mode === null && !moveState.unitsMoved.has(uid)) {
-      // If unit already committed to advance, restore advance mode with saved die
       if (moveState.unitsAdvanced[uid] !== undefined) {
         moveState.advanceDie = moveState.unitsAdvanced[uid];
         enterMoveMode('advance');
-      }
       } else {
-        // Auto-enter move mode for drag enforcement, but without zone overlays
-        enterMoveMode('move', true);
+        moveState.advanceDie = null;
+        enterMoveMode('move');
       }
+    }
   }
 }
 
@@ -444,47 +511,14 @@ export function initMovement() {
   callbacks.selectUnit = movementSelectUnit;
 
   wireButtons();
+  wireCardRangeButtons();
   setupClickOutside();
   captureTurnStarts();
   renderModels();
   updateMoveButtons();
   syncMovedUI();
 
-  // Override card range toggle clicks to draw per-model SVG rings
-  // (shared initBattleControls wires them to old hidden HTML circles)
-  var activeCardRanges = new Set();
-  var RANGE_COLORS = {
-    move:    { fill: 'rgba(0,212,255,0.04)', stroke: 'rgba(0,212,255,0.2)' },
-    advance: { fill: 'rgba(204,136,0,0.04)', stroke: 'rgba(204,136,0,0.2)' },
-    charge:  { fill: 'rgba(204,100,0,0.04)', stroke: 'rgba(204,100,0,0.2)' },
-    ds:      { fill: 'rgba(186,126,255,0.04)', stroke: 'rgba(186,126,255,0.2)' }
-  };
-  ['move','advance','charge','ds'].forEach(function(type) {
-    var btn = document.getElementById('rt-' + type);
-    if (!btn) return;
-    btn.addEventListener('click', function() {
-      var uid = currentUnit; if (!uid) return;
-      var u = UNITS[uid]; if (!u) return;
-      if (activeCardRanges.has(type)) activeCardRanges.delete(type);
-      else activeCardRanges.add(type);
-      // Rebuild all active range rings
-      clearRangeRings();
-      if (activeCardRanges.size > 0) {
-        var ranges = [];
-        activeCardRanges.forEach(function(t) {
-          var radiusInches;
-          if (t === 'move') radiusInches = u.M;
-          else if (t === 'advance') radiusInches = u.M + 3.5;
-          else if (t === 'charge') radiusInches = u.M + 7;
-          else if (t === 'ds') radiusInches = 9;
-          else return;
-          var col = RANGE_COLORS[t] || RANGE_COLORS.move;
-          ranges.push({ radiusInches: radiusInches, fill: col.fill, stroke: col.stroke });
-        });
-        if (ranges.length) drawPerModelRangeRings(uid, ranges);
-      }
-    });
-  });
+  activeRangeTypes.clear();
 
   // Select the first unit
   movementSelectUnit('assault-intercessors');
