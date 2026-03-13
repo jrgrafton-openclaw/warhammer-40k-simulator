@@ -131,7 +131,7 @@
       weapons:[
         {type:'RANGED',name:'Grot Blasta',rng:'12"',a:1,s:3,ap:0,d:1,kw:['PISTOL']}
       ],
-      abilities:['Cowardly']
+      abilities:[{name:'Cowardly',desc:'This unit automatically fails Battle-shock tests.'}]
     }
   };
 
