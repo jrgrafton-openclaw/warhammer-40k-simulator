@@ -253,6 +253,44 @@
   animation: token-hit-flash-icon .8s ease-out forwards;
 }
 
+/* ── Weapon range toggles ── */
+#card-ranges { flex-wrap: wrap; }
+.range-toggle.weapon-range {
+  flex: 0 1 auto;
+  background: rgba(0,180,255,0.06);
+  border: 1px solid rgba(0,212,255,0.18);
+  color: rgba(200,220,240,0.7);
+  font: 600 10px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 0.6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s, box-shadow .15s;
+  text-transform: none;
+}
+.range-toggle.weapon-range:hover {
+  border-color: rgba(0,212,255,0.38);
+  background: rgba(0,180,255,0.1);
+  color: rgba(210,230,250,0.9);
+}
+.range-toggle.weapon-range.active {
+  background: rgba(0,212,255,0.12);
+  border-color: rgba(0,212,255,0.5);
+  color: #d7ecff;
+  box-shadow: 0 0 10px rgba(0,212,255,0.12), inset 0 0 0 1px rgba(0,212,255,0.08);
+}
+.no-ranged-label {
+  color: rgba(200,220,240,0.3);
+  font: 600 10px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  padding: 4px 0;
+}
+
+/* ── SVG weapon range rings ── */
+.weapon-range-ring {
+  vector-effect: non-scaling-stroke;
+  mix-blend-mode: screen;
+}
+
 @media (max-width: 1200px) {
   #roll-overlay { min-width: 390px; max-width: 460px; }
 }

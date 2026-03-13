@@ -903,9 +903,94 @@
     closeWeaponPopup(); clearLines(); clearEffects(); paint(); setStatus('');
   }
 
+  // ── Weapon range toggles & per-model range rings ──────
+  const activeWeaponRanges = new Set(); // indices into getProfiles() result
+
+  function buildWeaponToggles(uid) {
+    const rangesEl = $('#card-ranges');
+    if (!rangesEl) return;
+    const u = getUnit(uid);
+    if (!u || u.faction !== ACTIVE) {
+      rangesEl.innerHTML = '';
+      return;
+    }
+    const profiles = getProfiles(uid);
+    if (!profiles.length) {
+      rangesEl.innerHTML = '<span class="no-ranged-label">No ranged weapons</span>';
+      return;
+    }
+    // Deduplicate by name+range
+    const seen = new Map();
+    const deduped = [];
+    profiles.forEach((p, i) => {
+      const key = p.name + '|' + p.rng;
+      if (!seen.has(key)) { seen.set(key, i); deduped.push({ profile: p, ix: i }); }
+    });
+    rangesEl.innerHTML = deduped.map(({ profile: p, ix }) => {
+      const rng = parseInt(String(p.rng || '').replace(/[^0-9]/g, '')) || 0;
+      const active = activeWeaponRanges.has(ix) ? ' active' : '';
+      return `<button class="range-toggle weapon-range${active}" data-wpn-ix="${ix}">${p.name} ${rng}"</button>`;
+    }).join('');
+    rangesEl.querySelectorAll('.weapon-range').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ix = Number(btn.dataset.wpnIx);
+        if (activeWeaponRanges.has(ix)) activeWeaponRanges.delete(ix);
+        else activeWeaponRanges.add(ix);
+        btn.classList.toggle('active', activeWeaponRanges.has(ix));
+        drawRangeRings(uid);
+      });
+    });
+  }
+
+  function drawRangeRings(uid) {
+    const g = $('#layer-range-rings');
+    if (!g) return;
+    g.innerHTML = '';
+    if (!uid || !activeWeaponRanges.size) return;
+    const unit = getUnit(uid);
+    if (!unit || unit.faction !== ACTIVE) return;
+    const profiles = getProfiles(uid);
+    const NS = 'http://www.w3.org/2000/svg';
+    const colors = [
+      { fill: 'rgba(0,180,255,0.06)', stroke: 'rgba(0,212,255,0.25)' },
+      { fill: 'rgba(80,140,255,0.05)', stroke: 'rgba(100,160,255,0.22)' },
+      { fill: 'rgba(0,255,200,0.04)', stroke: 'rgba(0,220,180,0.20)' },
+      { fill: 'rgba(140,100,255,0.05)', stroke: 'rgba(140,120,255,0.22)' },
+    ];
+    let colorIdx = 0;
+    activeWeaponRanges.forEach(ix => {
+      const p = profiles[ix];
+      if (!p) return;
+      const rng = parseInt(String(p.rng || '').replace(/[^0-9]/g, '')) || 0;
+      if (!rng) return;
+      const radiusPx = rng * PX_PER_INCH;
+      const col = colors[colorIdx % colors.length];
+      colorIdx++;
+      unit.models.forEach(m => {
+        const circle = document.createElementNS(NS, 'circle');
+        circle.setAttribute('cx', m.x);
+        circle.setAttribute('cy', m.y);
+        circle.setAttribute('r', radiusPx);
+        circle.setAttribute('fill', col.fill);
+        circle.setAttribute('stroke', col.stroke);
+        circle.setAttribute('stroke-width', '1');
+        circle.setAttribute('class', 'weapon-range-ring');
+        circle.setAttribute('pointer-events', 'none');
+        g.appendChild(circle);
+      });
+    });
+  }
+
+  function clearWeaponRanges() {
+    activeWeaponRanges.clear();
+    const g = $('#layer-range-rings');
+    if (g) g.innerHTML = '';
+  }
+
   const oldSelect = B.selectUnit.bind(B);
   B.selectUnit = function(uid){
     oldSelect(uid);
+    clearWeaponRanges();
     if (!uid) {
       // Deselect — clear all shooting state
       selectAttacker(null);
@@ -916,6 +1001,12 @@
     if (!u) return;
     if (u.faction === ACTIVE) {
       selectAttacker(uid);
+      buildWeaponToggles(uid);
+      requestAnimationFrame(() => paint());
+    } else {
+      // Enemy unit selected — clear weapon toggles
+      const rangesEl = $('#card-ranges');
+      if (rangesEl) rangesEl.innerHTML = '';
       requestAnimationFrame(() => paint());
     }
   };

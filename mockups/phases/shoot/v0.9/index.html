@@ -90,6 +90,7 @@
         <g id="layer-move-zones"></g>
         <g id="layer-move-ghosts"></g>
         <g id="layer-target-lines"></g>
+        <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
         <g id="layer-models"></g>
         <g id="layer-move-rulers"></g>
@@ -103,12 +104,13 @@
     <div id="weapon-popup" class="overlay-panel hidden"></div>
     <div id="roll-overlay" class="overlay-panel hidden"></div>
 
-    <div id="range-move" class="range-circle rc-move"></div>
-    <div id="range-advance" class="range-circle rc-advance"></div>
-    <div id="range-charge" class="range-circle rc-charge"></div>
-    <div id="range-move-label" class="range-label rl-move">MOVE</div>
-    <div id="range-advance-label" class="range-label rl-advance">ADV</div>
-    <div id="range-charge-label" class="range-label rl-charge">CHARGE</div>
+    <!-- Movement range circles hidden in shooting phase -->
+    <div id="range-move" class="range-circle rc-move" style="display:none"></div>
+    <div id="range-advance" class="range-circle rc-advance" style="display:none"></div>
+    <div id="range-charge" class="range-circle rc-charge" style="display:none"></div>
+    <div id="range-move-label" class="range-label rl-move" style="display:none"></div>
+    <div id="range-advance-label" class="range-label rl-advance" style="display:none"></div>
+    <div id="range-charge-label" class="range-label rl-charge" style="display:none"></div>
 
     <div id="unit-card" class="visible">
       <div class="card-hdr">
