@@ -852,6 +852,12 @@
   const oldSelect = B.selectUnit.bind(B);
   B.selectUnit = function(uid){
     oldSelect(uid);
+    if (!uid) {
+      // Deselect — clear all shooting state
+      selectAttacker(null);
+      requestAnimationFrame(() => paint());
+      return;
+    }
     const u = getUnit(uid);
     if (!u) return;
     if (u.faction === ACTIVE) {
@@ -861,8 +867,13 @@
   };
   window.selectUnit = B.selectUnit;
 
+  // Escape key deselects
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { B.selectUnit(null); }
+  });
+
   $('#btn-end-shoot')?.addEventListener('click', () => setStatus('END SHOOTING NOT WIRED IN MOCKUP'));
-  $('#card-close')?.addEventListener('click', () => $('#unit-card')?.classList.remove('visible'));
+  $('#card-close')?.addEventListener('click', () => B.selectUnit(null));
 
   window.__shootDebug = {
     state,
