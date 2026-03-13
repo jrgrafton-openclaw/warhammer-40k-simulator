@@ -80,7 +80,7 @@
 }
 
 /* ── Hide card range toggles (replaced by auto-drawn per-model SVG rings) ── */
-#card-ranges { display: none !important; }
+/* card-ranges visible — shared buildCard populates MOVE/AVG ADV/AVG CHRG toggles */
 
 /* ── DS range circle + label ── */
 .rc-ds { border: 1.5px dotted rgba(186,126,255,.6); }

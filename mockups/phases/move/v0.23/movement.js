@@ -449,6 +449,42 @@ export function initMovement() {
   updateMoveButtons();
   syncMovedUI();
 
+  // Override card range toggle clicks to draw per-model SVG rings
+  // (shared initBattleControls wires them to old hidden HTML circles)
+  var activeCardRanges = new Set();
+  var RANGE_COLORS = {
+    move:    { fill: 'rgba(0,212,255,0.04)', stroke: 'rgba(0,212,255,0.2)' },
+    advance: { fill: 'rgba(204,136,0,0.04)', stroke: 'rgba(204,136,0,0.2)' },
+    charge:  { fill: 'rgba(204,100,0,0.04)', stroke: 'rgba(204,100,0,0.2)' },
+    ds:      { fill: 'rgba(186,126,255,0.04)', stroke: 'rgba(186,126,255,0.2)' }
+  };
+  ['move','advance','charge','ds'].forEach(function(type) {
+    var btn = document.getElementById('rt-' + type);
+    if (!btn) return;
+    btn.addEventListener('click', function() {
+      var uid = currentUnit; if (!uid) return;
+      var u = UNITS[uid]; if (!u) return;
+      if (activeCardRanges.has(type)) activeCardRanges.delete(type);
+      else activeCardRanges.add(type);
+      // Rebuild all active range rings
+      clearRangeRings();
+      if (activeCardRanges.size > 0) {
+        var ranges = [];
+        activeCardRanges.forEach(function(t) {
+          var radiusInches;
+          if (t === 'move') radiusInches = u.M;
+          else if (t === 'advance') radiusInches = u.M + 3.5;
+          else if (t === 'charge') radiusInches = u.M + 7;
+          else if (t === 'ds') radiusInches = 9;
+          else return;
+          var col = RANGE_COLORS[t] || RANGE_COLORS.move;
+          ranges.push({ radiusInches: radiusInches, fill: col.fill, stroke: col.stroke });
+        });
+        if (ranges.length) drawPerModelRangeRings(uid, ranges);
+      }
+    });
+  });
+
   // Select the first unit
   movementSelectUnit('assault-intercessors');
 }
