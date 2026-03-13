@@ -556,7 +556,7 @@
       const to = projectileAnchor(pair.to);
       if (!from.valid || !to.valid) return;
       setTimeout(() => {
-        fireProjectile('var(--imp)', from, to);
+        fireProjectile('#ff8c00', from, to);
       }, ix * 70);
     });
     await new Promise(r => setTimeout(r, Math.max(460, pairs.length * 70 + 420)));
