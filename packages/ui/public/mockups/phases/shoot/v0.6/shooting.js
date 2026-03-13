@@ -305,6 +305,26 @@
     return elementCenterInBattlefieldInner(el);
   }
 
+  function projectileAnchor(model){
+    const svg = $('#bf-svg');
+    const layer = $('#proj-container');
+    if (!model || !svg || !layer || !Number.isFinite(model.x) || !Number.isFinite(model.y)) {
+      return { x: 0, y: 0, valid: false };
+    }
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return { x: 0, y: 0, valid: false };
+    const pt = svg.createSVGPoint();
+    pt.x = model.x;
+    pt.y = model.y;
+    const screen = pt.matrixTransform(ctm);
+    const rect = layer.getBoundingClientRect();
+    return {
+      x: screen.x - rect.left,
+      y: screen.y - rect.top,
+      valid: true
+    };
+  }
+
   function tokenVisual(model){
     return document.querySelector(`#layer-models .model-base[data-model-id="${model.id}"]`);
   }
@@ -340,8 +360,8 @@
   async function playVolley(attacker, target){
     const pairs = attacker.models.map(m => ({ from: m, to: randomTargetModel(target) }));
     pairs.forEach((pair, ix) => {
-      const from = modelScreenCenter(pair.from);
-      const to = modelScreenCenter(pair.to);
+      const from = projectileAnchor(pair.from);
+      const to = projectileAnchor(pair.to);
       if (!from.valid || !to.valid) return;
       setTimeout(() => {
         fireProjectile('var(--imp)', from, to);
@@ -644,6 +664,7 @@
     paint,
     getUnitAnchor,
     modelScreenCenter,
+    projectileAnchor,
     rollDiceStage,
     playVolley
   };
