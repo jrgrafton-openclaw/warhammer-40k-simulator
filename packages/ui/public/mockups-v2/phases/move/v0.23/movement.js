@@ -4,7 +4,7 @@
  * Imports shared modules instead of using BattleUI global.
  */
 
-import { PX_PER_INCH, simState, callbacks } from '../../../shared/state/store.js';
+import { PX_PER_INCH, simState, callbacks, currentUnit } from '../../../shared/state/store.js';
 import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion } from '../../../shared/world/svg-renderer.js';
@@ -74,8 +74,7 @@ function syncMovedUI() {
 
   var badge = document.getElementById('unit-state-badge');
   if (badge) {
-    var uid = getCurrentUnit();
-    var isMoved = uid && moveState.unitsMoved.has(uid);
+    var isMoved = currentUnit && moveState.unitsMoved.has(currentUnit);
     badge.classList.toggle('visible', !!isMoved);
   }
 }
@@ -91,16 +90,9 @@ function getDragUnitId() {
   return null;
 }
 
-// Helper to get current unit from store (import is a live binding)
-function getCurrentUnit() {
-  // Access the live binding via the store module
-  var active = document.querySelector('.rail-unit.active');
-  return active ? active.dataset.unit : null;
-}
-
 // ── Enter / Confirm / Cancel ───────────────────────────
 function enterMoveMode(mode) {
-  var uid = getCurrentUnit();
+  var uid = currentUnit;
   if (!uid || moveState.unitsMoved.has(uid)) return;
   clearMoveOverlays();
   moveState.mode = mode;
@@ -110,7 +102,7 @@ function enterMoveMode(mode) {
 }
 
 function confirmMove() {
-  var uid = getCurrentUnit();
+  var uid = currentUnit;
   var unit = uid ? simState.units.find(function(u) { return u.id === uid; }) : null;
   if (unit) {
     checkCohesion(unit);
@@ -126,11 +118,11 @@ function confirmMove() {
   moveState.advanceDie = null;
   clearMoveOverlays();
   updateMoveButtons();
-  baseSelectUnit(null);
+  movementSelectUnit(null);
 }
 
 function cancelMove() {
-  var uid = getCurrentUnit();
+  var uid = currentUnit;
   var unit = uid ? simState.units.find(function(u) { return u.id === uid; }) : null;
   if (unit) {
     unit.models.forEach(function(m) {
@@ -148,7 +140,7 @@ function cancelMove() {
 
 // ── Update action bar buttons ──────────────────────────
 function updateMoveButtons() {
-  var uid = getCurrentUnit();
+  var uid = currentUnit;
   var inMode = moveState.mode !== null;
   var alreadyMoved = uid && moveState.unitsMoved.has(uid);
   var unit = uid ? simState.units.find(function(u) { return u.id === uid; }) : null;
@@ -268,7 +260,8 @@ function clearMoveOverlays() {
 }
 
 // ── Drag interceptor: block already-moved + enemy ──────
-(function() {
+// Called inside initMovement() to ensure it runs AFTER initModelInteraction()
+function installDragInterceptor() {
   var _drag = null;
   Object.defineProperty(simState, 'drag', {
     configurable: true,
@@ -286,69 +279,71 @@ function clearMoveOverlays() {
       _drag = value;
     }
   });
-})();
+}
 
 // ── Drag enforcement: zone clamp + terrain + re-render ─
-// Runs after svg-renderer's mousemove handler (bubbling phase)
-window.addEventListener('mousemove', function() {
-  var drag = simState.drag;
-  if (!drag || !moveState.mode) return;
-  var uid = getCurrentUnit(); if (!uid) return;
-  var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+// Must be registered AFTER initModelInteraction() so svg-renderer's handler fires first
+// and sets raw position, then this handler clamps/corrects it.
+function installDragEnforcement() {
+  window.addEventListener('mousemove', function() {
+    var drag = simState.drag;
+    if (!drag || !moveState.mode) return;
+    var uid = currentUnit; if (!uid) return;
+    var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
 
-  if (drag.type === 'model') {
-    var m = drag.model, ts = phaseTurnStarts[m.id]; if (!ts) return;
-    // Zone clamp from turn-start
-    var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
-    if (dist > rangePx) {
-      var sc = rangePx / dist; m.x = ts.x + dx * sc; m.y = ts.y + dy * sc;
-      var reRes = resolveOverlaps(m, m.x, m.y); m.x = reRes.x; m.y = reRes.y;
-    }
-    // Terrain collision (continuous)
-    var tr = doTerrainCollision(m.x, m.y, m.r); m.x = tr.x; m.y = tr.y;
-  }
-  else if (drag.type === 'unit') {
-    // Cross-unit collision
-    doUnitDragCollisions(drag.unit);
-    // Zone clamp per model
-    drag.unit.models.forEach(function(m) {
-      var ts = phaseTurnStarts[m.id]; if (!ts) return;
+    if (drag.type === 'model') {
+      var m = drag.model, ts = phaseTurnStarts[m.id]; if (!ts) return;
+      // Zone clamp from turn-start
       var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
-      if (dist > rangePx) { var sc = rangePx/dist; m.x = ts.x+dx*sc; m.y = ts.y+dy*sc; }
-    });
-    // Terrain: push entire unit as block
-    var maxPX = 0, maxPY = 0;
-    drag.unit.models.forEach(function(m) {
-      var tr = doTerrainCollision(m.x, m.y, m.r);
-      var px = tr.x - m.x, py = tr.y - m.y;
-      if (Math.abs(px) > Math.abs(maxPX)) maxPX = px;
-      if (Math.abs(py) > Math.abs(maxPY)) maxPY = py;
-    });
-    if (maxPX !== 0 || maxPY !== 0) {
-      drag.unit.models.forEach(function(m) { m.x += maxPX; m.y += maxPY; });
+      if (dist > rangePx) {
+        var sc = rangePx / dist; m.x = ts.x + dx * sc; m.y = ts.y + dy * sc;
+        var reRes = resolveOverlaps(m, m.x, m.y); m.x = reRes.x; m.y = reRes.y;
+      }
+      // Terrain collision (continuous)
+      var tr = doTerrainCollision(m.x, m.y, m.r); m.x = tr.x; m.y = tr.y;
     }
-    doUnitDragCollisions(drag.unit);
-  }
-
-  // Re-render overlays during drag
-  renderMoveOverlays(uid);
-  // Lift dragged unit to z-top
-  var dragUnitId = getDragUnitId();
-  if (dragUnitId) {
-    ['layer-hulls', 'layer-models'].forEach(function(layerId) {
-      var layer = document.getElementById(layerId); if (!layer) return;
-      Array.from(layer.children).forEach(function(el) {
-        if (el.dataset && el.dataset.unitId === dragUnitId) layer.appendChild(el);
+    else if (drag.type === 'unit') {
+      // Cross-unit collision
+      doUnitDragCollisions(drag.unit);
+      // Zone clamp per model
+      drag.unit.models.forEach(function(m) {
+        var ts = phaseTurnStarts[m.id]; if (!ts) return;
+        var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
+        if (dist > rangePx) { var sc = rangePx/dist; m.x = ts.x+dx*sc; m.y = ts.y+dy*sc; }
       });
-    });
-  }
+      // Terrain: push entire unit as block
+      var maxPX = 0, maxPY = 0;
+      drag.unit.models.forEach(function(m) {
+        var tr = doTerrainCollision(m.x, m.y, m.r);
+        var px = tr.x - m.x, py = tr.y - m.y;
+        if (Math.abs(px) > Math.abs(maxPX)) maxPX = px;
+        if (Math.abs(py) > Math.abs(maxPY)) maxPY = py;
+      });
+      if (maxPX !== 0 || maxPY !== 0) {
+        drag.unit.models.forEach(function(m) { m.x += maxPX; m.y += maxPY; });
+      }
+      doUnitDragCollisions(drag.unit);
+    }
 
-  renderModels();
-});
+    // Re-render: models first, then overlays, then z-lift (matches v1 patched renderModels order)
+    renderModels();
+    renderMoveOverlays(uid);
+    // Lift dragged unit to z-top
+    var dragUnitId = getDragUnitId();
+    if (dragUnitId) {
+      ['layer-hulls', 'layer-models'].forEach(function(layerId) {
+        var layer = document.getElementById(layerId); if (!layer) return;
+        Array.from(layer.children).forEach(function(el) {
+          if (el.dataset && el.dataset.unitId === dragUnitId) layer.appendChild(el);
+        });
+      });
+    }
+  });
+}
 
 // ── Selection override via callbacks ─────────────────
 function movementSelectUnit(uid) {
-  if (moveState.mode !== null && uid !== getCurrentUnit()) cancelMove();
+  if (moveState.mode !== null && uid !== currentUnit) cancelMove();
   baseSelectUnit(uid);
 
   // Selection tone: friendly = cyan, enemy = red
@@ -383,7 +378,7 @@ function setupClickOutside() {
       moveState.mode = null; moveState.advanceDie = null;
       clearMoveOverlays(); updateMoveButtons(); renderModels();
       baseSelectUnit(null);
-    } else if (getCurrentUnit()) {
+    } else if (currentUnit) {
       baseSelectUnit(null); updateMoveButtons();
     }
   }, true);
@@ -392,13 +387,13 @@ function setupClickOutside() {
 // ── Button wiring ─────────────────────────────────────
 function wireButtons() {
   document.getElementById('btn-move').addEventListener('click', function() {
-    var uid = getCurrentUnit();
+    var uid = currentUnit;
     if (!uid || moveState.unitsMoved.has(uid)) return;
     enterMoveMode('move');
   });
 
   document.getElementById('btn-advance').addEventListener('click', function() {
-    var uid = getCurrentUnit();
+    var uid = currentUnit;
     if (!uid || moveState.unitsMoved.has(uid) || moveState.mode === 'advance') return;
     // Cancel any current normal move first (snap back to turn-start before rolling)
     if (moveState.mode === 'move') {
@@ -420,6 +415,12 @@ function wireButtons() {
 
 // ── Public init ───────────────────────────────────────
 export function initMovement() {
+  // Install drag interceptor + enforcement AFTER initModelInteraction()
+  // so svg-renderer's mousemove fires first (sets raw position),
+  // then our handler clamps/corrects it.
+  installDragInterceptor();
+  installDragEnforcement();
+
   // Register the movement selectUnit override via the callback system
   callbacks.selectUnit = movementSelectUnit;
 
