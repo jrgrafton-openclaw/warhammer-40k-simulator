@@ -111,7 +111,7 @@ function enterMoveMode(mode) {
   moveState.mode = mode;
   updateMoveButtons();
   renderMoveOverlays(uid);
-  drawMoveRangeRings(uid, mode);
+  clearRangeRings();
   renderModels();
 }
 
