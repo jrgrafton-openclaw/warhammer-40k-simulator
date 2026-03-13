@@ -113,15 +113,27 @@
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="phases/shoot/v0.8a/index.html">
+        <a class="card latest" href="phases/shoot/v0.9/index.html">
           <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.9</div>
+          <div class="card-codename">TALL RUIN LoS</div>
+          <div class="card-title">Per-model line-of-sight through terrain · Benefit of Cover</div>
+          <ul class="card-features">
+            <li>Edge-to-edge LoS: 8-point ray casting through tall ruin polygons</li>
+            <li>Clear/blocked aiming lines with terrain hit points</li>
+            <li>Benefit of Cover: +1 save when inside ruin footprint</li>
+            <li>Visible model count limits attacks + wound allocation</li>
+            <li>Orange projectiles, Escape deselect, Gretchin unit</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+
+        <a class="card" href="phases/shoot/v0.8a/index.html">
           <div class="card-version">v0.8a</div>
           <div class="card-codename">BOTTOM-DOCKED DICE OVERLAY</div>
           <div class="card-title">Full shooting flow · ES modules · WorldAPI contract</div>
           <ul class="card-features">
             <li>10 ES modules replacing 7 IIFE global scripts</li>
-            <li>WorldAPI: worldToScreen, getUnitAnchor, getCamera</li>
-            <li>CSS split into 11 component files + design tokens</li>
             <li>Full attack pipeline: select → target → hit/wound/save/damage → result</li>
             <li>Projectile FX, wound rings, model removal, spent-state tracking</li>
           </ul>
