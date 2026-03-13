@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — UI Mockup Archive</title>
+  <title>WH40K Simulator - UI Mockup Archive</title>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cinzel+Decorative:wght@700&family=Roboto+Condensed:wght@400;600&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -199,7 +199,7 @@
 
   <header class="page-header">
     <div class="page-title">WH40K Simulator</div>
-    <div class="page-subtitle">UI Mockup Archive — 10th Edition Battle Simulator</div>
+    <div class="page-subtitle">UI Mockup Archive - 10th Edition Battle Simulator</div>
     <div class="page-divider">
       <div class="divider-line"></div>
       <span class="divider-ornament">✦</span>
@@ -226,10 +226,10 @@
     ══════════════════════════════════════════════════════ -->
     <div id="tab-move" class="tab-pane">
 
-      <div class="section-title">Movement Phase — Prototypes</div>
+      <div class="section-title">Movement Phase - Prototypes</div>
       <div class="section-desc">
         How players move units and individual models. Covers normal move, advance, cohesion, and range enforcement.
-        Each version copies forward from the last — pick up any iteration and compare.
+        Each version copies forward from the last - pick up any iteration and compare.
       </div>
 
       <div class="card-grid featured">
@@ -288,7 +288,7 @@
           <ul class="card-features">
             <li>Models collide with terrain walls during drag (line-segment push-out)</li>
             <li>Ork units cannot be moved (Imperium turn only); can still be selected</li>
-            <li>Drag interceptor blocks already-moved units at the source — not mousemove</li>
+            <li>Drag interceptor blocks already-moved units at the source - not mousemove</li>
             <li>Click outside = soft exit (keep positions); CANCEL still snaps back</li>
             <li>Unit drag collision resolved at drop, not continuously during drag</li>
           </ul>
@@ -361,25 +361,25 @@
       <div class="card-grid archive">
         <a class="card" href="phases/move/v0.13c/index.html">
           <div class="card-version" style="font-size:22px;">v0.13c</div>
-          <div class="card-title">Modifier — Keyboard Power User</div>
+          <div class="card-title">Modifier - Keyboard Power User</div>
           <ul class="card-features"><li>Drag ANY model = move formation</li><li>SHIFT+drag = break model off</li></ul>
           <span class="card-link">Open →</span>
         </a>
         <a class="card" href="phases/move/v0.13b/index.html">
           <div class="card-version" style="font-size:22px;">v0.13b</div>
-          <div class="card-title">Toolbar — Explicit Action</div>
+          <div class="card-title">Toolbar - Explicit Action</div>
           <ul class="card-features"><li>Floating toolbar spawns on select</li><li>Click "Move Models" to toggle</li></ul>
           <span class="card-link">Open →</span>
         </a>
         <a class="card" href="phases/move/v0.13a/index.html">
           <div class="card-version" style="font-size:22px;">v0.13a</div>
-          <div class="card-title">Drill-Down — Figma-style Grouping</div>
+          <div class="card-title">Drill-Down - Figma-style Grouping</div>
           <ul class="card-features"><li>1st click = drag whole unit</li><li>2nd click = drag single model</li></ul>
           <span class="card-link">Open →</span>
         </a>
         <a class="card" href="phases/move/v0.13/index.html">
           <div class="card-version" style="font-size:22px;">v0.13</div>
-          <div class="card-title">Group vs Individual — Combined</div>
+          <div class="card-title">Group vs Individual - Combined</div>
           <ul class="card-features"><li>First full model formation prototype</li></ul>
           <span class="card-link">Open →</span>
         </a>
@@ -412,21 +412,34 @@
          SHOOT PHASE
     ══════════════════════════════════════════════════════ -->
     <div id="tab-shoot" class="tab-pane hidden">
-      <div class="section-title">Shooting Phase — Prototypes</div>
+      <div class="section-title">Shooting Phase - Prototypes</div>
       <div class="section-desc">
         Target selection, range validation, dice pipeline, and terrain-aware line-of-sight for ranged combat.
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="phases/shoot/v0.7a/index.html">
+        <a class="card latest" href="phases/shoot/v0.9/index.html">
           <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.9</div>
+          <div class="card-codename">TALL RUIN LOS BLOCKING</div>
+          <div class="card-title">Per-model line-of-sight through tall ruins with visual ray termination</div>
+          <ul class="card-features">
+            <li>Each attacker model independently checks LoS to each target model through tall ruin footprints</li>
+            <li>Blocked rays show blue→red/dashed at the obstruction point</li>
+            <li>Attack count scales to visible model count only (e.g. 3/5 models → 3 attacks per profile)</li>
+            <li>Tall ruins (≥4") block all LoS; scatter terrain (≤2") does not block</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+
+        <a class="card" href="phases/shoot/v0.7a/index.html">
           <div class="card-version">v0.7a</div>
           <div class="card-codename">BOTTOM COMBAT RAIL</div>
           <div class="card-title">Docked combat rail fused to the phase bar for low-eye-travel resolution</div>
           <ul class="card-features">
             <li>Choose a firing unit, then click a target to open a wide bottom rail above the action bar</li>
             <li>Hit → wound → save → result steps stay anchored to the global controls</li>
-            <li>Best for comparing a stable “command deck” feel against world-space alternatives</li>
+            <li>Best for comparing a stable "command deck" feel against world-space alternatives</li>
           </ul>
           <span class="card-link">Open →</span>
         </a>
@@ -523,7 +536,7 @@
          CHARGE PHASE
     ══════════════════════════════════════════════════════ -->
     <div id="tab-charge" class="tab-pane hidden">
-      <div class="section-title">Charge Phase — Prototypes</div>
+      <div class="section-title">Charge Phase - Prototypes</div>
       <div class="section-desc">
         Declare charge, 2D6 roll, engagement range placement. Builds on shooting prototype canvas.
       </div>
@@ -547,9 +560,9 @@
          FIGHT PHASE
     ══════════════════════════════════════════════════════ -->
     <div id="tab-fight" class="tab-pane hidden">
-      <div class="section-title">Fight Phase — Prototypes</div>
+      <div class="section-title">Fight Phase - Prototypes</div>
       <div class="section-desc">
-        Pile-in moves, attack sequence, model removal. The most visually complex phase — models physically fight.
+        Pile-in moves, attack sequence, model removal. The most visually complex phase - models physically fight.
       </div>
       <div class="backlog-grid">
         <div class="backlog-card">
@@ -568,7 +581,7 @@
       <div class="section-title">Command Phase + Special Mechanics</div>
       <div class="section-desc">
         CP generation, stratagem use, ability triggers, deep strike, pre-game deployment.
-        These build on a full integrated battlefield — start from INTEGRATED/ canvas.
+        These build on a full integrated battlefield - start from INTEGRATED/ canvas.
       </div>
       <div class="backlog-grid">
         <div class="backlog-card">
@@ -602,10 +615,10 @@
          INTEGRATED
     ══════════════════════════════════════════════════════ -->
     <div id="tab-integrated" class="tab-pane hidden">
-      <div class="section-title">Integrated — Full Game Prototypes</div>
+      <div class="section-title">Integrated - Full Game Prototypes</div>
       <div class="section-desc">
         Once individual phase UX is approved, it gets merged here. INTEGRATED/v0.N is the closest thing to
-        "the current game" — all approved phases running together. This is the demo-able product.
+        "the current game" - all approved phases running together. This is the demo-able product.
       </div>
       <div class="section-desc" style="margin-top:8px;color:#3a2810;">
         Not started yet. Start with: <code class="code-inline">cp -r phases/move/v0.16/ phases/INTEGRATED/v0.1/</code>
@@ -631,7 +644,7 @@
          ARCHIVE
     ══════════════════════════════════════════════════════ -->
     <div id="tab-archive" class="tab-pane hidden">
-      <div class="section-title">Archive — Design Evolution v0.1–v0.12</div>
+      <div class="section-title">Archive - Design Evolution v0.1-v0.12</div>
       <div class="section-desc">
         Early design exploration: layout, palette, typography, token styles, range circles, terrain. Historical reference only.
       </div>
@@ -652,7 +665,7 @@
           <div class="card-codename">HAMMER AND ANVIL · FIXED</div>
           <div class="card-title">Bug fixes · CSS range circles · v0.8a header</div>
           <ul class="card-features">
-            <li>CSS range circles — circular at any zoom</li>
+            <li>CSS range circles - circular at any zoom</li>
             <li>v0.8a header: CP · VP · Reset · phase pill</li>
           </ul>
           <span class="card-link">Open →</span>
@@ -669,7 +682,7 @@
         </a>
       </div>
 
-      <div class="archive-divider">v0.7 – v0.9 design variants</div>
+      <div class="archive-divider">v0.7 - v0.9 design variants</div>
       <div class="card-grid archive">
         <a class="card v08a" href="archive/v0.9a.html"><div class="card-version" style="font-size:22px;">v0.9a</div><div class="card-title">Rajdhani · Clean Iteration</div><span class="card-link">Open →</span></a>
         <a class="card v08b" href="archive/v0.9b.html"><div class="card-version" style="font-size:22px;">v0.9b</div><div class="card-title">Terrain as Context</div><span class="card-link">Open →</span></a>
@@ -682,12 +695,12 @@
         <a class="card v07c" href="archive/v0.7c.html"><div class="card-version" style="font-size:22px;">v0.7c</div><div class="card-title">Imperial Command Deck</div><span class="card-link">Open →</span></a>
       </div>
 
-      <div class="archive-divider">v0.1 – v0.6 earliest prototypes</div>
+      <div class="archive-divider">v0.1 - v0.6 earliest prototypes</div>
       <div class="card-grid archive">
         <a class="card" href="archive/v0.6.html"><div class="card-version" style="font-size:22px;">v0.6</div><div class="card-title">Phase-Aware + Floating HUD</div><span class="card-link">Open →</span></a>
         <a class="card" href="archive/v0.5.html"><div class="card-version" style="font-size:22px;">v0.5</div><div class="card-title">Clean Terrain + High Contrast</div><span class="card-link">Open →</span></a>
         <a class="card" href="archive/v0.4.html"><div class="card-version" style="font-size:22px;">v0.4</div><div class="card-title">High Contrast + Terrain</div><span class="card-link">Open →</span></a>
-        <a class="card" href="archive/v0.3.html"><div class="card-version" style="font-size:22px;">v0.3</div><div class="card-title">Full Redesign — GW Datacard</div><span class="card-link">Open →</span></a>
+        <a class="card" href="archive/v0.3.html"><div class="card-version" style="font-size:22px;">v0.3</div><div class="card-title">Full Redesign - GW Datacard</div><span class="card-link">Open →</span></a>
         <a class="card" href="archive/v0.2.html"><div class="card-version" style="font-size:22px;">v0.2</div><div class="card-title">Gemini-Assisted Revision</div><span class="card-link">Open →</span></a>
         <a class="card" href="archive/v0.1.html"><div class="card-version" style="font-size:22px;">v0.1</div><div class="card-title">Initial Mockup</div><span class="card-link">Open →</span></a>
       </div>
