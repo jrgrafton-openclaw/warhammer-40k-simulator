@@ -241,34 +241,33 @@
   position: absolute;
   z-index: 30;
   width: 320px;
-  border: 1px solid rgba(201,163,82,0.28);
-  border-top: 2px solid rgba(201,163,82,0.62);
-  background: linear-gradient(180deg, rgba(16,12,7,0.97), rgba(8,7,5,0.95));
-  box-shadow: 0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
-  backdrop-filter: blur(10px);
-  padding: 14px;
+  border: 1px solid var(--imp-tint2);
+  border-top: 2px solid var(--imp);
+  background: var(--bg-surface);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+  backdrop-filter: blur(12px);
+  padding: 12px 14px;
 }
 .variant-panel.rail-mode {
   left: 50%;
   bottom: 88px;
   top: auto;
   transform: translateX(-50%);
-  width: min(680px, calc(100% - 360px));
-  border-radius: 14px 14px 6px 6px;
-  border-color: rgba(201,163,82,0.34);
-  background: linear-gradient(180deg, rgba(18,13,8,0.97), rgba(9,8,6,0.95));
+  width: min(420px, calc(100% - 360px));
+  border-radius: 0;
+  border-color: var(--imp-tint2);
 }
 .variant-panel.stack-mode {
   width: 328px;
-  border-radius: 14px;
-  border-color: rgba(201,163,82,0.34);
-  background: linear-gradient(180deg, rgba(18,13,8,0.97), rgba(9,8,6,0.95));
+  border-radius: 0;
+  border-color: var(--imp-tint2);
 }
 .variant-eyebrow {
-  font: 700 10px/1 'Anton', sans-serif;
+  font: 700 10px/1 'Rajdhani', sans-serif;
   letter-spacing: 2px;
-  color: rgba(201,163,82,0.88);
-  margin-bottom: 10px;
+  color: var(--imp);
+  margin-bottom: 8px;
+  text-transform: uppercase;
 }
 .variant-header {
   display: flex;
@@ -278,16 +277,17 @@
   margin-bottom: 12px;
 }
 .variant-title {
-  font: 700 18px/1.1 'Rajdhani', sans-serif;
-  letter-spacing: 0.03em;
-  color: #f5e7c8;
+  font: normal 400 18px/1.1 'Anton', sans-serif;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  text-transform: uppercase;
 }
 .variant-subtitle {
   margin-top: 4px;
-  font: 500 11px/1.2 'Rajdhani', sans-serif;
-  letter-spacing: 0.12em;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: rgba(185,197,208,0.62);
+  color: var(--text-muted);
 }
 .stage-row {
   display: flex;
@@ -304,12 +304,12 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
-.stage-pill.active { color: #fff5d9; border-color: rgba(201,163,82,0.45); background: rgba(201,163,82,0.12); }
+.stage-pill.active { color: var(--imp); border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.08); }
 .stage-pill.done { color: #93ffda; border-color: rgba(111,255,211,0.24); background: rgba(111,255,211,0.08); }
 .stage-copy { display: grid; gap: 8px; }
-.stage-kicker { font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(201,163,82,0.7); }
-.stage-head { font: 700 24px/1 'Anton', sans-serif; letter-spacing: 0.03em; color: #f4ead1; }
-.stage-sub { font: 500 13px/1.35 'Rajdhani', sans-serif; color: rgba(214,220,224,0.72); }
+.stage-kicker { font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: var(--imp-dim); }
+.stage-head { font: 400 22px/1 'Anton', sans-serif; letter-spacing: 0.04em; color: var(--text-primary); text-transform: uppercase; }
+.stage-sub { font: 500 12px/1.35 'Rajdhani', sans-serif; color: var(--text-sec); }
 .stat-strip { display:flex; gap:10px; flex-wrap:wrap; }
 .stat-strip span {
   font: 600 11px/1 'Rajdhani', sans-serif;
@@ -327,10 +327,10 @@
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  color: #f4ead1;
+  border-radius: 4px;
+  border: 1px solid rgba(0,212,255,0.08);
+  background: var(--bg-raised);
+  color: var(--text-primary);
   font: 700 16px/1 'Rajdhani', sans-serif;
 }
 .die-chip.good { background: rgba(90,189,126,0.16); border-color: rgba(90,189,126,0.35); color: #9dffb8; }
@@ -344,33 +344,33 @@
 .result-grid > div {
   padding: 10px;
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  background: rgba(255,255,255,0.03);
+  border-radius: 0;
+  background: var(--bg-raised);
   display:grid;
   gap:6px;
 }
-.result-grid strong { font: 700 24px/1 'Anton', sans-serif; color: #f4ead1; }
-.result-grid span { font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(214,220,224,0.62); }
+.result-grid strong { font: 400 22px/1 'Anton', sans-serif; color: var(--text-primary); }
+.result-grid span { font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-sec); }
 .control-row,
 .floating-actions {
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
   gap:10px;
-  margin-top: 14px;
+  margin-top: 12px;
 }
 .ghost-btn,
 .solid-btn {
-  border: 1px solid rgba(255,255,255,0.1);
-  padding: 10px 14px;
-  border-radius: 12px;
-  font: 700 12px/1 'Rajdhani', sans-serif;
-  letter-spacing: 0.14em;
+  border: 1px solid rgba(0,212,255,0.12);
+  padding: 8px 14px;
+  border-radius: 0;
+  font: 700 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
 }
-.ghost-btn { background: rgba(255,255,255,0.03); color: rgba(226,229,232,0.74); }
-.solid-btn { background: linear-gradient(135deg, rgba(201,163,82,0.92), rgba(233,198,119,0.82)); color: #111; border-color: rgba(201,163,82,0.4); }
+.ghost-btn { background: var(--bg-raised); color: var(--text-sec); }
+.solid-btn { background: var(--imp); color: var(--bg-primary); border-color: var(--imp); }
 .ghost-btn:disabled { opacity: 0.35; cursor: default; }
 
 .shoot-floating-controls {
@@ -386,7 +386,7 @@
   box-shadow: 0 24px 60px rgba(0,0,0,0.4);
   backdrop-filter: blur(10px);
 }
-.floating-head { font: 700 16px/1 'Rajdhani', sans-serif; color: #f3e3bf; }
+.floating-head { font: 700 16px/1 'Rajdhani', sans-serif; color: var(--text-primary); }
 .floating-sub { margin-top: 4px; font: 600 10px/1.2 'Rajdhani', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(207,214,219,0.6); }
 
 .shoot-glyphs {
@@ -421,71 +421,48 @@
 }
 .combat-glyph strong {
   font: 700 14px/1 'Anton', sans-serif;
-  color: #f4ead1;
+  color: var(--text-primary);
   letter-spacing: 0.04em;
 }
-.combat-glyph.active { border-color: rgba(201,163,82,0.45); background: rgba(29,22,12,0.82); }
+.combat-glyph.active { border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.08); }
 .combat-glyph.done { border-color: rgba(111,255,211,0.26); background: rgba(10,28,22,0.72); }
 
 @media (max-width: 1100px) {
-  .variant-panel.rail-mode { width: calc(100% - 40px); bottom: 96px; }
+  .variant-panel.rail-mode { width: calc(100% - 360px); min-width: 300px; bottom: 96px; }
 }
 
-.variant-eyebrow {
-  font: 700 10px/1 'Rajdhani', sans-serif;
-  letter-spacing: 2.4px;
-  color: rgba(201,163,82,0.88);
-  margin-bottom: 10px;
-  text-transform: uppercase;
-}
-.variant-title { color: #f3ebda; }
-.variant-subtitle {
-  margin-top: 4px;
-  font: 600 10px/1.2 'Rajdhani', sans-serif;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(166,155,129,0.88);
-}
+/* Override block — match imperium palette */
 .ghost-btn,
 .solid-btn,
-.weapon-select-btn,
-.icon-btn {
-  border-radius: 8px;
+.weapon-select-btn {
+  border-radius: 0;
   font: 700 11px/1 'Rajdhani', sans-serif;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 .ghost-btn,
 .weapon-select-btn {
-  border: 1px solid rgba(201,163,82,0.18);
-  background: linear-gradient(180deg, rgba(28,24,14,0.92), rgba(16,13,7,0.96));
-  color: #e4dcc7;
+  border: 1px solid rgba(0,212,255,0.12);
+  background: var(--bg-raised);
+  color: var(--text-sec);
 }
 .solid-btn {
-  background: linear-gradient(180deg, rgba(21,31,40,0.98), rgba(7,15,23,0.96));
-  color: #9fe8ff;
-  border: 1px solid rgba(0,212,255,0.34);
-  box-shadow: inset 0 0 0 1px rgba(0,212,255,0.08), 0 0 14px rgba(0,212,255,0.08);
+  background: var(--imp);
+  color: var(--bg-primary);
+  border: 1px solid var(--imp);
+  box-shadow: none;
+  font-weight: 700;
 }
-.icon-btn {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: 1px solid rgba(201,163,82,0.18);
-  background: linear-gradient(180deg, rgba(28,24,14,0.92), rgba(16,13,7,0.96));
-  color: #d7ccad;
-  cursor: pointer;
+.solid-btn:hover {
+  background: #33e0ff;
 }
 .target-summary {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid rgba(201,163,82,0.14);
-  background: rgba(0,0,0,0.18);
-  border-radius: 10px;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(0,212,255,0.08);
+  background: var(--bg-raised);
+  border-radius: 0;
 }
 .target-summary-top {
   display: flex;
@@ -494,15 +471,16 @@
   align-items: center;
 }
 .target-summary-name {
-  font: 700 17px/1 'Rajdhani', sans-serif;
-  color: #f1e6cd;
-  letter-spacing: 0.03em;
+  font: normal 400 17px/1 'Anton', sans-serif;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 .target-summary-faction {
-  font: 600 10px/1.2 'Rajdhani', sans-serif;
-  letter-spacing: 0.16em;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: rgba(172,164,139,0.82);
+  color: var(--text-muted);
 }
 .target-stat-grid {
   display: grid;
@@ -510,23 +488,24 @@
   gap: 6px;
 }
 .target-stat {
-  padding: 7px 4px 6px;
-  border: 1px solid rgba(255,255,255,0.06);
-  background: rgba(255,255,255,0.03);
-  border-radius: 8px;
+  padding: 8px 2px;
+  border: none;
+  background: none;
+  border-radius: 0;
   text-align: center;
+  border-bottom: 1px solid rgba(0,212,255,0.06);
 }
 .target-stat label {
   display: block;
-  font: 600 9px/1 'Rajdhani', sans-serif;
-  letter-spacing: 0.18em;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
   text-transform: uppercase;
-  color: rgba(172,164,139,0.82);
+  color: var(--text-dis);
   margin-bottom: 4px;
 }
 .target-stat strong {
-  font: 700 15px/1 'Rajdhani', sans-serif;
-  color: #f4ead1;
+  font: 700 18px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary);
 }
 .weapon-grid {
   display: grid;
@@ -534,21 +513,27 @@
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 .weapon-card {
-  padding: 11px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(201,163,82,0.15);
-  background: linear-gradient(180deg, rgba(19,16,10,0.98), rgba(10,9,7,0.96));
+  padding: 10px 12px;
+  border-radius: 0;
+  border: 1px solid rgba(0,212,255,0.12);
+  background: var(--bg-raised);
   display: grid;
-  gap: 8px;
+  gap: 6px;
   cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.weapon-card:hover {
+  border-color: rgba(0,212,255,0.25);
+  background: var(--bg-selected);
 }
 .weapon-card.selected {
-  border-color: rgba(0,212,255,0.42);
-  box-shadow: inset 0 0 0 1px rgba(0,212,255,0.12), 0 0 16px rgba(0,212,255,0.09);
+  border-color: var(--imp);
+  background: var(--bg-selected);
+  box-shadow: inset 0 0 0 1px rgba(0,212,255,0.12);
 }
 .weapon-card-title {
-  font: 700 14px/1.15 'Rajdhani', sans-serif;
-  color: #f1e6cd;
+  font: 700 13px/1.15 'Rajdhani', sans-serif;
+  color: var(--text-primary);
 }
 .weapon-card-meta {
   display: flex;
@@ -563,16 +548,15 @@
   font: 600 9px/1 'Rajdhani', sans-serif;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(224,221,210,0.78);
+  color: var(--text-sec);
 }
 .profile-pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
 .helper-copy {
-  font: 500 12px/1.35 'Rajdhani', sans-serif;
-  color: rgba(214,220,224,0.72);
+  font: 500 11px/1.35 'Rajdhani', sans-serif;
+  color: var(--text-sec);
 }
 .stage-copy.compact { gap: 10px; }
 @media (max-width: 1100px) {
-  .variant-panel.rail-mode { width: calc(100% - 80px); }
   .target-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .weapon-grid { grid-template-columns: 1fr; }
 }
