@@ -794,6 +794,9 @@
       }
     }
 
+    // Clear aiming lines before damage is applied (models may be removed)
+    clearLines();
+
     const originalModels = target.models.slice();
     const allocation = allocateWoundsToModels(target, totalDamage, losResult.visibleTargetModelIds);
     const flashedModels = allocation.flashedModels.length ? allocation.flashedModels : originalModels.slice(-Math.min(originalModels.length, totalDamage || 0));
