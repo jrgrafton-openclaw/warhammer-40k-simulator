@@ -7,6 +7,17 @@
 /* ── Wider roll overlay for weapon picker ── */
 #roll-overlay { max-width: 720px; }
 
+/* ── Override shared action-bar label to be visible + not flex-expand ── */
+#move-mode-label {
+  flex: 0 0 auto !important;
+  color: var(--imp) !important;
+  min-width: auto !important;
+}
+#move-mode-label.fight-pile-in    { color: #ff8c00 !important; }
+#move-mode-label.fight-consolidate { color: #ff8c00 !important; }
+#move-mode-label.fight-target     { color: var(--imp) !important; }
+#move-mode-label.fight-attack     { color: var(--ork) !important; }
+
 /* ── Engagement range highlight on hulls ── */
 .unit-hull.fight-engaged {
   filter: drop-shadow(0 0 6px rgba(0,255,120,0.4));

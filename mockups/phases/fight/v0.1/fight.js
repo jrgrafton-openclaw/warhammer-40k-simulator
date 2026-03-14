@@ -43,7 +43,12 @@ function d6(){ return 1 + Math.floor(rng() * 6); }
 // ── Helpers ─────────────────────────────────────────────
 function getUnit(uid){ return simState.units.find(u => u.id === uid); }
 function isEnemy(uid){ const u = getUnit(uid); return u && u.faction !== ACTIVE; }
-function setStatus(msg){ const el = $('#move-mode-label'); if (el) el.textContent = msg || ''; }
+function setStatus(msg, cls){
+  const el = $('#move-mode-label');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.className = cls || '';
+}
 function parseSave(sv){ const n = parseInt(String(sv || '').replace(/[^0-9]/g, '')); return n || 7; }
 function woundTarget(str, toughness){ if (str >= toughness * 2) return 2; if (str > toughness) return 3; if (str === toughness) return 4; if (str * 2 <= toughness) return 6; return 5; }
 function damageValue(d){ if (typeof d === 'number') return d; const s = String(d || '1').trim().toUpperCase(); if (s === 'D3') return null; return Number(s) || 1; }
@@ -328,7 +333,10 @@ function enterDragMode(mode) {
   // Update buttons
   updateFightButtons();
   // Update status
-  setStatus(mode === 'pile-in' ? '◉ PILE IN 3"' : '◉ CONSOLIDATE 3"');
+  setStatus(
+    mode === 'pile-in' ? '◉ PILE IN 3"' : '◉ CONSOLIDATE 3"',
+    mode === 'pile-in' ? 'fight-pile-in' : 'fight-consolidate'
+  );
 }
 
 // ── Exit drag mode ──────────────────────────────────────
@@ -427,6 +435,25 @@ function clearFightOverlays() {
 }
 
 // ── Direction validation ────────────────────────────────
+// Distance from a point (px,py) to the closest enemy model (center-to-center minus radii)
+function closestEnemyDist(px, py, modelRadius, enemyModels) {
+  let best = Infinity;
+  for (const em of enemyModels) {
+    const d = Math.hypot(px - em.x, py - em.y) - modelRadius - getModelRadius(em);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
+function closestObjectiveDist(px, py) {
+  let best = Infinity;
+  for (const o of OBJECTIVES) {
+    const d = Math.hypot(px - o.x, py - o.y);
+    if (d < best) best = d;
+  }
+  return best;
+}
+
 function isPileInDirectionValid(unitId) {
   const unit = getUnit(unitId);
   if (!unit) return false;
@@ -439,12 +466,10 @@ function isPileInDirectionValid(unitId) {
     if (!start) return true;
     if (Math.hypot(m.x - start.x, m.y - start.y) < 0.5) return true; // didn't move
 
-    const closestNow = Math.min(...allEnemyModels.map(em => modelDistance(m, em)));
-    const closestBefore = Math.min(...allEnemyModels.map(em => {
-      const d = Math.hypot(start.x - em.x, start.y - em.y) - getModelRadius(m) - getModelRadius(em);
-      return d;
-    }));
-    return closestNow < closestBefore - 0.1;
+    const r = getModelRadius(m);
+    const distNow = closestEnemyDist(m.x, m.y, r, allEnemyModels);
+    const distBefore = closestEnemyDist(start.x, start.y, r, allEnemyModels);
+    return distNow <= distBefore + 0.5; // allow tiny tolerance for float errors
   });
 }
 
@@ -459,19 +484,19 @@ function isConsolidateDirectionValid(unitId) {
     if (!start) return true;
     if (Math.hypot(m.x - start.x, m.y - start.y) < 0.5) return true;
 
-    // Closer to enemy?
+    const r = getModelRadius(m);
+
+    // Closer to enemy? (with tolerance)
     if (allEnemyModels.length) {
-      const closestEnemyNow = Math.min(...allEnemyModels.map(em => modelDistance(m, em)));
-      const closestEnemyBefore = Math.min(...allEnemyModels.map(em => {
-        return Math.hypot(start.x - em.x, start.y - em.y) - getModelRadius(m) - getModelRadius(em);
-      }));
-      if (closestEnemyNow < closestEnemyBefore - 0.1) return true;
+      const distNow = closestEnemyDist(m.x, m.y, r, allEnemyModels);
+      const distBefore = closestEnemyDist(start.x, start.y, r, allEnemyModels);
+      if (distNow <= distBefore + 0.5) return true;
     }
 
-    // OR closer to objective?
-    const closestObjNow = Math.min(...OBJECTIVES.map(o => Math.hypot(m.x - o.x, m.y - o.y)));
-    const closestObjBefore = Math.min(...OBJECTIVES.map(o => Math.hypot(start.x - o.x, start.y - o.y)));
-    return closestObjNow < closestObjBefore - 0.1;
+    // OR closer to objective? (with tolerance)
+    const objNow = closestObjectiveDist(m.x, m.y);
+    const objBefore = closestObjectiveDist(start.x, start.y);
+    return objNow <= objBefore + 0.5;
   });
 }
 
@@ -525,7 +550,7 @@ function confirmDrag() {
   if (mode === 'pile-in') {
     // After pile-in confirmed, enter target selection
     state.phase = 'target-select';
-    setStatus('Select enemy target');
+    setStatus('Select enemy target', 'fight-target');
     paint();
   } else if (mode === 'consolidate') {
     // After consolidation confirmed, mark as fought
@@ -814,7 +839,7 @@ async function resolveAttack(targetId){
   const totalAttacks = attackCount(profile, attacker);
   if (totalAttacks <= 0) return;
 
-  setStatus('MELEE ATTACKS');
+  setStatus('◉ MAKE ATTACKS', 'fight-attack');
 
   // Hit roll (WS-based)
   const hitRolls = Array.from({length: totalAttacks}, d6);
