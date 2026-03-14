@@ -1,11 +1,14 @@
 /* fight.js — Fight phase interaction (ES module)
- * Melee combat: pile-in, WS-based hit rolls, wound/save/damage, consolidation.
+ * Melee combat: manual pile-in drag, WS-based hit rolls, wound/save/damage,
+ * manual consolidation drag.
  */
 
 import { simState, PX_PER_INCH, callbacks } from '../../../shared/state/store.js';
 import { UNITS, KW_RULES, wgState, initAllTooltips, showTip, hideTip } from '../../../shared/state/units.js';
-import { selectUnit as baseSelectUnit, renderModels } from '../../../shared/world/svg-renderer.js';
+import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
+         checkCohesion } from '../../../shared/world/svg-renderer.js';
 import { center, projectileAnchor, getModelRadius } from '../../../shared/lib/coord-helpers.js';
+import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
 
 const ACTIVE = 'imp';
 
@@ -18,7 +21,11 @@ const state = {
   seed: (Date.now() ^ 0x5f3759df) >>> 0,
   pinnedPopupTargetId: null,
   pinnedRollTargetId: null,
-  overlayRaf: null
+  overlayRaf: null,
+  // drag mode state
+  dragMode: null,       // null | 'pile-in' | 'consolidate'
+  dragStarts: {},       // modelId → {x, y} captured at mode entry
+  killsThisAttack: 0    // track kills for consolidation eligibility
 };
 
 window.__spentUnitIds = state.foughtUnits;
@@ -98,7 +105,6 @@ function isInEngagement(unitId){
   );
 }
 
-// Check if two specific units are engaged with each other
 function isEngagedWith(unitIdA, unitIdB){
   const a = getUnit(unitIdA), b = getUnit(unitIdB);
   if (!a || !b) return false;
@@ -111,15 +117,10 @@ function isEngagedWith(unitIdA, unitIdB){
 function unitIsInfantry(uid){
   const u = UNITS[uid];
   if (!u) return false;
-  // Check faction string and unit data for INFANTRY keyword
   const factionStr = (u.faction || '').toUpperCase();
   if (factionStr.includes('INFANTRY')) return true;
-  // Check abilities/keywords for Infantry
   if (u.keywords && u.keywords.some(k => String(k).toUpperCase() === 'INFANTRY')) return true;
-  // Heuristic: all Space Marine and Ork infantry have small bases
-  // Vehicle check: if faction includes VEHICLE, it's not infantry
   if (factionStr.includes('VEHICLE')) return false;
-  // Default: infantry for small-base models (R32), not for large vehicles
   const unitData = getUnit(uid);
   if (!unitData) return false;
   return unitData.models.every(m => (m.r || 8) <= 10);
@@ -141,7 +142,6 @@ function deriveThresholds(profile, attacker, target){
   const t = Number(UNITS[target.id]?.stats?.T || 4);
   const rawSave = parseSave(UNITS[target.id]?.stats?.Sv);
   const ap = Number(profile.ap || 0);
-  // No cover bonus in melee
   const save = Math.min(7, Math.max(2, rawSave - ap));
   return { hit, wound: woundTarget(Number(profile.s || 0), t), save };
 }
@@ -236,14 +236,12 @@ function paint(){
     if (uid === state.attackerId) {
       h.classList.add('shoot-attacker');
     } else if (isEnemy(uid) && state.attackerId && !state.foughtUnits.has(state.attackerId)) {
-      // Highlight enemies engaged with the selected attacker green, others dimmed
       if (isEngagedWith(state.attackerId, uid)) {
         h.classList.add('shoot-valid');
       } else {
         h.classList.add('shoot-invalid');
       }
     } else if (!isEnemy(uid) && uid !== state.attackerId) {
-      // Dim friendly units that are not the attacker
       const u = getUnit(uid);
       if (u && u.faction === ACTIVE) {
         if (state.foughtUnits.has(uid)) h.classList.add('fight-ineligible');
@@ -297,15 +295,13 @@ async function playMeleeVolley(attacker, target){
     const toPos = projectileAnchor(pair.to);
     if (!toPos.valid) return;
     setTimeout(() => {
-      // Create 2-3 slash marks at the target position
-      const slashCount = 2 + Math.floor(rng() * 2); // 2 or 3
+      const slashCount = 2 + Math.floor(rng() * 2);
       for (let s = 0; s < slashCount; s++) {
         const slash = document.createElement('div');
         slash.className = 'melee-slash';
-        // Offset slightly per slash for visual spread
         const offsetX = (rng() - 0.5) * 16;
         const offsetY = (rng() - 0.5) * 12;
-        const rotation = -30 + rng() * 60; // -30 to 30 degrees
+        const rotation = -30 + rng() * 60;
         slash.style.left = (toPos.x + offsetX) + 'px';
         slash.style.top = (toPos.y + offsetY) + 'px';
         slash.style.transform = `rotate(${rotation}deg)`;
@@ -319,194 +315,409 @@ async function playMeleeVolley(attacker, target){
   await new Promise(r => setTimeout(r, Math.max(460, pairs.length * 80 + 420)));
 }
 
-// ── Pile-In movement (3" toward closest enemy) ──────────
-async function pileIn(unitId){
-  const unit = getUnit(unitId);
-  if (!unit) return;
-  setStatus('PILE IN');
+// ══════════════════════════════════════════════════════════
+// ── MANUAL DRAG: Pile-In & Consolidation ─────────────────
+// ══════════════════════════════════════════════════════════
 
-  const isInfantry = unitIsInfantry(unitId);
-  const maxMove = 3 * PX_PER_INCH; // 3" = 36px
-  const enemies = simState.units.filter(u => u.faction !== unit.faction);
-  const allEnemyModels = enemies.flatMap(e => e.models);
-  if (!allEnemyModels.length) return;
-
-  // Calculate target positions for each model
-  const moves = [];
-  unit.models.forEach(m => {
-    // Find closest enemy model
-    let closestDist = Infinity;
-    let closestEnemy = null;
-    allEnemyModels.forEach(em => {
-      const d = modelDistance(m, em);
-      if (d < closestDist) { closestDist = d; closestEnemy = em; }
-    });
-    if (!closestEnemy) return;
-
-    // Already in base contact?
-    const r1 = getModelRadius(m);
-    const r2 = getModelRadius(closestEnemy);
-    if (closestDist <= 1) {
-      moves.push({ model: m, dx: 0, dy: 0 });
-      return;
-    }
-
-    // Direction toward closest enemy
-    const dx = closestEnemy.x - m.x;
-    const dy = closestEnemy.y - m.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 0.1) { moves.push({ model: m, dx: 0, dy: 0 }); return; }
-
-    const ux = dx / dist;
-    const uy = dy / dist;
-
-    // Move up to 3", but stop at base contact (radii touching + 1px gap)
-    const contactDist = dist - r1 - r2 - 1;
-    const moveAmount = Math.min(maxMove, Math.max(0, contactDist));
-
-    // Must end closer than we started
-    if (moveAmount <= 0) {
-      moves.push({ model: m, dx: 0, dy: 0 });
-      return;
-    }
-
-    moves.push({
-      model: m,
-      dx: ux * moveAmount,
-      dy: uy * moveAmount,
-      startX: m.x,
-      startY: m.y,
-      endX: m.x + ux * moveAmount,
-      endY: m.y + uy * moveAmount
-    });
-  });
-
-  // Animate over 300ms
-  const duration = 300;
-  const startTime = performance.now();
-
-  await new Promise(resolve => {
-    function tick(now) {
-      const t = Math.min(1, (now - startTime) / duration);
-      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease in-out quad
-
-      moves.forEach(mv => {
-        if (mv.dx === 0 && mv.dy === 0) return;
-        mv.model.x = mv.startX + mv.dx * ease;
-        mv.model.y = mv.startY + mv.dy * ease;
-      });
-
-      renderModels();
-
-      if (t < 1) requestAnimationFrame(tick);
-      else resolve();
-    }
-    requestAnimationFrame(tick);
-  });
-
-  // Ensure final positions are exact
-  moves.forEach(mv => {
-    if (mv.endX !== undefined) { mv.model.x = mv.endX; mv.model.y = mv.endY; }
-  });
-  renderModels();
-
-  // Brief pause after pile-in
-  await new Promise(r => setTimeout(r, 100));
+function doTerrainCollision(cx, cy, r) {
+  return resolveTerrainCollision(cx, cy, r, window._terrainAABBs || []);
 }
 
-// ── Consolidation (3" after kills) ──────────────────────
-async function consolidate(unitId){
+function doUnitDragCollisions(unit) {
+  resolveUnitDragCollisions(unit, simState.units);
+}
+
+// ── Range rings (3" orange circles from dragStarts) ─────
+function drawFightRangeRings(unitId) {
+  const layer = document.getElementById('layer-range-rings');
+  if (!layer) return;
+  layer.innerHTML = '';
   const unit = getUnit(unitId);
   if (!unit) return;
-  setStatus('CONSOLIDATE');
+  const NS = 'http://www.w3.org/2000/svg';
+  const radiusPx = 3 * PX_PER_INCH;
+  const color = { fill: 'rgba(255,140,0,0.06)', stroke: 'rgba(255,140,0,0.25)' };
 
-  const isInfantry = unitIsInfantry(unitId);
-  const maxMove = 3 * PX_PER_INCH; // 3"
+  unit.models.forEach(m => {
+    const start = state.dragStarts[m.id];
+    if (!start) return;
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', start.x);
+    circle.setAttribute('cy', start.y);
+    circle.setAttribute('r', radiusPx);
+    circle.setAttribute('fill', color.fill);
+    circle.setAttribute('stroke', color.stroke);
+    circle.setAttribute('stroke-width', '1.5');
+    circle.setAttribute('class', 'range-ring');
+    circle.setAttribute('pointer-events', 'none');
+    layer.appendChild(circle);
+  });
+}
+
+// ── Ghost circles at start positions ────────────────────
+function renderFightGhosts(unitId) {
+  const layerGhosts = document.getElementById('layer-move-ghosts');
+  if (!layerGhosts) return;
+  layerGhosts.innerHTML = '';
+  if (!state.dragMode || !unitId) return;
+  const unit = getUnit(unitId);
+  if (!unit) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const color = '#ff8c00';
+
+  unit.models.forEach(m => {
+    const start = state.dragStarts[m.id];
+    if (!start) return;
+    let ghost;
+    if (m.shape === 'rect') {
+      ghost = document.createElementNS(NS, 'rect');
+      ghost.setAttribute('x', start.x - m.w / 2);
+      ghost.setAttribute('y', start.y - m.h / 2);
+      ghost.setAttribute('width', m.w);
+      ghost.setAttribute('height', m.h);
+      ghost.setAttribute('rx', '5');
+      ghost.setAttribute('ry', '5');
+    } else {
+      ghost = document.createElementNS(NS, 'circle');
+      ghost.setAttribute('cx', start.x);
+      ghost.setAttribute('cy', start.y);
+      ghost.setAttribute('r', m.r);
+    }
+    ghost.setAttribute('class', 'move-ghost');
+    ghost.style.stroke = color;
+    ghost.style.strokeWidth = '1.5';
+    ghost.style.fill = 'none';
+    ghost.style.pointerEvents = 'none';
+    layerGhosts.appendChild(ghost);
+  });
+}
+
+// ── Ruler lines from start to current ───────────────────
+function renderFightRulers(unitId) {
+  const layerRulers = document.getElementById('layer-move-rulers');
+  if (!layerRulers) return;
+  layerRulers.innerHTML = '';
+  if (!state.dragMode || !unitId) return;
+  const unit = getUnit(unitId);
+  if (!unit) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const radiusPx = 3 * PX_PER_INCH;
+
+  unit.models.forEach(m => {
+    const ts = state.dragStarts[m.id];
+    if (!ts) return;
+    const dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
+    if (dist < 1) return;
+    const overRange = dist > radiusPx + 0.5;
+
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', ts.x);
+    line.setAttribute('y1', ts.y);
+    line.setAttribute('x2', m.x);
+    line.setAttribute('y2', m.y);
+    line.setAttribute('class', 'move-ruler');
+    line.style.stroke = overRange ? '#ff3333' : '#ff8c00';
+    layerRulers.appendChild(line);
+
+    const label = document.createElementNS(NS, 'text');
+    label.setAttribute('x', (ts.x + m.x) / 2);
+    label.setAttribute('y', (ts.y + m.y) / 2 - 4);
+    label.setAttribute('class', 'move-ruler-label');
+    label.setAttribute('text-anchor', 'middle');
+    label.textContent = (dist / PX_PER_INCH).toFixed(1) + '"';
+    layerRulers.appendChild(label);
+  });
+}
+
+// ── Clear fight overlays ────────────────────────────────
+function clearFightOverlays() {
+  ['layer-move-ghosts', 'layer-move-rulers', 'layer-range-rings'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+}
+
+// ── Direction validation ────────────────────────────────
+function isPileInLegal(unitId) {
+  const unit = getUnit(unitId);
+  if (!unit) return false;
+  const enemies = simState.units.filter(u => u.faction !== unit.faction);
+  const allEnemyModels = enemies.flatMap(e => e.models);
+  if (!allEnemyModels.length) return true;
+
+  return unit.models.every(m => {
+    const start = state.dragStarts[m.id];
+    if (!start) return true;
+    const moved = Math.hypot(m.x - start.x, m.y - start.y);
+    if (moved < 0.5) return true; // didn't move, that's fine
+
+    const closestNow = Math.min(...allEnemyModels.map(em => modelDistance(m, em)));
+    const closestBefore = Math.min(...allEnemyModels.map(em =>
+      Math.hypot(start.x - em.x, start.y - em.y) - getModelRadius({...m, x: start.x, y: start.y}) - getModelRadius(em)
+    ));
+    return closestNow < closestBefore - 0.1;
+  });
+}
+
+function isConsolidateLegal(unitId) {
+  const unit = getUnit(unitId);
+  if (!unit) return false;
   const enemies = simState.units.filter(u => u.faction !== unit.faction);
   const allEnemyModels = enemies.flatMap(e => e.models);
 
-  const moves = [];
-  unit.models.forEach(m => {
-    let targetX = null, targetY = null;
+  return unit.models.every(m => {
+    const start = state.dragStarts[m.id];
+    if (!start) return true;
+    const moved = Math.hypot(m.x - start.x, m.y - start.y);
+    if (moved < 0.5) return true;
 
-    // Priority 1: Move toward closest enemy within (3" + engagement range)
+    // Closer to closest enemy?
     if (allEnemyModels.length) {
-      let closestDist = Infinity;
-      let closestEnemy = null;
-      allEnemyModels.forEach(em => {
-        const d = modelDistance(m, em);
-        if (d < closestDist) { closestDist = d; closestEnemy = em; }
-      });
-      if (closestEnemy && closestDist <= (3 + 1) * PX_PER_INCH) { // 3" move + 1" engagement
-        targetX = closestEnemy.x;
-        targetY = closestEnemy.y;
-      }
+      const closestEnemyNow = Math.min(...allEnemyModels.map(em => modelDistance(m, em)));
+      const startModel = {...m, x: start.x, y: start.y};
+      const closestEnemyBefore = Math.min(...allEnemyModels.map(em =>
+        Math.hypot(start.x - em.x, start.y - em.y) - getModelRadius(startModel) - getModelRadius(em)
+      ));
+      if (closestEnemyNow < closestEnemyBefore - 0.1) return true;
     }
 
-    // Priority 2: Move toward nearest objective
-    if (targetX === null) {
-      let bestObjDist = Infinity;
-      OBJECTIVES.forEach(obj => {
-        const d = Math.hypot(m.x - obj.x, m.y - obj.y);
-        if (d < bestObjDist) { bestObjDist = d; targetX = obj.x; targetY = obj.y; }
-      });
+    // OR closer to closest objective?
+    const closestObjNow = Math.min(...OBJECTIVES.map(o => Math.hypot(m.x - o.x, m.y - o.y)));
+    const closestObjBefore = Math.min(...OBJECTIVES.map(o => Math.hypot(start.x - o.x, start.y - o.y)));
+    return closestObjNow < closestObjBefore - 0.1;
+  });
+}
+
+function isDragLegal(unitId) {
+  if (state.dragMode === 'pile-in') return isPileInLegal(unitId);
+  if (state.dragMode === 'consolidate') return isConsolidateLegal(unitId);
+  return false;
+}
+
+// ── Enter / Confirm / Cancel drag mode ──────────────────
+function enterDragMode(mode) {
+  const uid = state.attackerId;
+  if (!uid) return;
+  const unit = getUnit(uid);
+  if (!unit) return;
+
+  state.dragMode = mode;
+  state.dragStarts = {};
+  unit.models.forEach(m => {
+    state.dragStarts[m.id] = { x: m.x, y: m.y };
+  });
+
+  drawFightRangeRings(uid);
+  renderFightGhosts(uid);
+  renderFightRulers(uid);
+
+  // Show confirm/cancel
+  const btnConfirm = $('#btn-confirm-fight');
+  const btnCancel = $('#btn-cancel-fight');
+  if (btnConfirm) { btnConfirm.style.display = ''; btnConfirm.disabled = false; }
+  if (btnCancel) { btnCancel.style.display = ''; }
+
+  // Highlight active chip
+  const chip = $(`#fight-chip-${mode === 'pile-in' ? 'pilein' : 'consolidate'}`);
+  if (chip) chip.classList.add('active');
+
+  const label = mode === 'pile-in' ? '◉ PILE IN — Drag models' : '◉ CONSOLIDATE — Drag models';
+  setStatus(label);
+}
+
+function confirmDragMode() {
+  const uid = state.attackerId;
+  if (!uid || !state.dragMode) return;
+
+  if (!isDragLegal(uid)) {
+    const btn = $('#btn-confirm-fight');
+    if (btn) {
+      btn.classList.add('shake-error');
+      setTimeout(() => btn.classList.remove('shake-error'), 450);
     }
+    return;
+  }
 
-    // Priority 3: Don't move
-    if (targetX === null) {
-      moves.push({ model: m, dx: 0, dy: 0 });
-      return;
-    }
+  const wasPileIn = state.dragMode === 'pile-in';
+  exitDragMode(false); // don't revert positions
 
-    const dx = targetX - m.x;
-    const dy = targetY - m.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist < 0.1) { moves.push({ model: m, dx: 0, dy: 0 }); return; }
+  if (wasPileIn) {
+    // Proceed to weapon selection
+    proceedToWeaponSelection();
+  } else {
+    // Consolidation done → mark unit as fought
+    markUnitFought();
+  }
+}
 
-    const ux = dx / dist;
-    const uy = dy / dist;
-    const moveAmount = Math.min(maxMove, dist);
-
-    moves.push({
-      model: m,
-      dx: ux * moveAmount,
-      dy: uy * moveAmount,
-      startX: m.x,
-      startY: m.y,
-      endX: m.x + ux * moveAmount,
-      endY: m.y + uy * moveAmount
+function cancelDragMode() {
+  const uid = state.attackerId;
+  if (!uid || !state.dragMode) return;
+  const unit = getUnit(uid);
+  if (unit) {
+    // Revert to drag start positions
+    unit.models.forEach(m => {
+      const start = state.dragStarts[m.id];
+      if (start) { m.x = start.x; m.y = start.y; }
     });
-  });
-
-  // Animate over 300ms
-  const duration = 300;
-  const startTime = performance.now();
-
-  await new Promise(resolve => {
-    function tick(now) {
-      const t = Math.min(1, (now - startTime) / duration);
-      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-
-      moves.forEach(mv => {
-        if (mv.dx === 0 && mv.dy === 0) return;
-        mv.model.x = mv.startX + mv.dx * ease;
-        mv.model.y = mv.startY + mv.dy * ease;
-      });
-
-      renderModels();
-
-      if (t < 1) requestAnimationFrame(tick);
-      else resolve();
-    }
-    requestAnimationFrame(tick);
-  });
-
-  moves.forEach(mv => {
-    if (mv.endX !== undefined) { mv.model.x = mv.endX; mv.model.y = mv.endY; }
-  });
+  }
+  exitDragMode(true);
   renderModels();
+  paint();
+}
 
-  await new Promise(r => setTimeout(r, 100));
+function exitDragMode(reverted) {
+  state.dragMode = null;
+  state.dragStarts = {};
+  clearFightOverlays();
+
+  const btnConfirm = $('#btn-confirm-fight');
+  const btnCancel = $('#btn-cancel-fight');
+  if (btnConfirm) btnConfirm.style.display = 'none';
+  if (btnCancel) btnCancel.style.display = 'none';
+
+  // Remove chip active states
+  $$('.fight-range-chip').forEach(c => c.classList.remove('active'));
+
+  if (!reverted) setStatus('');
+}
+
+// ── Show fight chips in card-ranges ─────────────────────
+function showPileInChip() {
+  const rangesEl = $('#card-ranges');
+  if (!rangesEl) return;
+  rangesEl.innerHTML = '';
+  const chip = document.createElement('button');
+  chip.className = 'fight-range-chip';
+  chip.id = 'fight-chip-pilein';
+  chip.textContent = 'PILE IN 3"';
+  chip.addEventListener('click', () => {
+    if (state.dragMode) return; // already in a mode
+    enterDragMode('pile-in');
+  });
+  rangesEl.appendChild(chip);
+}
+
+function showConsolidateChip() {
+  const rangesEl = $('#card-ranges');
+  if (!rangesEl) return;
+  rangesEl.innerHTML = '';
+  const chip = document.createElement('button');
+  chip.className = 'fight-range-chip';
+  chip.id = 'fight-chip-consolidate';
+  chip.textContent = 'CONSOLIDATE 3"';
+  chip.addEventListener('click', () => {
+    if (state.dragMode) return;
+    enterDragMode('consolidate');
+  });
+  rangesEl.appendChild(chip);
+}
+
+// ── Drag interceptor ────────────────────────────────────
+function installDragInterceptor() {
+  let _drag = null;
+  Object.defineProperty(simState, 'drag', {
+    configurable: true,
+    get() { return _drag; },
+    set(value) {
+      if (value !== null) {
+        let unit = null;
+        if (value.type === 'unit') unit = value.unit;
+        else if (value.type === 'model') unit = simState.units.find(u => u.models.includes(value.model));
+
+        if (unit) {
+          // Block dragging if not in a drag mode
+          if (state.dragMode === null) return;
+          // Block dragging enemy units
+          if (unit.faction !== ACTIVE) return;
+          // Block dragging units that have already fought
+          if (state.foughtUnits.has(unit.id)) return;
+          // Block dragging units that aren't the current attacker
+          if (unit.id !== state.attackerId) return;
+        }
+      }
+      _drag = value;
+    }
+  });
+}
+
+// ── Drag enforcement (mousemove) ────────────────────────
+function installDragEnforcement() {
+  window.addEventListener('mousemove', () => {
+    const drag = simState.drag;
+    if (!drag || !state.dragMode) return;
+    const uid = state.attackerId;
+    if (!uid) return;
+    const radiusPx = 3 * PX_PER_INCH;
+
+    if (drag.type === 'model') {
+      const m = drag.model;
+      const ts = state.dragStarts[m.id];
+      if (!ts) return;
+      // Zone clamp from drag start
+      const dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
+      if (dist > radiusPx) {
+        const sc = radiusPx / dist;
+        m.x = ts.x + dx * sc;
+        m.y = ts.y + dy * sc;
+        const reRes = resolveOverlaps(m, m.x, m.y);
+        m.x = reRes.x;
+        m.y = reRes.y;
+      }
+      // Terrain collision
+      const tr = doTerrainCollision(m.x, m.y, m.r);
+      m.x = tr.x;
+      m.y = tr.y;
+    } else if (drag.type === 'unit') {
+      // Unit-to-unit collision
+      doUnitDragCollisions(drag.unit);
+      // Zone clamp per model
+      drag.unit.models.forEach(m => {
+        const ts = state.dragStarts[m.id];
+        if (!ts) return;
+        const dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
+        if (dist > radiusPx) {
+          const sc = radiusPx / dist;
+          m.x = ts.x + dx * sc;
+          m.y = ts.y + dy * sc;
+        }
+      });
+      // Terrain: push entire unit as block
+      let maxPX = 0, maxPY = 0;
+      drag.unit.models.forEach(m => {
+        const tr = doTerrainCollision(m.x, m.y, m.r);
+        const px = tr.x - m.x, py = tr.y - m.y;
+        if (Math.abs(px) > Math.abs(maxPX)) maxPX = px;
+        if (Math.abs(py) > Math.abs(maxPY)) maxPY = py;
+      });
+      if (maxPX !== 0 || maxPY !== 0) {
+        drag.unit.models.forEach(m => { m.x += maxPX; m.y += maxPY; });
+      }
+      doUnitDragCollisions(drag.unit);
+    }
+
+    // Re-render
+    renderModels();
+    drawFightRangeRings(uid);
+    renderFightGhosts(uid);
+    renderFightRulers(uid);
+
+    // Update confirm button state based on direction legality
+    const btnConfirm = $('#btn-confirm-fight');
+    if (btnConfirm) btnConfirm.disabled = !isDragLegal(uid);
+
+    // Lift dragged unit to z-top
+    const dragUnitId = uid;
+    if (dragUnitId) {
+      ['layer-hulls', 'layer-models'].forEach(layerId => {
+        const layer = document.getElementById(layerId);
+        if (!layer) return;
+        Array.from(layer.children).forEach(el => {
+          if (el.dataset && el.dataset.unitId === dragUnitId) layer.appendChild(el);
+        });
+      });
+    }
+  });
 }
 
 // ── Overlay helpers (reused from shooting pattern) ──────
@@ -551,7 +762,7 @@ function openWeaponPopup(targetId, options){
   overlay.querySelectorAll('.weapon-choice').forEach(btn => btn.addEventListener('click', () => {
     state.selectedProfileIx = Number(btn.dataset.ix);
     closeWeaponPopup();
-    resolveAttack(targetId);
+    resolveAttack(state.targetId);
   }));
   ensureOverlayPinLoop();
 }
@@ -746,42 +957,43 @@ async function finishFight(attacker, target, totalDamage, killCount){
   paint();
 
   await showResultPanel(target.id, totalDamage, killCount);
+  state.killsThisAttack = killCount;
 
   // Consolidation: only if kills were scored
   if (killCount > 0) {
-    await consolidate(attacker.id);
+    // Show consolidate chip and wait for player
+    showConsolidateChip();
+    setStatus('Kills scored — consolidate available');
+    // Don't mark as fought yet — wait for consolidation confirm or skip
+  } else {
+    // No kills → skip consolidation, mark as fought
+    markUnitFought();
   }
+}
 
-  // Mark as fought
-  state.foughtUnits.add(attacker.id);
+function markUnitFought() {
+  if (state.attackerId) state.foughtUnits.add(state.attackerId);
   setStatus('');
+  const rangesEl = $('#card-ranges');
+  if (rangesEl) rangesEl.innerHTML = '';
   state.attackerId = null;
   state.targetId = null;
   state.hoveredTargetId = null;
+  state.killsThisAttack = 0;
   closeWeaponPopup();
   clearEffects();
+  clearFightOverlays();
   baseSelectUnit(null);
   paint();
 }
 
-// ── Begin fight flow for a unit ─────────────────────────
-async function beginFight(targetId){
-  if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
-  state.targetId = targetId;
-  state.hoveredTargetId = null;
-  paint();
+// ── Proceed to weapon selection after pile-in ───────────
+function proceedToWeaponSelection() {
+  const targetId = state.targetId;
+  if (!targetId || !state.attackerId) return;
 
-  const attacker = getUnit(state.attackerId);
-  const target = getUnit(targetId);
-  if (!attacker || !target) return;
-
-  // Step 1: Pile-in
-  await pileIn(state.attackerId);
-
-  // Step 2: Weapon selection
   const profiles = getProfiles(state.attackerId);
   if (!profiles.length) {
-    // No melee weapons — skip
     state.foughtUnits.add(state.attackerId);
     setStatus('No melee weapons');
     setTimeout(() => { setStatus(''); baseSelectUnit(null); paint(); }, 1000);
@@ -790,18 +1002,34 @@ async function beginFight(targetId){
 
   if (profiles.length === 1) {
     state.selectedProfileIx = 0;
-    await resolveAttack(targetId);
+    resolveAttack(targetId);
   } else {
-    // Show weapon picker — resolveAttack is called via the picker callback
     const options = profiles.map((p, i) => ({ profile: p, i }));
     openWeaponPopup(targetId, options);
   }
 }
 
+// ── Begin fight flow for a unit ─────────────────────────
+function beginFight(targetId){
+  if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
+  state.targetId = targetId;
+  state.hoveredTargetId = null;
+  state.killsThisAttack = 0;
+  paint();
+
+  const attacker = getUnit(state.attackerId);
+  const target = getUnit(targetId);
+  if (!attacker || !target) return;
+
+  // Step 1: Show pile-in chip — player must click it to enter drag mode
+  showPileInChip();
+  setStatus('Click PILE IN to move models, or select weapon');
+}
+
 // ── Enemy interaction ───────────────────────────────────
 function onEnemyInteract(unitId){
   if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
-  // Target must be specifically engaged with the selected attacker (not just any unit)
+  if (state.dragMode) return; // don't interact while dragging
   if (!isEngagedWith(state.attackerId, unitId)) return;
   beginFight(unitId);
 }
@@ -811,6 +1039,7 @@ function bindFightOverrides(){
 
   svg.addEventListener('mousemove', (e) => {
     if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
+    if (state.dragMode) return; // suppress hover highlights during drag
     let node = e.target;
     while (node && !(node.classList?.contains('model-base') || node.classList?.contains('unit-hull'))) node = node.parentElement;
     if (!node) return;
@@ -829,6 +1058,7 @@ function bindFightOverrides(){
 
   const intercept = (e) => {
     if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
+    if (state.dragMode) return; // don't intercept clicks during drag mode
     let node = e.target;
     while (node && !(node.classList?.contains('model-base') || node.classList?.contains('unit-hull'))) node = node.parentElement;
     if (!node) return;
@@ -849,13 +1079,19 @@ function selectAttacker(uid){
   state.targetId = null;
   state.hoveredTargetId = null;
   state.selectedProfileIx = 0;
+  state.killsThisAttack = 0;
   closeWeaponPopup();
   clearEffects();
+  clearFightOverlays();
+  if (state.dragMode) exitDragMode(true);
   paint();
   setStatus('');
 }
 
 function wrappedSelectUnit(uid){
+  // If in drag mode, don't allow changing selection
+  if (state.dragMode) return;
+
   baseSelectUnit(uid);
   if (!uid) {
     selectAttacker(null);
@@ -865,10 +1101,9 @@ function wrappedSelectUnit(uid){
   const u = getUnit(uid);
   if (!u) return;
   if (u.faction === ACTIVE) {
-    // Only allow selecting units that are in engagement and haven't fought
     if (state.foughtUnits.has(uid)) {
       setStatus('Unit already fought this phase');
-      selectAttacker(uid); // Show it selected but fought
+      selectAttacker(uid);
     } else if (!isInEngagement(uid)) {
       setStatus('Not in Engagement Range');
       selectAttacker(uid);
@@ -876,7 +1111,7 @@ function wrappedSelectUnit(uid){
       selectAttacker(uid);
       setStatus('Select enemy target');
     }
-    // Clear range toggles in fight phase (no ranged weapons matter)
+    // Clear range toggles — fight.js will populate dynamically
     const rangesEl = $('#card-ranges');
     if (rangesEl) rangesEl.innerHTML = '';
     requestAnimationFrame(() => paint());
@@ -894,19 +1129,34 @@ export function initFight(){
   $('#btn-end-fight')?.addEventListener('click', () => setStatus('END FIGHT NOT WIRED IN MOCKUP'));
   $('#card-close')?.addEventListener('click', () => wrappedSelectUnit(null));
 
+  // Confirm/Cancel buttons for pile-in and consolidation drag
+  $('#btn-confirm-fight')?.addEventListener('click', () => confirmDragMode());
+  $('#btn-cancel-fight')?.addEventListener('click', () => cancelDragMode());
+
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { wrappedSelectUnit(null); }
+    if (e.key === 'Escape') {
+      if (state.dragMode) {
+        cancelDragMode();
+      } else {
+        wrappedSelectUnit(null);
+      }
+    }
   });
+
+  // Install drag interceptor + enforcement AFTER initModelInteraction()
+  installDragInterceptor();
+  installDragEnforcement();
 
   window.__fightDebug = {
     state,
     selectAttacker,
     beginFight,
     resolveAttack,
-    pileIn,
-    consolidate,
     isInEngagement,
-    paint
+    paint,
+    enterDragMode,
+    confirmDragMode,
+    cancelDragMode
   };
 
   bindFightOverrides();
