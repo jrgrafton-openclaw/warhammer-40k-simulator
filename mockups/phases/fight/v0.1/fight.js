@@ -742,6 +742,7 @@ function confirmDrag() {
 
 // ── Cancel drag ─────────────────────────────────────────
 function cancelDrag() {
+  const currentPhase = state.phase;
   const unit = getUnit(state.attackerId);
   if (unit) {
     unit.models.forEach(m => {
@@ -752,14 +753,20 @@ function cancelDrag() {
   exitDragMode();
   renderModels();
 
-  // If cancelling pile-in, deselect entirely
-  if (state.phase === 'pile-in') {
+  if (currentPhase === 'pile-in') {
+    // Cancel pile-in: deselect entirely
     state.attackerId = null;
     state.phase = null;
-    setStatus('');
+    setStatus('— SELECT UNIT —');
     baseSelectUnit(null);
+    paint();
+  } else if (currentPhase === 'consolidate') {
+    // Cancel consolidation: reset positions but re-enter consolidate mode
+    // so the player can try again
+    state.phase = 'consolidate';
+    enterDragMode('consolidate');
+    paint();
   }
-  paint();
 }
 
 // ── Drag interceptor ────────────────────────────────────
@@ -1252,5 +1259,6 @@ export function initFight() {
   installDragInterceptor();
   installDragEnforcement();
   bindFightOverrides();
+  setStatus('— SELECT UNIT —');
   paint();
 }
