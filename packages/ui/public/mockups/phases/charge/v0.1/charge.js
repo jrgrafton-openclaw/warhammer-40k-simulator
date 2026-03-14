@@ -525,6 +525,9 @@ function enterSelectCharger() {
   state.chargeRoll = 0;
   clearChargeOverlays();
   clearRangeRings();
+  // Hide the unit card so a resolved/failed unit doesn't linger as "selected"
+  const card = document.getElementById('unit-card');
+  if (card) card.classList.remove('visible');
   paintHulls();
   updateButtons();
 }
