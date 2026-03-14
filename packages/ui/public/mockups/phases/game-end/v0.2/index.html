@@ -266,51 +266,84 @@
   const content  = document.querySelector('.game-end-content');
   const watermark = document.querySelector('.faction-watermark');
   const endBtn   = document.getElementById('btn-end-fight');
-  const hint     = document.getElementById('dismiss-hint');
+  const hint     = document.querySelector('.dismiss-hint');
   const overlayEls = [backdrop, content, watermark];
 
   let overlayVisible = true;
-  let hintShown = false;
+  let animating = false;
+
+  function fadeOut(cb) {
+    if (animating) return;
+    animating = true;
+    const start = performance.now();
+    const duration = 300;
+    // Capture current computed opacities
+    const startOpacities = overlayEls.map(el => parseFloat(getComputedStyle(el).opacity));
+    function tick(now) {
+      const t = Math.min(1, (now - start) / duration);
+      overlayEls.forEach((el, i) => {
+        el.style.opacity = String(startOpacities[i] * (1 - t));
+      });
+      if (t < 1) requestAnimationFrame(tick);
+      else {
+        overlayEls.forEach(el => {
+          el.classList.add('overlay-hidden');
+          el.style.opacity = '';
+        });
+        animating = false;
+        if (cb) cb();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function fadeIn(cb) {
+    if (animating) return;
+    animating = true;
+    // Remove hidden, set opacity 0 inline, then animate to target
+    overlayEls.forEach(el => {
+      el.style.opacity = '0';
+      el.classList.remove('overlay-hidden');
+    });
+    // Read target opacities (from CSS, with animations already completed)
+    void backdrop.offsetHeight;
+    const targetOpacities = overlayEls.map(el => {
+      el.style.opacity = '';
+      const target = parseFloat(getComputedStyle(el).opacity);
+      el.style.opacity = '0';
+      return target;
+    });
+    void backdrop.offsetHeight;
+
+    const start = performance.now();
+    const duration = 300;
+    function tick(now) {
+      const t = Math.min(1, (now - start) / duration);
+      overlayEls.forEach((el, i) => {
+        el.style.opacity = String(targetOpacities[i] * t);
+      });
+      if (t < 1) requestAnimationFrame(tick);
+      else {
+        overlayEls.forEach(el => { el.style.opacity = ''; });
+        animating = false;
+        if (cb) cb();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
 
   function dismissOverlay() {
-    if (!overlayVisible) return;
+    if (!overlayVisible || animating) return;
     overlayVisible = false;
-    hintShown = true;
-
-    overlayEls.forEach(el => {
-      el.classList.remove('re-entering');
-      el.classList.add('dismissing');
-    });
-
-    backdrop.addEventListener('animationend', function onEnd() {
-      backdrop.removeEventListener('animationend', onEnd);
-      overlayEls.forEach(el => el.classList.add('dismissed'));
-    });
-
+    fadeOut();
     endBtn.classList.add('pulse');
+    if (hint) hint.style.display = 'none';
   }
 
   function summonOverlay() {
-    if (overlayVisible) return;
+    if (overlayVisible || animating) return;
     overlayVisible = true;
-
-    overlayEls.forEach(el => {
-      el.classList.remove('dismissing', 'dismissed');
-    });
-
-    // Hide hint on re-summon
-    if (hint) hint.style.display = 'none';
-
-    // Force reflow to restart animations
-    overlayEls.forEach(el => void el.offsetHeight);
-
-    overlayEls.forEach(el => el.classList.add('re-entering'));
-
-    backdrop.addEventListener('animationend', function onEnd() {
-      backdrop.removeEventListener('animationend', onEnd);
-      overlayEls.forEach(el => el.classList.remove('re-entering'));
-    });
-
+    fadeIn();
     endBtn.classList.remove('pulse');
   }
 
