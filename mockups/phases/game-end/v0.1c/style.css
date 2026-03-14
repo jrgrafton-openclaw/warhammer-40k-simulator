@@ -9,7 +9,7 @@
   position: fixed;
   inset: 0;
   background: radial-gradient(ellipse at center, #050608 0%, #020304 100%);
-  opacity: 0.94;
+  opacity: 0.78;
   z-index: 100;
   animation: backdrop-fade 0.8s ease-out both;
 }
@@ -31,7 +31,7 @@
 
 @keyframes backdrop-fade {
   from { opacity: 0; }
-  to   { opacity: 0.94; }
+  to   { opacity: 0.78; }
 }
 
 /* ── Faction watermark ── */
@@ -238,59 +238,26 @@
   margin-top: 6px;
 }
 
-.timeline-vp {
-  font: 400 10px/1 'Anton', sans-serif;
-  color: var(--imp-dim);
+.timeline-scores {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   margin-top: 2px;
 }
 
-/* Hover tooltip */
-.timeline-tooltip {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-raised);
-  border: 1px solid var(--border);
-  padding: 6px 10px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s;
-  display: flex;
-  gap: 12px;
+.ts-imp {
+  font: 400 11px/1 'Anton', sans-serif;
+  color: var(--imp);
 }
 
-.timeline-node:hover .timeline-tooltip {
-  opacity: 1;
+.ts-ork {
+  font: 400 11px/1 'Anton', sans-serif;
+  color: var(--ork);
 }
 
-.timeline-tooltip-faction {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.tooltip-faction-label {
-  font: 600 7px/1 'Rajdhani', sans-serif;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-
-.tooltip-faction-label.imp { color: var(--imp-dim); }
-.tooltip-faction-label.ork { color: var(--ork-dim); }
-
-.tooltip-vp {
-  font: 400 14px/1 'Anton', sans-serif;
-}
-
-.tooltip-vp.imp { color: var(--imp); }
-.tooltip-vp.ork { color: var(--ork); }
-
-.tooltip-delta {
+.ts-sep {
   font: 500 8px/1 'Rajdhani', sans-serif;
-  color: var(--text-muted);
+  color: var(--text-dis);
 }
 
 /* Timeline node staggered entrance */
@@ -309,10 +276,12 @@
   to   { opacity: 1; transform: scale(1); }
 }
 
-/* ── Action links ── */
-.victory-links {
-  margin-top: 56px;
-  text-align: center;
+/* ── Action buttons ── */
+.victory-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 48px;
   animation: links-in 0.5s ease-out 1.2s both;
 }
 
@@ -321,30 +290,41 @@
   to   { opacity: 1; }
 }
 
-.victory-link {
-  font: 500 10px/1 'Rajdhani', sans-serif;
-  letter-spacing: 2px;
+.victory-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  color: var(--text-muted);
-  text-decoration: none;
+  padding: 12px 28px;
+  border: 1px solid;
   cursor: pointer;
-  background: none;
-  border: none;
-  padding: 4px 8px;
-  transition: color 0.2s;
+  transition: all 0.2s;
+  background: transparent;
 }
 
-.victory-link:hover {
-  color: var(--imp);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-thickness: 1px;
+.victory-btn.primary {
+  border-color: var(--imp);
+  color: #080c10;
+  background: var(--imp);
+}
+.victory-btn.primary:hover {
+  background: #18eaff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
 }
 
-.victory-link-sep {
-  font: 500 10px/1 'Rajdhani', sans-serif;
+.victory-btn.secondary {
+  border-color: var(--text-muted);
+  color: var(--text-sec);
+}
+.victory-btn.secondary:hover {
+  border-color: var(--imp-dim);
+  color: var(--text-primary);
+}
+
+.victory-btn.disabled {
+  border-color: var(--border);
   color: var(--text-dis);
-  margin: 0 6px;
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ── Backlink (override for overlay z-index) ── */
