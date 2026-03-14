@@ -343,33 +343,12 @@
   color: var(--imp);
 }
 
-/* ── Dismiss / re-summon animations ── */
-@keyframes overlay-fade-out {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-@keyframes overlay-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.game-end-backdrop.dismissing,
-.game-end-content.dismissing,
-.faction-watermark.dismissing {
-  animation: overlay-fade-out 0.3s ease-out forwards;
-}
-
-.game-end-backdrop.dismissed,
-.game-end-content.dismissed,
-.faction-watermark.dismissed {
-  display: none;
-}
-
-.game-end-backdrop.re-entering,
-.game-end-content.re-entering,
-.faction-watermark.re-entering {
-  animation: overlay-fade-in 0.3s ease-in forwards;
+/* ── Dismiss / re-summon ── */
+/* Use visibility+opacity, NOT display:none (which restarts all CSS animations) */
+.overlay-hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 
 /* ── END GAME button pulse when overlay dismissed ── */
