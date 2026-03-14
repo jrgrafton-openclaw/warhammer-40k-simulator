@@ -145,20 +145,24 @@ function rollChargeDice() {
     const totalEl = $('#charge-dice-total');
     const resultEl = $('#charge-dice-result');
 
-    // Determine success/fail based on farthest declared target
-    let maxDist = 0;
+    // Determine success/fail: for each declared target, find the NEAREST
+    // charger-model-to-target-model distance (only need one model to reach).
+    // The charge must cover the LARGEST of those per-target minimums.
+    let neededPx = 0;
     const charger = getUnit(state.chargerId);
     state.declaredTargets.forEach(tid => {
       const target = getUnit(tid);
       if (!charger || !target) return;
+      let minDistToTarget = Infinity;
       charger.models.forEach(cm => {
         target.models.forEach(tm => {
           const d = Math.hypot(cm.x - tm.x, cm.y - tm.y) - getModelRadius(cm) - getModelRadius(tm);
-          if (d > maxDist) maxDist = d;
+          if (d < minDistToTarget) minDistToTarget = d;
         });
       });
+      if (minDistToTarget > neededPx) neededPx = minDistToTarget;
     });
-    const neededInches = maxDist / PX_PER_INCH;
+    const neededInches = neededPx / PX_PER_INCH;
     const success = total >= Math.ceil(neededInches);
 
     // Reset
@@ -483,6 +487,8 @@ function updateButtons() {
 
 // ── Phase transitions ─────────────────────────────────
 function enterSelectCharger() {
+  // Clear any pending auto-reset timer from a previous RESOLVED state
+  if (state._resetTimer) { clearTimeout(state._resetTimer); state._resetTimer = null; }
   state.phase = 'SELECT_CHARGER';
   state.chargerId = null;
   state.declaredTargets = [];
@@ -601,10 +607,15 @@ function confirmCharge() {
   paintHulls();
   updateButtons();
 
-  // Auto-transition
-  setTimeout(() => {
-    baseSelectUnit(null);
-    enterSelectCharger();
+  // Auto-transition (clear any previous pending reset first)
+  if (state._resetTimer) clearTimeout(state._resetTimer);
+  state._resetTimer = setTimeout(() => {
+    state._resetTimer = null;
+    // Only auto-reset if still in RESOLVED (user hasn't already started next charge)
+    if (state.phase === 'RESOLVED') {
+      baseSelectUnit(null);
+      enterSelectCharger();
+    }
   }, 2000);
 }
 
