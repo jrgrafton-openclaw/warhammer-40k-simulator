@@ -605,6 +605,11 @@ export function renderModels() {
   if (currentUnit && activeRangeTypes.size > 0) {
     updateRangeCirclesFromUnit(currentUnit);
   }
+
+  // Post-render callback for phase-specific overlays (e.g. fight highlights)
+  if (typeof callbacks.afterRender === 'function') {
+    callbacks.afterRender();
+  }
 }
 
 // ── initModelInteraction ──────────────────────────────

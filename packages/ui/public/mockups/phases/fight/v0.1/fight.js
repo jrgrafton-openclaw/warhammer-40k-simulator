@@ -592,49 +592,21 @@ function updateDirectionFeedback() {
 }
 
 function highlightInvalidModels(invalidIds) {
-  const NS = 'http://www.w3.org/2000/svg';
-  // Clear previous highlights and crosses
+  // Clear previous highlights
   document.querySelectorAll('#layer-models .model-base').forEach(g => {
     g.classList.remove('fight-invalid-model');
-    const cross = g.querySelector('.fight-invalid-cross');
-    if (cross) cross.remove();
   });
-  // Add highlights + orange cross to invalid models
+  // Add orange border ring to invalid models (CSS handles ring + icon color)
   invalidIds.forEach(modelId => {
     const el = document.querySelector(`#layer-models .model-base[data-model-id="${modelId}"]`);
     if (!el) return;
     el.classList.add('fight-invalid-model');
-    // Get model position from data attributes or the shape element
-    const shape = el.querySelector('circle, rect');
-    if (!shape) return;
-    const cx = parseFloat(shape.getAttribute('cx') || shape.getAttribute('x')) || 0;
-    const cy = parseFloat(shape.getAttribute('cy') || shape.getAttribute('y')) || 0;
-    const r = parseFloat(shape.getAttribute('r') || '8');
-    const crossSize = r * 0.6;
-    // Draw ✕ cross
-    const crossG = document.createElementNS(NS, 'g');
-    crossG.setAttribute('class', 'fight-invalid-cross');
-    const line1 = document.createElementNS(NS, 'line');
-    line1.setAttribute('x1', cx - crossSize); line1.setAttribute('y1', cy - crossSize);
-    line1.setAttribute('x2', cx + crossSize); line1.setAttribute('y2', cy + crossSize);
-    line1.setAttribute('stroke', '#ff8c00'); line1.setAttribute('stroke-width', '2.5');
-    line1.setAttribute('stroke-linecap', 'round');
-    const line2 = document.createElementNS(NS, 'line');
-    line2.setAttribute('x1', cx + crossSize); line2.setAttribute('y1', cy - crossSize);
-    line2.setAttribute('x2', cx - crossSize); line2.setAttribute('y2', cy + crossSize);
-    line2.setAttribute('stroke', '#ff8c00'); line2.setAttribute('stroke-width', '2.5');
-    line2.setAttribute('stroke-linecap', 'round');
-    crossG.appendChild(line1);
-    crossG.appendChild(line2);
-    el.appendChild(crossG);
   });
 }
 
 function clearModelHighlights() {
   document.querySelectorAll('#layer-models .model-base').forEach(g => {
     g.classList.remove('fight-invalid-model');
-    const cross = g.querySelector('.fight-invalid-cross');
-    if (cross) cross.remove();
   });
 }
 
@@ -1301,7 +1273,7 @@ export function initFight() {
     if (bf) {
       const stack = document.createElement('div');
       stack.id = 'fight-banner-stack';
-      stack.style.cssText = "position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;";
+      stack.style.cssText = "position:absolute;top:96px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;";
       bf.appendChild(stack);
 
       // Move existing cohesion banner into the stack
@@ -1326,6 +1298,15 @@ export function initFight() {
   installDragInterceptor();
   installDragEnforcement();
   bindFightOverrides();
+
+  // Re-apply invalid model highlights after every renderModels() call
+  // (renderModels rebuilds DOM via innerHTML, wiping classes)
+  callbacks.afterRender = () => {
+    if (state.dragMode && state.attackerId) {
+      updateDirectionFeedback();
+    }
+  };
+
   setStatus('— SELECT UNIT —');
   paint();
 }

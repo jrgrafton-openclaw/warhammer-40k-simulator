@@ -24,4 +24,4 @@ export let currentUnit = null;
 export function setCurrentUnit(uid) { currentUnit = uid; }
 
 // ── Callback registry (allows shooting.js to wrap selectUnit) ──
-export const callbacks = { selectUnit: null };
+export const callbacks = { selectUnit: null, afterRender: null };
