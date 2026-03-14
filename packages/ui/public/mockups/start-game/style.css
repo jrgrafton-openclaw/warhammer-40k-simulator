@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
-   Start Game — Splash Screen Styles
-   All shared styles are in ../../shared/tokens/*.css
-   This file contains ONLY start-game-specific styles.
+   Start Game v0.2 — Splash Screen Styles
+   Hybrid approach: 1 raster bg + CSS/SVG atmosphere layers
+   Shared tokens via ../../shared/tokens/*.css
 ══════════════════════════════════════════════════════════════ */
 
 /* ── Full-viewport layout ── */
@@ -12,40 +12,153 @@
   background: var(--bg-primary);
 }
 
-/* ── Parallax background layers ── */
-.parallax-layer {
+/* ═══════════════════════════════════════════════════════════
+   LAYER 1: Background image — single cathedral painting
+═══════════════════════════════════════════════════════════ */
+.bg-image {
   position: absolute;
-  inset: -40px; /* extra bleed for parallax movement */
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  inset: -30px; /* bleed for parallax */
+  background: url(assets/bg-far.webp) center/cover no-repeat;
+  animation: bg-drift 50s ease-in-out infinite alternate;
 }
 
-.parallax-far  { background-image: url(assets/bg-far.webp);  animation: drift-far  60s ease-in-out infinite alternate; }
-.parallax-mid  { background-image: url(assets/bg-mid.webp);  animation: drift-mid  45s ease-in-out infinite alternate; }
-.parallax-near { background-image: url(assets/bg-near.webp); animation: drift-near 30s ease-in-out infinite alternate; }
+@keyframes bg-drift {
+  from { transform: translateX(-12px) scale(1.02); }
+  to   { transform: translateX(12px) scale(1.02); }
+}
 
-@keyframes drift-far  { from { transform: translateX(-15px); } to { transform: translateX(15px); } }
-@keyframes drift-mid  { from { transform: translateX(-25px); } to { transform: translateX(25px); } }
-@keyframes drift-near { from { transform: translateX(-35px); } to { transform: translateX(35px); } }
-
-/* ── Vignette + grain overlays ── */
-.vignette {
+/* Darken the image so the panel pops */
+.bg-dim {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 40%, rgba(8,12,16,0.85) 100%);
+  background: rgba(8, 12, 16, 0.45);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYER 2: CSS fog — animated gradient overlays
+═══════════════════════════════════════════════════════════ */
+.fog-layer {
+  position: absolute;
+  inset: 0;
   pointer-events: none;
 }
 
-.grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.04;
-  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAMqADAAQAAAABAAAAMgAAAADDVAJpAAABqUlEQVRoBe2ZvQ3CQBBE7RJogQYogBIoIaED0wEdUAIl0AENUBRNQAd2CcaSD1laaXRr3+z6P5R8mdn93LdaoWKWZdn5PM8vWZY1HMcJGeMHq2Gr/iml1L0oim0cx7vBYJBm/VHDVjqUUr7v78qyfFksFmO0D/wTsqxhq7OiKMbX6/W+1+t10zQNEU9snCAk2+220Wazebrf76er1WrG8w1sxWq5XB77/f40TdMdjPFarXYwDCPyfb+dJInFGP0OcCIIgp7ruue6rpPdbvcYDAb7NE23VVVxDh7/hDSbzcLzvDPHOJ/Pb+f5fL6mf6qybDQavQyHwzWMcdeyLIVh2MFbQRynOE5gHMUxwMmx0WjEYJTHUVVVDJJwJXAkCACO58S/ByVVVeWsqqoOz/fwF7A+T8g+WFXVMU3T/a+truvjLMuKIAxHhmGUvu/Hnudh+xTHDZqmeZIk1vl8fp7NZhOe7+H0/6u3Xq/Xq0aj0VjXdZUkCU/6j6Io3MVicWi327PLYrFYPZhRt9t1oija4a26f2uK4/hIpyB27OyDKPCf/AI1r+0Cws0pIAAAAABJRU5ErkJggg==");
-  pointer-events: none;
+/* Low fog rolling across bottom */
+.fog-low {
+  background: linear-gradient(
+    0deg,
+    rgba(8, 12, 16, 0.9) 0%,
+    rgba(8, 12, 16, 0.6) 15%,
+    rgba(8, 12, 16, 0.1) 35%,
+    transparent 50%
+  );
+  animation: fog-low-drift 40s ease-in-out infinite alternate;
 }
 
-/* ── Ember particles (CSS-only) ── */
+@keyframes fog-low-drift {
+  from { transform: translateX(-20px); opacity: 0.9; }
+  to   { transform: translateX(20px); opacity: 1; }
+}
+
+/* Mid-height atmospheric haze */
+.fog-mid {
+  background: radial-gradient(
+    ellipse 120% 60% at 30% 55%,
+    rgba(0, 212, 255, 0.03) 0%,
+    transparent 70%
+  );
+  animation: fog-mid-pulse 25s ease-in-out infinite alternate;
+}
+
+@keyframes fog-mid-pulse {
+  from { opacity: 0.4; transform: translateX(10px); }
+  to   { opacity: 1; transform: translateX(-15px); }
+}
+
+/* Second haze — opposite side */
+.fog-mid-alt {
+  background: radial-gradient(
+    ellipse 100% 50% at 75% 40%,
+    rgba(0, 212, 255, 0.02) 0%,
+    transparent 60%
+  );
+  animation: fog-mid-alt-pulse 30s ease-in-out infinite alternate;
+}
+
+@keyframes fog-mid-alt-pulse {
+  from { opacity: 1; transform: translateX(-10px); }
+  to   { opacity: 0.3; transform: translateX(12px); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYER 3: SVG smoke wisps — anchored to screen edges
+═══════════════════════════════════════════════════════════ */
+.smoke-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.smoke-wisp {
+  position: absolute;
+  opacity: 0;
+  filter: blur(2px);
+}
+
+/* Left smoke — rises from bottom-left */
+.smoke-left {
+  left: 5%;
+  bottom: 0;
+  width: 200px;
+  height: 400px;
+  animation: smoke-rise-left 18s ease-in-out infinite;
+}
+
+/* Right smoke — rises from bottom-right */
+.smoke-right {
+  right: 8%;
+  bottom: 0;
+  width: 180px;
+  height: 350px;
+  animation: smoke-rise-right 22s ease-in-out infinite 4s;
+}
+
+/* Center-left smoke */
+.smoke-center {
+  left: 35%;
+  bottom: 0;
+  width: 160px;
+  height: 300px;
+  animation: smoke-rise-center 20s ease-in-out infinite 8s;
+}
+
+@keyframes smoke-rise-left {
+  0%   { opacity: 0; transform: translateY(30px) translateX(0) scaleX(1); }
+  15%  { opacity: 0.12; }
+  50%  { opacity: 0.08; transform: translateY(-120px) translateX(25px) scaleX(1.3); }
+  85%  { opacity: 0.04; }
+  100% { opacity: 0; transform: translateY(-250px) translateX(40px) scaleX(1.6); }
+}
+
+@keyframes smoke-rise-right {
+  0%   { opacity: 0; transform: translateY(20px) translateX(0) scaleX(1); }
+  15%  { opacity: 0.1; }
+  50%  { opacity: 0.07; transform: translateY(-100px) translateX(-20px) scaleX(1.2); }
+  85%  { opacity: 0.03; }
+  100% { opacity: 0; transform: translateY(-200px) translateX(-35px) scaleX(1.5); }
+}
+
+@keyframes smoke-rise-center {
+  0%   { opacity: 0; transform: translateY(40px) translateX(0) scaleX(0.8); }
+  20%  { opacity: 0.08; }
+  60%  { opacity: 0.05; transform: translateY(-140px) translateX(15px) scaleX(1.4); }
+  100% { opacity: 0; transform: translateY(-280px) translateX(30px) scaleX(1.8); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LAYER 4: CSS ember particles — resolution independent
+═══════════════════════════════════════════════════════════ */
 .ember-field {
   position: absolute;
   inset: 0;
@@ -55,23 +168,67 @@
 
 .ember {
   position: absolute;
-  width: 3px;
-  height: 3px;
   border-radius: 50%;
-  background: #cc8800;
-  box-shadow: 0 0 6px 1px rgba(204,136,0,0.5);
-  animation: ember-rise linear infinite;
   opacity: 0;
+}
+
+.ember--warm {
+  background: #cc7700;
+  box-shadow: 0 0 6px 2px rgba(204, 119, 0, 0.6);
+}
+
+.ember--hot {
+  background: #ff9933;
+  box-shadow: 0 0 8px 2px rgba(255, 153, 51, 0.7);
+}
+
+.ember--cyan {
+  background: var(--imp);
+  box-shadow: 0 0 6px 2px rgba(0, 212, 255, 0.4);
 }
 
 @keyframes ember-rise {
   0%   { opacity: 0; transform: translateY(0) translateX(0); }
-  10%  { opacity: 0.8; }
-  90%  { opacity: 0.3; }
-  100% { opacity: 0; transform: translateY(-100vh) translateX(30px); }
+  8%   { opacity: 1; }
+  70%  { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(calc(-70vh - 50px)) translateX(var(--drift)); }
 }
 
-/* ── Splash panel — matches victory-panel from game-end ── */
+/* ═══════════════════════════════════════════════════════════
+   OVERLAYS: Vignette + grain + scanlines
+═══════════════════════════════════════════════════════════ */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 30%, rgba(8,12,16,0.7) 80%, rgba(8,12,16,0.95) 100%);
+  pointer-events: none;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAMqADAAQAAAABAAAAMgAAAADDVAJpAAABqUlEQVRoBe2ZvQ3CQBBE7RJogQYogBIoIaED0wEdUAIl0AENUBRNQAd2CcaSD1laaXRr3+z6P5R8mdn93LdaoWKWZdn5PM8vWZY1HMcJGeMHq2Gr/iml1L0oim0cx7vBYJBm/VHDVjqUUr7v78qyfFksFmO0D/wTsqxhq7OiKMbX6/W+1+t10zQNEU9snCAk2+220Wazebrf76er1WrG8w1sxWq5XB77/f40TdMdjPFarXYwDCPyfb+dJInFGP0OcCIIgp7ruue6rpPdbvcYDAb7NE23VVVxDh7/hDSbzcLzvDPHOJ/Pb+f5fL6mf6qybDQavQyHwzWMcdeyLIVh2MFbQRynOE5gHMUxwMmx0WjEYJTHUVVVDJJwJXAkCACO58S/ByVVVeWsqqoOz/fwF7A+T8g+WFXVMU3T/a+truvjLMuKIAxHhmGUvu/Hnudh+xTHDZqmeZIk1vl8fp7NZhOe7+H0/6u3Xq/Xq0aj0VjXdZUkCU/6j6Io3MVicWi327PLYrFYPZhRt9t1oija4a26f2uK4/hIpyB27OyDKPCf/AI1r+0Cws0pIAAAAABJRU5ErkJggg==");
+  pointer-events: none;
+}
+
+/* Subtle horizontal scanlines */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SPLASH PANEL — matches victory-panel from game-end
+═══════════════════════════════════════════════════════════ */
 .splash-panel {
   position: absolute;
   top: 50%;
@@ -131,7 +288,7 @@
   border-left: 2px solid var(--imp);
 }
 
-/* Panel glow — same as victory-glow */
+/* Panel glow */
 .splash-glow {
   position: absolute;
   top: -1px; left: -1px; right: -1px; bottom: -1px;
@@ -156,7 +313,9 @@
   z-index: 0;
 }
 
-/* ── Title ── */
+/* ═══════════════════════════════════════════════════════════
+   TITLE + MENU
+═══════════════════════════════════════════════════════════ */
 .splash-header {
   text-align: center;
   position: relative;
@@ -216,7 +375,7 @@
   font-size: 10px;
 }
 
-/* ── Menu buttons — matches victory-btn style ── */
+/* ── Menu buttons — matches victory-btn ── */
 .splash-menu {
   display: flex;
   flex-direction: column;
@@ -242,7 +401,6 @@
   position: relative;
 }
 
-/* Stagger-in animation */
 .menu-btn:nth-child(1) { animation: btn-slide-in 0.4s ease-out 0.6s both; }
 .menu-btn:nth-child(2) { animation: btn-slide-in 0.4s ease-out 0.68s both; }
 .menu-btn:nth-child(3) { animation: btn-slide-in 0.4s ease-out 0.76s both; }
@@ -252,7 +410,6 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Primary (New Game) */
 .menu-btn.primary {
   border-color: var(--imp);
   color: var(--bg-primary);
@@ -266,15 +423,17 @@
   background: var(--imp-dim);
 }
 
-/* Disabled */
 .menu-btn.disabled {
   border-color: var(--border);
   color: var(--text-dis);
-  cursor: default;
-  pointer-events: none;
+  cursor: not-allowed;
+}
+.menu-btn.disabled:hover {
+  border-color: var(--border);
+  background: transparent;
+  box-shadow: none;
 }
 
-/* Tooltip for disabled buttons */
 .menu-btn.disabled .tooltip {
   display: none;
   position: absolute;
@@ -291,11 +450,6 @@
   white-space: nowrap;
   pointer-events: none;
 }
-/* Show on parent hover (re-enable pointer-events for tooltip) */
-.menu-btn.disabled {
-  pointer-events: auto;
-  cursor: not-allowed;
-}
 .menu-btn.disabled:hover .tooltip {
   display: block;
 }
@@ -305,7 +459,9 @@
   line-height: 1;
 }
 
-/* ── Mute toggle ── */
+/* ═══════════════════════════════════════════════════════════
+   UI ELEMENTS — version badge, backlink, mute
+═══════════════════════════════════════════════════════════ */
 .mute-toggle {
   position: fixed;
   bottom: 16px;
@@ -329,7 +485,6 @@
   color: var(--text-sec);
 }
 
-/* ── Version badge ── */
 .version-badge {
   position: fixed;
   top: 12px;
@@ -342,7 +497,6 @@
   animation: fade-in 0.4s ease-out 1s both;
 }
 
-/* ── Backlink ── */
 .splash-backlink {
   position: fixed;
   top: 12px;
