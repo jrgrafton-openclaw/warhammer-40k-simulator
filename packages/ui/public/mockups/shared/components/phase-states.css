@@ -8,20 +8,25 @@
    SPENT / MOVED / ATTACKED roster row
 ══════════════════════════════════════════════════════════════ */
 .rail-unit.moved,
-.rail-unit.attacked {
+.rail-unit.attacked,
+.rail-unit.fought {
   background: linear-gradient(90deg, var(--spent-tint) 0%, rgba(8,12,16,.18) 100%);
   border-left-color: var(--spent-dim);
 }
 .rail-unit.moved:hover,
-.rail-unit.attacked:hover {
+.rail-unit.attacked:hover,
+.rail-unit.fought:hover {
   background: linear-gradient(90deg, var(--spent-tint-2) 0%, rgba(8,12,16,.26) 100%);
 }
 .rail-unit.moved .rn,
-.rail-unit.attacked .rn { color: #c2cedb; }
+.rail-unit.attacked .rn,
+.rail-unit.fought .rn { color: #c2cedb; }
 .rail-unit.moved .rc,
-.rail-unit.attacked .rc  { color: var(--spent); }
+.rail-unit.attacked .rc,
+.rail-unit.fought .rc  { color: var(--spent); }
 .rail-unit.moved.active,
-.rail-unit.attacked.active {
+.rail-unit.attacked.active,
+.rail-unit.fought.active {
   background: linear-gradient(90deg, rgba(138,152,171,.18) 0%, rgba(8,12,16,.26) 100%);
   border-left-color: var(--spent);
 }
@@ -40,7 +45,8 @@
   display: none;
 }
 .rail-unit.moved .roster-state-pill,
-.rail-unit.attacked .roster-state-pill { display: inline-flex; align-items: center; }
+.rail-unit.attacked .roster-state-pill,
+.rail-unit.fought .roster-state-pill { display: inline-flex; align-items: center; }
 
 /* Unit card title badge */
 .card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }

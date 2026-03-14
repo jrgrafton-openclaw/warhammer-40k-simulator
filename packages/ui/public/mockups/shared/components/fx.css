@@ -110,6 +110,23 @@
   100% { transform: translateY(0px) scale(1); }
 }
 
+/* ── Melee slash effect ── */
+@keyframes melee-slash {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-30deg); }
+  20%  { opacity: 1; transform: scale(1.1) rotate(0deg); }
+  50%  { opacity: 0.8; transform: scale(1) rotate(2deg); }
+  100% { opacity: 0; transform: scale(0.8) rotate(5deg); }
+}
+.melee-slash {
+  position: absolute;
+  width: 24px; height: 4px;
+  background: linear-gradient(90deg, transparent, #ff6030, #ffaa40, transparent);
+  border-radius: 2px;
+  transform-origin: center;
+  animation: melee-slash 0.4s ease-out forwards;
+  pointer-events: none;
+}
+
 /* ── Shake on blocked confirm ── */
 @keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 .shake-error { animation: shake-err 0.4s ease; }
