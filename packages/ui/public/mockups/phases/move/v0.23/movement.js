@@ -305,7 +305,8 @@ function renderCardRangeRings(uid) {
     return;
   }
   var u = UNITS[uid];
-  if (!u) {
+  var unit = simState.units.find(function(su) { return su.id === uid; });
+  if (!u || !unit) {
     clearRangeRings();
     syncCardRangeButtons(null);
     return;
@@ -317,6 +318,9 @@ function renderCardRangeRings(uid) {
     return;
   }
 
+  var activeType = Array.from(activeRangeTypes)[0] || null;
+  syncCardRangeButtons(activeType);
+
   var RANGE_COLORS = {
     move:    { fill: 'rgba(0,212,255,0.04)', stroke: 'rgba(0,212,255,0.2)' },
     advance: { fill: 'rgba(204,136,0,0.04)', stroke: 'rgba(204,136,0,0.2)' },
@@ -324,30 +328,55 @@ function renderCardRangeRings(uid) {
     ds:      { fill: 'rgba(186,126,255,0.04)', stroke: 'rgba(186,126,255,0.2)' }
   };
 
-  var ranges = [];
-  activeRangeTypes.forEach(function(type) {
-    var radiusInches;
-    if (type === 'move') radiusInches = u.M;
-    else if (type === 'advance') radiusInches = u.M + 3.5;
-    else if (type === 'charge') radiusInches = u.M + 7;
-    else if (type === 'ds') radiusInches = 9;
-    else return;
-    var col = RANGE_COLORS[type] || RANGE_COLORS.move;
-    ranges.push({ radiusInches: radiusInches, fill: col.fill, stroke: col.stroke });
-  });
+  var radiusInches;
+  if (activeType === 'move') radiusInches = u.M;
+  else if (activeType === 'advance') radiusInches = u.M + 3.5;
+  else if (activeType === 'charge') radiusInches = u.M + 7;
+  else if (activeType === 'ds') radiusInches = 9;
+  else {
+    clearRangeRings();
+    return;
+  }
 
-  if (ranges.length) drawPerModelRangeRings(uid, ranges);
-  else clearRangeRings();
+  if (activeType === 'ds') {
+    drawPerModelRangeRings(uid, [{ radiusInches: radiusInches, fill: RANGE_COLORS.ds.fill, stroke: RANGE_COLORS.ds.stroke }]);
+    return;
+  }
+
+  var layer = document.getElementById('layer-range-rings');
+  if (!layer) return;
+  layer.innerHTML = '';
+  var NS = 'http://www.w3.org/2000/svg';
+  var radiusPx = radiusInches * PX_PER_INCH;
+  var color = RANGE_COLORS[activeType] || RANGE_COLORS.move;
+
+  unit.models.forEach(function(m) {
+    var start = phaseTurnStarts[m.id];
+    if (!start) return;
+    var circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', start.x);
+    circle.setAttribute('cy', start.y);
+    circle.setAttribute('r', radiusPx);
+    circle.setAttribute('fill', color.fill);
+    circle.setAttribute('stroke', color.stroke);
+    circle.setAttribute('stroke-width', '1.5');
+    circle.setAttribute('class', 'range-ring');
+    circle.setAttribute('pointer-events', 'none');
+    layer.appendChild(circle);
+  });
 }
 
 function wireCardRangeButtons() {
   ['move','advance','charge','ds'].forEach(function(type) {
     var btn = document.getElementById('rt-' + type);
     if (!btn) return;
-    btn.addEventListener('click', function() {
-      setExclusiveCardRange(type);
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      var isSameActive = activeRangeTypes.has(type);
+      setExclusiveCardRange(isSameActive ? null : type);
       renderCardRangeRings(currentUnit);
-    });
+    }, true);
   });
 }
 
