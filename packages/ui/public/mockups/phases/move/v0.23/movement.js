@@ -179,6 +179,7 @@ function enterMoveMode(mode) {
   if (!uid || moveState.unitsMoved.has(uid)) return;
   clearMoveOverlays();
   moveState.mode = mode;
+  setExclusiveCardRange(mode === 'advance' ? 'advance' : 'move');
   updateMoveButtons();
   drawMoveRangeRings(uid, mode);
   renderMoveOverlays(uid);
@@ -249,8 +250,9 @@ function updateMoveButtons() {
     btnMove.disabled = isEnemy || alreadyMoved || hasAdvanced || (moveState.mode === 'advance');
   }
   if (btnAdvance) {
-    btnAdvance.classList.toggle('active', moveState.mode === 'advance');
-    btnAdvance.disabled = isEnemy || alreadyMoved || hasAdvanced || moveState.mode === 'advance';
+    var advIsActive = moveState.mode === 'advance';
+    btnAdvance.classList.toggle('active', advIsActive);
+    btnAdvance.disabled = advIsActive ? false : (isEnemy || alreadyMoved || hasAdvanced);
   }
   if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode || !isCurrentMoveLegal(uid);
   if (btnCancel)  btnCancel.disabled  = isEnemy || !inMode;
