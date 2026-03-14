@@ -620,7 +620,8 @@ export function initModelInteraction() {
     var bdiv = document.createElement('div');
     bdiv.id = 'cohesion-banner';
     bdiv.innerHTML = '⚠ UNIT COHESION BROKEN';
-    bdiv.style.cssText = "position:absolute;top:60px;left:50%;transform:translateX(-50%);background:rgba(204,32,32,.96);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;z-index:1000;display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5);border:2px solid #ff4040;";
+    bdiv.style.display = 'none';
+    // Appended to #battlefield initially; fight.js moves it into #phase-header
     var bf = document.getElementById('battlefield');
     if (bf) bf.appendChild(bdiv);
   }
