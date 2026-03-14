@@ -4,26 +4,26 @@
  * ES module.
  */
 
-import { PX_PER_INCH, simState, callbacks, currentUnit } from '../../../shared/state/store.js';
+import { PX_PER_INCH, simState, callbacks, currentUnit, activeRangeTypes } from '../../../shared/state/store.js';
 import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
-         checkCohesion } from '../../../shared/world/svg-renderer.js';
+         checkCohesion, updateRangeCirclesFromUnit, clearRangeCircles } from '../../../shared/world/svg-renderer.js';
 import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
 
 // ── Constants ────────────────────────────────────────────
-var BOARD_W = 720;
+var BOARD_W = 900;
 var BOARD_H = 528;
-// Deployment zones (narrowed to make room for staging areas)
-var IMP_ZONE = { xMin: 70, xMax: 240, yMin: 0, yMax: BOARD_H };
-var ORK_ZONE = { xMin: 480, xMax: 650, yMin: 0, yMax: BOARD_H };
+// Deployment zones (widened staging: 160px each side)
+var IMP_ZONE = { xMin: 160, xMax: 330, yMin: 0, yMax: BOARD_H };
+var ORK_ZONE = { xMin: 570, xMax: 740, yMin: 0, yMax: BOARD_H };
 // Staging areas
-var IMP_STAGING = { xMin: 0, xMax: 70, yMin: 0, yMax: BOARD_H };
-var ORK_STAGING = { xMin: 650, xMax: 720, yMin: 0, yMax: BOARD_H };
-// Drop zones (reserves / deep strike) — SVG coordinates
-var IMP_RESERVES_DZ = { xMin: 6, xMax: 64, yMin: 400, yMax: 450 };
-var IMP_DS_DZ       = { xMin: 6, xMax: 64, yMin: 460, yMax: 510 };
-var ORK_RESERVES_DZ = { xMin: 656, xMax: 714, yMin: 400, yMax: 450 };
-var ORK_DS_DZ       = { xMin: 656, xMax: 714, yMin: 460, yMax: 510 };
+var IMP_STAGING = { xMin: 0, xMax: 160, yMin: 0, yMax: BOARD_H };
+var ORK_STAGING = { xMin: 740, xMax: 900, yMin: 0, yMax: BOARD_H };
+// Drop zones (reserves / deep strike) — SVG coordinates (140x100 each)
+var IMP_RESERVES_DZ = { xMin: 10, xMax: 150, yMin: 310, yMax: 410 };
+var IMP_DS_DZ       = { xMin: 10, xMax: 150, yMin: 420, yMax: 520 };
+var ORK_RESERVES_DZ = { xMin: 750, xMax: 890, yMin: 310, yMax: 410 };
+var ORK_DS_DZ       = { xMin: 750, xMax: 890, yMin: 420, yMax: 520 };
 
 // ── Deployment state ─────────────────────────────────────
 var deployState = {
@@ -34,7 +34,8 @@ var deployState = {
   placingUnit: null,
   impTotal: 0,
   orkTotal: 0,
-  unitInDropZone: null  // 'reserves' | 'deepstrike' | null
+  unitInDropZone: null,  // 'reserves' | 'deepstrike' | null
+  locked: false          // true after confirmDeployment()
 };
 
 // Expose for renderModels to detect off-board units
@@ -93,51 +94,60 @@ function arrangeModels(unit, cx, cy) {
   }
 }
 
+// ── Position undeployed units in staging area (SVG models) ──
+function positionUnitsInStaging() {
+  var impY = 55;
+  var orkY = 55;
+  var spacing = 22;
+
+  simState.units.forEach(function(unit) {
+    if (deployState.deployedUnits.has(unit.id)) return;
+    if (deployState.placingUnit === unit.id) return;
+
+    var staging, cx;
+    if (unit.faction === 'imp') {
+      staging = IMP_STAGING;
+      cx = (staging.xMin + staging.xMax) / 2;
+      // Skip reserves/deep strike units (keep off-screen)
+      if (deployState.reserveUnits.has(unit.id) ||
+          deployState.deepStrikeUnits.has(unit.id)) {
+        unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
+        return;
+      }
+      arrangeModels(unit, cx, impY);
+      // Advance Y for next unit
+      var rows = Math.ceil(unit.models.length / Math.ceil(Math.sqrt(unit.models.length)));
+      impY += rows * spacing + 15;
+    } else if (unit.faction === 'ork') {
+      staging = ORK_STAGING;
+      cx = (staging.xMin + staging.xMax) / 2;
+      if (deployState.reserveUnits.has(unit.id) ||
+          deployState.deepStrikeUnits.has(unit.id)) {
+        unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
+        return;
+      }
+      // Orks are pre-deployed, skip
+      return;
+    }
+  });
+}
+
 // ── Staging token rendering ──────────────────────────────
 function renderStagingTokens() {
   var impContainer = document.getElementById('staging-tokens-imp');
   var orkContainer = document.getElementById('staging-tokens-ork');
   if (!impContainer || !orkContainer) return;
 
+  // Clear HTML tokens — we now use SVG models in staging
   impContainer.innerHTML = '';
   orkContainer.innerHTML = '';
 
-  simState.units.forEach(function(unit) {
-    if (deployState.deployedUnits.has(unit.id)) return;
-    if (unit.faction !== 'imp') return;
-
-    var ud = UNITS[unit.id];
-    if (!ud) return;
-
-    var token = document.createElement('div');
-    token.className = 'staging-token imp';
-    token.dataset.unitId = unit.id;
-
-    var statusHtml = '';
-    if (deployState.reserveUnits.has(unit.id)) {
-      statusHtml = '<span class="st-status in-reserves">RESERVES</span>';
-    } else if (deployState.deepStrikeUnits.has(unit.id)) {
-      statusHtml = '<span class="st-status in-deepstrike">DEEP STRIKE</span>';
-    }
-
-    token.innerHTML =
-      '<div class="st-icon">' + unit.models.length + '</div>' +
-      '<span class="st-name">' + ud.name + '</span>' +
-      statusHtml;
-
-    if (deployState.placingUnit === unit.id) {
-      token.classList.add('selected');
-    }
-
-    token.addEventListener('click', function() {
-      onStagingTokenClick(unit.id);
-    });
-
-    impContainer.appendChild(token);
-  });
+  // Position undeployed units in staging area as actual SVG models
+  positionUnitsInStaging();
 }
 
 function onStagingTokenClick(unitId) {
+  if (deployState.locked) return;
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
   if (unit.faction !== 'imp') return;
@@ -152,6 +162,7 @@ function onStagingTokenClick(unitId) {
 
 // ── Placement flow ───────────────────────────────────────
 function startPlacement(unitId) {
+  if (deployState.locked) return;
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
@@ -254,8 +265,7 @@ function cancelPlacement() {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
-  // Move models back off-screen (back to staging)
-  unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
+  // Return to staging (positionUnitsInStaging will place them)
   deployState.placingUnit = null;
   deployState.unitInDropZone = null;
 
@@ -363,6 +373,8 @@ function confirmDeployment() {
   var btn = document.getElementById('btn-end');
   if (btn && btn.disabled) return;
 
+  deployState.locked = true;
+
   btn.textContent = '✓ DEPLOYMENT LOCKED';
   btn.disabled = true;
   btn.style.background = 'rgba(0,200,80,0.15)';
@@ -463,6 +475,7 @@ function installDragInterceptor() {
   Object.defineProperty(simState, 'drag', {
     get: function() { return _drag; },
     set: function(v) {
+      if (deployState.locked) { return; }
       if (v && v.unitId) {
         var uid = v.unitId;
         if (uid !== deployState.placingUnit) {
@@ -483,6 +496,7 @@ function installDragEnforcement() {
   if (!svg) return;
 
   svg.addEventListener('mousemove', function() {
+    if (deployState.locked) return;
     if (!simState.drag || !simState.drag.unitId) return;
     var uid = simState.drag.unitId;
     if (uid !== deployState.placingUnit) return;
@@ -620,6 +634,10 @@ function wireButtons() {
         deploySelectUnit(uid);
         return;
       }
+      if (deployState.locked) {
+        deploySelectUnit(uid);
+        return;
+      }
       if (deployState.deployedUnits.has(uid)) {
         deploySelectUnit(uid);
         return;
@@ -696,8 +714,57 @@ export function initDeployment() {
   installDragInterceptor();
   installDragEnforcement();
 
-  // Initial render
+  // Bug 7: Override range toggles for single-select behavior
+  wireRangeToggleSingleSelect();
+
+  // Initial render — position undeployed units in staging
+  positionUnitsInStaging();
   renderModels();
   renderStagingTokens();
   updateUI();
+}
+
+// ── Single-select range toggles (Bug 7) ──────────────────
+function wireRangeToggleSingleSelect() {
+  var types = ['move', 'advance', 'charge', 'ds'];
+  var buttons = {};
+  types.forEach(function(t) {
+    buttons[t] = document.getElementById('rt-' + t);
+  });
+
+  types.forEach(function(t) {
+    var btn = buttons[t];
+    if (!btn) return;
+
+    // Clone to remove existing listeners from initBattleControls
+    var newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    buttons[t] = newBtn;
+
+    newBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var wasActive = newBtn.classList.contains('active');
+
+      // Deactivate ALL range toggles and hide ALL range circles
+      types.forEach(function(ot) {
+        var ob = buttons[ot];
+        if (ob) ob.classList.remove('active');
+        var circle = document.getElementById('range-' + ot);
+        var label = document.getElementById('range-' + ot + '-label');
+        if (circle) circle.style.display = 'none';
+        if (label) label.style.display = 'none';
+      });
+
+      // If it wasn't active, activate this one
+      if (!wasActive) {
+        newBtn.classList.add('active');
+        activeRangeTypes.clear();
+        activeRangeTypes.add(t);
+        if (currentUnit) updateRangeCirclesFromUnit(currentUnit);
+      } else {
+        activeRangeTypes.clear();
+        clearRangeCircles();
+      }
+    });
+  });
 }
