@@ -1,0 +1,394 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.3 Deployment Phase — HTML Staging Panels
+   Board reverted to 720x528, staging is separate HTML columns,
+   deployment-complete hides zone shading.
+   All shared styles are in ../../../shared/components/*.css
+══════════════════════════════════════════════════════════════ */
+
+/* ── App layout: 4-column (roster | imp staging | battlefield | ork staging) ── */
+#app {
+  display: grid;
+  grid-template-columns: 220px 180px 1fr 180px;
+  height: 100vh;
+}
+#roster { grid-column: 1; }
+.staging-panel.imp-side { grid-column: 2; }
+#battlefield { grid-column: 3; }
+.staging-panel.ork-side { grid-column: 4; }
+
+/* ── Staging panels (HTML, not SVG) ── */
+.staging-panel {
+  grid-row: 1;
+  background: var(--bg-base, #0d1117);
+  border-left: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 8px;
+  gap: 6px;
+}
+
+.staging-header {
+  font: 700 10px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 10px 4px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-bottom: 4px;
+}
+.staging-header.imp { color: var(--imp, #00d4ff); }
+.staging-header.ork { color: var(--ork, #ff4020); }
+
+.staging-unit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Staging cards (unit entries) ── */
+.staging-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: var(--bg-raised, #161b22);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+}
+.staging-card:hover {
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.04);
+}
+.staging-card.imp:hover {
+  border-color: rgba(0,212,255,0.3);
+  box-shadow: 0 0 8px rgba(0,212,255,0.12);
+}
+.staging-card.ork:hover {
+  border-color: rgba(255,64,32,0.3);
+  box-shadow: 0 0 8px rgba(255,64,32,0.12);
+}
+.staging-card.deployed {
+  opacity: 0.5;
+  cursor: default;
+}
+.staging-card.placing {
+  border-color: rgba(0,212,255,0.5);
+  background: rgba(0,212,255,0.08);
+  box-shadow: 0 0 12px rgba(0,212,255,0.2);
+}
+.staging-card.in-reserves {
+  border-color: rgba(186,126,255,0.3);
+  background: rgba(186,126,255,0.06);
+}
+.staging-card.in-deepstrike {
+  border-color: rgba(255,170,0,0.3);
+  background: rgba(255,170,0,0.06);
+}
+
+.sc-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted, #8b949e);
+  flex-shrink: 0;
+}
+.staging-card.imp .sc-icon {
+  border-color: rgba(0,212,255,0.3);
+  color: var(--imp, #00d4ff);
+}
+.staging-card.ork .sc-icon {
+  border-color: rgba(255,64,32,0.3);
+  color: var(--ork, #ff4020);
+}
+
+.sc-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sc-name {
+  font: 600 10px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary, #c9d1d9);
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sc-status {
+  font: 700 7px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 2px;
+  width: fit-content;
+}
+.sc-status.st-deployed {
+  background: rgba(0,200,80,0.15);
+  color: #00c850;
+}
+.sc-status.st-reserves {
+  background: rgba(186,126,255,0.15);
+  color: #ba7eff;
+}
+.sc-status.st-deepstrike {
+  background: rgba(255,170,0,0.15);
+  color: #ffaa00;
+}
+.sc-status.st-placing {
+  background: rgba(0,212,255,0.15);
+  color: var(--imp, #00d4ff);
+  animation: pulse-placing 1.2s ease infinite;
+}
+@keyframes pulse-placing {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.sc-action {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 700 14px/1 'Rajdhani', sans-serif;
+  color: var(--imp, #00d4ff);
+  flex-shrink: 0;
+  margin-left: auto;
+  transition: background 0.15s, border-color 0.15s;
+}
+.staging-card:hover .sc-action {
+  background: rgba(0,212,255,0.1);
+  border-color: rgba(0,212,255,0.4);
+}
+
+/* ── Drop zones (reserves / deep strike) ── */
+.staging-drop-zone {
+  border: 1px dashed rgba(186,126,255,0.2);
+  border-radius: 6px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+.staging-drop-zone:hover {
+  border-color: rgba(186,126,255,0.4);
+  background: rgba(186,126,255,0.06);
+}
+.staging-drop-zone.deepstrike {
+  border-color: rgba(255,170,0,0.2);
+}
+.staging-drop-zone.deepstrike:hover {
+  border-color: rgba(255,170,0,0.4);
+  background: rgba(255,170,0,0.06);
+}
+.staging-drop-zone.ork {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+.dz-title {
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(186,126,255,0.7);
+}
+.staging-drop-zone.deepstrike .dz-title {
+  color: rgba(255,170,0,0.7);
+}
+
+.dz-hint {
+  font: 500 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-dis, #484f58);
+  text-transform: uppercase;
+}
+
+.dz-units {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+
+/* ── Deployment zone SVG styling ── */
+.deploy-zone-bg.imp-zone { fill: rgba(0,80,160,0.08); }
+.deploy-zone-bg.ork-zone { fill: rgba(255,64,32,0.08); }
+.nml-zone-bg { fill: rgba(0,0,0,0.12); }
+
+.deploy-zone-border.imp-border {
+  stroke: rgba(0,212,255,0.2);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.deploy-zone-border.ork-border {
+  stroke: rgba(255,64,32,0.2);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.deploy-zone-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.deploy-zone-sublabel {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.deploy-zone-label.imp-label, .deploy-zone-sublabel.imp-label { fill: rgba(0,212,255,0.1); }
+.deploy-zone-label.ork-label, .deploy-zone-sublabel.ork-label { fill: rgba(255,64,32,0.1); }
+.nml-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: rgba(201,163,82,0.06);
+  pointer-events: none;
+}
+
+/* ── Zone highlight on drag ── */
+.deploy-zone-bg.zone-active.imp-zone { fill: rgba(0,212,255,0.14); transition: fill 0.2s; }
+.deploy-zone-bg.zone-active.ork-zone { fill: rgba(255,64,32,0.14); transition: fill 0.2s; }
+
+/* ── Deployment complete — hide zone overlays + staging panels ── */
+.deployment-complete .deploy-zone-bg,
+.deployment-complete .deploy-zone-border,
+.deployment-complete .deploy-zone-label,
+.deployment-complete .deploy-zone-sublabel,
+.deployment-complete .nml-label {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.deployment-complete .nml-zone-bg {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.deployment-complete .staging-panel {
+  display: none;
+}
+.deployment-complete #app {
+  grid-template-columns: 220px 1fr;
+}
+.deployment-complete #battlefield {
+  grid-column: 2;
+}
+
+/* ── Version badge ── */
+.deploy-badge {
+  position: absolute; top: 32px; right: 12px; z-index: 50;
+  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dis); padding: 3px 8px;
+  border: 1px solid rgba(0,212,255,.06);
+}
+
+/* ── Deploy status label in action bar ── */
+#deploy-status-label {
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--imp, #00d4ff);
+  padding: 0 4px;
+  min-width: 120px;
+  text-align: center;
+  flex: 0;
+}
+#deploy-status-label.ork-turn {
+  color: var(--ork, #ff4020);
+}
+
+/* ── Zone warning banner ── */
+.zone-warning {
+  position: absolute;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: rgba(204,34,34,0.9);
+  color: #fff;
+  font: 700 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 3px;
+  display: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.zone-warning.visible { display: block; }
+
+/* ── Deployment ghost (placement preview) ── */
+.deploy-ghost {
+  pointer-events: none;
+  fill: none;
+  stroke-dasharray: 4 3;
+  opacity: .4;
+}
+
+/* ── Cohesion banner positioning ── */
+#cohesion-banner {
+  top: 88px !important; left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important; max-width: 280px !important;
+  padding: 5px 14px !important; font-size: 11px !important;
+  white-space: nowrap !important;
+}
+
+/* ── Deploy-state pill in roster ── */
+.roster-state-pill.deploy-state {
+  background: rgba(255,170,0,0.12);
+  color: #ffaa00;
+  border-color: rgba(255,170,0,0.25);
+}
+.roster-state-pill.deploy-state.deployed {
+  background: rgba(0,200,80,0.12);
+  color: #00c850;
+  border-color: rgba(0,200,80,0.25);
+}
+.roster-state-pill.deploy-state.in-reserves {
+  background: rgba(186,126,255,0.12);
+  color: #ba7eff;
+  border-color: rgba(186,126,255,0.25);
+}
+
+/* ── Shake on blocked confirm ── */
+@keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.shake-error { animation: shake-err 0.4s ease; }
