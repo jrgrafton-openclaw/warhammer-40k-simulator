@@ -101,7 +101,8 @@
   <div style="max-width:1200px; margin:0 auto;">
 
     <div class="tab-nav" id="phase-tabs">
-      <button class="tab-btn active" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
+      <button class="tab-btn active" data-tab="start-game" onclick="switchTab('start-game')">START GAME</button>
+      <button class="tab-btn" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
       <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
       <button class="tab-btn" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
       <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
@@ -109,8 +110,35 @@
       <button class="tab-btn" data-tab="game-end" onclick="switchTab('game-end')">GAME END</button>
     </div>
 
+    <!-- START GAME -->
+    <div id="tab-start-game" class="tab-pane">
+      <div class="section-title">Start Game — Splash Screen</div>
+      <div class="section-desc">
+        Initial splash screen with parallax animated battlefield background,
+        frosted glass menu panel, and ambient audio. Entry point to the game.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="start-game/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">SPLASH SCREEN</div>
+          <div class="card-title">Parallax battlefield · Frosted glass menu · Ambient audio</div>
+          <ul class="card-features">
+            <li>3-layer parallax background (gothic cathedral, ruins, embers)</li>
+            <li>Frosted glass panel with victory-panel styling</li>
+            <li>New Game → Deploy · Load Game / Settings disabled</li>
+            <li>Ambient drone loop with mute toggle</li>
+            <li>CSS ember particles + vignette + grain overlay</li>
+            <li>Stagger-in entrance animations</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
     <!-- DEPLOY PHASE -->
-    <div id="tab-deploy" class="tab-pane">
+    <div id="tab-deploy" class="tab-pane hidden">
       <div class="section-title">Deployment Phase</div>
       <div class="section-desc">
         Pre-game unit placement with deployment zones, strategic reserves, and deep strike.
