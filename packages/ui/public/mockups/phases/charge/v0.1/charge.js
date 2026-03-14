@@ -467,11 +467,31 @@ function updateCardRanges(uid) {
 }
 
 // ── Button state ──────────────────────────────────────
+function isPlacementValid() {
+  if (state.phase !== 'CHARGE_MOVE') return false;
+  // 1. Engagement reached?
+  const engagement = checkEngagementReached(state.chargerId, [state.chargeTargetId]);
+  if (!engagement.allReached) return false;
+  // 2. Coherency?
+  if (!isCoherent(state.chargerId)) return false;
+  // 3. No model over charge roll distance?
+  const rangePx = state.chargeRoll * PX_PER_INCH;
+  const charger = getUnit(state.chargerId);
+  if (charger) {
+    for (const m of charger.models) {
+      const start = state.turnStarts[m.id];
+      if (!start) continue;
+      if (Math.hypot(m.x - start.x, m.y - start.y) > rangePx + 1) return false;
+    }
+  }
+  return true;
+}
+
 function updateButtons() {
   const confirmBtn = $('#btn-confirm-charge');
 
   if (confirmBtn) {
-    confirmBtn.disabled = state.phase !== 'CHARGE_MOVE';
+    confirmBtn.disabled = !isPlacementValid();
   }
 
   // Mode label
@@ -562,37 +582,7 @@ async function clickTarget(uid) {
 }
 
 function confirmCharge() {
-  if (state.phase !== 'CHARGE_MOVE') return;
-
-  // Check engagement reached
-  const engagement = checkEngagementReached(state.chargerId, [state.chargeTargetId]);
-  if (!engagement.allReached) {
-    setModeLabel('⚠ MUST REACH TARGET');
-    return;
-  }
-
-  // Check coherency
-  if (!isCoherent(state.chargerId)) {
-    setModeLabel('⚠ COHERENCY BROKEN');
-    return;
-  }
-
-  // Check no model moved further than charge roll
-  const rangePx = state.chargeRoll * PX_PER_INCH;
-  const charger = getUnit(state.chargerId);
-  let overMoved = false;
-  if (charger) {
-    charger.models.forEach(m => {
-      const start = state.turnStarts[m.id];
-      if (!start) return;
-      const dist = Math.hypot(m.x - start.x, m.y - start.y);
-      if (dist > rangePx + 1) overMoved = true;
-    });
-  }
-  if (overMoved) {
-    setModeLabel('⚠ MODEL OVER RANGE');
-    return;
-  }
+  if (!isPlacementValid()) return;
 
   // Success!
   state.chargedUnits.add(state.chargerId);
@@ -718,6 +708,7 @@ function installDragEnforcement() {
     drawGhostsAndRulers();
     drawEngagementRings();
     paintHulls();
+    updateButtons(); // continuously validate CONFIRM button during drag
 
     const dragUnitId = state.chargerId;
     if (dragUnitId) {
