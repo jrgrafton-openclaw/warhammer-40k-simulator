@@ -10,7 +10,7 @@ import { renderTerrain } from '../../../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../../../shared/world/collision.js';
 import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
          renderModels } from '../../../shared/world/svg-renderer.js';
-import { initDeployment } from './deployment.js?v=20260314-deploy2';
+import { initDeployment } from './deployment.js?v=20260314-deploy3';
 import '../../../shared/world/world-api.js';
 
 // ── Wire getRangeInches into the card builder ────────────
@@ -37,17 +37,18 @@ simState.units = [
     models:[{id:'rd1',x:OFF,y:OFF,r:22,shape:'rect',w:43,h:25}], broken:false, deployed:false },
 
   // Orks (auto-deployed in their deployment zone, spread out)
+  // Ork zone is now 570-740 (shifted +90px from old 480-650)
   { id:'boss-nob', rosterIndex:6, faction:'ork', keywords:['Infantry','Character'],
-    models:[{id:'bn1',x:560,y:100,r:R40}], broken:false, deployed:true },
+    models:[{id:'bn1',x:650,y:100,r:R40}], broken:false, deployed:true },
   { id:'boyz-mob', rosterIndex:7, faction:'ork', keywords:['Infantry'],
     models:[
-      {id:'bm1',x:500,y:200,r:R32},{id:'bm2',x:517,y:200,r:R32},{id:'bm3',x:534,y:200,r:R32},
-      {id:'bm4',x:551,y:200,r:R32},{id:'bm5',x:568,y:200,r:R32},{id:'bm6',x:500,y:217,r:R32},
-      {id:'bm7',x:517,y:217,r:R32},{id:'bm8',x:534,y:217,r:R32},{id:'bm9',x:551,y:217,r:R32},
-      {id:'bm10',x:568,y:217,r:R32}
+      {id:'bm1',x:590,y:200,r:R32},{id:'bm2',x:607,y:200,r:R32},{id:'bm3',x:624,y:200,r:R32},
+      {id:'bm4',x:641,y:200,r:R32},{id:'bm5',x:658,y:200,r:R32},{id:'bm6',x:590,y:217,r:R32},
+      {id:'bm7',x:607,y:217,r:R32},{id:'bm8',x:624,y:217,r:R32},{id:'bm9',x:641,y:217,r:R32},
+      {id:'bm10',x:658,y:217,r:R32}
     ], broken:false, deployed:true },
   { id:'mekboy', rosterIndex:8, faction:'ork', keywords:['Infantry','Character'],
-    models:[{id:'mb1',x:560,y:350,r:R32}], broken:false, deployed:true }
+    models:[{id:'mb1',x:650,y:350,r:R32}], broken:false, deployed:true }
 ];
 
 // ── Initialise shared modules ────────────────────────────

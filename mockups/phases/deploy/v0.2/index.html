@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="../../../shared/components/fx.css">
   <link rel="stylesheet" href="../../../shared/components/battlefield.css">
   <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css?v=20260314-deploy2">
+  <link rel="stylesheet" href="style.css?v=20260314-deploy3">
 </head>
 <body>
 <div id="app">
@@ -168,51 +168,51 @@
 
     <div id="battlefield-inner">
       <!-- SVG 1: terrain + deployment zones + staging areas -->
-      <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+      <svg id="bf-svg-terrain" viewBox="0 0 900 528" preserveAspectRatio="xMidYMid slice">
 
-        <!-- ═══ IMPERIUM STAGING AREA (far left, outside deployment zone) ═══ -->
-        <rect class="staging-bg imp-staging" x="0" y="0" width="70" height="528"/>
-        <line class="staging-border imp-staging-border" x1="70" y1="0" x2="70" y2="528"/>
-        <text class="staging-label imp-staging-label" x="35" y="24">IMPERIUM</text>
-        <text class="staging-sublabel imp-staging-label" x="35" y="38">STAGING</text>
+        <!-- ═══ IMPERIUM STAGING AREA (far left, 0-160) ═══ -->
+        <rect class="staging-bg imp-staging" x="0" y="0" width="160" height="528"/>
+        <line class="staging-border imp-staging-border" x1="160" y1="0" x2="160" y2="528"/>
+        <text class="staging-label imp-staging-label" x="80" y="24">IMPERIUM</text>
+        <text class="staging-sublabel imp-staging-label" x="80" y="38">STAGING</text>
         <!-- Imp Reserves drop zone -->
-        <rect class="drop-zone-bg imp-reserves-dz" id="imp-reserves-dz" x="6" y="400" width="58" height="50" rx="3"/>
-        <text class="drop-zone-label imp-dz-label" x="35" y="422">RESERVES</text>
-        <text class="drop-zone-sublabel imp-dz-label" x="35" y="434">drop here</text>
+        <rect class="drop-zone-bg imp-reserves-dz" id="imp-reserves-dz" x="10" y="310" width="140" height="100" rx="4"/>
+        <text class="drop-zone-label imp-dz-label" x="80" y="355">RESERVES</text>
+        <text class="drop-zone-sublabel imp-dz-label" x="80" y="370">drop here</text>
         <!-- Imp Deep Strike drop zone -->
-        <rect class="drop-zone-bg imp-deepstrike-dz" id="imp-deepstrike-dz" x="6" y="460" width="58" height="50" rx="3"/>
-        <text class="drop-zone-label imp-dz-label" x="35" y="482">DEEP</text>
-        <text class="drop-zone-sublabel imp-dz-label" x="35" y="494">STRIKE</text>
+        <rect class="drop-zone-bg imp-deepstrike-dz" id="imp-deepstrike-dz" x="10" y="420" width="140" height="100" rx="4"/>
+        <text class="drop-zone-label imp-dz-label" x="80" y="465">DEEP STRIKE</text>
+        <text class="drop-zone-sublabel imp-dz-label" x="80" y="480">drop here</text>
 
-        <!-- ═══ IMPERIUM DEPLOYMENT ZONE ═══ -->
-        <rect class="deploy-zone-bg imp-zone" x="70" y="0" width="170" height="528"/>
-        <line class="deploy-zone-border imp-border" x1="240" y1="0" x2="240" y2="528"/>
-        <text class="deploy-zone-label imp-label" x="155" y="264">IMPERIUM</text>
-        <text class="deploy-zone-sublabel imp-label" x="155" y="284">DEPLOYMENT ZONE</text>
+        <!-- ═══ IMPERIUM DEPLOYMENT ZONE (160-330) ═══ -->
+        <rect class="deploy-zone-bg imp-zone" x="160" y="0" width="170" height="528"/>
+        <line class="deploy-zone-border imp-border" x1="330" y1="0" x2="330" y2="528"/>
+        <text class="deploy-zone-label imp-label" x="245" y="264">IMPERIUM</text>
+        <text class="deploy-zone-sublabel imp-label" x="245" y="284">DEPLOYMENT ZONE</text>
 
-        <!-- No Man's Land: middle (240-480px) -->
-        <rect class="nml-zone-bg" x="240" y="0" width="240" height="528"/>
-        <text class="nml-label" x="360" y="264">NO MAN'S LAND</text>
+        <!-- No Man's Land: middle (330-570) -->
+        <rect class="nml-zone-bg" x="330" y="0" width="240" height="528"/>
+        <text class="nml-label" x="450" y="264">NO MAN'S LAND</text>
 
-        <!-- ═══ ORK DEPLOYMENT ZONE ═══ -->
-        <rect class="deploy-zone-bg ork-zone" x="480" y="0" width="170" height="528"/>
-        <line class="deploy-zone-border ork-border" x1="480" y1="0" x2="480" y2="528"/>
-        <text class="deploy-zone-label ork-label" x="565" y="264">ORKS</text>
-        <text class="deploy-zone-sublabel ork-label" x="565" y="284">DEPLOYMENT ZONE</text>
+        <!-- ═══ ORK DEPLOYMENT ZONE (570-740) ═══ -->
+        <rect class="deploy-zone-bg ork-zone" x="570" y="0" width="170" height="528"/>
+        <line class="deploy-zone-border ork-border" x1="570" y1="0" x2="570" y2="528"/>
+        <text class="deploy-zone-label ork-label" x="655" y="264">ORKS</text>
+        <text class="deploy-zone-sublabel ork-label" x="655" y="284">DEPLOYMENT ZONE</text>
 
-        <!-- ═══ ORK STAGING AREA (far right) ═══ -->
-        <rect class="staging-bg ork-staging" x="650" y="0" width="70" height="528"/>
-        <line class="staging-border ork-staging-border" x1="650" y1="0" x2="650" y2="528"/>
-        <text class="staging-label ork-staging-label" x="685" y="24">ORKS</text>
-        <text class="staging-sublabel ork-staging-label" x="685" y="38">STAGING</text>
+        <!-- ═══ ORK STAGING AREA (far right, 740-900) ═══ -->
+        <rect class="staging-bg ork-staging" x="740" y="0" width="160" height="528"/>
+        <line class="staging-border ork-staging-border" x1="740" y1="0" x2="740" y2="528"/>
+        <text class="staging-label ork-staging-label" x="820" y="24">ORKS</text>
+        <text class="staging-sublabel ork-staging-label" x="820" y="38">STAGING</text>
         <!-- Ork Reserves drop zone -->
-        <rect class="drop-zone-bg ork-reserves-dz" id="ork-reserves-dz" x="656" y="400" width="58" height="50" rx="3"/>
-        <text class="drop-zone-label ork-dz-label" x="685" y="422">RESERVES</text>
-        <text class="drop-zone-sublabel ork-dz-label" x="685" y="434">drop here</text>
+        <rect class="drop-zone-bg ork-reserves-dz" id="ork-reserves-dz" x="750" y="310" width="140" height="100" rx="4"/>
+        <text class="drop-zone-label ork-dz-label" x="820" y="355">RESERVES</text>
+        <text class="drop-zone-sublabel ork-dz-label" x="820" y="370">drop here</text>
         <!-- Ork Deep Strike drop zone -->
-        <rect class="drop-zone-bg ork-deepstrike-dz" id="ork-deepstrike-dz" x="656" y="460" width="58" height="50" rx="3"/>
-        <text class="drop-zone-label ork-dz-label" x="685" y="482">DEEP</text>
-        <text class="drop-zone-sublabel ork-dz-label" x="685" y="494">STRIKE</text>
+        <rect class="drop-zone-bg ork-deepstrike-dz" id="ork-deepstrike-dz" x="750" y="420" width="140" height="100" rx="4"/>
+        <text class="drop-zone-label ork-dz-label" x="820" y="465">DEEP STRIKE</text>
+        <text class="drop-zone-sublabel ork-dz-label" x="820" y="480">drop here</text>
 
         <g id="terrain-layer"></g>
       </svg>
@@ -231,8 +231,18 @@
       <div class="obj-hex-wrap neutral" style="left:83.33%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">04</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
       <div class="obj-hex-wrap neutral" style="left:50%;top:86.36%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">05</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
 
+      <!-- Range circles (Bug 6) -->
+      <div id='range-move' class='range-circle rc-move' style='display:none'></div>
+      <div id='range-advance' class='range-circle rc-advance' style='display:none'></div>
+      <div id='range-charge' class='range-circle rc-charge' style='display:none'></div>
+      <div id='range-ds' class='range-circle rc-ds' style='display:none'></div>
+      <div id='range-move-label' class='range-label rl-move' style='display:none'>MOVE</div>
+      <div id='range-advance-label' class='range-label rl-advance' style='display:none'>ADV</div>
+      <div id='range-charge-label' class='range-label rl-charge' style='display:none'>CHARGE</div>
+      <div id='range-ds-label' class='range-label rl-ds' style='display:none'>DS</div>
+
       <!-- SVG 2: model overlays + bases -->
-      <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+      <svg id="bf-svg" viewBox="0 0 900 528" preserveAspectRatio="xMidYMid slice">
         <g id="layer-move-ghosts"></g>
         <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
@@ -341,6 +351,6 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script type="module" src="scene.js?v=20260314-deploy2"></script>
+<script type="module" src="scene.js?v=20260314-deploy3"></script>
 </body>
 </html>
