@@ -8,7 +8,7 @@ import { PX_PER_INCH, simState, callbacks, currentUnit, activeRangeTypes } from 
 import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion } from '../../../shared/world/svg-renderer.js';
-import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
+import { resolveTerrainCollision, resolveUnitDragCollisions, canBreachTerrain } from '../../../shared/world/collision.js';
 import { rollAdvanceDie } from './advance-dice.js';
 import { clearRangeRings, drawPerModelRangeRings } from '../../../shared/world/range-rings.js';
 
@@ -120,7 +120,7 @@ function isCurrentMoveLegal(uid) {
     var ts = phaseTurnStarts[m.id];
     if (!ts) return false;
     if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
-    if (modelCollidesTerrain(m)) return false;
+    if (!canBreachTerrain(unit) && modelCollidesTerrain(m)) return false;
 
     for (var j = i + 1; j < unit.models.length; j++) {
       if (modelsOverlap(m, unit.models[j])) return false;
@@ -477,8 +477,11 @@ function installDragEnforcement() {
         var sc = rangePx / dist; m.x = ts.x + dx * sc; m.y = ts.y + dy * sc;
         var reRes = resolveOverlaps(m, m.x, m.y); m.x = reRes.x; m.y = reRes.y;
       }
-      // Terrain collision (continuous)
-      var tr = doTerrainCollision(m.x, m.y, m.r); m.x = tr.x; m.y = tr.y;
+      // Terrain collision (continuous) — skip for breachable units
+      var dragModelUnit = simState.units.find(function(u) { return u.models.includes(m); });
+      if (!canBreachTerrain(dragModelUnit)) {
+        var tr = doTerrainCollision(m.x, m.y, m.r); m.x = tr.x; m.y = tr.y;
+      }
     }
     else if (drag.type === 'unit') {
       // Cross-unit collision
@@ -489,16 +492,18 @@ function installDragEnforcement() {
         var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
         if (dist > rangePx) { var sc = rangePx/dist; m.x = ts.x+dx*sc; m.y = ts.y+dy*sc; }
       });
-      // Terrain: push entire unit as block
-      var maxPX = 0, maxPY = 0;
-      drag.unit.models.forEach(function(m) {
-        var tr = doTerrainCollision(m.x, m.y, m.r);
-        var px = tr.x - m.x, py = tr.y - m.y;
-        if (Math.abs(px) > Math.abs(maxPX)) maxPX = px;
-        if (Math.abs(py) > Math.abs(maxPY)) maxPY = py;
-      });
-      if (maxPX !== 0 || maxPY !== 0) {
-        drag.unit.models.forEach(function(m) { m.x += maxPX; m.y += maxPY; });
+      // Terrain: push entire unit as block — skip for breachable units
+      if (!canBreachTerrain(drag.unit)) {
+        var maxPX = 0, maxPY = 0;
+        drag.unit.models.forEach(function(m) {
+          var tr = doTerrainCollision(m.x, m.y, m.r);
+          var px = tr.x - m.x, py = tr.y - m.y;
+          if (Math.abs(px) > Math.abs(maxPX)) maxPX = px;
+          if (Math.abs(py) > Math.abs(maxPY)) maxPY = py;
+        });
+        if (maxPX !== 0 || maxPY !== 0) {
+          drag.unit.models.forEach(function(m) { m.x += maxPX; m.y += maxPY; });
+        }
       }
       doUnitDragCollisions(drag.unit);
     }

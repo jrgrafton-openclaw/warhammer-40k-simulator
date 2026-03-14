@@ -141,6 +141,18 @@ export function resolveTerrainCollision(cx, cy, r, aabbs) {
   return { x: x, y: y };
 }
 
+// ── Breachable terrain check ──────────────────────────
+// Infantry, Beasts, and Swarms can move through ruin walls (WH40K 10e Breachable rule)
+var BREACHABLE_KEYWORDS = ['Infantry', 'Beast', 'Swarm'];
+
+export function canBreachTerrain(unit) {
+  if (!unit || !unit.keywords) return false;
+  for (var i = 0; i < unit.keywords.length; i++) {
+    if (BREACHABLE_KEYWORDS.indexOf(unit.keywords[i]) !== -1) return true;
+  }
+  return false;
+}
+
 // ── Cross-unit collision for unit drag ────────────────────
 export function resolveUnitDragCollisions(unit, allUnits) {
   for (var iter = 0; iter < 4; iter++) {
