@@ -152,13 +152,23 @@
         <span class="ph-sep">·</span>
         <div class="ph-item active"><span class="ph-dot"></span>FIGHT</div>
       </div>
+
       <div class="ab-sep"></div>
+
       <span id="move-mode-label"></span>
+
+      <div class="ab-sep"></div>
+
+      <!-- Confirm / Cancel (same classes as move prototype for shared CSS) -->
+      <button class="action-btn confirm-move" id="btn-confirm-fight" disabled>✓ CONFIRM</button>
+      <button class="action-btn cancel-move"  id="btn-cancel-fight"  disabled>✕ CANCEL</button>
+
+      <div class="ab-sep"></div>
+
+      <!-- End-of-phase cluster -->
       <div class="phase-end-cluster">
         <button class="btn-strat" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
         <div class="phase-end-divider" aria-hidden="true"></div>
-        <button class="btn-cta" id="btn-confirm-fight" style="display:none">CONFIRM ✓</button>
-        <button class="btn-strat" id="btn-cancel-fight" style="display:none">CANCEL ✗</button>
         <button class="btn-cta" id="btn-end-fight">END FIGHT →</button>
       </div>
     </div>
