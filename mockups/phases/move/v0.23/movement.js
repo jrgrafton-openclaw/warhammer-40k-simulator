@@ -89,6 +89,56 @@ function doUnitDragCollisions(unit) {
   resolveUnitDragCollisions(unit, simState.units);
 }
 
+function modelCollidesTerrain(model) {
+  var aabbs = window._terrainAABBs || [];
+  for (var i = 0; i < aabbs.length; i++) {
+    var box = aabbs[i];
+    var lx = box.iA * model.x + box.iC * model.y + box.iE;
+    var ly = box.iB * model.x + box.iD * model.y + box.iF;
+    var cpx = Math.max(box.minX, Math.min(box.maxX, lx));
+    var cpy = Math.max(box.minY, Math.min(box.maxY, ly));
+    if (Math.hypot(lx - cpx, ly - cpy) < model.r - 0.001) return true;
+  }
+  return false;
+}
+
+function modelsOverlap(a, b) {
+  var buffer = 1;
+  var minDist = (a.r || 0) + (b.r || 0) + buffer;
+  return Math.hypot(a.x - b.x, a.y - b.y) < minDist - 0.001;
+}
+
+function isCurrentMoveLegal(uid) {
+  if (!uid || !moveState.mode) return false;
+  var unit = simState.units.find(function(u) { return u.id === uid; });
+  if (!unit || unit.faction !== ACTIVE_PLAYER_FACTION) return false;
+
+  var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+
+  for (var i = 0; i < unit.models.length; i++) {
+    var m = unit.models[i];
+    var ts = phaseTurnStarts[m.id];
+    if (!ts) return false;
+    if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
+    if (modelCollidesTerrain(m)) return false;
+
+    for (var j = i + 1; j < unit.models.length; j++) {
+      if (modelsOverlap(m, unit.models[j])) return false;
+    }
+
+    for (var ui = 0; ui < simState.units.length; ui++) {
+      var other = simState.units[ui];
+      if (other.id === uid) continue;
+      for (var oi = 0; oi < other.models.length; oi++) {
+        if (modelsOverlap(m, other.models[oi])) return false;
+      }
+    }
+  }
+
+  checkCohesion(unit);
+  return !unit.broken;
+}
+
 function ensureRosterStatePills() {
   document.querySelectorAll('.rail-unit').forEach(function(row) {
     if (row.querySelector('.roster-state-pill')) return;
@@ -138,6 +188,11 @@ function enterMoveMode(mode) {
 function confirmMove() {
   var uid = currentUnit;
   var unit = uid ? simState.units.find(function(u) { return u.id === uid; }) : null;
+  if (!isCurrentMoveLegal(uid)) {
+    var illegalBtn = document.getElementById('btn-confirm-move');
+    if (illegalBtn) { illegalBtn.classList.add('shake-error'); setTimeout(function() { illegalBtn.classList.remove('shake-error'); }, 450); }
+    return;
+  }
   if (unit) {
     checkCohesion(unit);
     if (unit.broken) {
@@ -197,7 +252,7 @@ function updateMoveButtons() {
     btnAdvance.classList.toggle('active', moveState.mode === 'advance');
     btnAdvance.disabled = isEnemy || alreadyMoved || hasAdvanced || moveState.mode === 'advance';
   }
-  if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode;
+  if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode || !isCurrentMoveLegal(uid);
   if (btnCancel)  btnCancel.disabled  = isEnemy || !inMode;
 
   if (modeLabel) {
@@ -450,6 +505,7 @@ function installDragEnforcement() {
     renderModels();
     renderCardRangeRings(uid);
     renderMoveOverlays(uid);
+    updateMoveButtons();
     // Lift dragged unit to z-top
     var dragUnitId = getDragUnitId();
     if (dragUnitId) {
