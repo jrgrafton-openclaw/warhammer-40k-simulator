@@ -126,7 +126,10 @@ function paintHulls() {
   const validTargets = (state.phase === 'SELECT_TARGET' && state.chargerId)
     ? getValidTargets(state.chargerId) : [];
 
-  $$('#layer-hulls .unit-hull').forEach(h => {
+  const hulls = $$('#layer-hulls .unit-hull');
+  console.log(`[charge:paintHulls] phase=${state.phase} chargerId=${state.chargerId} validTargets=[${validTargets}] hullCount=${hulls.length}`);
+
+  hulls.forEach(h => {
     const uid = h.dataset.unitId;
     h.classList.remove('shoot-valid', 'shoot-invalid', 'shoot-target', 'shoot-attacker');
 
@@ -136,13 +139,16 @@ function paintHulls() {
     }
 
     if (state.phase === 'SELECT_TARGET' && isEnemy(uid)) {
+      let cls;
       if (uid === state.chargeTargetId) {
-        h.classList.add('shoot-target');
+        cls = 'shoot-target';
       } else if (validTargets.includes(uid)) {
-        h.classList.add('shoot-valid');
+        cls = 'shoot-valid';
       } else {
-        h.classList.add('shoot-invalid');
+        cls = 'shoot-invalid';
       }
+      h.classList.add(cls);
+      console.log(`[charge:paintHulls]   hull ${uid} → ${cls} (computedStroke=${getComputedStyle(h).stroke})`);
     }
   });
   syncRosterUI();
@@ -530,13 +536,19 @@ function enterSelectCharger() {
 
 function selectCharger(uid) {
   if (!isEligibleCharger(uid)) return;
+  console.log(`[charge:selectCharger] uid=${uid}`);
   state.chargerId = uid;
   state.chargeTargetId = null;
   state.phase = 'SELECT_TARGET';
   captureTurnStarts(uid);
-  baseSelectUnit(uid);
+  baseSelectUnit(uid);  // NOTE: this calls renderModels() which clears hulls
   updateCardRanges(uid);
-  paintHulls();
+  paintHulls();  // re-applies shoot-valid/shoot-invalid AFTER renderModels
+  console.log(`[charge:selectCharger] paintHulls done — checking if classes survived:`);
+  $$('#layer-hulls .unit-hull').forEach(h => {
+    if (h.classList.contains('shoot-valid') || h.classList.contains('shoot-invalid'))
+      console.log(`  ${h.dataset.unitId}: ${h.classList.contains('shoot-valid') ? 'shoot-valid' : 'shoot-invalid'}`);
+  });
   updateButtons();
 }
 
@@ -784,8 +796,9 @@ function handleSvgMousedown(e) {
 
 // ── selectUnit wrapper ────────────────────────────────
 function chargeSelectUnit(uid) {
+  console.log(`[charge:chargeSelectUnit] uid=${uid} phase=${state.phase}`);
   clearRangeRings();
-  baseSelectUnit(uid);
+  baseSelectUnit(uid);  // calls renderModels() → clears hulls
 
   if (!uid) {
     if (state.phase === 'SELECT_TARGET') {
@@ -801,6 +814,9 @@ function chargeSelectUnit(uid) {
       selectCharger(uid);
     }
   }
+  // Final check: do hulls still have classes?
+  const hullsWithClass = $$('#layer-hulls .unit-hull').filter(h => h.classList.contains('shoot-valid') || h.classList.contains('shoot-invalid'));
+  console.log(`[charge:chargeSelectUnit] END — hulls with shoot classes: ${hullsWithClass.length}`);
 }
 
 // ── Stratagem modal wiring ────────────────────────────
