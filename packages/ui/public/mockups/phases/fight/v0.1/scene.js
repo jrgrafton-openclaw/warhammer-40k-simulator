@@ -11,19 +11,16 @@
  */
 
 import { R32, R40, simState } from '../../../shared/state/store.js';
-import { buildCard, initAllTooltips, setGetRangeInches } from '../../../shared/state/units.js';
+import { buildCard, initAllTooltips } from '../../../shared/state/units.js';
 import { mapData } from '../../../shared/state/terrain-data.js';
 import { renderTerrain } from '../../../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../../../shared/world/collision.js';
-import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
+import { initBoard, initBattleControls, initModelInteraction,
          selectUnit } from '../../../shared/world/svg-renderer.js';
 // Import fight to register its selectUnit override and init
 import { initFight } from './fight.js';
 // Import WorldAPI so it's available (side-effect: wires up the facade)
 import '../../../shared/world/world-api.js';
-
-// ── Wire getRangeInches into the card builder ────────────
-setGetRangeInches(getRangeInches);
 
 // ── Army positions — MELEE ENGAGEMENT scenario ──────────
 // PX_PER_INCH = 12, so 1" = 12px edge-to-edge

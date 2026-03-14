@@ -12,6 +12,42 @@
   filter: drop-shadow(0 0 6px rgba(0,255,120,0.4));
 }
 
+/* ── Fight range chips (pile-in / consolidate) ── */
+.fight-range-chip {
+  padding: 5px 10px;
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid rgba(255,140,0,0.4);
+  color: rgba(255,140,0,0.8);
+  cursor: pointer;
+  transition: all .15s;
+}
+.fight-range-chip:hover {
+  border-color: rgba(255,140,0,0.7);
+  color: #ff8c00;
+}
+.fight-range-chip.active {
+  background: rgba(255,140,0,0.12);
+  border-color: #ff8c00;
+  color: #ff8c00;
+}
+.fight-range-chip:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ── Shake error animation ── */
+@keyframes shake-error {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+.shake-error {
+  animation: shake-error 0.4s ease-out;
+}
+
 /* ── Ineligible units dimmed ── */
 .unit-hull.fight-ineligible {
   opacity: 0.35;
