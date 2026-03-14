@@ -799,9 +799,11 @@ function chargeSelectUnit(uid) {
   }
 
   const u = getUnit(uid);
+  console.log(`[chargeSelectUnit] uid=${uid} u=${!!u} faction=${u?.faction} ACTIVE=${ACTIVE} eligible=${isEligibleCharger(uid)} phase=${state.phase}`);
   if (u && u.faction === ACTIVE && isEligibleCharger(uid)) {
     // Allow selecting a charger from any pre-move phase (including switching during SELECT_TARGET)
     if (state.phase === 'IDLE' || state.phase === 'SELECT_CHARGER' || state.phase === 'RESOLVED' || state.phase === 'SELECT_TARGET') {
+      console.log(`[chargeSelectUnit] → calling selectCharger(${uid})`);
       if (state.phase === 'SELECT_TARGET') {
         clearChargeOverlays();
         clearRangeRings();
