@@ -1,6 +1,6 @@
 /**
- * scene.js — Army data + initialisation wiring for the deployment phase prototype.
- * ES module entry point.
+ * scene.js — Army data + initialisation wiring for deployment v0.2.
+ * ES module entry point. Auto-deploys Ork units on load.
  */
 
 import { R32, R40, simState } from '../../../shared/state/store.js';
@@ -10,18 +10,18 @@ import { renderTerrain } from '../../../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../../../shared/world/collision.js';
 import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
          renderModels } from '../../../shared/world/svg-renderer.js';
-import { initDeployment } from './deployment.js?v=20260314-deploy1';
+import { initDeployment } from './deployment.js?v=20260314-deploy2';
 import '../../../shared/world/world-api.js';
 
 // ── Wire getRangeInches into the card builder ────────────
 setGetRangeInches(getRangeInches);
 
-// ── Unit definitions (all start OFF-BOARD, no models on battlefield) ──
-// Models are stored here but positioned off-screen; deployment.js manages placement.
-var OFF = -9999; // off-screen sentinel
+// ── Unit definitions ────────────────────────────────────
+// Imperium starts OFF-BOARD (staging area). Orks start pre-deployed.
+var OFF = -9999;
 
 simState.units = [
-  // Imperium
+  // Imperium (all start off-board, player deploys them)
   { id:'assault-intercessors', rosterIndex:0, faction:'imp', keywords:['Infantry'],
     models:[{id:'ai1',x:OFF,y:OFF,r:R32},{id:'ai2',x:OFF,y:OFF,r:R32},{id:'ai3',x:OFF,y:OFF,r:R32},
             {id:'ai4',x:OFF,y:OFF,r:R32},{id:'ai5',x:OFF,y:OFF,r:R32}], broken:false, deployed:false },
@@ -35,16 +35,19 @@ simState.units = [
             {id:'hb4',x:OFF,y:OFF,r:R32},{id:'hb5',x:OFF,y:OFF,r:R32}], broken:false, deployed:false },
   { id:'redemptor-dreadnought', rosterIndex:4, faction:'imp', keywords:['Vehicle'],
     models:[{id:'rd1',x:OFF,y:OFF,r:22,shape:'rect',w:43,h:25}], broken:false, deployed:false },
-  // Orks
+
+  // Orks (auto-deployed in their deployment zone, spread out)
   { id:'boss-nob', rosterIndex:6, faction:'ork', keywords:['Infantry','Character'],
-    models:[{id:'bn1',x:OFF,y:OFF,r:R40}], broken:false, deployed:false },
+    models:[{id:'bn1',x:560,y:100,r:R40}], broken:false, deployed:true },
   { id:'boyz-mob', rosterIndex:7, faction:'ork', keywords:['Infantry'],
-    models:[{id:'bm1',x:OFF,y:OFF,r:R32},{id:'bm2',x:OFF,y:OFF,r:R32},{id:'bm3',x:OFF,y:OFF,r:R32},
-            {id:'bm4',x:OFF,y:OFF,r:R32},{id:'bm5',x:OFF,y:OFF,r:R32},{id:'bm6',x:OFF,y:OFF,r:R32},
-            {id:'bm7',x:OFF,y:OFF,r:R32},{id:'bm8',x:OFF,y:OFF,r:R32},{id:'bm9',x:OFF,y:OFF,r:R32},
-            {id:'bm10',x:OFF,y:OFF,r:R32}], broken:false, deployed:false },
+    models:[
+      {id:'bm1',x:500,y:200,r:R32},{id:'bm2',x:517,y:200,r:R32},{id:'bm3',x:534,y:200,r:R32},
+      {id:'bm4',x:551,y:200,r:R32},{id:'bm5',x:568,y:200,r:R32},{id:'bm6',x:500,y:217,r:R32},
+      {id:'bm7',x:517,y:217,r:R32},{id:'bm8',x:534,y:217,r:R32},{id:'bm9',x:551,y:217,r:R32},
+      {id:'bm10',x:568,y:217,r:R32}
+    ], broken:false, deployed:true },
   { id:'mekboy', rosterIndex:8, faction:'ork', keywords:['Infantry','Character'],
-    models:[{id:'mb1',x:OFF,y:OFF,r:R32}], broken:false, deployed:false }
+    models:[{id:'mb1',x:560,y:350,r:R32}], broken:false, deployed:true }
 ];
 
 // ── Initialise shared modules ────────────────────────────

@@ -1,6 +1,7 @@
 /**
- * deployment.js — Deployment state machine, zone validation, reserves management,
- * drag enforcement, and UI wiring (ES module).
+ * deployment.js — v0.2 Deployment state machine with staging areas,
+ * drag-to-reserves/deep-strike, auto-deploy enemy, streamlined confirm/cancel.
+ * ES module.
  */
 
 import { PX_PER_INCH, simState, callbacks, currentUnit } from '../../../shared/state/store.js';
@@ -12,22 +13,28 @@ import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../sha
 // ── Constants ────────────────────────────────────────────
 var BOARD_W = 720;
 var BOARD_H = 528;
-// Deployment zones: left third for Imperium, right third for Orks
-var IMP_ZONE = { xMin: 0, xMax: 240, yMin: 0, yMax: BOARD_H };
-var ORK_ZONE = { xMin: 480, xMax: BOARD_W, yMin: 0, yMax: BOARD_H };
+// Deployment zones (narrowed to make room for staging areas)
+var IMP_ZONE = { xMin: 70, xMax: 240, yMin: 0, yMax: BOARD_H };
+var ORK_ZONE = { xMin: 480, xMax: 650, yMin: 0, yMax: BOARD_H };
+// Staging areas
+var IMP_STAGING = { xMin: 0, xMax: 70, yMin: 0, yMax: BOARD_H };
+var ORK_STAGING = { xMin: 650, xMax: 720, yMin: 0, yMax: BOARD_H };
+// Drop zones (reserves / deep strike) — SVG coordinates
+var IMP_RESERVES_DZ = { xMin: 6, xMax: 64, yMin: 400, yMax: 450 };
+var IMP_DS_DZ       = { xMin: 6, xMax: 64, yMin: 460, yMax: 510 };
+var ORK_RESERVES_DZ = { xMin: 656, xMax: 714, yMin: 400, yMax: 450 };
+var ORK_DS_DZ       = { xMin: 656, xMax: 714, yMin: 460, yMax: 510 };
 
 // ── Deployment state ─────────────────────────────────────
 var deployState = {
-  activePlayer: 'imp',        // 'imp' | 'ork' — alternates after each placement
-  mode: 'place',              // 'place' | 'reserves'
-  deployedUnits: new Set(),   // unit IDs on the board
-  reserveUnits: new Set(),    // unit IDs assigned to strategic reserves
-  deepStrikeUnits: new Set(), // unit IDs assigned to deep strike
-  placingUnit: null,          // unit ID currently being positioned (not yet confirmed)
-  impTotal: 0,                // total imp units
-  orkTotal: 0,                // total ork units
-  impPlaced: 0,               // imp units deployed or in reserves
-  orkPlaced: 0                // ork units deployed or in reserves
+  activePlayer: 'imp',
+  deployedUnits: new Set(),
+  reserveUnits: new Set(),
+  deepStrikeUnits: new Set(),
+  placingUnit: null,
+  impTotal: 0,
+  orkTotal: 0,
+  unitInDropZone: null  // 'reserves' | 'deepstrike' | null
 };
 
 // Expose for renderModels to detect off-board units
@@ -41,6 +48,10 @@ function getDeployZone(faction) {
 function isInZone(x, y, r, zone) {
   return (x - r) >= zone.xMin && (x + r) <= zone.xMax &&
          (y - r) >= zone.yMin && (y + r) <= zone.yMax;
+}
+
+function isPointInRect(x, y, rect) {
+  return x >= rect.xMin && x <= rect.xMax && y >= rect.yMin && y <= rect.yMax;
 }
 
 function isUnitInZone(unit) {
@@ -69,7 +80,6 @@ function arrangeModels(unit, cx, cy) {
     models[0].y = cy;
     return;
   }
-  // Place in rows with 2" coherency spacing (~17px between bases)
   var spacing = 17;
   var cols = Math.ceil(Math.sqrt(n));
   var rows = Math.ceil(n / cols);
@@ -83,80 +93,60 @@ function arrangeModels(unit, cx, cy) {
   }
 }
 
-// ── Reserve panel management ─────────────────────────────
-function buildReserveCard(unit, unitData) {
-  var card = document.createElement('div');
-  card.className = 'reserve-card faction-' + unit.faction;
-  card.dataset.unitId = unit.id;
-  card.innerHTML =
-    '<div class="rc-icon">' + unit.models.length + '</div>' +
-    '<span class="rc-name">' + unitData.name + '</span>' +
-    '<span class="rc-count">×' + unit.models.length + '</span>';
-  card.addEventListener('click', function() {
-    onReserveCardClick(unit.id);
-  });
-  return card;
-}
+// ── Staging token rendering ──────────────────────────────
+function renderStagingTokens() {
+  var impContainer = document.getElementById('staging-tokens-imp');
+  var orkContainer = document.getElementById('staging-tokens-ork');
+  if (!impContainer || !orkContainer) return;
 
-function populateReservePanels() {
-  var impUndep = document.getElementById('imp-undeployed');
-  var orkUndep = document.getElementById('ork-undeployed');
-  var impStrat = document.getElementById('imp-strategic');
-  var orkStrat = document.getElementById('ork-strategic');
-  var impDs    = document.getElementById('imp-deepstrike');
-  var orkDs    = document.getElementById('ork-deepstrike');
-
-  // Clear all
-  [impUndep, orkUndep, impStrat, orkStrat, impDs, orkDs].forEach(function(el) {
-    if (el) el.innerHTML = '';
-  });
+  impContainer.innerHTML = '';
+  orkContainer.innerHTML = '';
 
   simState.units.forEach(function(unit) {
+    if (deployState.deployedUnits.has(unit.id)) return;
+    if (unit.faction !== 'imp') return;
+
     var ud = UNITS[unit.id];
     if (!ud) return;
-    var card = buildReserveCard(unit, ud);
 
-    if (deployState.deployedUnits.has(unit.id)) {
-      // deployed — don't show in reserves
-      return;
-    }
+    var token = document.createElement('div');
+    token.className = 'staging-token imp';
+    token.dataset.unitId = unit.id;
+
+    var statusHtml = '';
     if (deployState.reserveUnits.has(unit.id)) {
-      var stratList = unit.faction === 'imp' ? impStrat : orkStrat;
-      if (stratList) stratList.appendChild(card);
-      return;
+      statusHtml = '<span class="st-status in-reserves">RESERVES</span>';
+    } else if (deployState.deepStrikeUnits.has(unit.id)) {
+      statusHtml = '<span class="st-status in-deepstrike">DEEP STRIKE</span>';
     }
-    if (deployState.deepStrikeUnits.has(unit.id)) {
-      var dsList = unit.faction === 'imp' ? impDs : orkDs;
-      if (dsList) dsList.appendChild(card);
-      return;
-    }
-    // Undeployed
-    var undepList = unit.faction === 'imp' ? impUndep : orkUndep;
-    if (undepList) undepList.appendChild(card);
-  });
 
-  // Highlight selected card
-  document.querySelectorAll('.reserve-card').forEach(function(c) {
-    c.classList.toggle('selected', c.dataset.unitId === deployState.placingUnit);
+    token.innerHTML =
+      '<div class="st-icon">' + unit.models.length + '</div>' +
+      '<span class="st-name">' + ud.name + '</span>' +
+      statusHtml;
+
+    if (deployState.placingUnit === unit.id) {
+      token.classList.add('selected');
+    }
+
+    token.addEventListener('click', function() {
+      onStagingTokenClick(unit.id);
+    });
+
+    impContainer.appendChild(token);
   });
 }
 
-function onReserveCardClick(unitId) {
+function onStagingTokenClick(unitId) {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
-
-  // Can only interact with current player's units
-  if (unit.faction !== deployState.activePlayer) return;
-
-  // If already deployed or in reserves, ignore
+  if (unit.faction !== 'imp') return;
   if (deployState.deployedUnits.has(unitId)) return;
 
-  if (deployState.mode === 'reserves') {
-    assignToReserves(unitId);
-    return;
-  }
+  // Remove from reserves/deep strike if assigned
+  deployState.reserveUnits.delete(unitId);
+  deployState.deepStrikeUnits.delete(unitId);
 
-  // Place mode: start placing this unit
   startPlacement(unitId);
 }
 
@@ -165,11 +155,15 @@ function startPlacement(unitId) {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
-  // Remove from reserves if it was there
+  // Cancel any current placement
+  if (deployState.placingUnit && deployState.placingUnit !== unitId) {
+    cancelPlacement();
+  }
+
   deployState.reserveUnits.delete(unitId);
   deployState.deepStrikeUnits.delete(unitId);
-
   deployState.placingUnit = unitId;
+  deployState.unitInDropZone = null;
 
   // Position models in center of deployment zone
   var zone = getDeployZone(unit.faction);
@@ -187,10 +181,12 @@ function startPlacement(unitId) {
   // Enable confirm/cancel
   var btnConfirm = document.getElementById('btn-confirm-unit');
   var btnCancel = document.getElementById('btn-cancel-unit');
-  if (btnConfirm) btnConfirm.disabled = false;
+  if (btnConfirm) {
+    btnConfirm.disabled = false;
+    btnConfirm.textContent = '✓ CONFIRM';
+  }
   if (btnCancel) btnCancel.disabled = false;
 
-  // Highlight deployment zone
   highlightActiveZone(true);
 }
 
@@ -211,6 +207,16 @@ function confirmPlacement() {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
+  // If unit was dropped in a drop zone, handle that
+  if (deployState.unitInDropZone === 'reserves') {
+    assignToReserves(unitId);
+    return;
+  }
+  if (deployState.unitInDropZone === 'deepstrike') {
+    assignToDeepStrike(unitId);
+    return;
+  }
+
   // Validate zone
   if (!isUnitInZone(unit)) {
     showZoneWarning();
@@ -226,10 +232,7 @@ function confirmPlacement() {
   deployState.deployedUnits.add(unitId);
   unit.deployed = true;
   deployState.placingUnit = null;
-
-  // Update counts
-  if (unit.faction === 'imp') deployState.impPlaced++;
-  else deployState.orkPlaced++;
+  deployState.unitInDropZone = null;
 
   // Disable confirm/cancel
   var btnConfirm = document.getElementById('btn-confirm-unit');
@@ -238,9 +241,10 @@ function confirmPlacement() {
   if (btnCancel) btnCancel.disabled = true;
 
   highlightActiveZone(false);
-  advanceTurn();
+  clearDropZoneHighlights();
   renderModels();
   updateUI();
+  checkDeploymentComplete();
 }
 
 function cancelPlacement() {
@@ -250,9 +254,10 @@ function cancelPlacement() {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
-  // Move models back off-screen
+  // Move models back off-screen (back to staging)
   unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
   deployState.placingUnit = null;
+  deployState.unitInDropZone = null;
 
   var btnConfirm = document.getElementById('btn-confirm-unit');
   var btnCancel = document.getElementById('btn-cancel-unit');
@@ -260,6 +265,7 @@ function cancelPlacement() {
   if (btnCancel) btnCancel.disabled = true;
 
   highlightActiveZone(false);
+  clearDropZoneHighlights();
   renderModels();
   updateUI();
 }
@@ -268,98 +274,109 @@ function assignToReserves(unitId) {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
-  // Can only assign current player's units
-  if (unit.faction !== deployState.activePlayer) return;
-  if (deployState.deployedUnits.has(unitId)) return;
+  deployState.reserveUnits.add(unitId);
+  deployState.deepStrikeUnits.delete(unitId);
+  unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
+  deployState.placingUnit = null;
+  deployState.unitInDropZone = null;
 
-  // Toggle: if already in reserves, remove
-  if (deployState.reserveUnits.has(unitId)) {
-    deployState.reserveUnits.delete(unitId);
-  } else {
-    deployState.deepStrikeUnits.delete(unitId);
-    deployState.reserveUnits.add(unitId);
+  var btnConfirm = document.getElementById('btn-confirm-unit');
+  var btnCancel = document.getElementById('btn-cancel-unit');
+  if (btnConfirm) btnConfirm.disabled = true;
+  if (btnCancel) btnCancel.disabled = true;
 
-    // Move models off-screen
-    unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
-
-    // Count as placed
-    if (unit.faction === 'imp') deployState.impPlaced++;
-    else deployState.orkPlaced++;
-
-    advanceTurn();
-  }
-
+  highlightActiveZone(false);
+  clearDropZoneHighlights();
   renderModels();
   updateUI();
-}
-
-// ── Turn management ──────────────────────────────────────
-function advanceTurn() {
-  // Switch active player
-  deployState.activePlayer = deployState.activePlayer === 'imp' ? 'ork' : 'imp';
-
-  // Check if the new active player has any undeployed units
-  var hasUndeployed = simState.units.some(function(u) {
-    return u.faction === deployState.activePlayer &&
-      !deployState.deployedUnits.has(u.id) &&
-      !deployState.reserveUnits.has(u.id) &&
-      !deployState.deepStrikeUnits.has(u.id);
-  });
-
-  if (!hasUndeployed) {
-    // Check if the other player still has units
-    var otherFaction = deployState.activePlayer === 'imp' ? 'ork' : 'imp';
-    var otherHasUndeployed = simState.units.some(function(u) {
-      return u.faction === otherFaction &&
-        !deployState.deployedUnits.has(u.id) &&
-        !deployState.reserveUnits.has(u.id) &&
-        !deployState.deepStrikeUnits.has(u.id);
-    });
-    if (otherHasUndeployed) {
-      deployState.activePlayer = otherFaction;
-    }
-    // Otherwise both done — deployment complete
-  }
-
   checkDeploymentComplete();
 }
 
+function assignToDeepStrike(unitId) {
+  var unit = simState.units.find(function(u) { return u.id === unitId; });
+  if (!unit) return;
+
+  deployState.deepStrikeUnits.add(unitId);
+  deployState.reserveUnits.delete(unitId);
+  unit.models.forEach(function(m) { m.x = -9999; m.y = -9999; });
+  deployState.placingUnit = null;
+  deployState.unitInDropZone = null;
+
+  var btnConfirm = document.getElementById('btn-confirm-unit');
+  var btnCancel = document.getElementById('btn-cancel-unit');
+  if (btnConfirm) btnConfirm.disabled = true;
+  if (btnCancel) btnCancel.disabled = true;
+
+  highlightActiveZone(false);
+  clearDropZoneHighlights();
+  renderModels();
+  updateUI();
+  checkDeploymentComplete();
+}
+
+// ── Drop zone detection ─────────────────────────────────
+function getDropZoneForUnit(unit) {
+  if (!unit || unit.models.length === 0) return null;
+  var m = unit.models[0];
+  var dz = unit.faction === 'imp'
+    ? { reserves: IMP_RESERVES_DZ, ds: IMP_DS_DZ }
+    : { reserves: ORK_RESERVES_DZ, ds: ORK_DS_DZ };
+
+  if (isPointInRect(m.x, m.y, dz.reserves)) return 'reserves';
+  if (isPointInRect(m.x, m.y, dz.ds)) return 'deepstrike';
+  return null;
+}
+
+function highlightDropZones(faction, dropType) {
+  clearDropZoneHighlights();
+  if (!dropType) return;
+
+  var prefix = faction === 'imp' ? 'imp' : 'ork';
+  if (dropType === 'reserves') {
+    var el = document.getElementById(prefix + '-reserves-dz');
+    if (el) el.classList.add('dz-highlight');
+  } else if (dropType === 'deepstrike') {
+    var el = document.getElementById(prefix + '-deepstrike-dz');
+    if (el) el.classList.add('dz-highlight');
+  }
+}
+
+function clearDropZoneHighlights() {
+  document.querySelectorAll('.drop-zone-bg').forEach(function(el) {
+    el.classList.remove('dz-highlight');
+  });
+}
+
+// ── Deployment completion ────────────────────────────────
 function checkDeploymentComplete() {
-  var allPlaced = simState.units.every(function(u) {
+  var allImpPlaced = simState.units.every(function(u) {
+    if (u.faction !== 'imp') return true;
     return deployState.deployedUnits.has(u.id) ||
       deployState.reserveUnits.has(u.id) ||
       deployState.deepStrikeUnits.has(u.id);
   });
   var btn = document.getElementById('btn-end');
-  if (btn) btn.disabled = !allPlaced;
+  if (btn) btn.disabled = !allImpPlaced;
 }
 
 function confirmDeployment() {
-  // Final confirmation — freeze state
   var btn = document.getElementById('btn-end');
   if (btn && btn.disabled) return;
 
-  // Visual confirmation
   btn.textContent = '✓ DEPLOYMENT LOCKED';
   btn.disabled = true;
   btn.style.background = 'rgba(0,200,80,0.15)';
   btn.style.borderColor = 'rgba(0,200,80,0.4)';
   btn.style.color = '#00c850';
 
-  // Update phase header
   var sub = document.getElementById('deploy-subtitle');
   if (sub) sub.textContent = 'Deployment Complete — Ready for Command Phase';
 
-  // Disable all interaction
   deployState.placingUnit = null;
   var btnConfirm = document.getElementById('btn-confirm-unit');
   var btnCancel = document.getElementById('btn-cancel-unit');
-  var btnPlace = document.getElementById('btn-place');
-  var btnRes = document.getElementById('btn-reserves');
   if (btnConfirm) btnConfirm.disabled = true;
   if (btnCancel) btnCancel.disabled = true;
-  if (btnPlace) btnPlace.disabled = true;
-  if (btnRes) btnRes.disabled = true;
 }
 
 // ── UI updates ───────────────────────────────────────────
@@ -367,47 +384,38 @@ function updateUI() {
   updateStatusLabel();
   updateSubtitle();
   updateRosterPills();
-  populateReservePanels();
+  renderStagingTokens();
   checkDeploymentComplete();
 }
 
 function updateStatusLabel() {
   var label = document.getElementById('deploy-status-label');
   if (!label) return;
-
-  var faction = deployState.activePlayer;
-  var factionName = faction === 'imp' ? 'IMPERIUM' : 'ORKS';
-  var total = faction === 'imp' ? deployState.impTotal : deployState.orkTotal;
   var placed = 0;
   simState.units.forEach(function(u) {
-    if (u.faction !== faction) return;
+    if (u.faction !== 'imp') return;
     if (deployState.deployedUnits.has(u.id) ||
         deployState.reserveUnits.has(u.id) ||
         deployState.deepStrikeUnits.has(u.id)) {
       placed++;
     }
   });
-
-  label.textContent = factionName + ' DEPLOYING · ' + placed + '/' + total;
-  label.classList.toggle('ork-turn', faction === 'ork');
+  label.textContent = 'IMPERIUM DEPLOYING · ' + placed + '/' + deployState.impTotal;
 }
 
 function updateSubtitle() {
   var sub = document.getElementById('deploy-subtitle');
   if (!sub) return;
-  var faction = deployState.activePlayer;
-  var factionName = faction === 'imp' ? 'Imperium' : 'Orks';
-  var total = faction === 'imp' ? deployState.impTotal : deployState.orkTotal;
   var placed = 0;
   simState.units.forEach(function(u) {
-    if (u.faction !== faction) return;
+    if (u.faction !== 'imp') return;
     if (deployState.deployedUnits.has(u.id) ||
         deployState.reserveUnits.has(u.id) ||
         deployState.deepStrikeUnits.has(u.id)) {
       placed++;
     }
   });
-  sub.textContent = factionName + ' Deploying · ' + placed + '/' + total + ' units';
+  sub.textContent = 'Imperium Deploying · ' + placed + '/' + deployState.impTotal + ' units';
 }
 
 function updateRosterPills() {
@@ -442,7 +450,7 @@ function showZoneWarning() {
 function highlightActiveZone(active) {
   var faction = deployState.placingUnit ?
     simState.units.find(function(u) { return u.id === deployState.placingUnit; })?.faction :
-    deployState.activePlayer;
+    'imp';
   var impZone = document.querySelector('.deploy-zone-bg.imp-zone');
   var orkZone = document.querySelector('.deploy-zone-bg.ork-zone');
   if (impZone) impZone.classList.toggle('zone-active', active && faction === 'imp');
@@ -451,21 +459,17 @@ function highlightActiveZone(active) {
 
 // ── Drag enforcement ─────────────────────────────────────
 function installDragInterceptor() {
-  // Block drags on units that are not the placing unit
-  var origDrag = Object.getOwnPropertyDescriptor(simState, 'drag') || {};
   var _drag = simState.drag;
   Object.defineProperty(simState, 'drag', {
     get: function() { return _drag; },
     set: function(v) {
       if (v && v.unitId) {
         var uid = v.unitId;
-        // Only allow dragging the currently-placing unit
         if (uid !== deployState.placingUnit) {
-          // But allow selecting deployed units for viewing
           if (deployState.deployedUnits.has(uid)) {
             baseSelectUnit(uid);
           }
-          return; // block the drag
+          return;
         }
       }
       _drag = v;
@@ -486,27 +490,51 @@ function installDragEnforcement() {
     var unit = simState.units.find(function(u) { return u.id === uid; });
     if (!unit) return;
 
-    // Clamp to deployment zone
-    var zone = getDeployZone(unit.faction);
-    var wasOutside = false;
-    unit.models.forEach(function(m) {
-      var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
-      if (!isInZone(m.x, m.y, r, zone)) {
-        var clamped = clampToZone(m.x, m.y, r, zone);
-        m.x = clamped.x;
-        m.y = clamped.y;
-        wasOutside = true;
-      }
-    });
+    // Check if unit anchor is in a drop zone
+    var dropType = getDropZoneForUnit(unit);
+    deployState.unitInDropZone = dropType;
+    highlightDropZones(unit.faction, dropType);
 
-    if (wasOutside) {
-      showZoneWarning();
+    // Update confirm button state based on position
+    var btnConfirm = document.getElementById('btn-confirm-unit');
+    if (btnConfirm) {
+      if (dropType) {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = dropType === 'reserves' ? '✓ TO RESERVES' : '✓ TO DEEP STRIKE';
+      } else if (isUnitInZone(unit)) {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '✓ CONFIRM';
+      } else {
+        btnConfirm.disabled = true;
+        btnConfirm.textContent = '✓ CONFIRM';
+      }
+    }
+
+    // Don't clamp if in staging/drop zone area
+    var anchorModel = unit.models[0];
+    var inStaging = isPointInRect(anchorModel.x, anchorModel.y,
+      unit.faction === 'imp' ? IMP_STAGING : ORK_STAGING);
+
+    if (!inStaging && !dropType) {
+      // Clamp to deployment zone
+      var zone = getDeployZone(unit.faction);
+      var wasOutside = false;
+      unit.models.forEach(function(m) {
+        var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
+        if (!isInZone(m.x, m.y, r, zone)) {
+          var clamped = clampToZone(m.x, m.y, r, zone);
+          m.x = clamped.x;
+          m.y = clamped.y;
+          wasOutside = true;
+        }
+      });
+      if (wasOutside) showZoneWarning();
     }
 
     // Terrain collision
     var aabbs = window._terrainAABBs || [];
     unit.models.forEach(function(m) {
-      if (m.shape === 'rect') return; // skip rect collision for simplicity
+      if (m.shape === 'rect') return;
       var resolved = resolveTerrainCollision(m.x, m.y, m.r, aabbs);
       m.x = resolved.x;
       m.y = resolved.y;
@@ -529,10 +557,8 @@ function deploySelectUnit(uid) {
   var unit = simState.units.find(function(u) { return u.id === uid; });
   if (!unit) return;
 
-  // If clicking a reserve card (handled elsewhere), skip
   baseSelectUnit(uid);
 
-  // Update unit state badge
   var badge = document.getElementById('unit-state-badge');
   if (badge) {
     if (deployState.deployedUnits.has(uid)) {
@@ -543,6 +569,10 @@ function deploySelectUnit(uid) {
       badge.textContent = 'RESERVES';
       badge.style.background = 'rgba(186,126,255,0.15)';
       badge.style.color = '#ba7eff';
+    } else if (deployState.deepStrikeUnits.has(uid)) {
+      badge.textContent = 'DEEP STRIKE';
+      badge.style.background = 'rgba(255,170,0,0.15)';
+      badge.style.color = '#ffaa00';
     } else {
       badge.textContent = 'UNDEPLOYED';
       badge.style.background = 'rgba(255,170,0,0.15)';
@@ -553,24 +583,6 @@ function deploySelectUnit(uid) {
 
 // ── Button wiring ────────────────────────────────────────
 function wireButtons() {
-  // Mode toggle: Place vs Reserves
-  var btnPlace = document.getElementById('btn-place');
-  var btnRes = document.getElementById('btn-reserves');
-  if (btnPlace) {
-    btnPlace.addEventListener('click', function() {
-      deployState.mode = 'place';
-      btnPlace.classList.add('active');
-      if (btnRes) btnRes.classList.remove('active');
-    });
-  }
-  if (btnRes) {
-    btnRes.addEventListener('click', function() {
-      deployState.mode = 'reserves';
-      if (btnPlace) btnPlace.classList.remove('active');
-      btnRes.classList.add('active');
-    });
-  }
-
   // Confirm / Cancel
   var btnConfirm = document.getElementById('btn-confirm-unit');
   var btnCancel = document.getElementById('btn-cancel-unit');
@@ -597,24 +609,24 @@ function wireButtons() {
     });
   }
 
-  // Roster unit clicks → start placement
+  // Roster unit clicks → start placement (Imperium only)
   document.querySelectorAll('.rail-unit').forEach(function(el) {
     el.addEventListener('click', function() {
       var uid = el.dataset.unit;
       if (!uid) return;
       var unit = simState.units.find(function(u) { return u.id === uid; });
       if (!unit) return;
-      if (unit.faction !== deployState.activePlayer) return;
-      if (deployState.deployedUnits.has(uid)) {
-        // Already deployed — just select for viewing
+      if (unit.faction !== 'imp') {
         deploySelectUnit(uid);
         return;
       }
-      if (deployState.mode === 'reserves') {
-        assignToReserves(uid);
-      } else {
-        startPlacement(uid);
+      if (deployState.deployedUnits.has(uid)) {
+        deploySelectUnit(uid);
+        return;
       }
+      deployState.reserveUnits.delete(uid);
+      deployState.deepStrikeUnits.delete(uid);
+      startPlacement(uid);
     });
   });
 }
@@ -628,15 +640,6 @@ function wireKeyboard() {
       if (deployState.placingUnit) confirmPlacement();
     } else if (key === 'ESCAPE' || key === 'X') {
       if (deployState.placingUnit) cancelPlacement();
-    } else if (key === 'P') {
-      var btnPlace = document.getElementById('btn-place');
-      if (btnPlace) btnPlace.click();
-    } else if (key === 'R') {
-      // Only switch to reserves mode if not also the reset key
-      if (!e.ctrlKey && !e.metaKey) {
-        var btnRes = document.getElementById('btn-reserves');
-        if (btnRes) btnRes.click();
-      }
     }
   });
 }
@@ -647,7 +650,6 @@ function setupClickOutside() {
   if (!svg) return;
   svg.addEventListener('click', function(e) {
     if (e.target === svg || e.target.tagName === 'g') {
-      // Clicked empty space
       if (!deployState.placingUnit) {
         deploySelectUnit(null);
       }
@@ -677,6 +679,13 @@ export function initDeployment() {
     else if (u.faction === 'ork') deployState.orkTotal++;
   });
 
+  // Mark Ork units as deployed (they're pre-placed in scene.js)
+  simState.units.forEach(function(u) {
+    if (u.faction === 'ork') {
+      deployState.deployedUnits.add(u.id);
+    }
+  });
+
   // Register selection override
   callbacks.selectUnit = deploySelectUnit;
 
@@ -687,8 +696,8 @@ export function initDeployment() {
   installDragInterceptor();
   installDragEnforcement();
 
-  // Initial render — models are off-screen, only terrain shows
+  // Initial render
   renderModels();
-  populateReservePanels();
+  renderStagingTokens();
   updateUI();
 }
