@@ -850,26 +850,22 @@ function buildWeaponRangeToggles(uid) {
   rangesEl.querySelectorAll('.weapon-range').forEach(btn => {
     btn.addEventListener('click', () => {
       const ix = Number(btn.dataset.wpnIx);
-      if (activeWeaponToggles.has(ix)) {
-        activeWeaponToggles.delete(ix);
-        btn.classList.remove('active');
-      } else {
-        activeWeaponToggles.add(ix);
-        btn.classList.add('active');
-      }
-      // Redraw all active weapon rings
+      const wasActive = activeWeaponToggles.has(ix);
+
+      activeWeaponToggles.clear();
+      rangesEl.querySelectorAll('.weapon-range').forEach(otherBtn => otherBtn.classList.remove('active'));
       clearRangeRings();
-      if (activeWeaponToggles.size > 0) {
-        const ranges = [];
-        activeWeaponToggles.forEach(wix => {
-          const prof = unique[wix];
-          if (!prof) return;
-          const rng = parseRange(prof);
-          const color = WEAPON_RING_COLORS[wix % WEAPON_RING_COLORS.length];
-          ranges.push({ radiusInches: rng, fill: color.fill, stroke: color.stroke });
-        });
-        if (ranges.length) drawPerModelRangeRings(uid, ranges);
-      }
+
+      if (wasActive) return;
+
+      activeWeaponToggles.add(ix);
+      btn.classList.add('active');
+
+      const prof = unique[ix];
+      if (!prof) return;
+      const rng = parseRange(prof);
+      const color = WEAPON_RING_COLORS[ix % WEAPON_RING_COLORS.length];
+      drawPerModelRangeRings(uid, [{ radiusInches: rng, fill: color.fill, stroke: color.stroke }]);
     });
   });
 }
