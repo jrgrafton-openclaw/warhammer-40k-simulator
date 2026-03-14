@@ -436,6 +436,7 @@ function installDragEnforcement() {
 
 // ── Selection override via callbacks ─────────────────
 function movementSelectUnit(uid) {
+  var previousUid = currentUnit;
   clearRangeRings();
   if (moveState.mode !== null && uid !== currentUnit) cancelMove();
   baseSelectUnit(uid);
@@ -450,8 +451,11 @@ function movementSelectUnit(uid) {
 
   if (uid) {
     var selectedUnit = simState.units.find(function(u) { return u.id === uid; });
-    if (selectedUnit && selectedUnit.faction === ACTIVE_PLAYER_FACTION) setExclusiveCardRange('move');
-    else setExclusiveCardRange(null);
+    if (selectedUnit && selectedUnit.faction === ACTIVE_PLAYER_FACTION) {
+      if (uid !== previousUid || activeRangeTypes.size === 0) setExclusiveCardRange('move');
+    } else {
+      setExclusiveCardRange(null);
+    }
   } else {
     setExclusiveCardRange(null);
   }
