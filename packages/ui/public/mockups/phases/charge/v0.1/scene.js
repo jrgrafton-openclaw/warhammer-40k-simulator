@@ -16,7 +16,7 @@ import { renderTerrain } from '../../../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../../../shared/world/collision.js';
 import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
          selectUnit } from '../../../shared/world/svg-renderer.js';
-import { initCharge } from './charge.js?v=2';
+import { initCharge } from './charge.js?v=3';
 import '../../../shared/world/world-api.js';
 
 // ── Wire getRangeInches into the card builder ────────────

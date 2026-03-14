@@ -32,6 +32,7 @@ const state = {
   phase: 'IDLE',           // IDLE | SELECT_CHARGER | SELECT_TARGET | ROLLING | CHARGE_MOVE | RESOLVED
   chargerId: null,
   chargeTargetId: null,    // single target for v0.1
+  hoveredTargetId: null,   // enemy hull being hovered
   chargeRoll: 0,           // 2D6 result
   die1: 0,
   die2: 0,
@@ -136,7 +137,7 @@ function paintHulls() {
     }
 
     if (state.phase === 'SELECT_TARGET' && isEnemy(uid)) {
-      if (uid === state.chargeTargetId) {
+      if (uid === state.chargeTargetId || uid === state.hoveredTargetId) {
         h.classList.add('shoot-target');
       } else if (validTargets.includes(uid)) {
         h.classList.add('shoot-valid');
@@ -856,6 +857,29 @@ export function initCharge() {
   if (svg) {
     svg.addEventListener('click', handleSvgClick, true);
     svg.addEventListener('mousedown', handleSvgMousedown, true);
+
+    // Hover: green → red on enemy hulls (matches shoot v0.9)
+    svg.addEventListener('mouseover', (e) => {
+      if (state.phase !== 'SELECT_TARGET') return;
+      let node = e.target;
+      while (node && !node.classList?.contains('unit-hull') && !node.classList?.contains('model-base')) node = node.parentElement;
+      if (!node) return;
+      const uid = node.dataset.unitId;
+      if (uid && isEnemy(uid) && uid !== state.hoveredTargetId) {
+        state.hoveredTargetId = uid;
+        paintHulls();
+      }
+    });
+    svg.addEventListener('mouseout', (e) => {
+      if (!state.hoveredTargetId) return;
+      let related = e.relatedTarget;
+      while (related && !related.classList?.contains('unit-hull') && !related.classList?.contains('model-base')) related = related.parentElement;
+      const newUid = related?.dataset?.unitId;
+      if (newUid !== state.hoveredTargetId) {
+        state.hoveredTargetId = null;
+        paintHulls();
+      }
+    });
   }
 
   // Keyboard shortcuts
