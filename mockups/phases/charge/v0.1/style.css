@@ -34,15 +34,13 @@
   fill: none;
   stroke: rgba(0,212,255,0.2);
   stroke-width: 1.5;
-  stroke-dasharray: 3 3;
   pointer-events: none;
 }
 
 /* ── Charge ruler lines (distance moved per model) ── */
 .charge-ruler {
-  stroke: rgba(0,212,255,0.25);
+  stroke: rgba(0,212,255,0.35);
   stroke-width: 1;
-  stroke-dasharray: 4 3;
   pointer-events: none;
 }
 .charge-ruler.over-range {

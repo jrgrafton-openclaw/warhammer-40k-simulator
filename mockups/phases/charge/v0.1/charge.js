@@ -208,7 +208,7 @@ function rollChargeDice(targetId) {
           setTimeout(() => {
             chips[0].classList.remove('rolling');
             chips[0].textContent = die1;
-            chips[0].classList.add(success ? 'success' : (die1 >= neededRoll ? 'success' : ''));
+            chips[0].classList.add('success'); // charge dice are always neutral — no per-die pass/fail
           }, 80);
         }
       }, 100);
@@ -221,6 +221,7 @@ function rollChargeDice(targetId) {
           setTimeout(() => {
             chips[1].classList.remove('rolling');
             chips[1].textContent = die2;
+            chips[1].classList.add('success'); // charge dice are always neutral — no per-die pass/fail
           }, 80);
         }
       }, 200);
@@ -437,7 +438,7 @@ function updateCardRanges(uid) {
   // Get M stat: look in UNITS data
   const unitData = UNITS[uid];
   const mStat = unitData?.M || 6;
-  const avgCharge = mStat + 7; // M + avg 2D6
+  const avgCharge = 7; // avg 2D6 charge roll (not M+7)
 
   cardRanges.innerHTML = `<button class="range-toggle charge active" id="rt-charge" data-range-type="charge">AVG CHRG ${avgCharge}"</button>`;
 
@@ -540,6 +541,7 @@ async function clickTarget(uid) {
   if (result.success) {
     state.phase = 'CHARGE_MOVE';
     setModeLabel(`⚡ CHARGE ${result.total}" — place models`);
+    clearRangeRings(); // turn off AVG CHRG rings to avoid doubling up with charge zones
     drawChargeZones();
     drawEngagementRings();
     drawGhostsAndRulers();
