@@ -1,0 +1,396 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1 Game End — Victory Overlay Styles
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY game-end-specific styles.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Dark backdrop over the battlefield ── */
+.game-end-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 8, 0.82);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: backdrop-fade 0.6s ease-out;
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Victory panel ── */
+.victory-panel {
+  position: relative;
+  width: 560px;
+  max-width: 92vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, #0e0b06 0%, #080604 100%);
+  border: 1px solid #3a2810;
+  padding: 40px 36px 32px;
+  animation: panel-rise 0.5s ease-out 0.2s both;
+}
+
+@keyframes panel-rise {
+  from { opacity: 0; transform: translateY(30px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Ornamental corners */
+.victory-panel::before,
+.victory-panel::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+.victory-panel::before {
+  top: 0; left: 0;
+  border-top: 2px solid #c9a352;
+  border-left: 2px solid #c9a352;
+}
+.victory-panel::after {
+  bottom: 0; right: 0;
+  border-bottom: 2px solid #c9a352;
+  border-right: 2px solid #c9a352;
+}
+
+/* Extra corners (top-right, bottom-left) via inner element */
+.victory-corners::before,
+.victory-corners::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+.victory-corners::before {
+  top: 0; right: 0;
+  border-top: 2px solid #c9a352;
+  border-right: 2px solid #c9a352;
+}
+.victory-corners::after {
+  bottom: 0; left: 0;
+  border-bottom: 2px solid #c9a352;
+  border-left: 2px solid #c9a352;
+}
+
+/* ── Victory glow ── */
+.victory-glow {
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 60px rgba(201, 163, 82, 0.08),
+    0 0 80px rgba(201, 163, 82, 0.12),
+    0 0 160px rgba(201, 163, 82, 0.06);
+  border: 1px solid transparent;
+}
+
+/* ── Aquila / header ── */
+.victory-aquila {
+  text-align: center;
+  font-size: 32px;
+  color: rgba(201, 163, 82, 0.25);
+  margin-bottom: 4px;
+  text-shadow: 0 0 20px rgba(201, 163, 82, 0.15);
+}
+
+.victory-label {
+  text-align: center;
+  font: 400 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: #4a3a1a;
+  margin-bottom: 16px;
+}
+
+/* ── Winner announcement ── */
+.victory-winner {
+  text-align: center;
+  font: 400 36px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  animation: winner-glow 2s ease-in-out infinite alternate;
+}
+
+.victory-winner.imp {
+  color: var(--imp);
+  text-shadow:
+    0 0 20px rgba(0, 212, 255, 0.4),
+    0 0 60px rgba(0, 212, 255, 0.15);
+}
+
+.victory-winner.ork {
+  color: var(--ork);
+  text-shadow:
+    0 0 20px rgba(255, 64, 32, 0.4),
+    0 0 60px rgba(255, 64, 32, 0.15);
+}
+
+@keyframes winner-glow {
+  from { filter: brightness(1); }
+  to   { filter: brightness(1.15); }
+}
+
+.victory-subtitle {
+  text-align: center;
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #c9a352;
+  margin-bottom: 28px;
+}
+
+/* ── Score display ── */
+.score-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.score-faction {
+  text-align: center;
+  min-width: 120px;
+}
+
+.score-faction-name {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.score-faction-name.imp { color: var(--imp-dim); }
+.score-faction-name.ork { color: var(--ork-dim); }
+
+.score-vp {
+  font: 400 48px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+}
+.score-vp.imp { color: var(--imp); }
+.score-vp.ork { color: var(--ork); }
+
+.score-vp-label {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: #4a6080;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.score-vs {
+  font: 400 14px/1 'Anton', sans-serif;
+  color: #3a2810;
+  letter-spacing: 3px;
+}
+
+/* ── Divider ── */
+.victory-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+.victory-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2a1e08, transparent);
+}
+.victory-divider-ornament {
+  color: rgba(201, 163, 82, 0.3);
+  font-size: 10px;
+}
+
+/* ── Per-round VP breakdown table ── */
+.vp-breakdown {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.vp-breakdown th {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #4a3a1a;
+  padding: 6px 8px;
+  border-bottom: 1px solid #1a1208;
+  text-align: center;
+}
+
+.vp-breakdown th:first-child {
+  text-align: left;
+}
+
+.vp-breakdown td {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  color: #8090a0;
+  padding: 5px 8px;
+  border-bottom: 1px solid #0e0b06;
+  text-align: center;
+}
+
+.vp-breakdown td:first-child {
+  text-align: left;
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.vp-breakdown tr.imp-row td:first-child { color: var(--imp-dim); }
+.vp-breakdown tr.ork-row td:first-child { color: var(--ork-dim); }
+.vp-breakdown td.total-col {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.vp-breakdown tr.imp-row td.total-col { color: var(--imp); }
+.vp-breakdown tr.ork-row td.total-col { color: var(--ork); }
+
+/* ── Unit statistics ── */
+.stats-section-title {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #4a3a1a;
+  margin-bottom: 10px;
+}
+
+.unit-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-column {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-column-header {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #1a1208;
+}
+.stat-column-header.imp { color: var(--imp-dim); }
+.stat-column-header.ork { color: var(--ork-dim); }
+
+.stat-unit {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 11px/1.4 'Rajdhani', sans-serif;
+  color: #6a7a8a;
+}
+
+.stat-unit .destroyed {
+  text-decoration: line-through;
+  color: #3a4a5a;
+}
+
+.stat-unit .surviving {
+  color: #8a9aaa;
+}
+
+.stat-icon {
+  font-size: 8px;
+  width: 12px;
+  text-align: center;
+}
+.stat-icon.alive { color: #4a8a4a; }
+.stat-icon.dead  { color: #8a3a3a; }
+
+/* ── MVP callout ── */
+.mvp-callout {
+  background: rgba(201, 163, 82, 0.06);
+  border: 1px solid #2a1e08;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.mvp-callout::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 8px; height: 8px;
+  border-top: 1.5px solid #c9a352;
+  border-left: 1.5px solid #c9a352;
+}
+
+.mvp-label {
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #c9a352;
+  margin-bottom: 6px;
+}
+
+.mvp-name {
+  font: 400 18px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  color: var(--imp);
+  margin-bottom: 4px;
+}
+
+.mvp-stat {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: #6a7a8a;
+}
+
+/* ── Action buttons ── */
+.victory-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.victory-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.victory-btn.primary {
+  border-color: #c9a352;
+  color: #c9a352;
+  background: rgba(201, 163, 82, 0.08);
+}
+.victory-btn.primary:hover {
+  background: rgba(201, 163, 82, 0.18);
+  box-shadow: 0 0 20px rgba(201, 163, 82, 0.15);
+}
+
+.victory-btn.secondary {
+  border-color: #2a3a4a;
+  color: #8090a0;
+}
+.victory-btn.secondary:hover {
+  border-color: #4a6080;
+  color: #b0c0d0;
+}
+
+.victory-btn.disabled {
+  border-color: #1a2535;
+  color: #2a3a4a;
+  cursor: default;
+  pointer-events: none;
+}

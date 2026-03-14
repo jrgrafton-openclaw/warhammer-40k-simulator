@@ -101,10 +101,11 @@
 
     <div class="tab-nav" id="phase-tabs">
       <button class="tab-btn active" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
-      <button class="tab-btn" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
       <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
+      <button class="tab-btn" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
       <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
       <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
+      <button class="tab-btn" data-tab="game-end" onclick="switchTab('game-end')">GAME END</button>
     </div>
 
     <!-- DEPLOY PHASE -->
@@ -147,6 +148,30 @@
       </div>
     </div>
 
+    <!-- MOVE PHASE -->
+    <div id="tab-move" class="tab-pane hidden">
+      <div class="section-title">Movement Phase</div>
+      <div class="section-desc">
+        Movement prototypes ported to the v2 component architecture.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/move/v0.23/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.23</div>
+          <div class="card-codename">MOVEMENT STATE MACHINE</div>
+          <div class="card-title">Full movement flow · ES modules · Shared components</div>
+          <ul class="card-features">
+            <li>Reuses shared tokens, components, and world modules</li>
+            <li>Movement enforcement: zone clamp, terrain collision, overlap resolution</li>
+            <li>Advance D6 roll animation, confirm/cancel, moved-state tracking</li>
+            <li>Drag interceptor blocks moved + enemy units</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
     <!-- SHOOT PHASE -->
     <div id="tab-shoot" class="tab-pane hidden">
       <div class="section-title">Shooting Phase</div>
@@ -179,30 +204,6 @@
             <li>10 ES modules replacing 7 IIFE global scripts</li>
             <li>Full attack pipeline: select → target → hit/wound/save/damage → result</li>
             <li>Projectile FX, wound rings, model removal, spent-state tracking</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- MOVE PHASE -->
-    <div id="tab-move" class="tab-pane hidden">
-      <div class="section-title">Movement Phase</div>
-      <div class="section-desc">
-        Movement prototypes ported to the v2 component architecture.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/move/v0.23/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.23</div>
-          <div class="card-codename">MOVEMENT STATE MACHINE</div>
-          <div class="card-title">Full movement flow · ES modules · Shared components</div>
-          <ul class="card-features">
-            <li>Reuses shared tokens, components, and world modules</li>
-            <li>Movement enforcement: zone clamp, terrain collision, overlap resolution</li>
-            <li>Advance D6 roll animation, confirm/cancel, moved-state tracking</li>
-            <li>Drag interceptor blocks moved + enemy units</li>
           </ul>
           <span class="card-link">Open →</span>
         </a>
@@ -269,6 +270,31 @@
             <li>Consolidation: 3" toward engagement range or nearest objective</li>
             <li>Attacker-specific engagement validation (per-unit targeting)</li>
             <li>Infantry pass through ruins; Vehicles blocked</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- GAME END -->
+    <div id="tab-game-end" class="tab-pane hidden">
+      <div class="section-title">Game End</div>
+      <div class="section-desc">
+        Post-game victory screen with VP summary, per-round breakdown,
+        unit survival statistics, and rematch options.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/game-end/v0.1/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">VICTORY OVERLAY</div>
+          <div class="card-title">Final results · VP breakdown · Unit statistics · Rematch</div>
+          <ul class="card-features">
+            <li>Final victory/defeat overlay on battlefield</li>
+            <li>VP score summary + per-round breakdown</li>
+            <li>Rematch / New Game / View Battle Report options</li>
+            <li>Unit survival statistics per faction</li>
           </ul>
           <span class="card-link">Open →</span>
         </a>
