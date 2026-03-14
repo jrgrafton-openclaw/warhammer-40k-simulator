@@ -100,14 +100,42 @@
   <div style="max-width:1200px; margin:0 auto;">
 
     <div class="tab-nav" id="phase-tabs">
-      <button class="tab-btn active" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
+      <button class="tab-btn active" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
+      <button class="tab-btn" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
       <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
       <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
       <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
     </div>
 
+    <!-- DEPLOY PHASE -->
+    <div id="tab-deploy" class="tab-pane">
+      <div class="section-title">Deployment Phase</div>
+      <div class="section-desc">
+        Pre-game unit placement with deployment zones, strategic reserves, and deep strike.
+        Alternating placement with zone validation and drag-to-deploy interaction.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/deploy/v0.1/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">ZONES + RESERVES + DRAG</div>
+          <div class="card-title">Deployment zones · Strategic reserves · Deep strike · Drag-to-deploy</div>
+          <ul class="card-features">
+            <li>Imperium/Ork deployment zones with colored overlays and boundaries</li>
+            <li>Reserve panels: undeployed, strategic reserves, deep strike holding areas</li>
+            <li>Alternating deployment: Imperium first, then Orks, unit by unit</li>
+            <li>Zone validation: models clamped to faction deployment zone</li>
+            <li>Drag-to-place with terrain collision and coherency auto-arrange</li>
+            <li>Confirm deployment locks state for Command Phase</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
     <!-- SHOOT PHASE -->
-    <div id="tab-shoot" class="tab-pane">
+    <div id="tab-shoot" class="tab-pane hidden">
       <div class="section-title">Shooting Phase</div>
       <div class="section-desc">
         Componentized ES module architecture. WorldAPI coordinate contract.
