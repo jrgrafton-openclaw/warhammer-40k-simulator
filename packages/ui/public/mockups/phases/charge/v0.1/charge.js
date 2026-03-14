@@ -734,10 +734,13 @@ function handleSvgClick(e) {
   const uid = node.dataset.unitId;
   if (!uid) return;
 
+  // Stop shared svg-renderer handlers from firing after us (they call renderModels which wipes hull classes)
+  e.preventDefault();
+  e.stopPropagation();
+  e.stopImmediatePropagation();
+
   if (state.phase === 'IDLE' || state.phase === 'SELECT_CHARGER' || state.phase === 'RESOLVED') {
     if (isFriendly(uid) && isEligibleCharger(uid)) {
-      e.preventDefault();
-      e.stopPropagation();
       selectCharger(uid);
     } else if (isFriendly(uid)) {
       baseSelectUnit(uid);
@@ -752,9 +755,6 @@ function handleSvgClick(e) {
 
   if (state.phase === 'SELECT_TARGET') {
     if (isEnemy(uid)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
       clickTarget(uid);
     } else if (isFriendly(uid) && uid !== state.chargerId) {
       if (isEligibleCharger(uid)) {
@@ -774,8 +774,11 @@ function handleSvgMousedown(e) {
   }
   if (!node) return;
 
+  // Block shared svg-renderer mousedown from calling dispatchSelectUnit + renderModels
+  // during target selection (it would wipe hull classes). In CHARGE_MOVE the shared
+  // drag handlers are needed so we only block SELECT_CHARGER and SELECT_TARGET.
   const uid = node.dataset.unitId;
-  if (state.phase === 'SELECT_TARGET' && isEnemy(uid)) {
+  if (state.phase === 'SELECT_CHARGER' || state.phase === 'SELECT_TARGET') {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
