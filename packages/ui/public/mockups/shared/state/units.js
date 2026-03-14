@@ -224,11 +224,14 @@ export function buildCard(uid) {
   // Range toggle labels
   if (_getRangeInches) {
     var radii = _getRangeInches(u);
-    document.getElementById('rt-move').innerHTML    = 'MOVE<br>' + u.M + '"';
-    document.getElementById('rt-advance').innerHTML = 'AVG ADV<br>' + Math.round(radii.advance) + '"';
-    document.getElementById('rt-charge').innerHTML  = 'AVG CHRG<br>' + Math.round(radii.charge) + '"';
-    var dsBtn = document.getElementById('rt-ds');
-    if (dsBtn) dsBtn.innerHTML = 'DS<br>' + Math.round(radii.ds) + '"';
+    var moveBtn = document.getElementById('rt-move');
+    var advBtn  = document.getElementById('rt-advance');
+    var chrgBtn = document.getElementById('rt-charge');
+    var dsBtn   = document.getElementById('rt-ds');
+    if (moveBtn) moveBtn.innerHTML = 'MOVE<br>' + u.M + '"';
+    if (advBtn)  advBtn.innerHTML  = 'AVG ADV<br>' + Math.round(radii.advance) + '"';
+    if (chrgBtn) chrgBtn.innerHTML = 'AVG CHRG<br>' + Math.round(radii.charge) + '"';
+    if (dsBtn)   dsBtn.innerHTML   = 'DS<br>' + Math.round(radii.ds) + '"';
     // Sync active state on toggles
     ['move','advance','charge','ds'].forEach(function(t) {
       var btn = document.getElementById('rt-' + t);
