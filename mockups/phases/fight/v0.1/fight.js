@@ -278,7 +278,74 @@ function createHitMarker(model){
   return token;
 }
 
-// ── Melee slash animation ───────────────────────────────
+// ── Chainsword weapon strike animation (design system v4) ──
+const SPARK_COLORS = ['#ff8020','#ffaa40','#e06818','#cc5010','#ff6830'];
+
+function fireWeaponStrike(container, targetScreenPos) {
+  const arena = document.createElement('div');
+  arena.style.cssText = `position:absolute;left:${targetScreenPos.x - 29}px;top:${targetScreenPos.y - 29}px;width:58px;height:58px;pointer-events:none;`;
+  container.appendChild(arena);
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const w = 98, h = 98;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'slash-svg');
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  svg.style.cssText = `position:absolute;left:-20px;top:-20px;width:${w}px;height:${h}px;pointer-events:none;overflow:visible;`;
+
+  const d = `M ${w*.08} ${h*.18} Q ${w*.45} ${h*.48} ${w*.92} ${h*.82}`;
+
+  const score = document.createElementNS(NS, 'path');
+  score.setAttribute('d', d);
+  score.setAttribute('fill', 'none');
+  score.setAttribute('stroke', '#1a1e24');
+  score.setAttribute('stroke-width', '4');
+  score.setAttribute('stroke-linecap', 'round');
+  score.setAttribute('stroke-dasharray', '200');
+  score.setAttribute('stroke-dashoffset', '200');
+  score.style.animation = 'slash-score .5s ease forwards';
+  svg.appendChild(score);
+
+  const edge = document.createElementNS(NS, 'path');
+  edge.setAttribute('d', d);
+  edge.setAttribute('fill', 'none');
+  edge.setAttribute('stroke', '#c0c8d4');
+  edge.setAttribute('stroke-width', '1.8');
+  edge.setAttribute('stroke-linecap', 'round');
+  edge.setAttribute('stroke-dasharray', '200');
+  edge.setAttribute('stroke-dashoffset', '200');
+  edge.setAttribute('filter', 'drop-shadow(0 0 2px #ffffff60)');
+  edge.style.animation = 'slash-draw .3s ease-out forwards';
+  svg.appendChild(edge);
+
+  arena.appendChild(svg);
+
+  const point = document.createElement('div');
+  point.className = 'slash-point';
+  point.style.cssText = 'left:50%;top:50%;animation:slash-point-flash .25s ease-out forwards;';
+  arena.appendChild(point);
+
+  setTimeout(() => {
+    for (let i = 0; i < 6; i++) {
+      const spark = document.createElement('div');
+      spark.className = 'slash-spark';
+      const color = SPARK_COLORS[Math.floor(rng() * SPARK_COLORS.length)];
+      const angle = (Math.PI * 2 / 6) * i + (rng() - .5) * .6;
+      const dist = 10 + rng() * 16;
+      spark.style.cssText = `
+        --sx:29px;--sy:29px;
+        --dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist}px;
+        background:${color};box-shadow:0 0 3px ${color};
+        left:0;top:0;
+        animation:slash-spark .4s ease-out ${rng()*.1}s forwards;
+      `;
+      arena.appendChild(spark);
+    }
+  }, 120);
+
+  setTimeout(() => arena.remove(), 900);
+}
+
 async function playMeleeVolley(attacker, target){
   const container = $('#proj-container');
   if (!container) return;
@@ -292,24 +359,18 @@ async function playMeleeVolley(attacker, target){
     const toPos = projectileAnchor(pair.to);
     if (!toPos.valid) return;
     setTimeout(() => {
-      const slashCount = 2 + Math.floor(rng() * 2);
-      for (let s = 0; s < slashCount; s++) {
-        const slash = document.createElement('div');
-        slash.className = 'melee-slash';
-        const offsetX = (rng() - 0.5) * 16;
-        const offsetY = (rng() - 0.5) * 12;
-        const rotation = -30 + rng() * 60;
-        slash.style.left = (toPos.x + offsetX) + 'px';
-        slash.style.top = (toPos.y + offsetY) + 'px';
-        slash.style.transform = `rotate(${rotation}deg)`;
-        slash.style.animationDelay = (s * 60) + 'ms';
-        container.appendChild(slash);
-        setTimeout(() => slash.remove(), 500 + s * 60);
+      fireWeaponStrike(container, toPos);
+      const token = tokenVisual(pair.to);
+      if (token) {
+        token.classList.remove('anim-slash-recoil');
+        void token.getBoundingClientRect();
+        token.classList.add('anim-slash-recoil');
+        setTimeout(() => token.classList.remove('anim-slash-recoil'), 350);
       }
-    }, ix * 80);
+    }, ix * 100);
   });
 
-  await new Promise(r => setTimeout(r, Math.max(460, pairs.length * 80 + 420)));
+  await new Promise(r => setTimeout(r, Math.max(500, pairs.length * 100 + 500)));
 }
 
 // ══════════════════════════════════════════════════════════
@@ -469,7 +530,11 @@ function isPileInDirectionValid(unitId) {
     const r = getModelRadius(m);
     const distNow = closestEnemyDist(m.x, m.y, r, allEnemyModels);
     const distBefore = closestEnemyDist(start.x, start.y, r, allEnemyModels);
-    return distNow <= distBefore + 0.5; // allow tiny tolerance for float errors
+    if (distNow > distBefore + 0.5) {
+      console.log(`[fight] pile-in: ${m.id} not closer to enemy (now=${distNow.toFixed(1)} before=${distBefore.toFixed(1)})`);
+      return false;
+    }
+    return true;
   });
 }
 
@@ -491,12 +556,17 @@ function isConsolidateDirectionValid(unitId) {
       const distNow = closestEnemyDist(m.x, m.y, r, allEnemyModels);
       const distBefore = closestEnemyDist(start.x, start.y, r, allEnemyModels);
       if (distNow <= distBefore + 0.5) return true;
+      console.log(`[fight] consolidate: ${m.id} not closer to enemy (now=${distNow.toFixed(1)} before=${distBefore.toFixed(1)})`);
     }
 
     // OR closer to objective? (with tolerance)
     const objNow = closestObjectiveDist(m.x, m.y);
     const objBefore = closestObjectiveDist(start.x, start.y);
-    return objNow <= objBefore + 0.5;
+    if (objNow > objBefore + 0.5) {
+      console.log(`[fight] consolidate: ${m.id} not closer to objective either (now=${objNow.toFixed(1)} before=${objBefore.toFixed(1)})`);
+      return false;
+    }
+    return true;
   });
 }
 
@@ -505,16 +575,26 @@ function isDragLegal(unitId) {
   if (!unit) return false;
   const radiusPx = 3 * PX_PER_INCH;
 
-  // Check range: no model beyond 3"
   for (const m of unit.models) {
     const ts = state.dragStarts[m.id];
     if (!ts) continue;
-    if (Math.hypot(m.x - ts.x, m.y - ts.y) > radiusPx + 0.5) return false;
+    const dist = Math.hypot(m.x - ts.x, m.y - ts.y);
+    if (dist > radiusPx + 0.5) {
+      console.log(`[fight] ${m.id} over range: ${(dist/PX_PER_INCH).toFixed(1)}" > 3"`);
+      return false;
+    }
   }
 
-  // Check direction based on mode
-  if (state.dragMode === 'pile-in') return isPileInDirectionValid(unitId);
-  if (state.dragMode === 'consolidate') return isConsolidateDirectionValid(unitId);
+  if (state.dragMode === 'pile-in') {
+    const valid = isPileInDirectionValid(unitId);
+    if (!valid) console.log('[fight] pile-in direction invalid');
+    return valid;
+  }
+  if (state.dragMode === 'consolidate') {
+    const valid = isConsolidateDirectionValid(unitId);
+    if (!valid) console.log('[fight] consolidate direction invalid');
+    return valid;
+  }
   return true;
 }
 
@@ -553,12 +633,13 @@ function confirmDrag() {
     setStatus('Select enemy target', 'fight-target');
     paint();
   } else if (mode === 'consolidate') {
-    // After consolidation confirmed, mark as fought
     state.foughtUnits.add(state.attackerId);
     state.attackerId = null;
     state.targetId = null;
     state.phase = null;
-    setStatus('');
+    setStatus('— NO UNIT —');
+    closeWeaponPopup();
+    clearEffects();
     baseSelectUnit(null);
     paint();
   }
@@ -903,23 +984,9 @@ async function finishFight(attacker, target, totalDamage, killCount) {
 
   await showResultPanel(target.id, totalDamage, killCount);
 
-  if (killCount > 0) {
-    // Auto enter consolidate mode
-    state.phase = 'consolidate';
-    enterDragMode('consolidate');
-    // Wait for confirm/cancel via button handlers
-  } else {
-    // No kills, skip consolidation, mark as fought
-    state.foughtUnits.add(attacker.id);
-    state.attackerId = null;
-    state.targetId = null;
-    state.phase = null;
-    setStatus('');
-    closeWeaponPopup();
-    clearEffects();
-    baseSelectUnit(null);
-    paint();
-  }
+  // Always allow consolidation after melee attacks
+  state.phase = 'consolidate';
+  enterDragMode('consolidate');
 }
 
 // ── Enemy interaction (target selection phase) ──────────
@@ -1008,7 +1075,7 @@ function selectAttacker(uid) {
   clearFightOverlays();
   if (state.dragMode) exitDragMode();
   paint();
-  setStatus('');
+  setStatus(uid ? '' : '— NO UNIT —');
 }
 
 function wrappedSelectUnit(uid) {
@@ -1021,6 +1088,7 @@ function wrappedSelectUnit(uid) {
   if (!uid) {
     selectAttacker(null);
     state.phase = null;
+    setStatus('— NO UNIT —');
     requestAnimationFrame(() => paint());
     return;
   }

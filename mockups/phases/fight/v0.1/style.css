@@ -64,20 +64,49 @@
   opacity: 0.35;
 }
 
-/* ── Melee slash effect (fight-specific, supplements shared fx.css) ── */
-.melee-slash-burst {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,96,48,0.6) 0%, rgba(255,170,64,0.2) 50%, transparent 70%);
-  transform: translate(-50%, -50%) scale(0);
-  animation: melee-burst 0.35s ease-out forwards;
+/* ── Weapon Strike (Chainsword) — from design system v4 ── */
+.slash-arena { position: relative; display: inline-block; }
+.slash-svg {
+  position: absolute; inset: -20px;
+  width: calc(100% + 40px); height: calc(100% + 40px);
+  pointer-events: none; overflow: visible;
+}
+@keyframes slash-draw {
+  0%   { stroke-dashoffset: 200; opacity: .85; }
+  35%  { stroke-dashoffset: 0; opacity: .85; }
+  60%  { stroke-dashoffset: 0; opacity: .25; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes slash-score {
+  0%   { stroke-dashoffset: 200; opacity: 0; }
+  35%  { stroke-dashoffset: 40; opacity: .45; }
+  65%  { stroke-dashoffset: 0; opacity: .3; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+@keyframes slash-spark {
+  0%   { opacity: 1; transform: translate(var(--sx), var(--sy)) scale(1); }
+  50%  { opacity: .7; }
+  100% { opacity: 0; transform: translate(calc(var(--sx) + var(--dx)), calc(var(--sy) + var(--dy))) scale(0); }
+}
+@keyframes slash-point-flash {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  20%  { opacity: .9; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.6); }
+}
+@keyframes slash-recoil {
+  0%   { transform: translateX(0) scale(1); }
+  15%  { transform: translateX(4px) scale(.96); }
+  40%  { transform: translateX(-3px) scale(1.03); }
+  65%  { transform: translateX(2px); }
+  100% { transform: translateX(0) scale(1); }
+}
+.slash-spark {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%;
   pointer-events: none;
 }
-
-@keyframes melee-burst {
-  0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-  50%  { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
-  100% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+.slash-point {
+  position: absolute; width: 8px; height: 8px; border-radius: 50%;
+  background: radial-gradient(circle, #ffffffcc 0%, #ffffff00 70%);
+  pointer-events: none; opacity: 0;
 }
+.anim-slash-recoil { animation: slash-recoil .3s ease-out forwards; }
