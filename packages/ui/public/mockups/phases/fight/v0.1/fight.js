@@ -406,6 +406,9 @@ function exitDragMode() {
   state.dragStarts = {};
   clearFightRangeRings();
   clearFightOverlays();
+  clearModelHighlights();
+  const banner = document.getElementById('fight-invalid-banner');
+  if (banner) banner.style.display = 'none';
   updateFightButtons();
 }
 
@@ -503,7 +506,7 @@ function closestEnemyDist(px, py, modelRadius, enemyModels) {
     const d = Math.hypot(px - em.x, py - em.y) - modelRadius - getModelRadius(em);
     if (d < best) best = d;
   }
-  return best;
+  return Math.max(0, best); // Clamp: overlapping/touching = 0
 }
 
 function closestObjectiveDist(px, py) {
@@ -513,6 +516,94 @@ function closestObjectiveDist(px, py) {
     if (d < best) best = d;
   }
   return best;
+}
+
+function updateDirectionFeedback() {
+  const banner = document.getElementById('fight-invalid-banner');
+  if (!banner) return;
+  
+  if (!state.dragMode || !state.attackerId) {
+    banner.style.display = 'none';
+    clearModelHighlights();
+    return;
+  }
+  
+  const unit = getUnit(state.attackerId);
+  if (!unit) { banner.style.display = 'none'; clearModelHighlights(); return; }
+  
+  const enemies = simState.units.filter(u => u.faction !== unit.faction);
+  const allEnemyModels = enemies.flatMap(e => e.models);
+  const radiusPx = 3 * PX_PER_INCH;
+  
+  let anyInvalid = false;
+  const invalidModelIds = new Set();
+  
+  unit.models.forEach(m => {
+    const start = state.dragStarts[m.id];
+    if (!start) return;
+    const moved = Math.hypot(m.x - start.x, m.y - start.y);
+    if (moved < 0.5) return; // didn't move, always valid
+    
+    // Check range
+    if (moved > radiusPx + 0.5) {
+      anyInvalid = true;
+      invalidModelIds.add(m.id);
+      return;
+    }
+    
+    // Check direction
+    const r = getModelRadius(m);
+    if (state.dragMode === 'pile-in') {
+      if (allEnemyModels.length) {
+        const distNow = closestEnemyDist(m.x, m.y, r, allEnemyModels);
+        const distBefore = closestEnemyDist(start.x, start.y, r, allEnemyModels);
+        if (distNow > distBefore + 0.5) {
+          anyInvalid = true;
+          invalidModelIds.add(m.id);
+        }
+      }
+    } else if (state.dragMode === 'consolidate') {
+      const distNow = allEnemyModels.length ? closestEnemyDist(m.x, m.y, r, allEnemyModels) : Infinity;
+      const distBefore = allEnemyModels.length ? closestEnemyDist(start.x, start.y, r, allEnemyModels) : Infinity;
+      const objNow = closestObjectiveDist(m.x, m.y);
+      const objBefore = closestObjectiveDist(start.x, start.y);
+      
+      const closerToEnemy = distNow <= distBefore + 0.5;
+      const closerToObj = objNow <= objBefore + 0.5;
+      if (!closerToEnemy && !closerToObj) {
+        anyInvalid = true;
+        invalidModelIds.add(m.id);
+      }
+    }
+  });
+  
+  if (anyInvalid) {
+    banner.textContent = state.dragMode === 'pile-in' 
+      ? '⚠ INVALID PILE IN — must move closer to enemy'
+      : '⚠ INVALID CONSOLIDATION — must move toward enemy or objective';
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+  
+  // Highlight invalid models with orange ring
+  highlightInvalidModels(invalidModelIds);
+}
+
+function highlightInvalidModels(invalidIds) {
+  document.querySelectorAll('#layer-models .model-base').forEach(g => {
+    g.classList.remove('fight-invalid-model');
+  });
+  invalidIds.forEach(modelId => {
+    const el = document.querySelector(`#layer-models .model-base[data-model-id="${modelId}"]`);
+    if (el) el.classList.add('fight-invalid-model');
+  });
+}
+
+function clearModelHighlights() {
+  document.querySelectorAll('#layer-models .model-base.fight-invalid-model').forEach(g => {
+    g.classList.remove('fight-invalid-model');
+  });
 }
 
 function isPileInDirectionValid(unitId) {
@@ -637,7 +728,7 @@ function confirmDrag() {
     state.attackerId = null;
     state.targetId = null;
     state.phase = null;
-    setStatus('— NO UNIT —');
+    setStatus('— SELECT UNIT —');
     closeWeaponPopup();
     clearEffects();
     baseSelectUnit(null);
@@ -741,6 +832,7 @@ function installDragEnforcement() {
     drawFightRangeRings(uid);
     renderFightOverlays(uid);
     updateFightButtons();
+    updateDirectionFeedback();
   });
 }
 
@@ -1075,7 +1167,7 @@ function selectAttacker(uid) {
   clearFightOverlays();
   if (state.dragMode) exitDragMode();
   paint();
-  setStatus(uid ? '' : '— NO UNIT —');
+  setStatus(uid ? '' : '— SELECT UNIT —');
 }
 
 function wrappedSelectUnit(uid) {
@@ -1088,7 +1180,7 @@ function wrappedSelectUnit(uid) {
   if (!uid) {
     selectAttacker(null);
     state.phase = null;
-    setStatus('— NO UNIT —');
+    setStatus('— SELECT UNIT —');
     requestAnimationFrame(() => paint());
     return;
   }
@@ -1140,6 +1232,16 @@ export function initFight() {
       else wrappedSelectUnit(null);
     }
   });
+
+  // Create invalid-direction banner
+  if (!document.getElementById('fight-invalid-banner')) {
+    const banner = document.createElement('div');
+    banner.id = 'fight-invalid-banner';
+    banner.innerHTML = '⚠ INVALID PILE IN';
+    banner.style.cssText = "position:absolute;top:96px;left:50%;transform:translateX(-50%);background:rgba(255,140,0,.92);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;z-index:1000;display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5);border:2px solid #ff8c00;white-space:nowrap;";
+    const bf = document.getElementById('battlefield');
+    if (bf) bf.appendChild(banner);
+  }
 
   installDragInterceptor();
   installDragEnforcement();

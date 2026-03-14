@@ -110,3 +110,11 @@
   pointer-events: none; opacity: 0;
 }
 .anim-slash-recoil { animation: slash-recoil .3s ease-out forwards; }
+
+/* Fix: slash animation must render above SVG model layer (z-index:6) */
+#fx-layer { z-index: 10 !important; }
+
+/* ── Invalid model highlight (orange ring) ── */
+.model-base.fight-invalid-model > :first-child {
+  filter: drop-shadow(0 0 6px rgba(255,140,0,0.8)) drop-shadow(0 0 12px rgba(255,140,0,0.4));
+}
