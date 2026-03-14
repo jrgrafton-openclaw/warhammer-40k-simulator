@@ -346,21 +346,22 @@ function fireWeaponStrike(container, targetScreenPos) {
   setTimeout(() => arena.remove(), 900);
 }
 
-async function playMeleeVolley(attacker, target){
+async function playMeleeVolley(attacker, target, strikeCount){
   const container = $('#proj-container');
   if (!container) return;
+  const count = strikeCount || attacker.models.length;
 
-  const pairs = attacker.models.map(m => ({
-    from: m,
-    to: randomTargetModel(target)
-  }));
+  const strikes = [];
+  for (let i = 0; i < count; i++) {
+    strikes.push({ to: randomTargetModel(target) });
+  }
 
-  pairs.forEach((pair, ix) => {
-    const toPos = projectileAnchor(pair.to);
+  strikes.forEach((s, ix) => {
+    const toPos = projectileAnchor(s.to);
     if (!toPos.valid) return;
     setTimeout(() => {
       fireWeaponStrike(container, toPos);
-      const token = tokenVisual(pair.to);
+      const token = tokenVisual(s.to);
       if (token) {
         token.classList.remove('anim-slash-recoil');
         void token.getBoundingClientRect();
@@ -370,7 +371,7 @@ async function playMeleeVolley(attacker, target){
     }, ix * 100);
   });
 
-  await new Promise(r => setTimeout(r, Math.max(500, pairs.length * 100 + 500)));
+  await new Promise(r => setTimeout(r, Math.max(500, count * 100 + 500)));
 }
 
 // ══════════════════════════════════════════════════════════
@@ -582,10 +583,6 @@ function updateDirectionFeedback() {
       ? '⚠ INVALID PILE IN — must move closer to enemy'
       : '⚠ INVALID CONSOLIDATION — must move toward enemy or objective';
     banner.style.display = 'block';
-    // Stack below cohesion banner if it's visible
-    const cohBanner = document.getElementById('cohesion-banner');
-    const cohVisible = cohBanner && cohBanner.style.display !== 'none';
-    banner.style.top = cohVisible ? '100px' : '60px';
   } else {
     banner.style.display = 'none';
   }
@@ -595,18 +592,49 @@ function updateDirectionFeedback() {
 }
 
 function highlightInvalidModels(invalidIds) {
+  const NS = 'http://www.w3.org/2000/svg';
+  // Clear previous highlights and crosses
   document.querySelectorAll('#layer-models .model-base').forEach(g => {
     g.classList.remove('fight-invalid-model');
+    const cross = g.querySelector('.fight-invalid-cross');
+    if (cross) cross.remove();
   });
+  // Add highlights + orange cross to invalid models
   invalidIds.forEach(modelId => {
     const el = document.querySelector(`#layer-models .model-base[data-model-id="${modelId}"]`);
-    if (el) el.classList.add('fight-invalid-model');
+    if (!el) return;
+    el.classList.add('fight-invalid-model');
+    // Get model position from data attributes or the shape element
+    const shape = el.querySelector('circle, rect');
+    if (!shape) return;
+    const cx = parseFloat(shape.getAttribute('cx') || shape.getAttribute('x')) || 0;
+    const cy = parseFloat(shape.getAttribute('cy') || shape.getAttribute('y')) || 0;
+    const r = parseFloat(shape.getAttribute('r') || '8');
+    const crossSize = r * 0.6;
+    // Draw ✕ cross
+    const crossG = document.createElementNS(NS, 'g');
+    crossG.setAttribute('class', 'fight-invalid-cross');
+    const line1 = document.createElementNS(NS, 'line');
+    line1.setAttribute('x1', cx - crossSize); line1.setAttribute('y1', cy - crossSize);
+    line1.setAttribute('x2', cx + crossSize); line1.setAttribute('y2', cy + crossSize);
+    line1.setAttribute('stroke', '#ff8c00'); line1.setAttribute('stroke-width', '2.5');
+    line1.setAttribute('stroke-linecap', 'round');
+    const line2 = document.createElementNS(NS, 'line');
+    line2.setAttribute('x1', cx + crossSize); line2.setAttribute('y1', cy - crossSize);
+    line2.setAttribute('x2', cx - crossSize); line2.setAttribute('y2', cy + crossSize);
+    line2.setAttribute('stroke', '#ff8c00'); line2.setAttribute('stroke-width', '2.5');
+    line2.setAttribute('stroke-linecap', 'round');
+    crossG.appendChild(line1);
+    crossG.appendChild(line2);
+    el.appendChild(crossG);
   });
 }
 
 function clearModelHighlights() {
-  document.querySelectorAll('#layer-models .model-base.fight-invalid-model').forEach(g => {
+  document.querySelectorAll('#layer-models .model-base').forEach(g => {
     g.classList.remove('fight-invalid-model');
+    const cross = g.querySelector('.fight-invalid-cross');
+    if (cross) cross.remove();
   });
 }
 
@@ -796,6 +824,17 @@ function installDragInterceptor() {
 
 // ── Drag enforcement (mousemove) ────────────────────────
 function installDragEnforcement() {
+  // Re-apply highlights after model drop (mouseup)
+  window.addEventListener('mouseup', () => {
+    if (state.dragMode && state.attackerId) {
+      // Short delay to let renderModels rebuild DOM first
+      requestAnimationFrame(() => {
+        updateDirectionFeedback();
+        updateFightButtons();
+      });
+    }
+  });
+
   window.addEventListener('mousemove', () => {
     const drag = simState.drag;
     if (!drag || !state.dragMode) return;
@@ -1027,11 +1066,17 @@ async function resolveAttack(targetId){
 
   // Hit roll (WS-based)
   const hitRolls = Array.from({length: totalAttacks}, d6);
+  const successCount = hitRolls.filter(r => r >= thresholds.hit).length;
   const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId,
-    `WS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
-
-  // Play weapon strike animation AFTER dice have rolled
-  await playMeleeVolley(attacker, target);
+    `WS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds',
+    async () => {
+      // Wait for dice to finish revealing, then play weapon strikes
+      const diceAnimMs = 80 + hitRolls.length * 40 + 300;
+      await new Promise(r => setTimeout(r, diceAnimMs));
+      if (successCount > 0) {
+        await playMeleeVolley(attacker, target, successCount);
+      }
+    });
 
   if (!hit.successes) {
     return finishFight(attacker, target, 0, 0);
@@ -1246,14 +1291,32 @@ export function initFight() {
     }
   });
 
-  // Create invalid-direction banner
-  if (!document.getElementById('fight-invalid-banner')) {
-    const banner = document.createElement('div');
-    banner.id = 'fight-invalid-banner';
-    banner.innerHTML = '⚠ INVALID PILE IN';
-    banner.style.cssText = "position:absolute;top:100px;left:50%;transform:translateX(-50%);background:rgba(255,140,0,.96);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;z-index:1000;display:none;pointer-events:none;box-shadow:0 0 12px rgba(255,140,0,.4),0 4px 12px rgba(0,0,0,.5);border:2px solid #ffaa40;white-space:nowrap;";
+  // Create banner container (stacks cohesion + fight banners vertically)
+  if (!document.getElementById('fight-banner-stack')) {
     const bf = document.getElementById('battlefield');
-    if (bf) bf.appendChild(banner);
+    if (bf) {
+      const stack = document.createElement('div');
+      stack.id = 'fight-banner-stack';
+      stack.style.cssText = "position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;";
+      bf.appendChild(stack);
+
+      // Move existing cohesion banner into the stack
+      const cohBanner = document.getElementById('cohesion-banner');
+      if (cohBanner) {
+        cohBanner.style.position = 'static';
+        cohBanner.style.top = '';
+        cohBanner.style.left = '';
+        cohBanner.style.transform = '';
+        stack.appendChild(cohBanner);
+      }
+
+      // Create invalid-direction banner
+      const banner = document.createElement('div');
+      banner.id = 'fight-invalid-banner';
+      banner.innerHTML = '⚠ INVALID PILE IN';
+      banner.style.cssText = "background:rgba(255,140,0,.96);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;display:none;pointer-events:none;box-shadow:0 0 12px rgba(255,140,0,.4),0 4px 12px rgba(0,0,0,.5);border:2px solid #ffaa40;white-space:nowrap;";
+      stack.appendChild(banner);
+    }
   }
 
   installDragInterceptor();
