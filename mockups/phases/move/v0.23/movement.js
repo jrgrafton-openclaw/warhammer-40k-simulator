@@ -285,24 +285,35 @@ function clearMoveOverlays() {
   });
 }
 
+function syncCardRangeButtons(activeType) {
+  ['move','advance','charge','ds'].forEach(function(type) {
+    var btn = document.getElementById('rt-' + type);
+    if (btn) btn.classList.toggle('active', type === activeType);
+  });
+}
+
+function setExclusiveCardRange(type) {
+  activeRangeTypes.clear();
+  if (type) activeRangeTypes.add(type);
+  syncCardRangeButtons(type);
+}
+
 function renderCardRangeRings(uid) {
   if (!uid) {
     clearRangeRings();
+    syncCardRangeButtons(null);
     return;
   }
   var u = UNITS[uid];
   if (!u) {
     clearRangeRings();
-    return;
-  }
-
-  if (moveState.mode) {
-    drawMoveRangeRings(uid, moveState.mode);
+    syncCardRangeButtons(null);
     return;
   }
 
   if (activeRangeTypes.size === 0) {
     clearRangeRings();
+    syncCardRangeButtons(null);
     return;
   }
 
@@ -334,9 +345,8 @@ function wireCardRangeButtons() {
     var btn = document.getElementById('rt-' + type);
     if (!btn) return;
     btn.addEventListener('click', function() {
-      setTimeout(function() {
-        renderCardRangeRings(currentUnit);
-      }, 0);
+      setExclusiveCardRange(type);
+      renderCardRangeRings(currentUnit);
     });
   });
 }
@@ -436,6 +446,14 @@ function movementSelectUnit(uid) {
     var selected = simState.units.find(function(u) { return u.id === uid; });
     var row = document.querySelector('.rail-unit[data-unit="' + uid + '"]');
     if (row && selected && selected.faction !== ACTIVE_PLAYER_FACTION) row.classList.add('active-enemy');
+  }
+
+  if (uid) {
+    var selectedUnit = simState.units.find(function(u) { return u.id === uid; });
+    if (selectedUnit && selectedUnit.faction === ACTIVE_PLAYER_FACTION) setExclusiveCardRange('move');
+    else setExclusiveCardRange(null);
+  } else {
+    setExclusiveCardRange(null);
   }
 
   updateMoveButtons();
