@@ -26,8 +26,9 @@
 
 /* ── Phase Header Pill ── */
 #phase-header {
-  position: absolute; top: 32px; left: 0; right: 0; height: 56px;
-  background: transparent; display: flex; align-items: flex-start; justify-content: center;
+  position: absolute; top: 32px; left: 0; right: 0;
+  background: transparent; display: flex; flex-direction: column; align-items: center;
+  gap: 6px;
   z-index: 10; pointer-events: none;
 }
 .phase-pill {
@@ -162,13 +163,29 @@
 .move-ruler       { pointer-events: none; stroke-width: 1; stroke-dasharray: 4 3; fill: none; opacity: .6; }
 .move-ruler-label { pointer-events: none; font: 600 9px/1 'Rajdhani', sans-serif; fill: rgba(224,232,240,.45); }
 
-/* ── Cohesion banner ── */
+/* ── Cohesion / fight banners (flow inside #phase-header column) ── */
+#cohesion-banner,
+#fight-invalid-banner {
+  position: static !important;
+  transform: none !important;
+  min-width: 320px;
+  text-align: center;
+  padding: 6px 20px !important;
+  font: 700 11px/1 'Rajdhani', sans-serif !important;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.5);
+}
 #cohesion-banner {
-  top: 88px !important; left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: auto !important; max-width: 280px !important;
-  padding: 5px 14px !important; font-size: 11px !important;
-  white-space: nowrap !important;
+  background: rgba(204,32,32,.96);
+  color: #fff;
+  border: 2px solid #ff4040;
+}
+#fight-invalid-banner {
+  background: rgba(255,140,0,.96);
+  color: #fff;
+  border: 2px solid #ffaa40;
 }
 
 /* ── Version badge ── */

@@ -1267,32 +1267,21 @@ export function initFight() {
     }
   });
 
-  // Create banner container (stacks cohesion + fight banners vertically)
-  if (!document.getElementById('fight-banner-stack')) {
-    const bf = document.getElementById('battlefield');
-    if (bf) {
-      const stack = document.createElement('div');
-      stack.id = 'fight-banner-stack';
-      stack.style.cssText = "position:absolute;top:96px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;";
-      bf.appendChild(stack);
-
-      // Move existing cohesion banner into the stack
-      const cohBanner = document.getElementById('cohesion-banner');
-      if (cohBanner) {
-        cohBanner.style.position = 'static';
-        cohBanner.style.top = '';
-        cohBanner.style.left = '';
-        cohBanner.style.transform = '';
-        stack.appendChild(cohBanner);
-      }
-
-      // Create invalid-direction banner
-      const banner = document.createElement('div');
-      banner.id = 'fight-invalid-banner';
-      banner.innerHTML = '⚠ INVALID PILE IN';
-      banner.style.cssText = "background:rgba(255,140,0,.96);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;display:none;pointer-events:none;box-shadow:0 0 12px rgba(255,140,0,.4),0 4px 12px rgba(0,0,0,.5);border:2px solid #ffaa40;white-space:nowrap;";
-      stack.appendChild(banner);
+  // Move cohesion banner + create fight banner inside #phase-header (flex column)
+  const phaseHeader = document.getElementById('phase-header');
+  if (phaseHeader && !document.getElementById('fight-invalid-banner')) {
+    // Move existing cohesion banner into the phase-header column
+    const cohBanner = document.getElementById('cohesion-banner');
+    if (cohBanner) {
+      phaseHeader.appendChild(cohBanner);
     }
+
+    // Create invalid-direction banner
+    const banner = document.createElement('div');
+    banner.id = 'fight-invalid-banner';
+    banner.innerHTML = '⚠ INVALID PILE IN';
+    banner.style.display = 'none';
+    phaseHeader.appendChild(banner);
   }
 
   installDragInterceptor();
