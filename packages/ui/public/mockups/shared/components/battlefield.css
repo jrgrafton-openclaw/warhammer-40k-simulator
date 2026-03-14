@@ -151,7 +151,7 @@
 .unit-hull.shoot-attacker { stroke: #00d4ff !important; stroke-width: 2.4 !important; stroke-opacity: 1 !important; }
 .unit-hull.shoot-valid { stroke: #44d17a !important; stroke-width: 2.4 !important; stroke-dasharray: none !important; stroke-opacity: 1 !important; fill: rgba(68,209,122,.10) !important; filter: drop-shadow(0 0 6px rgba(68,209,122,.4)); }
 .unit-hull.shoot-invalid { stroke: #8a3a3a !important; stroke-width: 1.5 !important; stroke-dasharray: 4 3 !important; stroke-opacity: .65 !important; fill: rgba(138,58,58,.06) !important; }
-.unit-hull.shoot-target { stroke: #ff4020 !important; stroke-width: 2.6 !important; stroke-opacity: 1 !important; filter: drop-shadow(0 0 8px rgba(255,64,32,.45)); }
+.unit-hull.shoot-target { stroke: #ff4020 !important; stroke-width: 2.6 !important; stroke-dasharray: none !important; stroke-opacity: 1 !important; fill: rgba(255,64,32,.10) !important; filter: drop-shadow(0 0 8px rgba(255,64,32,.45)); }
 .unit-hull.shoot-partial { stroke: #d4a93a !important; stroke-dasharray: 8 3 !important; fill: rgba(212,169,58,.08) !important; }
 
 /* ── Movement specifics ── */

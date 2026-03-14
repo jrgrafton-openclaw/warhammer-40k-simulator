@@ -582,6 +582,10 @@ function updateDirectionFeedback() {
       ? '⚠ INVALID PILE IN — must move closer to enemy'
       : '⚠ INVALID CONSOLIDATION — must move toward enemy or objective';
     banner.style.display = 'block';
+    // Stack below cohesion banner if it's visible
+    const cohBanner = document.getElementById('cohesion-banner');
+    const cohVisible = cohBanner && cohBanner.style.display !== 'none';
+    banner.style.top = cohVisible ? '100px' : '60px';
   } else {
     banner.style.display = 'none';
   }
@@ -1017,8 +1021,10 @@ async function resolveAttack(targetId){
   // Hit roll (WS-based)
   const hitRolls = Array.from({length: totalAttacks}, d6);
   const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId,
-    `WS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds',
-    () => playMeleeVolley(attacker, target));
+    `WS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds');
+
+  // Play weapon strike animation AFTER dice have rolled
+  await playMeleeVolley(attacker, target);
 
   if (!hit.successes) {
     return finishFight(attacker, target, 0, 0);
@@ -1238,7 +1244,7 @@ export function initFight() {
     const banner = document.createElement('div');
     banner.id = 'fight-invalid-banner';
     banner.innerHTML = '⚠ INVALID PILE IN';
-    banner.style.cssText = "position:absolute;top:96px;left:50%;transform:translateX(-50%);background:rgba(255,140,0,.92);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;z-index:1000;display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,.5);border:2px solid #ff8c00;white-space:nowrap;";
+    banner.style.cssText = "position:absolute;top:100px;left:50%;transform:translateX(-50%);background:rgba(255,140,0,.96);color:#fff;padding:8px 20px;font:700 11px/1 'Rajdhani',sans-serif;letter-spacing:2px;z-index:1000;display:none;pointer-events:none;box-shadow:0 0 12px rgba(255,140,0,.4),0 4px 12px rgba(0,0,0,.5);border:2px solid #ffaa40;white-space:nowrap;";
     const bf = document.getElementById('battlefield');
     if (bf) bf.appendChild(banner);
   }
