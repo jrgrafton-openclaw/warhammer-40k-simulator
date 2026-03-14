@@ -1,6 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Start Game v0.2 — Splash Screen Styles
-   Hybrid approach: 1 raster bg + CSS/SVG atmosphere layers
+   Start Game v0.3 — Cinematic Boot Sequence
    Shared tokens via ../../shared/tokens/*.css
 ══════════════════════════════════════════════════════════════ */
 
@@ -9,33 +8,97 @@
   position: fixed;
   inset: 0;
   overflow: hidden;
-  background: var(--bg-primary);
+  background: #040608;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LAYER 1: Background image — single cathedral painting
+   ENTER GATE — "Click to Enter" pre-screen
+═══════════════════════════════════════════════════════════ */
+.enter-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #040608;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.6s ease-out;
+}
+.enter-gate.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gate-aquila {
+  font-size: 48px;
+  color: var(--imp);
+  opacity: 0.3;
+  margin-bottom: 24px;
+  animation: gate-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gate-pulse {
+  0%, 100% { opacity: 0.2; filter: drop-shadow(0 0 8px rgba(0,212,255,0.1)); }
+  50%      { opacity: 0.5; filter: drop-shadow(0 0 20px rgba(0,212,255,0.3)); }
+}
+
+.gate-text {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  animation: gate-text-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gate-text-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BACKGROUND — cathedral with Ken Burns zoom
 ═══════════════════════════════════════════════════════════ */
 .bg-image {
   position: absolute;
-  inset: -30px; /* bleed for parallax */
+  inset: -40px;
   background: url(assets/bg-far.webp) center/cover no-repeat;
-  animation: bg-drift 50s ease-in-out infinite alternate;
+  opacity: 0;
+  transform: scale(1.0);
+  transition: opacity 1.2s ease-out;
+}
+.bg-image.active {
+  opacity: 1;
+  animation: ken-burns 60s ease-in-out infinite alternate;
 }
 
-@keyframes bg-drift {
-  from { transform: translateX(-12px) scale(1.02); }
-  to   { transform: translateX(12px) scale(1.02); }
+@keyframes ken-burns {
+  from { transform: scale(1.0) translateX(-8px); }
+  to   { transform: scale(1.06) translateX(8px); }
 }
 
-/* Darken the image so the panel pops */
+/* Dim overlay */
 .bg-dim {
   position: absolute;
   inset: 0;
-  background: rgba(8, 12, 16, 0.45);
+  background: rgba(8, 12, 16, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LAYER 2: CSS fog — animated gradient overlays
+   LIGHTNING FLASH
+═══════════════════════════════════════════════════════════ */
+.lightning-layer {
+  position: absolute;
+  inset: 0;
+  background: rgba(180, 210, 240, 0);
+  pointer-events: none;
+  z-index: 5;
+  transition: background 0.05s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FOG — wider, more visible
 ═══════════════════════════════════════════════════════════ */
 .fog-layer {
   position: absolute;
@@ -43,176 +106,90 @@
   pointer-events: none;
 }
 
-/* Low fog rolling across bottom */
 .fog-low {
   background: linear-gradient(
     0deg,
-    rgba(8, 12, 16, 0.9) 0%,
-    rgba(8, 12, 16, 0.6) 15%,
-    rgba(8, 12, 16, 0.1) 35%,
+    rgba(8, 12, 16, 0.95) 0%,
+    rgba(8, 12, 16, 0.7) 12%,
+    rgba(8, 12, 16, 0.25) 30%,
     transparent 50%
   );
-  animation: fog-low-drift 40s ease-in-out infinite alternate;
+  animation: fog-drift-a 35s ease-in-out infinite alternate;
 }
 
-@keyframes fog-low-drift {
-  from { transform: translateX(-20px); opacity: 0.9; }
-  to   { transform: translateX(20px); opacity: 1; }
+@keyframes fog-drift-a {
+  from { transform: translateX(-15px); }
+  to   { transform: translateX(15px); }
 }
 
-/* Mid-height atmospheric haze */
-.fog-mid {
+/* Left-side atmospheric haze */
+.fog-left {
   background: radial-gradient(
-    ellipse 120% 60% at 30% 55%,
-    rgba(0, 212, 255, 0.03) 0%,
+    ellipse 80% 70% at 15% 60%,
+    rgba(0, 212, 255, 0.04) 0%,
     transparent 70%
   );
-  animation: fog-mid-pulse 25s ease-in-out infinite alternate;
+  animation: fog-breathe-a 20s ease-in-out infinite alternate;
 }
 
-@keyframes fog-mid-pulse {
-  from { opacity: 0.4; transform: translateX(10px); }
-  to   { opacity: 1; transform: translateX(-15px); }
+@keyframes fog-breathe-a {
+  from { opacity: 0.5; transform: translateX(-10px) translateY(5px); }
+  to   { opacity: 1; transform: translateX(10px) translateY(-5px); }
 }
 
-/* Second haze — opposite side */
-.fog-mid-alt {
+/* Right-side atmospheric haze */
+.fog-right {
   background: radial-gradient(
-    ellipse 100% 50% at 75% 40%,
-    rgba(0, 212, 255, 0.02) 0%,
+    ellipse 70% 60% at 80% 45%,
+    rgba(0, 212, 255, 0.03) 0%,
     transparent 60%
   );
-  animation: fog-mid-alt-pulse 30s ease-in-out infinite alternate;
+  animation: fog-breathe-b 28s ease-in-out infinite alternate;
 }
 
-@keyframes fog-mid-alt-pulse {
-  from { opacity: 1; transform: translateX(-10px); }
-  to   { opacity: 0.3; transform: translateX(12px); }
+@keyframes fog-breathe-b {
+  from { opacity: 1; transform: translateX(8px); }
+  to   { opacity: 0.4; transform: translateX(-12px); }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   LAYER 3: SVG smoke wisps — anchored to screen edges
-═══════════════════════════════════════════════════════════ */
-.smoke-container {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
+/* Mid-band rolling smoke */
+.fog-band {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(120, 140, 160, 0.04) 20%,
+    rgba(120, 140, 160, 0.06) 40%,
+    rgba(120, 140, 160, 0.04) 60%,
+    transparent 100%
+  );
+  height: 40%;
+  top: 35%;
+  animation: fog-band-drift 45s ease-in-out infinite alternate;
 }
 
-.smoke-wisp {
-  position: absolute;
-  opacity: 0;
-  filter: blur(2px);
-}
-
-/* Left smoke — rises from bottom-left */
-.smoke-left {
-  left: 5%;
-  bottom: 0;
-  width: 200px;
-  height: 400px;
-  animation: smoke-rise-left 18s ease-in-out infinite;
-}
-
-/* Right smoke — rises from bottom-right */
-.smoke-right {
-  right: 8%;
-  bottom: 0;
-  width: 180px;
-  height: 350px;
-  animation: smoke-rise-right 22s ease-in-out infinite 4s;
-}
-
-/* Center-left smoke */
-.smoke-center {
-  left: 35%;
-  bottom: 0;
-  width: 160px;
-  height: 300px;
-  animation: smoke-rise-center 20s ease-in-out infinite 8s;
-}
-
-@keyframes smoke-rise-left {
-  0%   { opacity: 0; transform: translateY(30px) translateX(0) scaleX(1); }
-  15%  { opacity: 0.12; }
-  50%  { opacity: 0.08; transform: translateY(-120px) translateX(25px) scaleX(1.3); }
-  85%  { opacity: 0.04; }
-  100% { opacity: 0; transform: translateY(-250px) translateX(40px) scaleX(1.6); }
-}
-
-@keyframes smoke-rise-right {
-  0%   { opacity: 0; transform: translateY(20px) translateX(0) scaleX(1); }
-  15%  { opacity: 0.1; }
-  50%  { opacity: 0.07; transform: translateY(-100px) translateX(-20px) scaleX(1.2); }
-  85%  { opacity: 0.03; }
-  100% { opacity: 0; transform: translateY(-200px) translateX(-35px) scaleX(1.5); }
-}
-
-@keyframes smoke-rise-center {
-  0%   { opacity: 0; transform: translateY(40px) translateX(0) scaleX(0.8); }
-  20%  { opacity: 0.08; }
-  60%  { opacity: 0.05; transform: translateY(-140px) translateX(15px) scaleX(1.4); }
-  100% { opacity: 0; transform: translateY(-280px) translateX(30px) scaleX(1.8); }
+@keyframes fog-band-drift {
+  from { transform: translateX(-60px); opacity: 0.6; }
+  to   { transform: translateX(60px); opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════
-   LAYER 4: CSS ember particles — resolution independent
-═══════════════════════════════════════════════════════════ */
-.ember-field {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-}
-
-.ember {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0;
-}
-
-.ember--warm {
-  background: #cc7700;
-  box-shadow: 0 0 6px 2px rgba(204, 119, 0, 0.6);
-}
-
-.ember--hot {
-  background: #ff9933;
-  box-shadow: 0 0 8px 2px rgba(255, 153, 51, 0.7);
-}
-
-.ember--cyan {
-  background: var(--imp);
-  box-shadow: 0 0 6px 2px rgba(0, 212, 255, 0.4);
-}
-
-@keyframes ember-rise {
-  0%   { opacity: 0; transform: translateY(0) translateX(0); }
-  8%   { opacity: 1; }
-  70%  { opacity: 0.6; }
-  100% { opacity: 0; transform: translateY(calc(-70vh - 50px)) translateX(var(--drift)); }
-}
-
-/* ═══════════════════════════════════════════════════════════
-   OVERLAYS: Vignette + grain + scanlines
+   OVERLAYS: vignette + grain + scanlines
 ═══════════════════════════════════════════════════════════ */
 .vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 30%, rgba(8,12,16,0.7) 80%, rgba(8,12,16,0.95) 100%);
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(4,6,8,0.6) 70%, rgba(4,6,8,0.95) 100%);
   pointer-events: none;
 }
 
 .grain {
   position: absolute;
   inset: 0;
-  opacity: 0.035;
+  opacity: 0.03;
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAMqADAAQAAAABAAAAMgAAAADDVAJpAAABqUlEQVRoBe2ZvQ3CQBBE7RJogQYogBIoIaED0wEdUAIl0AENUBRNQAd2CcaSD1laaXRr3+z6P5R8mdn93LdaoWKWZdn5PM8vWZY1HMcJGeMHq2Gr/iml1L0oim0cx7vBYJBm/VHDVjqUUr7v78qyfFksFmO0D/wTsqxhq7OiKMbX6/W+1+t10zQNEU9snCAk2+220Wazebrf76er1WrG8w1sxWq5XB77/f40TdMdjPFarXYwDCPyfb+dJInFGP0OcCIIgp7ruue6rpPdbvcYDAb7NE23VVVxDh7/hDSbzcLzvDPHOJ/Pb+f5fL6mf6qybDQavQyHwzWMcdeyLIVh2MFbQRynOE5gHMUxwMmx0WjEYJTHUVVVDJJwJXAkCACO58S/ByVVVeWsqqoOz/fwF7A+T8g+WFXVMU3T/a+truvjLMuKIAxHhmGUvu/Hnudh+xTHDZqmeZIk1vl8fp7NZhOe7+H0/6u3Xq/Xq0aj0VjXdZUkCU/6j6Io3MVicWi327PLYrFYPZhRt9t1oija4a26f2uK4/hIpyB27OyDKPCf/AI1r+0Cws0pIAAAAABJRU5ErkJggg==");
   pointer-events: none;
 }
 
-/* Subtle horizontal scanlines */
 .scanlines {
   position: absolute;
   inset: 0;
@@ -220,14 +197,26 @@
     0deg,
     transparent 0px,
     transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
+    rgba(0, 0, 0, 0.025) 2px,
+    rgba(0, 0, 0, 0.025) 4px
   );
   pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SPLASH PANEL — matches victory-panel from game-end
+   CANVAS PARTICLE LAYER
+═══════════════════════════════════════════════════════════ */
+#ember-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SPLASH PANEL
 ═══════════════════════════════════════════════════════════ */
 .splash-panel {
   position: absolute;
@@ -242,30 +231,34 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   padding: 48px 40px 40px;
   z-index: 10;
-  animation: panel-rise 0.5s ease-out 0.2s both;
+
+  /* Hidden initially — cinematic reveal controls this */
+  opacity: 0;
+  pointer-events: none;
+}
+.splash-panel.visible {
+  pointer-events: auto;
 }
 
-@keyframes panel-rise {
-  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-/* Ornamental corners — all four */
+/* Corner bracket draw-in animation */
 .splash-panel::before,
 .splash-panel::after {
   content: '';
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 0;
+  height: 0;
   pointer-events: none;
+  transition: width 0.4s ease-out, height 0.4s ease-out;
 }
-.splash-panel::before {
+.splash-panel.visible::before {
   top: 0; left: 0;
+  width: 24px; height: 24px;
   border-top: 2px solid var(--imp);
   border-left: 2px solid var(--imp);
 }
-.splash-panel::after {
+.splash-panel.visible::after {
   bottom: 0; right: 0;
+  width: 24px; height: 24px;
   border-bottom: 2px solid var(--imp);
   border-right: 2px solid var(--imp);
 }
@@ -273,22 +266,39 @@
 .splash-corners::after {
   content: '';
   position: absolute;
-  width: 24px;
-  height: 24px;
+  width: 0;
+  height: 0;
   pointer-events: none;
+  transition: width 0.4s ease-out 0.1s, height 0.4s ease-out 0.1s;
 }
-.splash-corners::before {
+.splash-panel.visible .splash-corners::before {
   top: 0; right: 0;
+  width: 24px; height: 24px;
   border-top: 2px solid var(--imp);
   border-right: 2px solid var(--imp);
 }
-.splash-corners::after {
+.splash-panel.visible .splash-corners::after {
   bottom: 0; left: 0;
+  width: 24px; height: 24px;
   border-bottom: 2px solid var(--imp);
   border-left: 2px solid var(--imp);
 }
 
-/* Panel glow */
+/* Corner glow pulse */
+.splash-panel.visible::before {
+  box-shadow: -4px -4px 12px rgba(0, 212, 255, 0.15);
+  animation: corner-pulse 4s ease-in-out infinite alternate;
+}
+.splash-panel.visible::after {
+  box-shadow: 4px 4px 12px rgba(0, 212, 255, 0.15);
+  animation: corner-pulse 4s ease-in-out infinite alternate 2s;
+}
+
+@keyframes corner-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(0, 212, 255, 0.08); }
+  50%      { box-shadow: 0 0 16px rgba(0, 212, 255, 0.25); }
+}
+
 .splash-glow {
   position: absolute;
   top: -1px; left: -1px; right: -1px; bottom: -1px;
@@ -300,7 +310,6 @@
   border: 1px solid transparent;
 }
 
-/* ── Aquila watermark ── */
 .splash-aquila {
   position: absolute;
   top: 50%;
@@ -314,7 +323,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TITLE + MENU
+   TITLE — with glow pulse on idle
 ═══════════════════════════════════════════════════════════ */
 .splash-header {
   text-align: center;
@@ -329,7 +338,7 @@
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: 8px;
-  animation: fade-in 0.5s ease-out 0.4s both;
+  opacity: 0;
 }
 
 .splash-title {
@@ -340,7 +349,30 @@
   text-shadow:
     0 0 20px rgba(0, 212, 255, 0.4),
     0 0 60px rgba(0, 212, 255, 0.15);
-  animation: fade-in 0.5s ease-out 0.3s both;
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+/* Title stamp animation */
+.splash-title.stamp {
+  animation: title-stamp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes title-stamp {
+  0%   { opacity: 0; transform: scale(1.12); filter: brightness(2); }
+  40%  { opacity: 1; transform: scale(0.98); filter: brightness(1.4); }
+  70%  { transform: scale(1.01); filter: brightness(1.1); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+/* Idle title glow */
+.splash-title.idle {
+  animation: title-glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes title-glow {
+  from { text-shadow: 0 0 20px rgba(0,212,255,0.3), 0 0 60px rgba(0,212,255,0.1); }
+  to   { text-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 80px rgba(0,212,255,0.2); }
 }
 
 .splash-subtitle {
@@ -349,7 +381,12 @@
   text-transform: uppercase;
   color: var(--imp-dim);
   margin-top: 6px;
-  animation: fade-in 0.5s ease-out 0.5s both;
+  opacity: 0;
+}
+
+/* Fade-in utility */
+.fade-in {
+  animation: fade-in 0.5s ease-out forwards;
 }
 
 @keyframes fade-in {
@@ -363,7 +400,7 @@
   align-items: center;
   gap: 12px;
   margin: 20px 0 28px;
-  animation: fade-in 0.4s ease-out 0.5s both;
+  opacity: 0;
 }
 .splash-divider-line {
   flex: 1;
@@ -375,7 +412,9 @@
   font-size: 10px;
 }
 
-/* ── Menu buttons — matches victory-btn ── */
+/* ═══════════════════════════════════════════════════════════
+   MENU BUTTONS
+═══════════════════════════════════════════════════════════ */
 .splash-menu {
   display: flex;
   flex-direction: column;
@@ -399,11 +438,13 @@
   transition: all 0.2s;
   background: transparent;
   position: relative;
+  opacity: 0;
+  transform: translateY(16px);
 }
 
-.menu-btn:nth-child(1) { animation: btn-slide-in 0.4s ease-out 0.6s both; }
-.menu-btn:nth-child(2) { animation: btn-slide-in 0.4s ease-out 0.68s both; }
-.menu-btn:nth-child(3) { animation: btn-slide-in 0.4s ease-out 0.76s both; }
+.menu-btn.slide-in {
+  animation: btn-slide-in 0.4s ease-out forwards;
+}
 
 @keyframes btn-slide-in {
   from { opacity: 0; transform: translateY(16px); }
@@ -417,7 +458,7 @@
 }
 .menu-btn.primary:hover {
   background: #18eaff;
-  box-shadow: 0 0 24px rgba(0, 212, 255, 0.35);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
 }
 .menu-btn.primary:active {
   background: var(--imp-dim);
@@ -433,7 +474,6 @@
   background: transparent;
   box-shadow: none;
 }
-
 .menu-btn.disabled .tooltip {
   display: none;
   position: absolute;
@@ -460,7 +500,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   UI ELEMENTS — version badge, backlink, mute
+   UI CHROME — version, backlink, mute
 ═══════════════════════════════════════════════════════════ */
 .mute-toggle {
   position: fixed;
@@ -478,7 +518,10 @@
   justify-content: center;
   transition: all 0.2s;
   z-index: 20;
-  animation: fade-in 0.4s ease-out 1s both;
+  opacity: 0;
+}
+.mute-toggle.visible {
+  animation: fade-in 0.4s ease-out forwards;
 }
 .mute-toggle:hover {
   border-color: var(--imp-dim);
@@ -494,7 +537,10 @@
   text-transform: uppercase;
   color: var(--text-dis);
   z-index: 20;
-  animation: fade-in 0.4s ease-out 1s both;
+  opacity: 0;
+}
+.version-badge.visible {
+  animation: fade-in 0.4s ease-out forwards;
 }
 
 .splash-backlink {
@@ -507,8 +553,11 @@
   text-decoration: none;
   text-transform: uppercase;
   z-index: 20;
-  animation: fade-in 0.4s ease-out 1s both;
+  opacity: 0;
   transition: color 0.2s;
+}
+.splash-backlink.visible {
+  animation: fade-in 0.4s ease-out forwards;
 }
 .splash-backlink:hover {
   color: var(--imp);

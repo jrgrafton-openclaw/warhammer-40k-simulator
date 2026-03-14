@@ -6,160 +6,361 @@
   <title>WH40K Simulator — Start Game</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Shared design tokens -->
   <link rel="stylesheet" href="../shared/tokens/colors.css">
   <link rel="stylesheet" href="../shared/tokens/typography.css">
-  <!-- Page-specific styles -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="splash-root">
+<!-- ══════════════════════════════════════════════════════════
+     ENTER GATE — click to start (enables audio)
+══════════════════════════════════════════════════════════ -->
+<div class="enter-gate" id="enter-gate">
+  <div class="gate-aquila">⚜</div>
+  <div class="gate-text">Click to Enter</div>
+</div>
 
-  <!-- ══ LAYER 1: Background image (single cathedral painting) ══ -->
-  <div class="bg-image"></div>
+<!-- ══════════════════════════════════════════════════════════
+     MAIN SCENE (hidden until gate dismissed)
+══════════════════════════════════════════════════════════ -->
+<div class="splash-root">
+  <!-- Background -->
+  <div class="bg-image" id="bg-image"></div>
   <div class="bg-dim"></div>
 
-  <!-- ══ LAYER 2: CSS fog overlays ══ -->
+  <!-- Lightning flash layer -->
+  <div class="lightning-layer" id="lightning"></div>
+
+  <!-- Fog -->
   <div class="fog-layer fog-low"></div>
-  <div class="fog-layer fog-mid"></div>
-  <div class="fog-layer fog-mid-alt"></div>
+  <div class="fog-layer fog-left"></div>
+  <div class="fog-layer fog-right"></div>
+  <div class="fog-layer fog-band"></div>
 
-  <!-- ══ LAYER 3: SVG smoke wisps ══ -->
-  <div class="smoke-container">
-    <svg class="smoke-wisp smoke-left" viewBox="0 0 200 400" fill="none">
-      <path d="M100,400 Q80,350 90,300 Q100,250 70,200 Q50,150 80,100 Q95,60 85,20"
-            stroke="rgba(200,210,220,0.15)" stroke-width="40" stroke-linecap="round"
-            fill="none" filter="blur(8px)"/>
-    </svg>
-    <svg class="smoke-wisp smoke-right" viewBox="0 0 180 350" fill="none">
-      <path d="M90,350 Q110,300 100,250 Q85,200 110,150 Q130,100 105,50"
-            stroke="rgba(200,210,220,0.12)" stroke-width="35" stroke-linecap="round"
-            fill="none" filter="blur(10px)"/>
-    </svg>
-    <svg class="smoke-wisp smoke-center" viewBox="0 0 160 300" fill="none">
-      <path d="M80,300 Q60,260 75,220 Q90,180 65,130 Q50,90 70,40"
-            stroke="rgba(200,210,220,0.1)" stroke-width="30" stroke-linecap="round"
-            fill="none" filter="blur(12px)"/>
-    </svg>
-  </div>
+  <!-- Canvas particles -->
+  <canvas id="ember-canvas"></canvas>
 
-  <!-- ══ LAYER 4: CSS ember particles ══ -->
-  <div class="ember-field" id="ember-field"></div>
-
-  <!-- ══ Overlays: vignette + grain + scanlines ══ -->
+  <!-- Overlays -->
   <div class="vignette"></div>
   <div class="grain"></div>
   <div class="scanlines"></div>
 
-  <!-- ══ Main panel ══ -->
-  <div class="splash-panel">
+  <!-- Panel -->
+  <div class="splash-panel" id="panel">
     <div class="splash-corners" style="position:absolute;inset:0;pointer-events:none;"></div>
     <div class="splash-glow"></div>
     <div class="splash-aquila">⚜</div>
 
     <div class="splash-header">
-      <div class="splash-label">10th Edition</div>
-      <div class="splash-title">Warhammer 40,000</div>
-      <div class="splash-subtitle">Battle Simulator</div>
+      <div class="splash-label" id="label">10th Edition</div>
+      <div class="splash-title" id="title">Warhammer 40,000</div>
+      <div class="splash-subtitle" id="subtitle">Battle Simulator</div>
     </div>
 
-    <div class="splash-divider">
+    <div class="splash-divider" id="divider">
       <div class="splash-divider-line"></div>
       <span class="splash-divider-ornament">✦</span>
       <div class="splash-divider-line"></div>
     </div>
 
     <div class="splash-menu">
-      <button class="menu-btn primary" onclick="window.location.href='../phases/deploy/v0.2/index.html'">
+      <button class="menu-btn primary" id="btn-new" onclick="window.location.href='../phases/deploy/v0.2/index.html'">
         <span class="btn-icon">⚔</span> New Game
       </button>
-      <button class="menu-btn disabled">
+      <button class="menu-btn disabled" id="btn-load">
         <span class="btn-icon">💾</span> Load Game
         <span class="tooltip">Coming Soon</span>
       </button>
-      <button class="menu-btn disabled">
+      <button class="menu-btn disabled" id="btn-settings">
         <span class="btn-icon">⚙</span> Settings
         <span class="tooltip">Coming Soon</span>
       </button>
     </div>
   </div>
 
-  <!-- ── Version badge ── -->
-  <div class="version-badge">v0.2 · Start Game</div>
-
-  <!-- ── Back to mockups ── -->
-  <a class="splash-backlink" href="../index.html#start-game">← Mockups</a>
-
-  <!-- ── Mute toggle ── -->
+  <!-- Chrome -->
+  <div class="version-badge" id="version">v0.3 · Start Game</div>
+  <a class="splash-backlink" id="backlink" href="../index.html#start-game">← Mockups</a>
   <button class="mute-toggle" id="mute-toggle" title="Toggle audio">🔊</button>
 </div>
 
-<!-- ── Audio ── -->
+<!-- Audio -->
 <audio id="ambient-audio" loop preload="auto">
   <source src="assets/ambient-loop.mp3" type="audio/mpeg">
 </audio>
 
 <script>
-  /* ── Ember particles (programmatic for variety) ── */
-  (function() {
-    const field = document.getElementById('ember-field');
-    const count = 20;
-    const types = ['warm', 'warm', 'warm', 'hot', 'hot', 'cyan'];
+/* ═══════════════════════════════════════════════════════════
+   CANVAS PARTICLE SYSTEM
+═══════════════════════════════════════════════════════════ */
+(function() {
+  const canvas = document.getElementById('ember-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  let mouseX = -1000, mouseY = -1000;
+  const particles = [];
+  let running = false;
 
-    for (let i = 0; i < count; i++) {
-      const ember = document.createElement('div');
-      const type = types[Math.floor(Math.random() * types.length)];
-      const size = 2 + Math.random() * 3;
-      const drift = -30 + Math.random() * 60;
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
 
-      ember.className = 'ember ember--' + type;
-      ember.style.left = (Math.random() * 100) + '%';
-      ember.style.bottom = -(Math.random() * 10) + '%';
-      ember.style.width = size + 'px';
-      ember.style.height = size + 'px';
-      ember.style.setProperty('--drift', drift + 'px');
-      ember.style.animationName = 'ember-rise';
-      ember.style.animationDuration = (6 + Math.random() * 14) + 's';
-      ember.style.animationDelay = (Math.random() * 12) + 's';
-      ember.style.animationIterationCount = 'infinite';
-      ember.style.animationTimingFunction = 'linear';
-
-      field.appendChild(ember);
-    }
-  })();
-
-  /* ── Audio ── */
-  (function() {
-    const audio = document.getElementById('ambient-audio');
-    const btn = document.getElementById('mute-toggle');
-    let started = false;
-    const wasMuted = localStorage.getItem('wh40k-splash-muted') === 'true';
-
-    audio.volume = 0.65;
-    if (wasMuted) {
-      audio.muted = true;
-      btn.textContent = '🔇';
+  function createParticle() {
+    const type = Math.random();
+    let color, glow, size;
+    if (type < 0.15) {
+      // cyan spark
+      color = 'rgba(0,212,255,0.9)';
+      glow = 'rgba(0,212,255,0.5)';
+      size = 1.5 + Math.random() * 2;
+    } else if (type < 0.4) {
+      // hot ember
+      color = 'rgba(255,160,50,0.95)';
+      glow = 'rgba(255,120,20,0.5)';
+      size = 2 + Math.random() * 3;
+    } else {
+      // warm ember
+      color = 'rgba(200,120,30,0.8)';
+      glow = 'rgba(180,90,10,0.4)';
+      size = 1.5 + Math.random() * 2.5;
     }
 
-    function startAudio() {
-      if (started) return;
-      started = true;
-      audio.play().catch(function() {});
+    return {
+      x: Math.random() * W,
+      y: H + 10 + Math.random() * 40,
+      vx: -0.3 + Math.random() * 0.6,
+      vy: -(0.4 + Math.random() * 1.2),
+      size: size,
+      color: color,
+      glow: glow,
+      life: 0,
+      maxLife: 300 + Math.random() * 500,
+      drift: (Math.random() - 0.5) * 0.01, // wind drift acceleration
+      flicker: Math.random() * Math.PI * 2
+    };
+  }
+
+  function tick() {
+    if (!running) return;
+    ctx.clearRect(0, 0, W, H);
+
+    // Spawn new particles
+    while (particles.length < 80) {
+      particles.push(createParticle());
     }
 
-    /* Start on first interaction */
-    document.addEventListener('click', startAudio, { once: true });
-    document.addEventListener('keydown', startAudio, { once: true });
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.life++;
 
-    btn.addEventListener('click', function(e) {
-      e.stopPropagation();
-      startAudio();
-      audio.muted = !audio.muted;
-      btn.textContent = audio.muted ? '🔇' : '🔊';
-      localStorage.setItem('wh40k-splash-muted', String(audio.muted));
-    });
-  })();
+      // Mouse repulsion
+      const dx = p.x - mouseX;
+      const dy = p.y - mouseY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 120) {
+        const force = (120 - dist) / 120 * 0.5;
+        p.vx += (dx / dist) * force;
+        p.vy += (dy / dist) * force;
+      }
+
+      // Wind drift
+      p.vx += p.drift;
+      p.vx *= 0.99; // damping
+
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Opacity: fade in, sustain, fade out
+      let alpha = 1;
+      if (p.life < 30) alpha = p.life / 30;
+      if (p.life > p.maxLife - 60) alpha = (p.maxLife - p.life) / 60;
+      if (alpha <= 0 || p.life >= p.maxLife || p.y < -20) {
+        particles.splice(i, 1);
+        continue;
+      }
+
+      // Flicker
+      const flick = 0.7 + 0.3 * Math.sin(p.flicker + p.life * 0.08);
+      alpha *= flick;
+
+      // Draw glow
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.shadowColor = p.glow;
+      ctx.shadowBlur = p.size * 3;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.glow;
+      ctx.fill();
+      ctx.restore();
+
+      // Draw core
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 0.6, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.fill();
+      ctx.restore();
+    }
+
+    requestAnimationFrame(tick);
+  }
+
+  window.startParticles = function() {
+    resize();
+    running = true;
+    tick();
+  };
+
+  window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', function(e) {
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHTNING SYSTEM
+═══════════════════════════════════════════════════════════ */
+(function() {
+  const el = document.getElementById('lightning');
+  let active = false;
+
+  window.triggerLightning = function() {
+    if (!active) return;
+    el.style.background = 'rgba(180,210,240,0.08)';
+    setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 80);
+    setTimeout(function() { el.style.background = 'rgba(180,210,240,0.05)'; }, 150);
+    setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 220);
+  };
+
+  window.startLightning = function() {
+    active = true;
+    function scheduleNext() {
+      if (!active) return;
+      const delay = 12000 + Math.random() * 20000; // 12-32s
+      setTimeout(function() {
+        triggerLightning();
+        scheduleNext();
+      }, delay);
+    }
+    scheduleNext();
+  };
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   CINEMATIC BOOT SEQUENCE
+═══════════════════════════════════════════════════════════ */
+(function() {
+  const audio = document.getElementById('ambient-audio');
+  const muteBtn = document.getElementById('mute-toggle');
+  const wasMuted = localStorage.getItem('wh40k-splash-muted') === 'true';
+
+  audio.volume = 0;
+  if (wasMuted) {
+    audio.muted = true;
+    muteBtn.textContent = '🔇';
+  }
+
+  // Audio fade-in
+  function fadeInAudio() {
+    audio.play().catch(function() {});
+    let vol = 0;
+    const target = 0.65;
+    const step = target / 40; // 40 steps over ~1s
+    const interval = setInterval(function() {
+      vol = Math.min(vol + step, target);
+      audio.volume = vol;
+      if (vol >= target) clearInterval(interval);
+    }, 25);
+  }
+
+  // Mute toggle
+  muteBtn.addEventListener('click', function() {
+    audio.muted = !audio.muted;
+    muteBtn.textContent = audio.muted ? '🔇' : '🔊';
+    localStorage.setItem('wh40k-splash-muted', String(audio.muted));
+  });
+
+  // ── ENTER GATE ──
+  document.getElementById('enter-gate').addEventListener('click', function() {
+    const gate = document.getElementById('enter-gate');
+    gate.classList.add('hidden');
+
+    // Start audio with fade
+    fadeInAudio();
+
+    // ── CINEMATIC TIMELINE ──
+
+    // 0.0s — Flash + background reveal
+    const bg = document.getElementById('bg-image');
+    triggerLightning();
+    bg.classList.add('active');
+
+    // 0.5s — Second lightning flicker
+    setTimeout(triggerLightning, 500);
+
+    // 0.8s — Panel fades in
+    setTimeout(function() {
+      var panel = document.getElementById('panel');
+      panel.style.transition = 'opacity 0.6s ease-out';
+      panel.style.opacity = '1';
+      panel.classList.add('visible');
+    }, 800);
+
+    // 1.0s — Title stamps in
+    setTimeout(function() {
+      document.getElementById('label').classList.add('fade-in');
+    }, 900);
+    setTimeout(function() {
+      document.getElementById('title').classList.add('stamp');
+    }, 1000);
+    setTimeout(function() {
+      document.getElementById('subtitle').classList.add('fade-in');
+    }, 1300);
+    setTimeout(function() {
+      document.getElementById('divider').classList.add('fade-in');
+    }, 1400);
+
+    // 1.5s — Particles ignite
+    setTimeout(function() {
+      startParticles();
+      startLightning();
+    }, 1500);
+
+    // 2.0s — Menu buttons stagger in
+    setTimeout(function() {
+      document.getElementById('btn-new').classList.add('slide-in');
+    }, 2000);
+    setTimeout(function() {
+      document.getElementById('btn-load').classList.add('slide-in');
+    }, 2100);
+    setTimeout(function() {
+      document.getElementById('btn-settings').classList.add('slide-in');
+    }, 2200);
+
+    // 2.5s — Chrome appears
+    setTimeout(function() {
+      document.getElementById('version').classList.add('visible');
+      document.getElementById('backlink').classList.add('visible');
+      document.getElementById('mute-toggle').classList.add('visible');
+    }, 2500);
+
+    // 3.0s — Title enters idle glow
+    setTimeout(function() {
+      var t = document.getElementById('title');
+      t.classList.remove('stamp');
+      t.classList.add('idle');
+    }, 3000);
+
+    // Remove gate from DOM after transition
+    setTimeout(function() {
+      gate.remove();
+    }, 1000);
+  });
+})();
 </script>
 
 </body>
