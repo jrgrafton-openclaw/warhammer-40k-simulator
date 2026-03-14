@@ -170,21 +170,17 @@ function confirmPlacement() {
     finishPlacement();
 
   } else if (zone === 'ds') {
-    // Assign to deep strike
+    // Assign to deep strike — leave models wherever the player put them
     deployState.deepStrikeUnits.add(unitId);
     deployState.reserveUnits.delete(unitId);
-    // Position neatly inside DS zone
-    arrangeModels(unit, -145, 135);
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
 
   } else if (zone === 'reserves') {
-    // Assign to reserves
+    // Assign to reserves — leave models wherever the player put them
     deployState.reserveUnits.add(unitId);
     deployState.deepStrikeUnits.delete(unitId);
-    // Position neatly inside reserves zone
-    arrangeModels(unit, -145, 393);
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
@@ -268,21 +264,15 @@ function confirmDeployment() {
   // Add deployment-complete class to hide zone overlays
   document.body.classList.add('deployment-complete');
 
-  // Animate camera to center the board (pan right so x=0..720 fills view)
-  document.body.classList.add('camera-transition');
-  var cam = getCamera();
-  var bf = document.getElementById('battlefield');
-  var bfW = bf ? bf.clientWidth : 800;
-  // Center the 720px board in the viewport
-  var targetTx = (bfW - 720 * cam.scale) / 2;
-  var targetTy = 0;
+  // Animate camera to center the board (tx=0, ty=0 is the natural center)
   var inner = document.getElementById('battlefield-inner');
   if (inner) {
-    inner.style.transform = 'translate(' + targetTx + 'px,' + targetTy + 'px) scale(' + cam.scale + ')';
+    inner.style.transition = 'transform 0.6s ease';
+    inner.style.transform = 'translate(0px, 0px) scale(0.5)';
+    setTimeout(function() {
+      inner.style.transition = '';
+    }, 700);
   }
-  setTimeout(function() {
-    document.body.classList.remove('camera-transition');
-  }, 700);
 }
 
 // ── UI updates ───────────────────────────────────────────
@@ -392,11 +382,11 @@ function installDragInterceptor() {
           if (dragUnit.id !== deployState.placingUnit) {
             if (deployState.deployedUnits.has(dragUnit.id)) {
               baseSelectUnit(dragUnit.id);
-            } else {
-              // Clicking a staging unit starts placement
-              startPlacement(dragUnit.id);
+              return;
             }
-            return;
+            // Clicking a staging unit starts placement AND allows immediate drag
+            startPlacement(dragUnit.id);
+            // Fall through to set _drag so the mousedown drag begins immediately
           }
         }
       }
