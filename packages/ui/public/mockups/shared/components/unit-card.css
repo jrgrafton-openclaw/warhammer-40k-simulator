@@ -67,6 +67,7 @@
 .range-toggle.active.move    { background: var(--imp-tint); border-color: var(--imp-dim); color: var(--imp); }
 .range-toggle.active.advance { background: var(--strat-tint); border-color: var(--strat-dim); color: var(--strat); }
 .range-toggle.active.charge  { background: rgba(204,100,0,.1); border-color: rgba(204,100,0,.4); color: #cc6400; }
+.range-toggle.active.ds      { background: rgba(186,126,255,.1); border-color: rgba(186,126,255,.42); color: #ba7eff; }
 
 /* Card sections */
 .card-section { padding: 8px 14px; border-bottom: 1px solid rgba(0,212,255,.05); background: var(--bg-surface); }

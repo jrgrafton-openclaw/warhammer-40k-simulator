@@ -85,3 +85,10 @@
 /* ── DS range circle + label ── */
 .rc-ds { border: 1.5px dotted rgba(186,126,255,.6); }
 .rl-ds { color: rgba(186,126,255,.9); }
+
+/* ── DS card button active state (phase-local override) ── */
+#unit-card .range-toggle.active.ds {
+  background: rgba(186,126,255,.1);
+  border-color: rgba(186,126,255,.42);
+  color: #ba7eff;
+}
