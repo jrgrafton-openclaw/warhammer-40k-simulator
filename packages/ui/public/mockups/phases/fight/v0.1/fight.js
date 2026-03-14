@@ -98,6 +98,15 @@ function isInEngagement(unitId){
   );
 }
 
+// Check if two specific units are engaged with each other
+function isEngagedWith(unitIdA, unitIdB){
+  const a = getUnit(unitIdA), b = getUnit(unitIdB);
+  if (!a || !b) return false;
+  return a.models.some(am =>
+    b.models.some(bm => inEngagementRange(am, bm))
+  );
+}
+
 // ── Unit keyword check ──────────────────────────────────
 function unitIsInfantry(uid){
   const u = UNITS[uid];
@@ -227,8 +236,8 @@ function paint(){
     if (uid === state.attackerId) {
       h.classList.add('shoot-attacker');
     } else if (isEnemy(uid) && state.attackerId && !state.foughtUnits.has(state.attackerId)) {
-      // Highlight engaged enemies green, non-engaged enemies dimmed
-      if (isInEngagement(uid)) {
+      // Highlight enemies engaged with the selected attacker green, others dimmed
+      if (isEngagedWith(state.attackerId, uid)) {
         h.classList.add('shoot-valid');
       } else {
         h.classList.add('shoot-invalid');
@@ -792,9 +801,8 @@ async function beginFight(targetId){
 // ── Enemy interaction ───────────────────────────────────
 function onEnemyInteract(unitId){
   if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
-  // Target must have models that are within engagement range of attacker's models
-  // OR the attacker is eligible to fight (already checked via isInEngagement)
-  if (!isInEngagement(unitId)) return;
+  // Target must be specifically engaged with the selected attacker (not just any unit)
+  if (!isEngagedWith(state.attackerId, unitId)) return;
   beginFight(unitId);
 }
 
@@ -808,7 +816,7 @@ function bindFightOverrides(){
     if (!node) return;
     const uid = node.dataset.unitId;
     if (!isEnemy(uid)) return;
-    if (!isInEngagement(uid)) return;
+    if (!isEngagedWith(state.attackerId, uid)) return;
     state.hoveredTargetId = uid;
     paint();
   }, true);
@@ -826,7 +834,7 @@ function bindFightOverrides(){
     if (!node) return;
     const uid = node.dataset.unitId;
     if (!isEnemy(uid)) return;
-    if (!isInEngagement(uid)) return;
+    if (!isEngagedWith(state.attackerId, uid)) return;
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     if (e.type === 'click') onEnemyInteract(uid);
   };
@@ -884,10 +892,10 @@ window.selectUnit = wrappedSelectUnit;
 // ── Init ───────────────────────────────────────────────
 export function initFight(){
   $('#btn-end-fight')?.addEventListener('click', () => setStatus('END FIGHT NOT WIRED IN MOCKUP'));
-  $('#card-close')?.addEventListener('click', () => baseSelectUnit(null));
+  $('#card-close')?.addEventListener('click', () => wrappedSelectUnit(null));
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { baseSelectUnit(null); }
+    if (e.key === 'Escape') { wrappedSelectUnit(null); }
   });
 
   window.__fightDebug = {
