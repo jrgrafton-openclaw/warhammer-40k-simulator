@@ -1,0 +1,36 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1 Fight Phase — Overrides
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY fight-phase-specific overrides.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Wider roll overlay for weapon picker ── */
+#roll-overlay { max-width: 720px; }
+
+/* ── Engagement range highlight on hulls ── */
+.unit-hull.fight-engaged {
+  filter: drop-shadow(0 0 6px rgba(0,255,120,0.4));
+}
+
+/* ── Ineligible units dimmed ── */
+.unit-hull.fight-ineligible {
+  opacity: 0.35;
+}
+
+/* ── Melee slash effect (fight-specific, supplements shared fx.css) ── */
+.melee-slash-burst {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,96,48,0.6) 0%, rgba(255,170,64,0.2) 50%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: melee-burst 0.35s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes melee-burst {
+  0%   { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  50%  { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+  100% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+}
