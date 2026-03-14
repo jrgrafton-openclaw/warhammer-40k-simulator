@@ -98,100 +98,18 @@
 }
 
 /* ═══════════════════════════════════════════════════════════
-   FOG — wider, more visible
+   BOTTOM FADE — soft edge, NOT a letterbox bar
 ═══════════════════════════════════════════════════════════ */
-.fog-layer {
+.bottom-fade {
   position: absolute;
   inset: 0;
-  pointer-events: none;
-}
-
-.fog-low {
   background: linear-gradient(
     0deg,
-    rgba(8, 12, 16, 0.95) 0%,
-    rgba(8, 12, 16, 0.7) 12%,
-    rgba(8, 12, 16, 0.25) 30%,
-    transparent 50%
+    rgba(4, 6, 8, 0.7) 0%,
+    rgba(4, 6, 8, 0.3) 8%,
+    transparent 20%
   );
-  animation: fog-drift-a 35s ease-in-out infinite alternate;
-}
-
-@keyframes fog-drift-a {
-  from { transform: translateX(-15px); }
-  to   { transform: translateX(15px); }
-}
-
-/* Left-side atmospheric haze — VISIBLE */
-.fog-left {
-  background: radial-gradient(
-    ellipse 90% 80% at 10% 55%,
-    rgba(140, 160, 180, 0.12) 0%,
-    rgba(100, 120, 140, 0.06) 40%,
-    transparent 70%
-  );
-  animation: fog-breathe-a 20s ease-in-out infinite alternate;
-}
-
-@keyframes fog-breathe-a {
-  from { opacity: 0.6; transform: translateX(-15px) translateY(5px); }
-  to   { opacity: 1; transform: translateX(15px) translateY(-8px); }
-}
-
-/* Right-side atmospheric haze — VISIBLE */
-.fog-right {
-  background: radial-gradient(
-    ellipse 80% 70% at 85% 50%,
-    rgba(140, 160, 180, 0.10) 0%,
-    rgba(100, 120, 140, 0.05) 35%,
-    transparent 65%
-  );
-  animation: fog-breathe-b 28s ease-in-out infinite alternate;
-}
-
-@keyframes fog-breathe-b {
-  from { opacity: 1; transform: translateX(12px); }
-  to   { opacity: 0.5; transform: translateX(-18px); }
-}
-
-/* Mid-band rolling smoke — large, slow, VISIBLE */
-.fog-band {
-  background: linear-gradient(
-    90deg,
-    transparent 5%,
-    rgba(140, 155, 170, 0.10) 25%,
-    rgba(160, 175, 190, 0.14) 45%,
-    rgba(140, 155, 170, 0.10) 65%,
-    transparent 95%
-  );
-  height: 45%;
-  top: 30%;
-  animation: fog-band-drift 40s ease-in-out infinite alternate;
-}
-
-@keyframes fog-band-drift {
-  from { transform: translateX(-80px) scaleY(0.9); opacity: 0.5; }
-  to   { transform: translateX(80px) scaleY(1.1); opacity: 1; }
-}
-
-/* Secondary smoke band — counter-direction */
-.fog-band-2 {
-  background: linear-gradient(
-    90deg,
-    transparent 10%,
-    rgba(120, 140, 160, 0.08) 30%,
-    rgba(130, 150, 170, 0.11) 55%,
-    rgba(120, 140, 160, 0.06) 75%,
-    transparent 90%
-  );
-  height: 35%;
-  top: 40%;
-  animation: fog-band-drift-2 55s ease-in-out infinite alternate;
-}
-
-@keyframes fog-band-drift-2 {
-  from { transform: translateX(60px) scaleY(1.1); opacity: 0.7; }
-  to   { transform: translateX(-70px) scaleY(0.85); opacity: 1; }
+  pointer-events: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
