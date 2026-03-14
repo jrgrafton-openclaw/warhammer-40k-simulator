@@ -103,6 +103,7 @@
       <button class="tab-btn active" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
       <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
       <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
+      <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
     </div>
 
     <!-- SHOOT PHASE -->
@@ -202,6 +203,33 @@
             <li>Stratagem: Counter-Offensive</li>
           </ul>
           <span class="card-link" style="opacity:0.3">Backlog</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- FIGHT PHASE -->
+    <div id="tab-fight" class="tab-pane hidden">
+      <div class="section-title">Fight Phase</div>
+      <div class="section-desc">
+        Melee combat with pile-in, WS-based attack resolution, and consolidation.
+        Reuses shared dice, wound allocation, and model rendering from shooting.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/fight/v0.1/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">PILE-IN · MELEE · CONSOLIDATE</div>
+          <div class="card-title">Full fight flow · Engagement targeting · Melee slash FX</div>
+          <ul class="card-features">
+            <li>Pile-in: models auto-slide up to 3" toward closest enemy</li>
+            <li>WS-based hit rolls with full wound/save/damage pipeline</li>
+            <li>Melee slash animations (2-3 per model, staggered)</li>
+            <li>Consolidation: 3" toward engagement range or nearest objective</li>
+            <li>Attacker-specific engagement validation (per-unit targeting)</li>
+            <li>Infantry pass through ruins; Vehicles blocked</li>
+          </ul>
+          <span class="card-link">Open →</span>
         </a>
       </div>
     </div>
