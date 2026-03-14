@@ -116,7 +116,8 @@
 .offboard-zone.zone-active.ds-zone-bg { fill: rgba(255,170,0,0.08); stroke: rgba(255,170,0,0.4); transition: fill 0.2s, stroke 0.2s; }
 .offboard-zone.zone-active.reserves-zone-bg { fill: rgba(186,126,255,0.08); stroke: rgba(186,126,255,0.4); transition: fill 0.2s, stroke 0.2s; }
 
-/* ── Deployment complete — hide zone overlays + off-board zones ── */
+/* ── Deployment complete — hide deployment zone shading + staging only ── */
+/* DS and Reserves zones PERSIST (units enter play later) */
 .deployment-complete .deploy-zone-bg,
 .deployment-complete .deploy-zone-border,
 .deployment-complete .deploy-zone-label,
@@ -129,8 +130,9 @@
   opacity: 0;
   transition: opacity 0.5s ease;
 }
-.deployment-complete .offboard-zone,
-.deployment-complete .offboard-zone-label,
+/* Only hide staging zone and board-edge separator, keep DS + Reserves */
+.deployment-complete .staging-zone-bg,
+.deployment-complete .offboard-zone-label:not(.ds-label):not(.reserves-label),
 .deployment-complete .board-edge-separator {
   opacity: 0;
   transition: opacity 0.5s ease;
