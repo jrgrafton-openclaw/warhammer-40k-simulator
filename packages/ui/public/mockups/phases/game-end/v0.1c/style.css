@@ -1,0 +1,364 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1c Game End — Victory Monument (Cinematic Full-Bleed)
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY game-end-specific styles.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Full-bleed backdrop ── */
+.game-end-backdrop {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, #050608 0%, #020304 100%);
+  opacity: 0.94;
+  z-index: 100;
+  animation: backdrop-fade 0.8s ease-out both;
+}
+
+.game-end-content {
+  position: fixed;
+  inset: 0;
+  z-index: 101;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.game-end-content > * {
+  pointer-events: auto;
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to   { opacity: 0.94; }
+}
+
+/* ── Faction watermark ── */
+.faction-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 300px;
+  color: rgba(0, 212, 255, 0.03);
+  z-index: 100;
+  pointer-events: none;
+  line-height: 1;
+  animation: watermark-in 1s ease-out 0.5s both, watermark-pulse 8s ease-in-out 1.5s infinite;
+}
+
+@keyframes watermark-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes watermark-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.02); }
+}
+
+/* ── Victory title ── */
+.victory-title {
+  font: 400 56px/1 'Anton', sans-serif;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-align: center;
+  text-shadow: 0 0 40px rgba(0, 212, 255, 0.5);
+  animation: title-in 0.6s ease-out 0.3s both, title-glow 3s ease-in-out 0.9s infinite alternate;
+}
+
+@keyframes title-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes title-glow {
+  from { filter: brightness(1); }
+  to   { filter: brightness(1.2); }
+}
+
+.victory-tagline {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  text-align: center;
+  margin-top: 8px;
+  animation: title-in 0.6s ease-out 0.4s both;
+}
+
+/* ── Score pillars ── */
+.score-pillars {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  margin-top: 48px;
+  animation: pillars-ready 0.1s linear 0.5s both;
+}
+
+@keyframes pillars-ready {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.score-pillar {
+  width: 200px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.score-pillar--imp {
+  animation: pillar-left 0.5s ease-out 0.5s both;
+}
+
+.score-pillar--ork {
+  animation: pillar-right 0.5s ease-out 0.6s both;
+}
+
+@keyframes pillar-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pillar-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.pillar-faction-name {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.pillar-faction-name.imp { color: var(--imp-dim); }
+.pillar-faction-name.ork { color: var(--ork-dim); }
+
+.pillar-score {
+  font: 400 64px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+}
+
+.pillar-score.imp { color: var(--imp); }
+.pillar-score.ork { color: var(--ork); }
+
+.pillar-stat {
+  font: 500 11px/1.6 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.pillar-stat--sec  { color: var(--text-sec); }
+.pillar-stat--muted { color: var(--text-muted); }
+
+/* ── Center VS divider ── */
+.pillar-divider {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  padding-top: 24px;
+  animation: title-in 0.5s ease-out 0.55s both;
+}
+
+.pillar-divider-line {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+}
+
+.pillar-divider-vs {
+  font: 400 12px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  padding: 8px 0;
+}
+
+/* ── Round timeline ── */
+.round-timeline {
+  margin-top: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+}
+
+.timeline-track {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.timeline-segment {
+  width: 48px;
+  height: 1px;
+  background: var(--border);
+}
+
+.timeline-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+
+.timeline-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--imp-dim);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 7px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  position: relative;
+  z-index: 1;
+}
+
+.timeline-dot--filled {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: var(--imp);
+}
+
+.timeline-label {
+  font: 500 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-dis);
+  margin-top: 6px;
+}
+
+.timeline-vp {
+  font: 400 10px/1 'Anton', sans-serif;
+  color: var(--imp-dim);
+  margin-top: 2px;
+}
+
+/* Hover tooltip */
+.timeline-tooltip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  display: flex;
+  gap: 12px;
+}
+
+.timeline-node:hover .timeline-tooltip {
+  opacity: 1;
+}
+
+.timeline-tooltip-faction {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.tooltip-faction-label {
+  font: 600 7px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.tooltip-faction-label.imp { color: var(--imp-dim); }
+.tooltip-faction-label.ork { color: var(--ork-dim); }
+
+.tooltip-vp {
+  font: 400 14px/1 'Anton', sans-serif;
+}
+
+.tooltip-vp.imp { color: var(--imp); }
+.tooltip-vp.ork { color: var(--ork); }
+
+.tooltip-delta {
+  font: 500 8px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+}
+
+/* Timeline node staggered entrance */
+.timeline-node:nth-child(1)  { animation: node-in 0.3s ease-out 0.8s both; }
+.timeline-segment:nth-child(2) { animation: node-in 0.2s ease-out 0.85s both; }
+.timeline-node:nth-child(3)  { animation: node-in 0.3s ease-out 0.9s both; }
+.timeline-segment:nth-child(4) { animation: node-in 0.2s ease-out 0.95s both; }
+.timeline-node:nth-child(5)  { animation: node-in 0.3s ease-out 1.0s both; }
+.timeline-segment:nth-child(6) { animation: node-in 0.2s ease-out 1.05s both; }
+.timeline-node:nth-child(7)  { animation: node-in 0.3s ease-out 1.1s both; }
+.timeline-segment:nth-child(8) { animation: node-in 0.2s ease-out 1.15s both; }
+.timeline-node:nth-child(9)  { animation: node-in 0.3s ease-out 1.2s both; }
+
+@keyframes node-in {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+/* ── Action links ── */
+.victory-links {
+  margin-top: 56px;
+  text-align: center;
+  animation: links-in 0.5s ease-out 1.2s both;
+}
+
+@keyframes links-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.victory-link {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-decoration: none;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  transition: color 0.2s;
+}
+
+.victory-link:hover {
+  color: var(--imp);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.victory-link-sep {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  margin: 0 6px;
+}
+
+/* ── Backlink (override for overlay z-index) ── */
+.game-end-content .backlink {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 102;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.game-end-content .backlink:hover {
+  color: var(--imp);
+}
