@@ -102,6 +102,7 @@
     <div class="tab-nav" id="phase-tabs">
       <button class="tab-btn active" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
       <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
+      <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
     </div>
 
     <!-- SHOOT PHASE -->
@@ -162,6 +163,45 @@
             <li>Drag interceptor blocks moved + enemy units</li>
           </ul>
           <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- CHARGE PHASE -->
+    <div id="tab-charge" class="tab-pane hidden">
+      <div class="section-title">Charge Phase</div>
+      <div class="section-desc">
+        Charge declaration, 2D6 roll, engagement placement with wall collision.
+        Reuses shared world modules for terrain/unit collision.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/charge/v0.1/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">DECLARE + ROLL + ENGAGE</div>
+          <div class="card-title">Charger select · 2D6 roll · engagement placement · wall collision</div>
+          <ul class="card-features">
+            <li>Target declaration: eligible enemies within 12" highlighted orange</li>
+            <li>Animated 2D6 charge roll with success/fail determination</li>
+            <li>Engagement range zones (1") around target models</li>
+            <li>Wall collision via shared terrain AABBs</li>
+            <li>Unit coherency check (2") on confirm</li>
+            <li>Ghost circles + ruler lines during charge movement</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+
+        <a class="card">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">OVERWATCH</div>
+          <div class="card-title">Overwatch reaction · interrupt charge · stratagem integration</div>
+          <ul class="card-features">
+            <li>Defender overwatch reaction on charge declaration</li>
+            <li>Overwatch hit penalty (6+ only)</li>
+            <li>Stratagem: Counter-Offensive</li>
+          </ul>
+          <span class="card-link" style="opacity:0.3">Backlog</span>
         </a>
       </div>
     </div>

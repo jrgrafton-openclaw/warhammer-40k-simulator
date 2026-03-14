@@ -1,0 +1,268 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1 Charge Phase — Styles
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY charge-specific overrides & additions.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Charge target highlight states ── */
+.unit-hull.charge-valid {
+  stroke: #ff8c00 !important;
+  stroke-opacity: 0.9 !important;
+  stroke-width: 2.5 !important;
+  stroke-dasharray: none !important;
+  fill: rgba(255,140,0,0.08) !important;
+  filter: drop-shadow(0 0 6px rgba(255,140,0,0.4));
+  cursor: pointer;
+}
+.unit-hull.charge-declared {
+  stroke: #cc8800 !important;
+  stroke-opacity: 1 !important;
+  stroke-width: 2.5 !important;
+  stroke-dasharray: none !important;
+  fill: rgba(204,136,0,0.12) !important;
+  filter: drop-shadow(0 0 8px rgba(204,136,0,0.5));
+}
+.unit-hull.charge-invalid {
+  opacity: 0.35 !important;
+  stroke-opacity: 0.3 !important;
+}
+.unit-hull.charge-attacker {
+  stroke: #00d4ff !important;
+  stroke-opacity: 1 !important;
+  stroke-width: 2.5 !important;
+  stroke-dasharray: none !important;
+  fill: rgba(0,212,255,0.1) !important;
+}
+
+/* ── Charge declaration range lines ── */
+.charge-range-line {
+  stroke: rgba(255,140,0,0.35);
+  stroke-width: 1.2;
+  stroke-dasharray: 6 4;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.charge-range-line.declared {
+  stroke: rgba(204,136,0,0.6);
+  stroke-width: 1.5;
+}
+
+/* ── Charge zone overlay (per-model move radius after roll) ── */
+.charge-zone-ring {
+  fill: rgba(255,140,0,0.03);
+  stroke: rgba(255,140,0,0.2);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+  pointer-events: none;
+}
+
+/* ── Engagement range rings around target models ── */
+.engagement-ring {
+  fill: none;
+  stroke: rgba(255,140,0,0.3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+.engagement-ring.reached {
+  stroke: rgba(0,200,80,0.6);
+  stroke-width: 1.5;
+  fill: rgba(0,200,80,0.04);
+}
+
+/* ── Ghost circles at start positions ── */
+.charge-ghost {
+  fill: none;
+  stroke: rgba(0,212,255,0.2);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+
+/* ── Charge ruler lines (distance moved per model) ── */
+.charge-ruler {
+  stroke: rgba(0,212,255,0.25);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+.charge-ruler.over-range {
+  stroke: rgba(255,50,50,0.5);
+}
+.charge-ruler-label {
+  fill: rgba(0,212,255,0.6);
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  pointer-events: none;
+}
+.charge-ruler-label.over-range {
+  fill: rgba(255,50,50,0.7);
+}
+
+/* ── 2D6 Charge Dice Overlay ── */
+#charge-dice-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  background: rgba(8,12,16,0.8);
+  backdrop-filter: blur(4px);
+}
+#charge-dice-overlay.visible { display: flex; }
+
+.charge-dice-panel { text-align: center; }
+
+.charge-dice-title {
+  font: 700 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #ff8c00;
+  margin-bottom: 16px;
+}
+
+.charge-dice-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.charge-die {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-surface));
+  border: 2px solid var(--text-dis);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 6px 20px rgba(0,0,0,.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: normal 400 38px/1 'Anton', sans-serif;
+  color: var(--text-dis);
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.charge-die.rolling {
+  animation: die-roll-in .4s cubic-bezier(.34,1.56,.64,1) both;
+  color: #ff8c00;
+  border-color: #ff8c00;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 24px rgba(255,140,0,.35), 0 6px 20px rgba(0,0,0,.6);
+}
+
+.charge-dice-total {
+  font: 400 28px/1 'Anton', sans-serif;
+  color: #ff8c00;
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.charge-dice-result {
+  font: 700 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.charge-dice-result.success { color: #00cc50; }
+.charge-dice-result.fail { color: #cc2020; }
+
+/* ── Charge Result Banner ── */
+.charge-result-banner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.8);
+  padding: 16px 40px;
+  border-radius: 4px;
+  font: 700 18px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  z-index: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.charge-result-banner.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+.charge-result-banner.success {
+  background: rgba(0,200,80,0.95);
+  color: #fff;
+  box-shadow: 0 0 40px rgba(0,200,80,0.4), 0 8px 24px rgba(0,0,0,0.5);
+  border: 2px solid #00cc50;
+}
+.charge-result-banner.fail {
+  background: rgba(204,32,32,0.95);
+  color: #fff;
+  box-shadow: 0 0 40px rgba(204,32,32,0.4), 0 8px 24px rgba(0,0,0,0.5);
+  border: 2px solid #cc2020;
+}
+
+/* ── State pills for roster ── */
+.rail-unit.charged .roster-state-pill {
+  display: inline-flex;
+  border-color: #cc8800;
+  color: #cc8800;
+}
+.rail-unit.charged .roster-state-pill::before { content: 'CHARGED'; }
+
+.rail-unit.charge-failed .roster-state-pill {
+  display: inline-flex;
+  border-color: #882020;
+  color: #882020;
+}
+.rail-unit.charge-failed .roster-state-pill::before { content: 'FAILED'; }
+
+/* ── Unit state badge overrides ── */
+.unit-state-badge.charged {
+  display: inline-flex;
+  border-color: #cc8800;
+  background: rgba(204,136,0,0.12);
+  color: #cc8800;
+}
+.unit-state-badge.charge-failed {
+  display: inline-flex;
+  border-color: #882020;
+  background: rgba(136,32,32,0.12);
+  color: #882020;
+}
+
+/* ── Action bar charge buttons ── */
+.charge-declare-btn {
+  background: rgba(255,140,0,0.12) !important;
+  border-color: #ff8c00 !important;
+  color: #ff8c00 !important;
+}
+.charge-declare-btn:hover:not(:disabled) {
+  background: rgba(255,140,0,0.2) !important;
+  box-shadow: 0 0 12px rgba(255,140,0,0.2);
+}
+.charge-declare-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.charge-confirm-btn {
+  background: rgba(0,200,80,0.12) !important;
+  border-color: #00cc50 !important;
+  color: #00cc50 !important;
+}
+.charge-confirm-btn:hover:not(:disabled) {
+  background: rgba(0,200,80,0.2) !important;
+  box-shadow: 0 0 12px rgba(0,200,80,0.2);
+}
+.charge-confirm-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Charge status label ── */
+#charge-status-label {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+#charge-status-label.active-charge {
+  color: #ff8c00;
+}
