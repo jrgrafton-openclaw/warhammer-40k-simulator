@@ -1,0 +1,361 @@
+/* ══════════════════════════════════════════════════════════════
+   Start Game — Splash Screen Styles
+   All shared styles are in ../../shared/tokens/*.css
+   This file contains ONLY start-game-specific styles.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Full-viewport layout ── */
+.splash-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* ── Parallax background layers ── */
+.parallax-layer {
+  position: absolute;
+  inset: -40px; /* extra bleed for parallax movement */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.parallax-far  { background-image: url(assets/bg-far.webp);  animation: drift-far  60s ease-in-out infinite alternate; }
+.parallax-mid  { background-image: url(assets/bg-mid.webp);  animation: drift-mid  45s ease-in-out infinite alternate; }
+.parallax-near { background-image: url(assets/bg-near.webp); animation: drift-near 30s ease-in-out infinite alternate; }
+
+@keyframes drift-far  { from { transform: translateX(-15px); } to { transform: translateX(15px); } }
+@keyframes drift-mid  { from { transform: translateX(-25px); } to { transform: translateX(25px); } }
+@keyframes drift-near { from { transform: translateX(-35px); } to { transform: translateX(35px); } }
+
+/* ── Vignette + grain overlays ── */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(8,12,16,0.85) 100%);
+  pointer-events: none;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.04;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAMqADAAQAAAABAAAAMgAAAADDVAJpAAABqUlEQVRoBe2ZvQ3CQBBE7RJogQYogBIoIaED0wEdUAIl0AENUBRNQAd2CcaSD1laaXRr3+z6P5R8mdn93LdaoWKWZdn5PM8vWZY1HMcJGeMHq2Gr/iml1L0oim0cx7vBYJBm/VHDVjqUUr7v78qyfFksFmO0D/wTsqxhq7OiKMbX6/W+1+t10zQNEU9snCAk2+220Wazebrf76er1WrG8w1sxWq5XB77/f40TdMdjPFarXYwDCPyfb+dJInFGP0OcCIIgp7ruue6rpPdbvcYDAb7NE23VVVxDh7/hDSbzcLzvDPHOJ/Pb+f5fL6mf6qybDQavQyHwzWMcdeyLIVh2MFbQRynOE5gHMUxwMmx0WjEYJTHUVVVDJJwJXAkCACO58S/ByVVVeWsqqoOz/fwF7A+T8g+WFXVMU3T/a+truvjLMuKIAxHhmGUvu/Hnudh+xTHDZqmeZIk1vl8fp7NZhOe7+H0/6u3Xq/Xq0aj0VjXdZUkCU/6j6Io3MVicWi327PLYrFYPZhRt9t1oija4a26f2uK4/hIpyB27OyDKPCf/AI1r+0Cws0pIAAAAABJRU5ErkJggg==");
+  pointer-events: none;
+}
+
+/* ── Ember particles (CSS-only) ── */
+.ember-field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ember {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cc8800;
+  box-shadow: 0 0 6px 1px rgba(204,136,0,0.5);
+  animation: ember-rise linear infinite;
+  opacity: 0;
+}
+
+@keyframes ember-rise {
+  0%   { opacity: 0; transform: translateY(0) translateX(0); }
+  10%  { opacity: 0.8; }
+  90%  { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(-100vh) translateX(30px); }
+}
+
+/* ── Splash panel — matches victory-panel from game-end ── */
+.splash-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 480px;
+  max-width: 92vw;
+  background: rgba(10, 16, 22, 0.96);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  padding: 48px 40px 40px;
+  z-index: 10;
+  animation: panel-rise 0.5s ease-out 0.2s both;
+}
+
+@keyframes panel-rise {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Ornamental corners — all four */
+.splash-panel::before,
+.splash-panel::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+.splash-panel::before {
+  top: 0; left: 0;
+  border-top: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+}
+.splash-panel::after {
+  bottom: 0; right: 0;
+  border-bottom: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+}
+.splash-corners::before,
+.splash-corners::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+}
+.splash-corners::before {
+  top: 0; right: 0;
+  border-top: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+}
+.splash-corners::after {
+  bottom: 0; left: 0;
+  border-bottom: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+}
+
+/* Panel glow — same as victory-glow */
+.splash-glow {
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 60px rgba(0, 212, 255, 0.06),
+    0 0 80px rgba(0, 212, 255, 0.10),
+    0 0 160px rgba(0, 212, 255, 0.04);
+  border: 1px solid transparent;
+}
+
+/* ── Aquila watermark ── */
+.splash-aquila {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 200px;
+  color: var(--imp);
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Title ── */
+.splash-header {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 32px;
+}
+
+.splash-label {
+  font: 400 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  animation: fade-in 0.5s ease-out 0.4s both;
+}
+
+.splash-title {
+  font: 400 36px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-shadow:
+    0 0 20px rgba(0, 212, 255, 0.4),
+    0 0 60px rgba(0, 212, 255, 0.15);
+  animation: fade-in 0.5s ease-out 0.3s both;
+}
+
+.splash-subtitle {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--imp-dim);
+  margin-top: 6px;
+  animation: fade-in 0.5s ease-out 0.5s both;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Divider */
+.splash-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 28px;
+  animation: fade-in 0.4s ease-out 0.5s both;
+}
+.splash-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.splash-divider-ornament {
+  color: var(--imp-dim);
+  font-size: 10px;
+}
+
+/* ── Menu buttons — matches victory-btn style ── */
+.splash-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  position: relative;
+}
+
+/* Stagger-in animation */
+.menu-btn:nth-child(1) { animation: btn-slide-in 0.4s ease-out 0.6s both; }
+.menu-btn:nth-child(2) { animation: btn-slide-in 0.4s ease-out 0.68s both; }
+.menu-btn:nth-child(3) { animation: btn-slide-in 0.4s ease-out 0.76s both; }
+
+@keyframes btn-slide-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Primary (New Game) */
+.menu-btn.primary {
+  border-color: var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+}
+.menu-btn.primary:hover {
+  background: #18eaff;
+  box-shadow: 0 0 24px rgba(0, 212, 255, 0.35);
+}
+.menu-btn.primary:active {
+  background: var(--imp-dim);
+}
+
+/* Disabled */
+.menu-btn.disabled {
+  border-color: var(--border);
+  color: var(--text-dis);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Tooltip for disabled buttons */
+.menu-btn.disabled .tooltip {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: -100px;
+  transform: translateY(-50%);
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+/* Show on parent hover (re-enable pointer-events for tooltip) */
+.menu-btn.disabled {
+  pointer-events: auto;
+  cursor: not-allowed;
+}
+.menu-btn.disabled:hover .tooltip {
+  display: block;
+}
+
+.btn-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* ── Mute toggle ── */
+.mute-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(10, 16, 22, 0.8);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 20;
+  animation: fade-in 0.4s ease-out 1s both;
+}
+.mute-toggle:hover {
+  border-color: var(--imp-dim);
+  color: var(--text-sec);
+}
+
+/* ── Version badge ── */
+.version-badge {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  z-index: 20;
+  animation: fade-in 0.4s ease-out 1s both;
+}
+
+/* ── Backlink ── */
+.splash-backlink {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  z-index: 20;
+  animation: fade-in 0.4s ease-out 1s both;
+  transition: color 0.2s;
+}
+.splash-backlink:hover {
+  color: var(--imp);
+}

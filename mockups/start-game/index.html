@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — Start Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Shared design tokens -->
+  <link rel="stylesheet" href="../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../shared/tokens/typography.css">
+  <!-- Page-specific styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="splash-root">
+  <!-- ── Parallax background layers ── -->
+  <div class="parallax-layer parallax-far"></div>
+  <div class="parallax-layer parallax-mid"></div>
+  <div class="parallax-layer parallax-near"></div>
+
+  <!-- ── Overlays ── -->
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <!-- ── Ember particles ── -->
+  <div class="ember-field" id="ember-field"></div>
+
+  <!-- ── Main panel ── -->
+  <div class="splash-panel">
+    <div class="splash-corners" style="position:absolute;inset:0;pointer-events:none;"></div>
+    <div class="splash-glow"></div>
+    <div class="splash-aquila">⚜</div>
+
+    <div class="splash-header">
+      <div class="splash-label">10th Edition</div>
+      <div class="splash-title">Warhammer 40,000</div>
+      <div class="splash-subtitle">Battle Simulator</div>
+    </div>
+
+    <div class="splash-divider">
+      <div class="splash-divider-line"></div>
+      <span class="splash-divider-ornament">✦</span>
+      <div class="splash-divider-line"></div>
+    </div>
+
+    <div class="splash-menu">
+      <button class="menu-btn primary" onclick="window.location.href='../phases/deploy/v0.2/index.html'">
+        <span class="btn-icon">⚔</span> New Game
+      </button>
+      <button class="menu-btn disabled">
+        <span class="btn-icon">💾</span> Load Game
+        <span class="tooltip">Coming Soon</span>
+      </button>
+      <button class="menu-btn disabled">
+        <span class="btn-icon">⚙</span> Settings
+        <span class="tooltip">Coming Soon</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Version badge ── -->
+  <div class="version-badge">v0.1 · Start Game</div>
+
+  <!-- ── Back to mockups ── -->
+  <a class="splash-backlink" href="../index.html#start-game">← Mockups</a>
+
+  <!-- ── Mute toggle ── -->
+  <button class="mute-toggle" id="mute-toggle" title="Toggle audio">🔊</button>
+</div>
+
+<!-- ── Audio ── -->
+<audio id="ambient-audio" loop preload="none">
+  <source src="assets/ambient-loop.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+  /* ── Ember particles ── */
+  (function() {
+    const field = document.getElementById('ember-field');
+    const count = 14;
+    for (let i = 0; i < count; i++) {
+      const ember = document.createElement('div');
+      ember.className = 'ember';
+      ember.style.left = (Math.random() * 100) + '%';
+      ember.style.bottom = -(Math.random() * 20) + '%';
+      ember.style.animationDuration = (8 + Math.random() * 12) + 's';
+      ember.style.animationDelay = (Math.random() * 10) + 's';
+      ember.style.width = ember.style.height = (2 + Math.random() * 2) + 'px';
+      field.appendChild(ember);
+    }
+  })();
+
+  /* ── Audio ── */
+  (function() {
+    const audio = document.getElementById('ambient-audio');
+    const btn = document.getElementById('mute-toggle');
+    let started = false;
+    const muted = localStorage.getItem('wh40k-splash-muted') === 'true';
+
+    audio.volume = 0.3;
+    if (muted) {
+      audio.muted = true;
+      btn.textContent = '🔇';
+    }
+
+    function startAudio() {
+      if (started) return;
+      started = true;
+      audio.play().catch(() => {});
+    }
+
+    /* Start on first interaction */
+    document.addEventListener('click', startAudio, { once: true });
+    document.addEventListener('keydown', startAudio, { once: true });
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      startAudio();
+      audio.muted = !audio.muted;
+      btn.textContent = audio.muted ? '🔇' : '🔊';
+      localStorage.setItem('wh40k-splash-muted', audio.muted);
+    });
+  })();
+</script>
+
+</body>
+</html>
