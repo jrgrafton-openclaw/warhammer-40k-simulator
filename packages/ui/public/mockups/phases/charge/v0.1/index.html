@@ -138,9 +138,7 @@
       </div>
       <div class="card-stats" id="card-stats"></div>
       <div class="card-ranges" id="card-ranges">
-        <button class="range-toggle move" id="rt-move" data-range-type="move">MOVE 6"</button>
-        <button class="range-toggle advance" id="rt-advance" data-range-type="advance">ADV ~10"</button>
-        <button class="range-toggle charge" id="rt-charge" data-range-type="charge">CHRG ~13"</button>
+        <button class="range-toggle charge active" id="rt-charge" data-range-type="charge">AVG CHRG 13"</button>
       </div>
       <div id="card-wargear"></div>
       <div class="card-weapons" id="card-weapons"></div>
@@ -160,32 +158,18 @@
         <div class="ph-item"><span class="ph-dot"></span>FIGHT</div>
       </div>
       <div class="ab-sep"></div>
-      <span id="charge-status-label"></span>
+      <span id="move-mode-label">— SELECT UNIT —</span>
+      <div class="ab-sep"></div>
+      <button class="action-btn confirm-move" id="btn-confirm-charge" disabled>✓ CONFIRM</button>
+      <div class="ab-sep"></div>
       <div class="phase-end-cluster">
-        <button class="btn-cta charge-declare-btn" id="btn-declare-charge" disabled>DECLARE CHARGE</button>
-        <button class="btn-cta charge-confirm-btn" id="btn-confirm-charge" disabled style="display:none">CONFIRM CHARGE</button>
+        <button class="btn-strat" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
         <div class="phase-end-divider" aria-hidden="true"></div>
-        <button class="btn-cta" id="btn-end-charge">END CHARGE PHASE →</button>
+        <button class="btn-cta" id="btn-end-charge" data-shortcut="E">END CHARGE PHASE →</button>
       </div>
     </div>
   </main>
 </div>
-
-<!-- 2D6 Charge Dice Overlay -->
-<div id="charge-dice-overlay">
-  <div class="charge-dice-panel">
-    <div class="charge-dice-title">CHARGE ROLL</div>
-    <div class="charge-dice-row">
-      <div class="charge-die" id="charge-die-1">–</div>
-      <div class="charge-die" id="charge-die-2">–</div>
-    </div>
-    <div class="charge-dice-total" id="charge-dice-total"></div>
-    <div class="charge-dice-result" id="charge-dice-result"></div>
-  </div>
-</div>
-
-<!-- Charge Result Banner -->
-<div id="charge-result-banner" class="charge-result-banner"></div>
 
 <div id="modal-bg">
   <div id="strat-modal">
