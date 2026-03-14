@@ -36,6 +36,7 @@
   <div class="fog-layer fog-left"></div>
   <div class="fog-layer fog-right"></div>
   <div class="fog-layer fog-band"></div>
+  <div class="fog-layer fog-band-2"></div>
 
   <!-- Canvas particles -->
   <canvas id="ember-canvas"></canvas>
@@ -348,9 +349,11 @@
       document.getElementById('mute-toggle').classList.add('visible');
     }, 2500);
 
-    // 3.0s — Title enters idle glow
+    // 3.0s — Title enters idle glow (keep opacity!)
     setTimeout(function() {
       var t = document.getElementById('title');
+      t.style.opacity = '1';
+      t.style.transform = 'scale(1)';
       t.classList.remove('stamp');
       t.classList.add('idle');
     }, 3000);

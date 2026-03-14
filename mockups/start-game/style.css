@@ -62,10 +62,10 @@
 ═══════════════════════════════════════════════════════════ */
 .bg-image {
   position: absolute;
-  inset: -40px;
+  inset: -80px; /* generous bleed for all aspect ratios */
   background: url(assets/bg-far.webp) center/cover no-repeat;
   opacity: 0;
-  transform: scale(1.0);
+  transform: scale(1.08);
   transition: opacity 1.2s ease-out;
 }
 .bg-image.active {
@@ -74,8 +74,8 @@
 }
 
 @keyframes ken-burns {
-  from { transform: scale(1.0) translateX(-8px); }
-  to   { transform: scale(1.06) translateX(8px); }
+  from { transform: scale(1.08) translateX(-10px); }
+  to   { transform: scale(1.14) translateX(10px); }
 }
 
 /* Dim overlay */
@@ -122,54 +122,76 @@
   to   { transform: translateX(15px); }
 }
 
-/* Left-side atmospheric haze */
+/* Left-side atmospheric haze — VISIBLE */
 .fog-left {
   background: radial-gradient(
-    ellipse 80% 70% at 15% 60%,
-    rgba(0, 212, 255, 0.04) 0%,
+    ellipse 90% 80% at 10% 55%,
+    rgba(140, 160, 180, 0.12) 0%,
+    rgba(100, 120, 140, 0.06) 40%,
     transparent 70%
   );
   animation: fog-breathe-a 20s ease-in-out infinite alternate;
 }
 
 @keyframes fog-breathe-a {
-  from { opacity: 0.5; transform: translateX(-10px) translateY(5px); }
-  to   { opacity: 1; transform: translateX(10px) translateY(-5px); }
+  from { opacity: 0.6; transform: translateX(-15px) translateY(5px); }
+  to   { opacity: 1; transform: translateX(15px) translateY(-8px); }
 }
 
-/* Right-side atmospheric haze */
+/* Right-side atmospheric haze — VISIBLE */
 .fog-right {
   background: radial-gradient(
-    ellipse 70% 60% at 80% 45%,
-    rgba(0, 212, 255, 0.03) 0%,
-    transparent 60%
+    ellipse 80% 70% at 85% 50%,
+    rgba(140, 160, 180, 0.10) 0%,
+    rgba(100, 120, 140, 0.05) 35%,
+    transparent 65%
   );
   animation: fog-breathe-b 28s ease-in-out infinite alternate;
 }
 
 @keyframes fog-breathe-b {
-  from { opacity: 1; transform: translateX(8px); }
-  to   { opacity: 0.4; transform: translateX(-12px); }
+  from { opacity: 1; transform: translateX(12px); }
+  to   { opacity: 0.5; transform: translateX(-18px); }
 }
 
-/* Mid-band rolling smoke */
+/* Mid-band rolling smoke — large, slow, VISIBLE */
 .fog-band {
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    rgba(120, 140, 160, 0.04) 20%,
-    rgba(120, 140, 160, 0.06) 40%,
-    rgba(120, 140, 160, 0.04) 60%,
-    transparent 100%
+    transparent 5%,
+    rgba(140, 155, 170, 0.10) 25%,
+    rgba(160, 175, 190, 0.14) 45%,
+    rgba(140, 155, 170, 0.10) 65%,
+    transparent 95%
   );
-  height: 40%;
-  top: 35%;
-  animation: fog-band-drift 45s ease-in-out infinite alternate;
+  height: 45%;
+  top: 30%;
+  animation: fog-band-drift 40s ease-in-out infinite alternate;
 }
 
 @keyframes fog-band-drift {
-  from { transform: translateX(-60px); opacity: 0.6; }
-  to   { transform: translateX(60px); opacity: 1; }
+  from { transform: translateX(-80px) scaleY(0.9); opacity: 0.5; }
+  to   { transform: translateX(80px) scaleY(1.1); opacity: 1; }
+}
+
+/* Secondary smoke band — counter-direction */
+.fog-band-2 {
+  background: linear-gradient(
+    90deg,
+    transparent 10%,
+    rgba(120, 140, 160, 0.08) 30%,
+    rgba(130, 150, 170, 0.11) 55%,
+    rgba(120, 140, 160, 0.06) 75%,
+    transparent 90%
+  );
+  height: 35%;
+  top: 40%;
+  animation: fog-band-drift-2 55s ease-in-out infinite alternate;
+}
+
+@keyframes fog-band-drift-2 {
+  from { transform: translateX(60px) scaleY(1.1); opacity: 0.7; }
+  to   { transform: translateX(-70px) scaleY(0.85); opacity: 1; }
 }
 
 /* ═══════════════════════════════════════════════════════════
