@@ -19,47 +19,42 @@ import '../../../shared/world/world-api.js';
 setGetRangeInches(getRangeInches);
 
 // ── Army positions ─────────────────────────────────────
-// Positioned to test shooting edge cases:
-//   • Partial LoS (some models behind tall ruins, others peeking out)
-//   • Full LoS block (entire unit behind terrain)
-//   • Benefit of Cover (models inside ruin footprint → +1 save)
-//   • Clear LoS at range (open ground targets)
-//   • Mixed ranges (some in weapon range, some not)
+// Edge cases tested:
+//   • Nobz Mob just right of t6 ruin — partial LoS obstruction
+//   • Mekboy inside t14 ruin — Benefit of Cover (+1 save)
+//   • Boss Nob open ground at medium range
+//   • Gretchin open ground — clear LoS, easy targets
 simState.units = [
-  // ── IMPERIUM ──
-  // Assault Intercessors — spread along t3 ruin edge (192-288, 264-336)
-  // 3 models peeking right of the ruin, 2 tucked behind it
+  // ── IMPERIUM (original positions — validated clear ground) ──
   { id:'assault-intercessors', rosterIndex:0, faction:'imp',
-    models:[{id:'ai1',x:295,y:275,r:R32},{id:'ai2',x:295,y:295,r:R32},{id:'ai3',x:295,y:315,r:R32},
-            {id:'ai4',x:210,y:290,r:R32},{id:'ai5',x:210,y:310,r:R32}], broken:false },
-  // Primaris Lieutenant — open ground left flank, clear LoS across board
+    models:[{id:'ai1',x:165,y:233,r:R32},{id:'ai2',x:182,y:228,r:R32},{id:'ai3',x:199,y:233,r:R32},
+            {id:'ai4',x:173,y:249,r:R32},{id:'ai5',x:190,y:249,r:R32}], broken:false },
   { id:'primaris-lieutenant', rosterIndex:1, faction:'imp',
-    models:[{id:'pl1',x:120,y:180,r:R40}], broken:false },
-  // Intercessor Squad A — near top, behind t1 ruin edge (some peeking, some blocked)
+    models:[{id:'pl1',x:125,y:312,r:R40}], broken:false },
   { id:'intercessor-squad-a', rosterIndex:2, faction:'imp',
-    models:[{id:'isa1',x:155,y:130,r:R32},{id:'isa2',x:172,y:125,r:R32},{id:'isa3',x:190,y:130,r:R32},
-            {id:'isa4',x:162,y:148,r:R32},{id:'isa5',x:180,y:148,r:R32}], broken:false },
-  // Hellblasters — mid-left, open position for long-range shooting
+    models:[{id:'isa1',x:222,y:200,r:R32},{id:'isa2',x:239,y:195,r:R32},{id:'isa3',x:256,y:200,r:R32},
+            {id:'isa4',x:230,y:216,r:R32},{id:'isa5',x:248,y:216,r:R32}], broken:false },
   { id:'hellblasters', rosterIndex:3, faction:'imp',
-    models:[{id:'hb1',x:130,y:370,r:R32},{id:'hb2',x:147,y:365,r:R32},{id:'hb3',x:164,y:370,r:R32},
-            {id:'hb4',x:138,y:386,r:R32},{id:'hb5',x:155,y:386,r:R32}], broken:false },
-  // Redemptor Dreadnought — center-left, partially behind scatter terrain t4
+    models:[{id:'hb1',x:80,y:200,r:R32},{id:'hb2',x:97,y:195,r:R32},{id:'hb3',x:114,y:200,r:R32},
+            {id:'hb4',x:88,y:216,r:R32},{id:'hb5',x:105,y:216,r:R32}], broken:false },
   { id:'redemptor-dreadnought', rosterIndex:4, faction:'imp',
-    models:[{id:'rd1',x:100,y:295,r:22,shape:'rect',w:43,h:25}], broken:false },
+    models:[{id:'rd1',x:150,y:278,r:22,shape:'rect',w:43,h:25}], broken:false },
 
-  // ── ORKS ──
-  // Boss Nob — behind t11 ruin edge (528-624, 264-336), partially visible
+  // ── ORKS (repositioned for edge cases) ──
+  // Boss Nob — open ground, medium range (~29")
   { id:'boss-nob', rosterIndex:6, faction:'ork',
-    models:[{id:'bn1',x:635,y:300,r:R40}], broken:false },
-  // Nobz Mob — straddling t10 ruin (456-600, 192-264): 1 model peeking left, 2 behind
+    models:[{id:'bn1',x:440,y:145,r:R40}], broken:false },
+  // Nobz Mob — just right of t6 ruin edge (t6 SVG: x262-360, y149-246)
+  // LoS from Imperial left must pass through/around t6 → partial obstruction
   { id:'nobz-mob', rosterIndex:7, faction:'ork',
-    models:[{id:'nm1',x:448,y:230,r:R40},{id:'nm2',x:520,y:220,r:R40},{id:'nm3',x:540,y:245,r:R40}], broken:false },
-  // Mekboy — inside t11 ruin footprint (benefit of cover test)
+    models:[{id:'nm1',x:365,y:180,r:R40},{id:'nm2',x:380,y:185,r:R40},{id:'nm3',x:372,y:200,r:R40}], broken:false },
+  // Mekboy — inside t14 ruin footprint (t14 SVG: x360-458, y282-379)
+  // Tests Benefit of Cover (+1 save) and inside-ruin LoS exception
   { id:'mekboy', rosterIndex:8, faction:'ork',
-    models:[{id:'mb1',x:570,y:295,r:R32}], broken:false },
-  // Gretchin — open ground right flank (clear LoS, easy targets)
+    models:[{id:'mb1',x:410,y:320,r:R32}], broken:false },
+  // Gretchin — open ground, clear LoS (easy targets, ~27")
   { id:'gretchin', rosterIndex:9, faction:'ork',
-    models:[{id:'gr1',x:640,y:400,r:R32},{id:'gr2',x:658,y:395,r:R32},{id:'gr3',x:676,y:400,r:R32}], broken:false }
+    models:[{id:'gr1',x:400,y:220,r:R32},{id:'gr2',x:418,y:215,r:R32},{id:'gr3',x:436,y:220,r:R32}], broken:false }
 ];
 
 // ── Initialise shared modules ────────────────────────────
