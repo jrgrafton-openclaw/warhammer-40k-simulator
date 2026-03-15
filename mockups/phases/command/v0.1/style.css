@@ -64,20 +64,6 @@
   50%      { filter: drop-shadow(0 0 14px rgba(255,170,0,0.8)); }
 }
 
-/* ── Battleshocked hull — red danger glow ── */
-.unit-hull.cmd-battleshocked {
-  stroke: #cc2020 !important;
-  stroke-width: 2 !important;
-  stroke-opacity: 1 !important;
-  fill: rgba(204,32,32,0.08) !important;
-  filter: drop-shadow(0 0 8px rgba(204,32,32,0.5));
-  animation: hull-bs-pulse 2s ease-in-out infinite;
-}
-@keyframes hull-bs-pulse {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(204,32,32,0.3)); }
-  50%      { filter: drop-shadow(0 0 14px rgba(204,32,32,0.6)); }
-}
-
 /* ── Battleshocked model tokens — dim red flicker ── */
 .model-base.cmd-bs-token circle,
 .model-base.cmd-bs-token rect {

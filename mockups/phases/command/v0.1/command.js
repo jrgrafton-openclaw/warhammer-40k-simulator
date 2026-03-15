@@ -126,8 +126,9 @@ function setPill(uid, text, cls) {
 
 // ── Hull painting ───────────────────────────────────────
 function paintHulls() {
+  // Re-apply needs-test orange highlight to hulls
   $$('#layer-hulls .unit-hull').forEach(el => {
-    el.classList.remove('cmd-needs-test', 'cmd-battleshocked');
+    el.classList.remove('cmd-needs-test');
   });
 
   if (state.phase === 'battle-shock') {
@@ -138,12 +139,7 @@ function paintHulls() {
     });
   }
 
-  state.battleshockedUnits.forEach(uid => {
-    const hull = $(`#layer-hulls .unit-hull[data-unit-id="${uid}"]`);
-    if (hull) hull.classList.add('cmd-battleshocked');
-  });
-
-  // Also add battleshocked visual to model tokens
+  // Battleshocked: dim token visual only (no hull highlight per feedback)
   $$('#layer-models .model-base').forEach(g => {
     const uid = g.dataset.unitId;
     g.classList.toggle('cmd-bs-token', state.battleshockedUnits.has(uid));
@@ -544,14 +540,10 @@ export function initCommand() {
   // Install drag interceptor — no unit movement in command phase
   installDragInterceptor();
 
-  // Re-apply battleshocked token highlights after renderModels rebuilds DOM
+  // Re-apply hull highlights + token classes after renderModels rebuilds DOM
+  // (renderModels rebuilds SVG via innerHTML, wiping all added classes)
   callbacks.afterRender = () => {
-    if (state.battleshockedUnits.size > 0) {
-      $$('#layer-models .model-base').forEach(g => {
-        const uid = g.dataset.unitId;
-        g.classList.toggle('cmd-bs-token', state.battleshockedUnits.has(uid));
-      });
-    }
+    paintHulls();
   };
 
   // Start the state machine
