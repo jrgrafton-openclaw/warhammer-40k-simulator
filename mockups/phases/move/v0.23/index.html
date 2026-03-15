@@ -172,6 +172,21 @@
 
     <div class="v23-badge">v0.23 · MOVEMENT</div>
 
+    <!-- Debug Options Menu -->
+    <div id="debug-menu" style="position:absolute;top:58px;right:8px;z-index:800;font-family:Rajdhani,sans-serif;font-size:11px;">
+      <button id="debug-toggle" style="background:rgba(30,35,40,0.85);color:#8af;border:1px solid rgba(100,140,200,0.3);border-radius:4px;padding:2px 8px;cursor:pointer;font-family:inherit;font-size:11px;">⚙ Debug</button>
+      <div id="debug-panel" style="display:none;margin-top:4px;background:rgba(20,24,28,0.92);border:1px solid rgba(100,140,200,0.25);border-radius:6px;padding:8px 10px;min-width:160px;">
+        <label style="display:flex;align-items:center;gap:6px;color:#aac;cursor:pointer;margin-bottom:4px;">
+          <input type="checkbox" id="dbg-grid" style="accent-color:#8af;">
+          <span>Show collision grid</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;color:#aac;cursor:pointer;">
+          <input type="checkbox" id="dbg-paths" style="accent-color:#fa4;">
+          <span>Show pathfind routes</span>
+        </label>
+      </div>
+    </div>
+
     <div id="battlefield-inner">
       <!-- SVG 1: terrain + deployment zones -->
       <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
@@ -200,11 +215,13 @@
 
       <!-- SVG 2: movement overlays + model hulls + bases -->
       <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+        <g id="layer-debug-grid"></g>
         <g id="layer-move-ghosts"></g>
         <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
         <g id="layer-models"></g>
         <g id="layer-move-rulers"></g>
+        <g id="layer-debug-paths"></g>
       </svg>
     </div><!-- /battlefield-inner -->
 

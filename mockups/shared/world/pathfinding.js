@@ -1,539 +1,344 @@
 /**
- * pathfinding.js — Visibility-graph pathfinding around 2D obstacle polygons.
+ * pathfinding.js — Grid-based A* pathfinding using the existing collision system.
  *
- * Pure geometry, no DOM dependencies.
- * ES5-compatible function syntax (var, function — no arrow functions, no const/let).
+ * Instead of building a separate geometric model, this module probes the
+ * actual resolveTerrainCollision function to build an occupancy grid,
+ * then runs A* on it. 100% consistent with what the player sees.
+ *
+ * ES5-compatible function syntax (var, function — no arrow functions).
  */
 
-// ──────────────────────────────────────────────
-// Helpers
-// ──────────────────────────────────────────────
+// ── Grid settings ──────────────────────────────────────
+var GRID_CELL = 4;           // px per grid cell (4px ≈ 1/4 of smallest model radius)
+var GRID_W = 0;              // computed from battlefield
+var GRID_H = 0;
+var BF_W = 720;              // battlefield width in SVG units
+var BF_H = 528;              // battlefield height in SVG units
 
-var EPSILON = 1e-6;
+// 8-directional neighbors (dx, dy, cost multiplier)
+var DIRS = [
+  { dx:  1, dy:  0, cost: 1 },
+  { dx: -1, dy:  0, cost: 1 },
+  { dx:  0, dy:  1, cost: 1 },
+  { dx:  0, dy: -1, cost: 1 },
+  { dx:  1, dy:  1, cost: 1.4142 },
+  { dx: -1, dy:  1, cost: 1.4142 },
+  { dx:  1, dy: -1, cost: 1.4142 },
+  { dx: -1, dy: -1, cost: 1.4142 }
+];
+
+// ── Grid cache (keyed by radius) ───────────────────────
+var _gridCache = {};  // radiusKey → Uint8Array (0=free, 1=blocked)
 
 /**
- * Transform a local-space point to world-space using the inverse matrix fields.
- * World→Local: lx = iA*wx + iC*wy + iE,  ly = iB*wx + iD*wy + iF
- * Invert:  det = iA*iD - iB*iC
- *   wx = (iD*(lx-iE) - iC*(ly-iF)) / det
- *   wy = (-iB*(lx-iE) + iA*(ly-iF)) / det
+ * Build an occupancy grid for a given model radius.
+ * Probes resolveTerrainCollision at each cell center.
+ *
+ * @param {Array} terrainAABBs - from window._terrainAABBs
+ * @param {number} modelRadius - in SVG px
+ * @param {function} resolveCollision - resolveTerrainCollision(cx, cy, r, aabbs) → {x, y}
+ * @returns {Uint8Array} grid[row * GRID_W + col] = 0|1
  */
-function localToWorld(lx, ly, aabb) {
-  var det = aabb.iA * aabb.iD - aabb.iB * aabb.iC;
-  var dlx = lx - aabb.iE;
-  var dly = ly - aabb.iF;
-  return {
-    x: (aabb.iD * dlx - aabb.iC * dly) / det,
-    y: (-aabb.iB * dlx + aabb.iA * dly) / det
-  };
-}
+export function buildGrid(terrainAABBs, modelRadius, resolveCollision) {
+  GRID_W = Math.ceil(BF_W / GRID_CELL);
+  GRID_H = Math.ceil(BF_H / GRID_CELL);
+  var grid = new Uint8Array(GRID_W * GRID_H);
 
-/** Euclidean distance between two points. */
-function dist(a, b) {
-  var dx = a.x - b.x;
-  var dy = a.y - b.y;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-/** Cross product of vectors (b-a) × (c-a). */
-function cross(a, b, c) {
-  return (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
-}
-
-/**
- * Test if segments (p1,p2) and (p3,p4) intersect properly
- * (endpoints touching does NOT count — we use strict inequality).
- * Returns true if segments cross each other's interior.
- */
-function segmentsIntersectStrict(p1, p2, p3, p4) {
-  var d1 = cross(p3, p4, p1);
-  var d2 = cross(p3, p4, p2);
-  var d3 = cross(p1, p2, p3);
-  var d4 = cross(p1, p2, p4);
-
-  if (((d1 > EPSILON && d2 < -EPSILON) || (d1 < -EPSILON && d2 > EPSILON)) &&
-      ((d3 > EPSILON && d4 < -EPSILON) || (d3 < -EPSILON && d4 > EPSILON))) {
-    return true;
-  }
-  return false;
-}
-
-/**
- * Check if point p is inside a convex polygon (given as array of {x,y} in order).
- * Uses winding / cross-product sign consistency.
- */
-function pointInConvexPolygon(p, poly) {
-  var n = poly.length;
-  var sign = 0;
-  for (var i = 0; i < n; i++) {
-    var j = (i + 1) % n;
-    var c = cross(poly[i], poly[j], p);
-    if (Math.abs(c) < EPSILON) continue; // on edge — treat as not inside
-    if (sign === 0) {
-      sign = c > 0 ? 1 : -1;
-    } else if ((c > 0 ? 1 : -1) !== sign) {
-      return false;
+  for (var row = 0; row < GRID_H; row++) {
+    for (var col = 0; col < GRID_W; col++) {
+      var cx = col * GRID_CELL + GRID_CELL / 2;
+      var cy = row * GRID_CELL + GRID_CELL / 2;
+      var resolved = resolveCollision(cx, cy, modelRadius, terrainAABBs);
+      // If collision pushed the point, this cell is blocked
+      if (Math.abs(resolved.x - cx) > 0.1 || Math.abs(resolved.y - cy) > 0.1) {
+        grid[row * GRID_W + col] = 1;
+      }
     }
   }
-  return true;
+
+  return grid;
 }
 
 /**
- * Ensure polygon vertices are in counter-clockwise order.
- * If clockwise, reverse them.
+ * Get or build a cached grid for the given radius.
  */
-function ensureCCW(poly) {
-  var area = 0;
-  for (var i = 0; i < poly.length; i++) {
-    var j = (i + 1) % poly.length;
-    area += (poly[j].x - poly[i].x) * (poly[j].y + poly[i].y);
+export function getGrid(terrainAABBs, modelRadius, resolveCollision) {
+  var key = Math.round(modelRadius * 10);
+  if (!_gridCache[key]) {
+    _gridCache[key] = buildGrid(terrainAABBs, modelRadius, resolveCollision);
   }
-  if (area > 0) {
-    poly.reverse();
-  }
-  return poly;
+  return _gridCache[key];
 }
 
 /**
- * Expand a convex polygon outward by `radius`.
- * Offsets each edge outward along its outward normal, then computes
- * new vertices at the intersection of consecutive offset edges.
+ * Convert pixel coords to grid cell.
  */
-function expandPolygon(poly, radius) {
-  var n = poly.length;
-  // Ensure CCW so outward normals point away from interior
-  poly = ensureCCW(poly.slice());
-
-  // Compute offset lines for each edge
-  var offLines = [];
-  for (var i = 0; i < n; i++) {
-    var j = (i + 1) % n;
-    var dx = poly[j].x - poly[i].x;
-    var dy = poly[j].y - poly[i].y;
-    var len = Math.sqrt(dx * dx + dy * dy);
-    if (len < EPSILON) continue;
-    // Outward normal for CCW polygon: (dy, -dx) / len  → points right of edge direction
-    // For CCW winding, the outward normal is actually (-dy, dx) ... let me think:
-    // Edge from A to B: direction = (dx, dy). Left normal = (-dy, dx), Right normal = (dy, -dx).
-    // For CCW polygon, interior is to the left, so OUTWARD is to the RIGHT = (dy, -dx).
-    var nx = dy / len;
-    var ny = -dx / len;
-    // Offset both endpoints of the edge
-    offLines.push({
-      p: { x: poly[i].x + nx * radius, y: poly[i].y + ny * radius },
-      d: { x: dx, y: dy }
-    });
-  }
-
-  // Intersect consecutive offset lines to get expanded vertices
-  var expanded = [];
-  var m = offLines.length;
-  for (var i = 0; i < m; i++) {
-    var j = (i + 1) % m;
-    var pt = lineLineIntersection(offLines[i], offLines[j]);
-    if (pt) {
-      expanded.push(pt);
-    }
-  }
-  return expanded;
-}
-
-/**
- * Intersect two lines, each given as { p: {x,y}, d: {x,y} } (point + direction).
- * Returns intersection point or null if parallel.
- */
-function lineLineIntersection(l1, l2) {
-  var denom = l1.d.x * l2.d.y - l1.d.y * l2.d.x;
-  if (Math.abs(denom) < EPSILON) return null;
-  var dx = l2.p.x - l1.p.x;
-  var dy = l2.p.y - l1.p.y;
-  var t = (dx * l2.d.y - dy * l2.d.x) / denom;
+function toGrid(px, py) {
   return {
-    x: l1.p.x + t * l1.d.x,
-    y: l1.p.y + t * l1.d.y
+    col: Math.max(0, Math.min(GRID_W - 1, Math.floor(px / GRID_CELL))),
+    row: Math.max(0, Math.min(GRID_H - 1, Math.floor(py / GRID_CELL)))
   };
 }
 
 /**
- * Check if point p lies within `tol` of segment (a, b).
- * Used to catch segments that pass through polygon vertices (corners),
- * which segmentsIntersectStrict misses due to strict inequality.
+ * Convert grid cell to pixel coords (cell center).
  */
-function pointNearSegment(p, a, b, tol) {
-  var abx = b.x - a.x, aby = b.y - a.y;
-  var apx = p.x - a.x, apy = p.y - a.y;
-  var abLenSq = abx * abx + aby * aby;
-  if (abLenSq < EPSILON) return dist(p, a) < tol;
-  var t = (apx * abx + apy * aby) / abLenSq;
-  if (t < 0.01 || t > 0.99) return false; // exclude endpoints
-  var projX = a.x + t * abx, projY = a.y + t * aby;
-  var dx = p.x - projX, dy = p.y - projY;
-  return Math.sqrt(dx * dx + dy * dy) < tol;
-}
-
-/**
- * Check if segment (a, b) passes through any vertex of the given expanded polygons,
- * skipping polygons at skipPolyA/skipPolyB indices.
- */
-function segmentPassesThroughVertex(a, b, expandedPolys, skipPolyA, skipPolyB) {
-  for (var pi = 0; pi < expandedPolys.length; pi++) {
-    if (pi === skipPolyA || pi === skipPolyB) continue;
-    var poly = expandedPolys[pi];
-    for (var vi = 0; vi < poly.length; vi++) {
-      if (pointNearSegment(poly[vi], a, b, 0.5)) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Check if segment (a, b) intersects any edge of the expanded polygon at index `skipIdx`,
- * or any edge of other expanded polygons.
- * Also checks if the segment passes through any polygon vertex (corner case).
- */
-function segmentBlockedByExpandedPolys(a, b, expandedPolys, skipPolyA, skipPolyB) {
-  for (var pi = 0; pi < expandedPolys.length; pi++) {
-    // Skip edges of polygons that own either endpoint
-    if (pi === skipPolyA || pi === skipPolyB) continue;
-    var poly = expandedPolys[pi];
-    var n = poly.length;
-    for (var i = 0; i < n; i++) {
-      var j = (i + 1) % n;
-      if (segmentsIntersectStrict(a, b, poly[i], poly[j])) {
-        return true;
-      }
-    }
-  }
-  // Also check if segment passes through any polygon vertex
-  if (segmentPassesThroughVertex(a, b, expandedPolys, skipPolyA, skipPolyB)) return true;
-  return false;
-}
-
-/**
- * Check if segment (a, b) is blocked by any expanded polygon.
- * For start/end points (not belonging to any polygon), check all polygons.
- */
-function segmentBlockedByAllExpandedPolys(a, b, expandedPolys) {
-  for (var pi = 0; pi < expandedPolys.length; pi++) {
-    var poly = expandedPolys[pi];
-    var n = poly.length;
-    for (var i = 0; i < n; i++) {
-      var j = (i + 1) % n;
-      if (segmentsIntersectStrict(a, b, poly[i], poly[j])) {
-        return true;
-      }
-    }
-  }
-  // Also check vertex proximity for all polygons
-  if (segmentPassesThroughVertex(a, b, expandedPolys, -1, -1)) return true;
-  return false;
-}
-
-/**
- * Check if a point is inside any of the original (non-expanded) polygons.
- */
-function pointInsideAnyPolygon(p, polygons) {
-  for (var i = 0; i < polygons.length; i++) {
-    if (pointInConvexPolygon(p, polygons[i])) {
-      return true;
-    }
-  }
-  return false;
-}
-
-// ──────────────────────────────────────────────
-// Exported functions
-// ──────────────────────────────────────────────
-
-/**
- * Convert terrain AABBs to world-space convex polygons (rectangles).
- * Each polygon is an array of 4 {x,y} points in world space.
- * @param {Array} aabbs - terrain AABB objects with iA-iF, fA-fD, minX/Y, maxX/Y
- * @returns {Array<Array<{x:number, y:number}>>} world-space polygons
- */
-export function aabbsToWorldPolygons(aabbs) {
-  var polygons = [];
-  for (var i = 0; i < aabbs.length; i++) {
-    var b = aabbs[i];
-    // 4 corners in local space
-    var corners = [
-      { lx: b.minX, ly: b.minY },
-      { lx: b.maxX, ly: b.minY },
-      { lx: b.maxX, ly: b.maxY },
-      { lx: b.minX, ly: b.maxY }
-    ];
-    var worldCorners = [];
-    for (var c = 0; c < 4; c++) {
-      worldCorners.push(localToWorld(corners[c].lx, corners[c].ly, b));
-    }
-    polygons.push(worldCorners);
-  }
-  return polygons;
-}
-
-/**
- * Build a visibility graph for pathfinding around obstacles.
- * Expands each polygon outward by `radius` so paths keep clearance from walls.
- *
- * @param {Array<Array<{x:number, y:number}>>} polygons - world-space obstacle polygons
- * @param {number} radius - clearance radius in pixels
- * @returns {Object} navGraph - { vertices, edges, _expandedPolys, _polyOwnership }
- */
-export function buildNavGraph(polygons, radius) {
-  // 1. Expand each polygon
-  var expandedPolys = [];
-  for (var i = 0; i < polygons.length; i++) {
-    expandedPolys.push(expandPolygon(polygons[i], radius));
-  }
-
-  // 2. Collect all expanded vertices, tracking which polygon each belongs to
-  var vertices = [];
-  var polyOwnership = []; // polyOwnership[vertexIdx] = polygon index
-  for (var pi = 0; pi < expandedPolys.length; pi++) {
-    var ep = expandedPolys[pi];
-    for (var vi = 0; vi < ep.length; vi++) {
-      polyOwnership.push(pi);
-      vertices.push(ep[vi]);
-    }
-  }
-
-  // 3. Build visibility edges
-  var edges = new Map();
-  var n = vertices.length;
-
-  // Initialize adjacency lists
-  for (var i = 0; i < n; i++) {
-    edges.set(i, []);
-  }
-
-  // For each pair, check line of sight
-  for (var i = 0; i < n; i++) {
-    for (var j = i + 1; j < n; j++) {
-      var a = vertices[i];
-      var b = vertices[j];
-      var polyA = polyOwnership[i];
-      var polyB = polyOwnership[j];
-
-      // Check if segment crosses any expanded polygon edge (skip owning polygons)
-      if (!segmentBlockedByExpandedPolys(a, b, expandedPolys, polyA, polyB)) {
-        // Verify sample points along the segment aren't inside any expanded polygon
-        // Sample at 25%, 50%, 75% to catch thin-wall passes
-        var sampleBlocked = false;
-        for (var si = 1; si <= 3 && !sampleBlocked; si++) {
-          var t = si * 0.25;
-          var sp = { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) };
-          for (var pi = 0; pi < expandedPolys.length; pi++) {
-            if (pi === polyA || pi === polyB) continue;
-            if (pointInConvexPolygon(sp, expandedPolys[pi])) {
-              sampleBlocked = true;
-              break;
-            }
-          }
-        }
-        if (!sampleBlocked) {
-          var cost = dist(a, b);
-          edges.get(i).push({ to: j, cost: cost });
-          edges.get(j).push({ to: i, cost: cost });
-        }
-      }
-    }
-  }
-
-  // Also add edges between consecutive vertices on the same expanded polygon
-  // (polygon perimeter edges — always valid)
-  for (var pi = 0; pi < expandedPolys.length; pi++) {
-    var ep = expandedPolys[pi];
-    // Find the starting vertex index for this polygon
-    var startIdx = 0;
-    for (var k = 0; k < pi; k++) {
-      startIdx += expandedPolys[k].length;
-    }
-    for (var vi = 0; vi < ep.length; vi++) {
-      var ni = (vi + 1) % ep.length;
-      var idxA = startIdx + vi;
-      var idxB = startIdx + ni;
-      // Check if this edge already exists
-      var existing = edges.get(idxA);
-      var found = false;
-      for (var e = 0; e < existing.length; e++) {
-        if (existing[e].to === idxB) { found = true; break; }
-      }
-      if (!found) {
-        var cost = dist(vertices[idxA], vertices[idxB]);
-        edges.get(idxA).push({ to: idxB, cost: cost });
-        edges.get(idxB).push({ to: idxA, cost: cost });
-      }
-    }
-  }
-
+function toPixel(col, row) {
   return {
-    vertices: vertices,
-    edges: edges,
-    _expandedPolys: expandedPolys,
-    _polyOwnership: polyOwnership
+    x: col * GRID_CELL + GRID_CELL / 2,
+    y: row * GRID_CELL + GRID_CELL / 2
   };
 }
 
 /**
- * Find shortest path from start to end using A* on the visibility graph.
+ * A* shortest path on the occupancy grid.
  *
- * @param {Object} navGraph - from buildNavGraph
- * @param {Array<Array<{x,y}>>} polygons - original world polygons for inside-check
- * @param {{x:number, y:number}} start
- * @param {{x:number, y:number}} end
- * @param {number} radius - clearance radius
- * @returns {{ path: Array<{x,y}>, cost: number } | null}
+ * @param {Uint8Array} grid - occupancy grid
+ * @param {{x:number, y:number}} start - pixel coords
+ * @param {{x:number, y:number}} end - pixel coords
+ * @returns {{ path: Array<{x:number,y:number}>, cost: number } | null}
  */
-export function findShortestPath(navGraph, polygons, start, end, radius) {
-  // If start or end is inside an obstacle, return null
-  if (pointInsideAnyPolygon(start, polygons) || pointInsideAnyPolygon(end, polygons)) {
-    return null;
+export function findPath(grid, start, end) {
+  GRID_W = Math.ceil(BF_W / GRID_CELL);
+  GRID_H = Math.ceil(BF_H / GRID_CELL);
+
+  var s = toGrid(start.x, start.y);
+  var e = toGrid(end.x, end.y);
+
+  // If start or end is blocked, return null
+  if (grid[s.row * GRID_W + s.col] === 1) return null;
+  if (grid[e.row * GRID_W + e.col] === 1) return null;
+
+  // Same cell → trivial
+  if (s.col === e.col && s.row === e.row) {
+    return { path: [start, end], cost: Math.hypot(end.x - start.x, end.y - start.y) };
   }
 
-  var vertices = navGraph.vertices;
-  var edges = navGraph.edges;
-  var expandedPolys = navGraph._expandedPolys;
-  var n = vertices.length;
+  // A* with binary heap
+  var totalCells = GRID_W * GRID_H;
+  var gScore = new Float32Array(totalCells);
+  var fScore = new Float32Array(totalCells);
+  var cameFrom = new Int32Array(totalCells);
+  var closed = new Uint8Array(totalCells);
 
-  // Temporary vertex indices for start and end
-  var startIdx = n;
-  var endIdx = n + 1;
-
-  // Build temporary adjacency for start and end
-  var tempEdges = new Map();
-  // Copy existing edges (by reference is fine — we won't mutate them)
-  for (var i = 0; i < n; i++) {
-    tempEdges.set(i, edges.get(i));
-  }
-  tempEdges.set(startIdx, []);
-  tempEdges.set(endIdx, []);
-
-  // Temp vertices array
-  var allVerts = vertices.slice();
-  allVerts.push(start);
-  allVerts.push(end);
-
-  // Check direct start→end visibility
-  if (!segmentBlockedByAllExpandedPolys(start, end, expandedPolys)) {
-    var directCost = dist(start, end);
-    return { path: [start, end], cost: directCost };
+  for (var i = 0; i < totalCells; i++) {
+    gScore[i] = Infinity;
+    fScore[i] = Infinity;
+    cameFrom[i] = -1;
   }
 
-  // Connect start and end to visible graph vertices
-  for (var i = 0; i < n; i++) {
-    var v = vertices[i];
-    // start → vertex
-    if (!segmentBlockedByAllExpandedPolys(start, v, expandedPolys)) {
-      var c = dist(start, v);
-      tempEdges.get(startIdx).push({ to: i, cost: c });
-      // Add reverse edge — need to copy array to avoid mutating original
-      var arr = tempEdges.get(i);
-      if (arr === edges.get(i)) {
-        arr = arr.slice();
-        tempEdges.set(i, arr);
-      }
-      arr.push({ to: startIdx, cost: c });
-    }
-    // vertex → end
-    if (!segmentBlockedByAllExpandedPolys(v, end, expandedPolys)) {
-      var c = dist(v, end);
-      tempEdges.get(endIdx).push({ to: i, cost: c });
-      var arr = tempEdges.get(i);
-      if (arr === edges.get(i)) {
-        arr = arr.slice();
-        tempEdges.set(i, arr);
-      }
-      arr.push({ to: endIdx, cost: c });
-    }
-  }
-
-  // A* search
-  var totalVerts = n + 2;
-
-  // Simple binary-heap priority queue (min-heap on f-score)
-  var openSet = []; // array of { idx, f }
-  var gScore = {};
-  var fScore = {};
-  var cameFrom = {};
-  var closed = {};
-
+  var startIdx = s.row * GRID_W + s.col;
+  var endIdx = e.row * GRID_W + e.col;
   gScore[startIdx] = 0;
-  fScore[startIdx] = dist(start, end);
-  openSet.push({ idx: startIdx, f: fScore[startIdx] });
+  fScore[startIdx] = Math.hypot(e.col - s.col, e.row - s.row) * GRID_CELL;
 
-  function heapPush(item) {
-    openSet.push(item);
-    // Bubble up
-    var i = openSet.length - 1;
+  // Binary min-heap on fScore
+  var heap = [startIdx];
+
+  function heapPush(idx) {
+    heap.push(idx);
+    var i = heap.length - 1;
     while (i > 0) {
       var parent = (i - 1) >> 1;
-      if (openSet[parent].f <= openSet[i].f) break;
-      var tmp = openSet[parent];
-      openSet[parent] = openSet[i];
-      openSet[i] = tmp;
+      if (fScore[heap[parent]] <= fScore[heap[i]]) break;
+      var tmp = heap[parent]; heap[parent] = heap[i]; heap[i] = tmp;
       i = parent;
     }
   }
 
   function heapPop() {
-    if (openSet.length === 0) return null;
-    var top = openSet[0];
-    var last = openSet.pop();
-    if (openSet.length > 0) {
-      openSet[0] = last;
-      // Bubble down
+    if (heap.length === 0) return -1;
+    var top = heap[0];
+    var last = heap.pop();
+    if (heap.length > 0) {
+      heap[0] = last;
       var i = 0;
       while (true) {
-        var left = 2 * i + 1;
-        var right = 2 * i + 2;
-        var smallest = i;
-        if (left < openSet.length && openSet[left].f < openSet[smallest].f) smallest = left;
-        if (right < openSet.length && openSet[right].f < openSet[smallest].f) smallest = right;
+        var l = 2 * i + 1, r = 2 * i + 2, smallest = i;
+        if (l < heap.length && fScore[heap[l]] < fScore[heap[smallest]]) smallest = l;
+        if (r < heap.length && fScore[heap[r]] < fScore[heap[smallest]]) smallest = r;
         if (smallest === i) break;
-        var tmp = openSet[smallest];
-        openSet[smallest] = openSet[i];
-        openSet[i] = tmp;
+        var tmp = heap[smallest]; heap[smallest] = heap[i]; heap[i] = tmp;
         i = smallest;
       }
     }
     return top;
   }
 
-  while (openSet.length > 0) {
-    var current = heapPop();
-    var ci = current.idx;
-
-    if (ci === endIdx) {
-      // Reconstruct path
-      var path = [];
-      var node = endIdx;
-      while (node !== undefined) {
-        path.push(allVerts[node]);
-        node = cameFrom[node];
-      }
-      path.reverse();
-      return { path: path, cost: gScore[endIdx] };
-    }
-
+  while (heap.length > 0) {
+    var ci = heapPop();
+    if (ci === endIdx) break;
     if (closed[ci]) continue;
-    closed[ci] = true;
+    closed[ci] = 1;
 
-    var neighbors = tempEdges.get(ci);
-    if (!neighbors) continue;
+    var crow = (ci / GRID_W) | 0;
+    var ccol = ci % GRID_W;
 
-    for (var ni = 0; ni < neighbors.length; ni++) {
-      var nb = neighbors[ni];
-      if (closed[nb.to]) continue;
-      var tentG = gScore[ci] + nb.cost;
-      if (gScore[nb.to] === undefined || tentG < gScore[nb.to]) {
-        cameFrom[nb.to] = ci;
-        gScore[nb.to] = tentG;
-        fScore[nb.to] = tentG + dist(allVerts[nb.to], end);
-        heapPush({ idx: nb.to, f: fScore[nb.to] });
+    for (var d = 0; d < 8; d++) {
+      var nr = crow + DIRS[d].dy;
+      var nc = ccol + DIRS[d].dx;
+      if (nr < 0 || nr >= GRID_H || nc < 0 || nc >= GRID_W) continue;
+      var ni = nr * GRID_W + nc;
+      if (grid[ni] === 1 || closed[ni]) continue;
+
+      // For diagonal moves, also check that both cardinal neighbors are free
+      // (prevents cutting corners through walls)
+      if (DIRS[d].dx !== 0 && DIRS[d].dy !== 0) {
+        if (grid[crow * GRID_W + nc] === 1 || grid[nr * GRID_W + ccol] === 1) continue;
+      }
+
+      var tentG = gScore[ci] + DIRS[d].cost * GRID_CELL;
+      if (tentG < gScore[ni]) {
+        cameFrom[ni] = ci;
+        gScore[ni] = tentG;
+        fScore[ni] = tentG + Math.hypot(e.col - nc, e.row - nr) * GRID_CELL;
+        heapPush(ni);
       }
     }
   }
 
   // No path found
-  return null;
+  if (cameFrom[endIdx] === -1 && startIdx !== endIdx) return null;
+
+  // Reconstruct grid path
+  var rawPath = [];
+  var node = endIdx;
+  while (node !== -1) {
+    var r = (node / GRID_W) | 0;
+    var c = node % GRID_W;
+    rawPath.push(toPixel(c, r));
+    node = cameFrom[node];
+  }
+  rawPath.reverse();
+
+  // Replace first/last with actual start/end coords for precision
+  rawPath[0] = { x: start.x, y: start.y };
+  rawPath[rawPath.length - 1] = { x: end.x, y: end.y };
+
+  // Smooth path: remove unnecessary waypoints that have clear LOS
+  var smoothed = smoothPath(rawPath, grid);
+
+  // Compute total cost along smoothed path
+  var totalCost = 0;
+  for (var i = 1; i < smoothed.length; i++) {
+    totalCost += Math.hypot(smoothed[i].x - smoothed[i - 1].x, smoothed[i].y - smoothed[i - 1].y);
+  }
+
+  return { path: smoothed, cost: totalCost };
 }
+
+/**
+ * Smooth a grid path by removing intermediate points when there's clear LOS.
+ * Uses Bresenham-like line check on the grid.
+ */
+function smoothPath(path, grid) {
+  if (path.length <= 2) return path;
+
+  var result = [path[0]];
+  var anchor = 0;
+
+  for (var i = 2; i < path.length; i++) {
+    // Check LOS from anchor to i
+    if (!gridLineOfSight(grid, path[anchor], path[i])) {
+      // Can't skip — keep i-1 as waypoint
+      result.push(path[i - 1]);
+      anchor = i - 1;
+    }
+  }
+
+  result.push(path[path.length - 1]);
+  return result;
+}
+
+/**
+ * Check if there's a clear line-of-sight on the grid between two pixel positions.
+ * Uses DDA (Digital Differential Analyzer) to walk grid cells.
+ */
+function gridLineOfSight(grid, a, b) {
+  var ga = toGrid(a.x, a.y);
+  var gb = toGrid(b.x, b.y);
+
+  var x0 = ga.col, y0 = ga.row;
+  var x1 = gb.col, y1 = gb.row;
+
+  var dx = Math.abs(x1 - x0);
+  var dy = Math.abs(y1 - y0);
+  var sx = x0 < x1 ? 1 : -1;
+  var sy = y0 < y1 ? 1 : -1;
+  var err = dx - dy;
+
+  while (true) {
+    if (grid[y0 * GRID_W + x0] === 1) return false;
+
+    if (x0 === x1 && y0 === y1) break;
+
+    var e2 = 2 * err;
+    // Check diagonal corner-cutting
+    if (e2 > -dy && e2 < dx) {
+      // Diagonal step — check both cardinal neighbors
+      if (grid[y0 * GRID_W + (x0 + sx)] === 1) return false;
+      if (grid[(y0 + sy) * GRID_W + x0] === 1) return false;
+    }
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 <  dx) { err += dx; y0 += sy; }
+  }
+
+  return true;
+}
+
+/**
+ * Render the occupancy grid as an SVG overlay for debugging.
+ * Blocked cells are drawn as small red squares.
+ *
+ * @param {Uint8Array} grid
+ * @param {SVGElement} svgLayer - an SVG <g> element to render into
+ */
+export function renderGridDebug(grid, svgLayer) {
+  if (!svgLayer) return;
+  svgLayer.innerHTML = '';
+  var NS = 'http://www.w3.org/2000/svg';
+  GRID_W = Math.ceil(BF_W / GRID_CELL);
+  GRID_H = Math.ceil(BF_H / GRID_CELL);
+
+  for (var row = 0; row < GRID_H; row++) {
+    for (var col = 0; col < GRID_W; col++) {
+      if (grid[row * GRID_W + col] === 1) {
+        var rect = document.createElementNS(NS, 'rect');
+        rect.setAttribute('x', col * GRID_CELL);
+        rect.setAttribute('y', row * GRID_CELL);
+        rect.setAttribute('width', GRID_CELL);
+        rect.setAttribute('height', GRID_CELL);
+        rect.setAttribute('fill', 'rgba(255,50,50,0.35)');
+        rect.setAttribute('pointer-events', 'none');
+        svgLayer.appendChild(rect);
+      }
+    }
+  }
+}
+
+/**
+ * Render a path as an SVG polyline overlay for debugging.
+ *
+ * @param {Array<{x:number,y:number}>} pathPoints
+ * @param {SVGElement} svgLayer
+ * @param {string} color
+ */
+export function renderPathDebug(pathPoints, svgLayer, color) {
+  if (!svgLayer || !pathPoints || pathPoints.length < 2) return;
+  var NS = 'http://www.w3.org/2000/svg';
+  var points = pathPoints.map(function(p) { return p.x + ',' + p.y; }).join(' ');
+  var polyline = document.createElementNS(NS, 'polyline');
+  polyline.setAttribute('points', points);
+  polyline.setAttribute('fill', 'none');
+  polyline.setAttribute('stroke', color || '#ff0');
+  polyline.setAttribute('stroke-width', '1.5');
+  polyline.setAttribute('stroke-dasharray', '4,3');
+  polyline.setAttribute('pointer-events', 'none');
+  svgLayer.appendChild(polyline);
+}
+
+// ── Exports for backward compat ────────────────────────
+// Keep old function names as no-ops so import doesn't break during transition
+export function aabbsToWorldPolygons() { return []; }
+export function buildNavGraph() { return { vertices: [], edges: new Map() }; }
+export function findShortestPath() { return null; }
