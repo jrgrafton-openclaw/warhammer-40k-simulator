@@ -337,7 +337,7 @@
     overlayVisible = false;
     fadeOut();
     endBtn.classList.add('pulse');
-    if (hint) hint.style.display = 'none';
+    if (hint) { hint.style.visibility = 'hidden'; hint.style.opacity = '0'; }
   }
 
   function summonOverlay() {
