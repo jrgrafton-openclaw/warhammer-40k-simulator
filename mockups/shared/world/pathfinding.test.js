@@ -151,6 +151,52 @@ console.log('\nTest 6: Point inside obstacle → null');
   assert(result === null, 'returns null for start inside obstacle');
 })();
 
+// ─── Test 7: Path must not pass through wall corner (vertex pass-through) ───
+console.log('\nTest 7: Path must not pass through wall corner');
+(function() {
+  // Two walls forming a gap. A direct path would pass exactly through a wall corner.
+  // Wall 1: x=[40,50], y=[0,50]
+  // Wall 2: x=[50,60], y=[50,100]
+  // Corner at (50,50) — a direct path from (20,20) to (80,80) passes through it
+  var aabbs = [
+    makeAABB(40, 0, 50, 50),
+    makeAABB(50, 50, 60, 100)
+  ];
+  var polys = aabbsToWorldPolygons(aabbs);
+  var radius = 3;
+  var graph = buildNavGraph(polys, radius);
+
+  var start = { x: 20, y: 20 };
+  var end = { x: 80, y: 80 };
+  var result = findShortestPath(graph, polys, start, end, radius);
+
+  assert(result !== null, 'path found');
+  var directDist = Math.hypot(60, 60);
+  assert(result.cost > directDist, 'path avoids corner (' + result.cost.toFixed(2) + ' > ' + directDist.toFixed(2) + ')');
+  // Path should not be direct (2 points) — it must go around
+  assert(result.path.length >= 3, 'path routes around corner (' + result.path.length + ' points)');
+})();
+
+// ─── Test 8: Two thin walls close together — path must go around both ───
+console.log('\nTest 8: Two close parallel thin walls');
+(function() {
+  // Two thin vertical walls with a narrow gap between them
+  var aabbs = [
+    makeAABB(48, 20, 52, 80),  // wall 1
+    makeAABB(58, 20, 62, 80)   // wall 2, 6px gap
+  ];
+  var polys = aabbsToWorldPolygons(aabbs);
+  var radius = 5; // radius larger than the gap
+  var graph = buildNavGraph(polys, radius);
+
+  var start = { x: 30, y: 50 };
+  var end = { x: 80, y: 50 };
+  var result = findShortestPath(graph, polys, start, end, radius);
+
+  assert(result !== null, 'path found');
+  assert(result.cost > 50, 'path goes around both walls (' + result.cost.toFixed(2) + ' > 50)');
+})();
+
 // ─── Summary ───
 console.log('\n─── Results: ' + passed + ' passed, ' + failed + ' failed ───');
 if (failed > 0) {
