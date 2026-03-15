@@ -120,6 +120,37 @@ function getMoveRangePx(unitId, isAdvance) {
   return u.M * PX_PER_INCH;
 }
 
+// ── Wall collision warning ─────────────────────────────
+function updateWallCollisionWarning(unit) {
+  var banner = document.getElementById('wall-collision-banner');
+  // Clear previous highlights
+  document.querySelectorAll('.unit-hull.wall-collision').forEach(function(el) {
+    el.classList.remove('wall-collision');
+  });
+
+  if (!unit || !moveState.mode) {
+    if (banner) banner.style.display = 'none';
+    return;
+  }
+
+  var hasCollision = false;
+  unit.models.forEach(function(m) {
+    if (modelCollidesTerrain(m)) {
+      hasCollision = true;
+    }
+  });
+
+  if (hasCollision) {
+    document.querySelectorAll('.unit-hull[data-unit-id="' + unit.id + '"]').forEach(function(h) {
+      h.classList.add('wall-collision');
+    });
+  }
+
+  if (banner) {
+    banner.style.display = hasCollision ? 'block' : 'none';
+  }
+}
+
 function getFactionColor(unitId) {
   var u = UNITS[unitId]; if (!u) return '#888';
   return u.faction_side === 'imp' ? '#2266ee' : '#cc2222';
@@ -263,6 +294,7 @@ function confirmMove() {
   clearMoveOverlays();
   clearRangeRings();
   updateMoveButtons();
+  updateWallCollisionWarning(null);
   movementSelectUnit(null);
 }
 
@@ -280,6 +312,7 @@ function cancelMove() {
   clearMoveOverlays();
   clearRangeRings();
   updateMoveButtons();
+  updateWallCollisionWarning(null);
   renderModels();
   baseSelectUnit(null);
 }
@@ -617,6 +650,8 @@ function installDragEnforcement() {
     renderCardRangeRings(uid);
     renderMoveOverlays(uid);
     updateMoveButtons();
+    // Check wall collision for ALL units (breachable can't end on walls either)
+    if (dragUnit) updateWallCollisionWarning(dragUnit);
     // Lift dragged unit to z-top
     var dragUnitId = getDragUnitId();
     if (dragUnitId) {

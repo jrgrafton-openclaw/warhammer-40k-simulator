@@ -16,6 +16,18 @@
 .move-ruler       { pointer-events: none; stroke-width: 1; stroke-dasharray: 4 3; fill: none; opacity: .6; }
 .move-ruler-label { pointer-events: none; font: 600 9px/1 'Rajdhani', sans-serif; fill: rgba(224,232,240,.45); }
 
+/* ── Wall collision warning highlight on model hulls ── */
+.unit-hull.wall-collision {
+  stroke: #ffaa00 !important;
+  stroke-width: 2.5 !important;
+  filter: drop-shadow(0 0 6px rgba(255,170,0,.7));
+  animation: wall-pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes wall-pulse {
+  from { stroke-opacity: 0.7; }
+  to   { stroke-opacity: 1; }
+}
+
 /* ── Mode label states ── */
 /* Override shoot-specific flex/visibility from shared action-bar.css */
 #move-mode-label {
