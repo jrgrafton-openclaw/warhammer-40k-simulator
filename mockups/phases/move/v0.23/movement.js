@@ -120,7 +120,7 @@ function isCurrentMoveLegal(uid) {
     var ts = phaseTurnStarts[m.id];
     if (!ts) return false;
     if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
-    if (!canBreachTerrain(unit) && modelCollidesTerrain(m)) return false;
+    if (modelCollidesTerrain(m)) return false;
 
     for (var j = i + 1; j < unit.models.length; j++) {
       if (modelsOverlap(m, unit.models[j])) return false;

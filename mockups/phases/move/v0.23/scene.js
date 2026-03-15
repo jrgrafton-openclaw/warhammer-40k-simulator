@@ -33,6 +33,8 @@ simState.units = [
             {id:'hb4',x:88,y:216,r:R32},{id:'hb5',x:105,y:216,r:R32}], broken:false },
   { id:'redemptor-dreadnought', rosterIndex:4, faction:'imp', keywords:['Vehicle'],
     models:[{id:'rd1',x:150,y:278,r:22,shape:'rect',w:43,h:25}], broken:false },
+  { id:'outriders', rosterIndex:5, faction:'imp', keywords:['Mounted'],
+    models:[{id:'or1',x:100,y:340,r:R40},{id:'or2',x:125,y:340,r:R40},{id:'or3',x:112,y:362,r:R40}], broken:false },
   // Ork force holding OBJ 04 (SVG ≈ 600, 264) — models overlap the marker
   { id:'boss-nob', rosterIndex:6, faction:'ork', keywords:['Infantry','Character'],
     models:[{id:'bn1',x:600,y:242,r:R40}], broken:false },
