@@ -32,7 +32,22 @@ function d6(){ return 1 + Math.floor(rng() * 6); }
 function getUnit(uid){ return simState.units.find(u => u.id === uid); }
 function isEnemy(uid){ const u = getUnit(uid); return u && u.faction !== ACTIVE; }
 function setStatus(msg){ const el = $('#move-mode-label'); if (el) el.textContent = msg || ''; }
-function distIn(a, b){ const ca = center(getUnit(a)), cb = center(getUnit(b)); return Math.hypot(ca.x - cb.x, ca.y - cb.y) / PX_PER_INCH; }
+// Per 40K 10th Ed: "measure to the closest point of that model's base"
+// Range = closest base edge of closest attacker model → closest base edge of closest target model
+function distIn(a, b){
+  const ua = getUnit(a), ub = getUnit(b);
+  if (!ua || !ub) return Infinity;
+  let minDist = Infinity;
+  ua.models.forEach(ma => {
+    const ra = getModelRadius(ma);
+    ub.models.forEach(mb => {
+      const rb = getModelRadius(mb);
+      const d = Math.max(0, Math.hypot(ma.x - mb.x, ma.y - mb.y) - ra - rb);
+      if (d < minDist) minDist = d;
+    });
+  });
+  return minDist / PX_PER_INCH;
+}
 function parseRange(weapon){ return parseInt(String(weapon?.rng || '').replace(/[^0-9]/g, '')) || 0; }
 function getBallisticSkill(uid){ return ({'assault-intercessors':3,'intercessor-squad-a':3,'hellblasters':3,'primaris-lieutenant':3,'redemptor-dreadnought':3,'boyz-mob':5,'boss-nob':5,'mekboy':5,'nobz-mob':5,'gretchin':5}[uid] || 4); }
 function parseSave(sv){ const n = parseInt(String(sv || '').replace(/[^0-9]/g, '')); return n || 7; }
