@@ -387,7 +387,10 @@ function renderCardRangeRings(uid) {
 
   var radiusInches;
   if (activeType === 'move') radiusInches = u.M;
-  else if (activeType === 'advance') radiusInches = u.M + 3.5;
+  else if (activeType === 'advance') {
+    var advBonus = (moveState.advanceDie !== null) ? moveState.advanceDie : 3.5;
+    radiusInches = u.M + advBonus;
+  }
   else if (activeType === 'charge') radiusInches = u.M + 7;
   else if (activeType === 'ds') radiusInches = 9;
   else {
