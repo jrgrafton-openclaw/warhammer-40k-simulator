@@ -31,25 +31,29 @@ var DIRS = [
 var _gridCache = {};  // radiusKey → Uint8Array (0=free, 1=blocked)
 
 /**
- * Build an occupancy grid for a given model radius.
- * Probes resolveTerrainCollision at each cell center.
+ * Build an occupancy grid that marks where walls ARE (not the full exclusion zone).
+ * Uses a small probe radius (GRID_CELL) to detect wall geometry tightly.
+ *
+ * Path cost is measured center-to-center. The model's full radius is checked
+ * at confirm time via modelCollidesTerrain — this keeps paths tight and avoids
+ * units starting inside blocked cells.
  *
  * @param {Array} terrainAABBs - from window._terrainAABBs
- * @param {number} modelRadius - in SVG px
  * @param {function} resolveCollision - resolveTerrainCollision(cx, cy, r, aabbs) → {x, y}
  * @returns {Uint8Array} grid[row * GRID_W + col] = 0|1
  */
-export function buildGrid(terrainAABBs, modelRadius, resolveCollision) {
+export function buildGrid(terrainAABBs, resolveCollision) {
   GRID_W = Math.ceil(BF_W / GRID_CELL);
   GRID_H = Math.ceil(BF_H / GRID_CELL);
   var grid = new Uint8Array(GRID_W * GRID_H);
+  var probeRadius = GRID_CELL; // small probe — detect walls, not exclusion zones
 
   for (var row = 0; row < GRID_H; row++) {
     for (var col = 0; col < GRID_W; col++) {
       var cx = col * GRID_CELL + GRID_CELL / 2;
       var cy = row * GRID_CELL + GRID_CELL / 2;
-      var resolved = resolveCollision(cx, cy, modelRadius, terrainAABBs);
-      // If collision pushed the point, this cell is blocked
+      var resolved = resolveCollision(cx, cy, probeRadius, terrainAABBs);
+      // If collision pushed the point, this cell is blocked (wall is here)
       if (Math.abs(resolved.x - cx) > 0.1 || Math.abs(resolved.y - cy) > 0.1) {
         grid[row * GRID_W + col] = 1;
       }
@@ -60,14 +64,15 @@ export function buildGrid(terrainAABBs, modelRadius, resolveCollision) {
 }
 
 /**
- * Get or build a cached grid for the given radius.
+ * Get or build the cached wall grid (single grid, not per-radius).
  */
 export function getGrid(terrainAABBs, modelRadius, resolveCollision) {
-  var key = Math.round(modelRadius * 10);
-  if (!_gridCache[key]) {
-    _gridCache[key] = buildGrid(terrainAABBs, modelRadius, resolveCollision);
+  // Single grid for all units — walls are walls regardless of model size.
+  // Model radius is checked at confirm time via modelCollidesTerrain.
+  if (!_gridCache['walls']) {
+    _gridCache['walls'] = buildGrid(terrainAABBs, resolveCollision);
   }
-  return _gridCache[key];
+  return _gridCache['walls'];
 }
 
 /**
