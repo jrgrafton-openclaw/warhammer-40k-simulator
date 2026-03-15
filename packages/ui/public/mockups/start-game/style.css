@@ -507,3 +507,91 @@
 .splash-backlink:hover {
   color: var(--imp);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   CINEMATIC BOOT TIMELINE — pure CSS via .boot class
+   Adding .boot to .splash-root triggers all animations.
+   Timing: bg 0s → panel 0.8s → label 0.9s → title 1.0s →
+           subtitle 1.3s → divider 1.4s → buttons 2.0-2.2s →
+           chrome 2.5s → title idle glow 3.0s
+═══════════════════════════════════════════════════════════ */
+
+/* Background reveal */
+.boot .bg-image {
+  opacity: 1;
+  animation: ken-burns 60s ease-in-out 0s infinite alternate;
+}
+
+/* Panel fade-in at 0.8s */
+.boot #panel {
+  animation: fade-in 0.6s ease-out 0.8s forwards;
+  pointer-events: auto;
+}
+/* Corner brackets draw in at 0.8s (via .visible) */
+.boot #panel { }
+.boot .splash-panel { }
+/* Trigger corner draw-in via the .visible animations already defined */
+.boot .splash-panel::before {
+  top: -1px; left: -1px;
+  width: 24px; height: 24px;
+  border-top: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+  transition-delay: 0.8s;
+}
+.boot .splash-panel::after {
+  bottom: -1px; right: -1px;
+  width: 24px; height: 24px;
+  border-bottom: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+  transition-delay: 0.8s;
+}
+.boot .splash-corners::before {
+  top: -1px; right: -1px;
+  width: 24px; height: 24px;
+  border-top: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+  transition-delay: 0.9s;
+}
+.boot .splash-corners::after {
+  bottom: -1px; left: -1px;
+  width: 24px; height: 24px;
+  border-bottom: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+  transition-delay: 0.9s;
+}
+
+/* Title sequence */
+.boot #label {
+  animation: fade-in 0.5s ease-out 0.9s forwards;
+}
+.boot #title {
+  animation: title-stamp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 1.0s forwards;
+}
+.boot #subtitle {
+  animation: fade-in 0.5s ease-out 1.3s forwards;
+}
+.boot #divider {
+  animation: fade-in 0.5s ease-out 1.4s forwards;
+}
+
+/* Menu buttons stagger */
+.boot #btn-new {
+  animation: btn-slide-in 0.4s ease-out 2.0s forwards;
+}
+.boot #btn-load {
+  animation: btn-slide-in 0.4s ease-out 2.1s forwards;
+}
+.boot #btn-settings {
+  animation: btn-slide-in 0.4s ease-out 2.2s forwards;
+}
+
+/* Chrome at 2.5s */
+.boot #version {
+  animation: fade-in 0.4s ease-out 2.5s forwards;
+}
+.boot .splash-backlink {
+  animation: fade-in 0.4s ease-out 2.5s forwards;
+}
+.boot .mute-toggle {
+  animation: fade-in 0.4s ease-out 2.5s forwards;
+}
