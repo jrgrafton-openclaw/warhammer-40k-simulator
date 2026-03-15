@@ -102,6 +102,7 @@
 
     <div class="tab-nav" id="phase-tabs">
       <button class="tab-btn active" data-tab="start-game" onclick="switchTab('start-game')">START GAME</button>
+      <button class="tab-btn" data-tab="battle-forge" onclick="switchTab('battle-forge')">BATTLE FORGE</button>
       <button class="tab-btn" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
       <button class="tab-btn" data-tab="command" onclick="switchTab('command')">CMD</button>
       <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
@@ -133,6 +134,32 @@
             <li>Ambient drone loop with mute toggle</li>
             <li>CSS ember particles + vignette + grain overlay</li>
             <li>Stagger-in entrance animations</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- BATTLE FORGE -->
+    <div id="tab-battle-forge" class="tab-pane hidden">
+      <div class="section-title">Battle Forge — Pre-Game Setup</div>
+      <div class="section-desc">
+        Civ-style game configuration screen between splash and deployment.
+        Faction selection, battlefield layout, army list upload, and game settings.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="battle-forge/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">GAME SETUP</div>
+          <div class="card-title">Faction select · Map layout · Army list · Game settings</div>
+          <ul class="card-features">
+            <li>Two-column faction selection (Custodes vs Orks)</li>
+            <li>Battlefield layout cards with deployment zone diagrams</li>
+            <li>Army list upload placeholder (BattleScribe .ros)</li>
+            <li>Game settings row (turn limit, first turn, battle size)</li>
+            <li>Corner bracket panels, entrance animations, tooltip system</li>
           </ul>
           <span class="card-link">Open →</span>
         </a>

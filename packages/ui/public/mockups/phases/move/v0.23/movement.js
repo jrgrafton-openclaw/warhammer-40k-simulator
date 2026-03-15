@@ -393,9 +393,8 @@ function renderMoveRulers(uid) {
         layerRulers.appendChild(polyline);
       }
 
-      // Label at midpoint of path
-      var midIdx = Math.floor(waypoints.length / 2);
-      var labelPt = waypoints[midIdx] || { x: (ts.x + m.x) / 2, y: (ts.y + m.y) / 2 };
+      // Label at midpoint of straight line between start and current pos (matches breachable style)
+      var labelPt = { x: (ts.x + m.x) / 2, y: (ts.y + m.y) / 2 };
       var label = document.createElementNS(NS, 'text');
       label.setAttribute('x', labelPt.x); label.setAttribute('y', labelPt.y - 4);
       label.setAttribute('class', 'move-ruler-label'); label.setAttribute('text-anchor', 'middle');
