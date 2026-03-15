@@ -155,7 +155,7 @@
     ctx.clearRect(0, 0, W, H);
 
     /* ── Draw smoke FIRST (behind embers) ── */
-    while (smokePuffs.length < 25) smokePuffs.push(createSmokePuff());
+    while (smokePuffs.length < 38) smokePuffs.push(createSmokePuff());
 
     for (let i = smokePuffs.length - 1; i >= 0; i--) {
       const s = smokePuffs[i];
@@ -173,8 +173,8 @@
       else if (s.life > s.maxLife - fadeOut) alpha = (s.maxLife - s.life) / fadeOut;
       else alpha = 1;
 
-      // Peak opacity is low — this is subtle atmospheric smoke
-      alpha *= 0.045;
+      // Visible atmospheric smoke — dense enough to read as fog
+      alpha *= 0.11;
 
       if (alpha <= 0 || s.life >= s.maxLife || s.y < -s.size) {
         smokePuffs.splice(i, 1);
@@ -275,13 +275,21 @@
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 80);
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0.05)'; }, 150);
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 220);
+
+    // 40% chance of a second flash (double-strike)
+    if (Math.random() < 0.4) {
+      setTimeout(function() {
+        el.style.background = 'rgba(180,210,240,0.06)';
+        setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 60);
+      }, 400 + Math.random() * 200);
+    }
   };
 
   window.startLightning = function() {
     active = true;
     function scheduleNext() {
       if (!active) return;
-      const delay = 12000 + Math.random() * 20000; // 12-32s
+      var delay = 5000 + Math.random() * 7000; // 5-12s
       setTimeout(function() {
         triggerLightning();
         scheduleNext();
@@ -309,7 +317,7 @@
   function fadeInAudio() {
     audio.play().catch(function() {});
     let vol = 0;
-    const target = 0.65;
+    const target = 0.85;
     const step = target / 40; // 40 steps over ~1s
     const interval = setInterval(function() {
       vol = Math.min(vol + step, target);
