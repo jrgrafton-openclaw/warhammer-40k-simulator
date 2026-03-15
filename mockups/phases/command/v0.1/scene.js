@@ -4,8 +4,12 @@
  *
  * Units are positioned post-move/fight for a ROUND 2 COMMAND PHASE scenario:
  * - Hellblasters reduced to 2 models (below half of 5 starting) — needs battle-shock
- * - Boyz Mob has 4 models (below half of 10 starting) — needs battle-shock
+ * - All units well-spaced to avoid overlap
  * - Imperium units near OBJ 02 and OBJ 03 for VP scoring
+ * - Orks hold OBJ 04, some near OBJ 01
+ *
+ * NOTE: Only Imperium (ACTIVE player) units get battle-shock tests.
+ *       Boyz Mob (ork) is below half but is NOT tested (enemy turn).
  */
 
 import { R32, R40, simState } from '../../../shared/state/store.js';
@@ -21,80 +25,83 @@ import { initCommand } from './command.js';
 import '../../../shared/world/world-api.js';
 
 // ── Army positions — ROUND 2 POST-FIGHT scenario ────────
-// Imperium units near OBJ 02 (16.67%=120px, 50%=264px) and OBJ 03 (50%=360px, 50%=264px)
+// PX_PER_INCH = 12, R32 = 8px (infantry), R40 = 9px (characters)
 // OBJ 02 center: ~120, 264    OBJ 03 center: ~360, 264
+// OBJ 04 center: ~600, 264    OBJ 01 center: ~360, 72
+// Models need 2*R + gap between them to avoid overlap
 
 simState.units = [
   // ── IMPERIUM ─────────────────────────────────────────
   // Assault Intercessors: near OBJ 03 (center battlefield)
   { id:'assault-intercessors', rosterIndex:0, faction:'imp',
     models:[
-      {id:'ai1',x:340,y:250,r:R32},
-      {id:'ai2',x:355,y:242,r:R32},
-      {id:'ai3',x:370,y:250,r:R32},
-      {id:'ai4',x:347,y:264,r:R32},
-      {id:'ai5',x:363,y:264,r:R32}
+      {id:'ai1',x:340,y:245,r:R32},
+      {id:'ai2',x:360,y:240,r:R32},
+      {id:'ai3',x:380,y:245,r:R32},
+      {id:'ai4',x:350,y:262,r:R32},
+      {id:'ai5',x:370,y:262,r:R32}
     ], broken:false },
 
-  // Primaris Lieutenant: near OBJ 02
+  // Primaris Lieutenant: between OBJ 02 and center, well clear
   { id:'primaris-lieutenant', rosterIndex:1, faction:'imp',
-    models:[{id:'pl1',x:135,y:258,r:R40}], broken:false },
+    models:[{id:'pl1',x:160,y:240,r:R40}], broken:false },
 
   // Intercessor Squad A: near OBJ 02 (within 3" = 36px)
   { id:'intercessor-squad-a', rosterIndex:2, faction:'imp',
     models:[
-      {id:'isa1',x:100,y:245,r:R32},
-      {id:'isa2',x:117,y:240,r:R32},
-      {id:'isa3',x:134,y:245,r:R32},
-      {id:'isa4',x:108,y:260,r:R32},
-      {id:'isa5',x:126,y:260,r:R32}
+      {id:'isa1',x:95,y:245,r:R32},
+      {id:'isa2',x:115,y:240,r:R32},
+      {id:'isa3',x:135,y:245,r:R32},
+      {id:'isa4',x:105,y:265,r:R32},
+      {id:'isa5',x:125,y:265,r:R32}
     ], broken:false },
 
-  // Hellblasters: BELOW HALF (2 of 5 starting) — near center
+  // Hellblasters: BELOW HALF (2 of 5 starting) — mid-field, needs battle-shock
   { id:'hellblasters', rosterIndex:3, faction:'imp',
     startingStrength: 5,
     models:[
-      {id:'hb1',x:290,y:200,r:R32},
-      {id:'hb2',x:307,y:195,r:R32}
+      {id:'hb1',x:270,y:190,r:R32},
+      {id:'hb2',x:290,y:185,r:R32}
     ], broken:false },
 
-  // Redemptor Dreadnought: mid-field
+  // Redemptor Dreadnought: south mid-field, well-spaced
   { id:'redemptor-dreadnought', rosterIndex:4, faction:'imp',
-    models:[{id:'rd1',x:200,y:340,r:22,shape:'rect',w:43,h:25}], broken:false },
+    models:[{id:'rd1',x:220,y:370,r:22,shape:'rect',w:43,h:25}], broken:false },
 
   // ── ORKS ─────────────────────────────────────────────
-  // Boss Nob: Ork side
+  // Boss Nob: Ork deployment zone
   { id:'boss-nob', rosterIndex:6, faction:'ork',
-    models:[{id:'bn1',x:560,y:280,r:R40}], broken:false },
+    models:[{id:'bn1',x:570,y:300,r:R40}], broken:false },
 
-  // Nobz Mob: Ork side
+  // Nobz Mob: Ork side, spaced out
   { id:'nobz-mob', rosterIndex:7, faction:'ork',
     models:[
-      {id:'nm1',x:540,y:200,r:R40},
-      {id:'nm2',x:558,y:210,r:R40},
-      {id:'nm3',x:548,y:228,r:R40}
+      {id:'nm1',x:540,y:190,r:R40},
+      {id:'nm2',x:562,y:200,r:R40},
+      {id:'nm3',x:551,y:222,r:R40}
     ], broken:false },
 
-  // Mekboy: Ork side
+  // Mekboy: Ork rear
   { id:'mekboy', rosterIndex:8, faction:'ork',
-    models:[{id:'mb1',x:600,y:320,r:R32}], broken:false },
+    models:[{id:'mb1',x:620,y:350,r:R32}], broken:false },
 
-  // Gretchin: near OBJ 04
+  // Gretchin: near OBJ 04 (holding it)
   { id:'gretchin', rosterIndex:9, faction:'ork',
     models:[
-      {id:'gr1',x:590,y:260,r:R32},
-      {id:'gr2',x:605,y:255,r:R32},
-      {id:'gr3',x:620,y:260,r:R32}
+      {id:'gr1',x:585,y:255,r:R32},
+      {id:'gr2',x:605,y:250,r:R32},
+      {id:'gr3',x:625,y:255,r:R32}
     ], broken:false },
 
-  // Boyz Mob: BELOW HALF (4 of 10 starting) — mid-field Ork side
+  // Boyz Mob: BELOW HALF (4 of 10 starting) — Ork side
+  // NOTE: This is an Ork unit — NOT tested for battle-shock (it's Imperium's turn)
   { id:'boyz-mob', rosterIndex:10, faction:'ork',
     startingStrength: 10,
     models:[
-      {id:'bm1',x:480,y:300,r:R32},
-      {id:'bm2',x:497,y:295,r:R32},
-      {id:'bm3',x:488,y:316,r:R32},
-      {id:'bm4',x:505,y:310,r:R32}
+      {id:'bm1',x:470,y:310,r:R32},
+      {id:'bm2',x:490,y:305,r:R32},
+      {id:'bm3',x:480,y:328,r:R32},
+      {id:'bm4',x:500,y:322,r:R32}
     ], broken:false }
 ];
 

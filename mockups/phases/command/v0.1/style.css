@@ -26,6 +26,7 @@
   background: rgba(255,170,0,0.15);
   color: #ffaa00;
   border: 1px solid rgba(255,170,0,0.4);
+  display: inline-flex !important;
   animation: pill-pulse 1.2s ease-in-out infinite;
 }
 @keyframes pill-pulse {
@@ -38,17 +39,23 @@
   background: rgba(204,32,32,0.2);
   color: #cc2020;
   border: 1px solid rgba(204,32,32,0.4);
+  display: inline-flex !important;
 }
 
-/* ── Battle-shocked (passed): green pill ── */
+/* ── Battle-shock passed: green pill ── */
 .roster-state-pill.bs-passed {
   background: rgba(0,200,80,0.15);
   color: #00c850;
   border: 1px solid rgba(0,200,80,0.4);
+  display: inline-flex !important;
 }
 
 /* ── Amber hull pulse for needs-test units on battlefield ── */
 .unit-hull.cmd-needs-test {
+  stroke: #ffaa00 !important;
+  stroke-width: 2.5 !important;
+  stroke-opacity: 1 !important;
+  fill: rgba(255,170,0,0.1) !important;
   filter: drop-shadow(0 0 8px rgba(255,170,0,0.6));
   animation: hull-amber-pulse 1.2s ease-in-out infinite;
 }
@@ -57,21 +64,52 @@
   50%      { filter: drop-shadow(0 0 14px rgba(255,170,0,0.8)); }
 }
 
-/* ── Battleshocked hull animation ── */
+/* ── Battleshocked hull — red danger glow ── */
 .unit-hull.cmd-battleshocked {
-  animation: bs-enter 0.6s ease-out forwards, bs-pulse 2s ease-in-out 0.6s infinite;
+  stroke: #cc2020 !important;
+  stroke-width: 2 !important;
+  stroke-opacity: 1 !important;
+  fill: rgba(204,32,32,0.08) !important;
+  filter: drop-shadow(0 0 8px rgba(204,32,32,0.5));
+  animation: hull-bs-pulse 2s ease-in-out infinite;
 }
-@keyframes bs-enter {
-  0%   { filter: brightness(1); }
-  15%  { filter: brightness(2.5); background: #440000; }
-  35%  { filter: brightness(0.6); }
-  55%  { filter: brightness(1.8); }
-  75%  { filter: brightness(0.7); }
-  100% { filter: brightness(1); background: #120808; }
+@keyframes hull-bs-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(204,32,32,0.3)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(204,32,32,0.6)); }
 }
-@keyframes bs-pulse {
-  0%, 100% { box-shadow: 0 0 8px #cc202030, 0 0 20px #cc202010; }
-  50%      { box-shadow: 0 0 14px #cc202055, 0 0 30px #cc202020; }
+
+/* ── Battleshocked model tokens — dim red flicker ── */
+.model-base.cmd-bs-token circle,
+.model-base.cmd-bs-token rect {
+  stroke: #992020 !important;
+}
+.model-base.cmd-bs-token {
+  opacity: 0.7;
+  animation: token-bs-dim 2.2s ease-in-out infinite;
+}
+@keyframes token-bs-dim {
+  0%, 100% { opacity: 0.65; }
+  50%      { opacity: 0.85; }
+}
+
+/* ── Battle-shock banner (matches #fight-invalid-banner from battlefield.css) ── */
+#bs-banner {
+  position: static !important;
+  transform: none !important;
+  margin: 0 6px;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 6px 12px !important;
+  font: 700 10px/1 'Rajdhani', sans-serif !important;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.5);
+  background: rgba(255,140,0,.96);
+  color: #fff;
+  border: 2px solid #ffaa40;
 }
 
 /* ── Score tick animations ── */
@@ -90,80 +128,12 @@
 .ticking-out { animation: score-out 0.2s ease-out forwards; }
 .ticking-in  { animation: score-in 0.2s ease-out forwards, score-flash 0.5s ease-out forwards; }
 
-/* ── Dice roll-in animation ── */
-@keyframes die-roll-in {
-  0%   { transform: scale(.5) rotate(-20deg); opacity: 0; }
-  60%  { transform: scale(1.1) rotate(4deg); opacity: 1; }
-  100% { transform: scale(1) rotate(0); }
-}
-
-/* ── Roll overlay dice styling ── */
-.bs-dice-row {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-  margin: 16px 0;
-}
-.bs-die {
-  width: 52px; height: 52px;
-  background: var(--bg-raised);
-  border: 2px solid var(--border);
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font: 400 28px/1 'Anton', sans-serif;
-  color: var(--text-sec);
-  opacity: 0;
-}
-.bs-die.rolled {
-  animation: die-roll-in 0.35s ease-out forwards;
-}
-.bs-die.success { border-color: #00c850; color: #00c850; box-shadow: 0 0 12px rgba(0,200,80,0.3); }
-.bs-die.fail    { border-color: #cc2020; color: #cc2020; box-shadow: 0 0 12px rgba(204,32,32,0.3); }
-
-.bs-roll-title {
-  font: 400 18px/1 'Anton', sans-serif;
-  letter-spacing: 2px;
-  color: var(--text-primary);
-  text-align: center;
-  margin-bottom: 4px;
-}
-.bs-roll-info {
-  font: 500 11px/1.4 'Rajdhani', sans-serif;
-  color: var(--text-muted);
-  text-align: center;
-  letter-spacing: 1px;
-}
-.bs-roll-result {
-  font: 400 22px/1 'Anton', sans-serif;
-  letter-spacing: 2px;
-  text-align: center;
-  margin-top: 12px;
-}
-.bs-roll-result.passed { color: #00c850; text-shadow: 0 0 14px rgba(0,200,80,0.4); }
-.bs-roll-result.failed { color: #cc2020; text-shadow: 0 0 14px rgba(204,32,32,0.4); }
-
-.bs-roll-btn {
-  display: block;
-  margin: 16px auto 0;
-  padding: 8px 28px;
-  font: 600 10px/1 'Rajdhani', sans-serif;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  cursor: pointer;
-  border: 1px solid var(--imp);
-  background: rgba(0,212,255,0.08);
-  color: var(--imp);
-  transition: all 0.15s;
-}
-.bs-roll-btn:hover {
-  background: rgba(0,212,255,0.15);
-  box-shadow: 0 0 12px rgba(0,212,255,0.2);
-}
-
-/* ── Center-screen announce overlays ── */
+/* ── Announce overlays — positioned inside #battlefield, centered on board ── */
 .cmd-announce {
-  position: fixed;
-  top: 50%; left: 50%;
+  position: absolute;
+  /* Center horizontally in battlefield (accounts for roster sidebar) */
+  left: 50%;
+  top: 45%;
   transform: translate(-50%, -50%);
   z-index: 200;
   pointer-events: none;
