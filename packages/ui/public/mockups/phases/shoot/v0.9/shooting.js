@@ -887,11 +887,20 @@ function buildWeaponRangeToggles(uid) {
 
 // ── Override selectUnit to add shooting attacker logic ──
 function wrappedSelectUnit(uid) {
-  clearRangeRings();
-  activeWeaponToggles.clear();
+  const prevAttacker = state.attackerId;
+  const sameUnit = uid && uid === prevAttacker;
+
+  // Preserve range rings when re-selecting the same friendly unit
+  if (!sameUnit) {
+    clearRangeRings();
+    activeWeaponToggles.clear();
+  }
+
   baseSelectUnit(uid);
   if (!uid) {
     // Deselect — clear all shooting state
+    clearRangeRings();
+    activeWeaponToggles.clear();
     selectAttacker(null);
     requestAnimationFrame(() => paint());
     return;
@@ -900,10 +909,12 @@ function wrappedSelectUnit(uid) {
   if (!u) return;
   if (u.faction === ACTIVE) {
     selectAttacker(uid);
-    buildWeaponRangeToggles(uid);
+    if (!sameUnit) buildWeaponRangeToggles(uid);
     requestAnimationFrame(() => paint());
   } else {
-    // Enemy unit — clear weapon toggles
+    // Enemy unit — clear weapon toggles and range rings
+    clearRangeRings();
+    activeWeaponToggles.clear();
     const rangesEl = $('#card-ranges');
     if (rangesEl) rangesEl.innerHTML = '';
   }
