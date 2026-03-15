@@ -86,6 +86,20 @@ initModelInteraction();
 const unitCard = document.getElementById('unit-card');
 if (unitCard) unitCard.classList.remove('visible');
 
+// Block all unit dragging — game is over, battlefield is read-only
+(function installGameEndDragBlock() {
+  let _drag = null;
+  Object.defineProperty(simState, 'drag', {
+    configurable: true,
+    get() { return _drag; },
+    set(value) {
+      // Block all model/unit drags — only allow null (drag end)
+      if (value !== null) return;
+      _drag = value;
+    }
+  });
+})();
+
 // ── Build terrain collision AABBs ────────────────────────
 const svgEl = document.getElementById('bf-svg');
 window._terrainAABBs = buildTerrainAABBs(mapData, svgEl);
