@@ -2,6 +2,11 @@
  * Battle-shock tests, CP gain, VP scoring.
  *
  * Flow: battle-shock tests → CP gain (+1) → VP scoring → done
+ *
+ * WH40K 10th Edition Command Phase order:
+ *   1. Battle-shock tests (below-half friendly units roll 2D6 vs Ld)
+ *   2. Gain 1 CP
+ *   3. Score VP (standard method: 5 for 1+, 5 for 2+, 5 for more than opponent)
  */
 
 import { simState, PX_PER_INCH, callbacks } from '../../../shared/state/store.js';
@@ -12,7 +17,7 @@ const ACTIVE = 'imp';
 
 const state = {
   phase: 'battle-shock',  // 'battle-shock' | 'cp-gain' | 'vp-scoring' | 'done'
-  unitsNeedingTest: [],    // unit IDs below half strength
+  unitsNeedingTest: [],    // unit IDs below half strength (FRIENDLY ONLY)
   testedUnits: new Set(),
   battleshockedUnits: new Set(),
   seed: (Date.now() ^ 0x5f3759df) >>> 0,
@@ -46,10 +51,8 @@ function getLeadership(uid) {
 }
 
 function getStartingStrength(uid) {
-  // Check simState unit for explicit startingStrength, else fall back to UNITS data
   const su = getUnit(uid);
   if (su && su.startingStrength) return su.startingStrength;
-  // Heuristic: use model count in fight/v0.1 scene as "full strength"
   const defaults = {
     'assault-intercessors': 5,
     'primaris-lieutenant': 1,
@@ -75,7 +78,7 @@ function isBelowHalf(uid) {
 // ── Delay helper ────────────────────────────────────────
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ── Score tick animation ────────────────────────────────
+// ── Score tick animation (v4 design system) ─────────────
 function animateScoreTick(el, newVal) {
   return new Promise(resolve => {
     el.classList.add('ticking-out');
@@ -91,7 +94,7 @@ function animateScoreTick(el, newVal) {
   });
 }
 
-// ── Center-screen announce ──────────────────────────────
+// ── Announce overlay (inside #battlefield, aligned with phase header) ──
 function showAnnounce(id, text, cls, duration) {
   return new Promise(resolve => {
     const el = document.getElementById(id);
@@ -117,36 +120,51 @@ function setPill(uid, text, cls) {
   }
   pill.textContent = text;
   pill.className = 'roster-state-pill ' + (cls || '');
-}
-
-function removePill(uid) {
-  const row = $(`.rail-unit[data-unit="${uid}"]`);
-  if (!row) return;
-  const pill = row.querySelector('.roster-state-pill');
-  if (pill) pill.remove();
+  // Force display since shared CSS hides pills by default
+  pill.style.display = 'inline-flex';
 }
 
 // ── Hull painting ───────────────────────────────────────
 function paintHulls() {
-  $$('.unit-hull').forEach(el => {
+  $$('#layer-hulls .unit-hull').forEach(el => {
     el.classList.remove('cmd-needs-test', 'cmd-battleshocked');
   });
 
   if (state.phase === 'battle-shock') {
     state.unitsNeedingTest.forEach(uid => {
       if (state.testedUnits.has(uid)) return;
-      const hull = $(`.unit-hull[data-unit="${uid}"]`);
+      const hull = $(`#layer-hulls .unit-hull[data-unit-id="${uid}"]`);
       if (hull) hull.classList.add('cmd-needs-test');
     });
   }
 
   state.battleshockedUnits.forEach(uid => {
-    const hull = $(`.unit-hull[data-unit="${uid}"]`);
+    const hull = $(`#layer-hulls .unit-hull[data-unit-id="${uid}"]`);
     if (hull) hull.classList.add('cmd-battleshocked');
+  });
+
+  // Also add battleshocked visual to model tokens
+  $$('#layer-models .model-base').forEach(g => {
+    const uid = g.dataset.unitId;
+    g.classList.toggle('cmd-bs-token', state.battleshockedUnits.has(uid));
   });
 }
 
+// ── Banner management ───────────────────────────────────
+function updateBanner(text) {
+  const banner = document.getElementById('bs-banner');
+  if (!banner) return;
+  if (text) {
+    banner.textContent = text;
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
 // ── Battle-shock roll overlay ───────────────────────────
+// Uses SHARED overlay/dice classes from overlays.css + phase-states.css
+// Matches the advance-roll UX from move/v0.23 exactly.
 function showBattleShockRoll(uid) {
   return new Promise(resolve => {
     const u = UNITS[uid];
@@ -155,46 +173,67 @@ function showBattleShockRoll(uid) {
     const overlay = $('#roll-overlay');
     if (!overlay) { resolve(); return; }
 
-    overlay.innerHTML = `
-      <div class="bs-roll-title">BATTLE-SHOCK TEST — ${u.name}</div>
-      <div class="bs-roll-info">Leadership ${ld}+ &nbsp;·&nbsp; Roll 2D6 ≥ ${ld} to pass</div>
-      <div class="bs-dice-row">
-        <div class="bs-die" id="bs-d1">?</div>
-        <div class="bs-die" id="bs-d2">?</div>
-      </div>
-      <div class="bs-roll-result" id="bs-result"></div>
-      <button class="bs-roll-btn" id="bs-roll-btn">CLICK TO ROLL</button>
-    `;
+    overlay.innerHTML =
+      '<div class="overlay-title">BATTLE-SHOCK TEST — ' + u.name + '</div>' +
+      '<div class="dice-summary">Leadership ' + ld + '+ · Roll 2D6 ≥ ' + ld + ' to pass</div>' +
+      '<div class="dice-row">' +
+        '<span class="die pre-roll">\u2013</span>' +
+        '<span class="die pre-roll">\u2013</span>' +
+      '</div>' +
+      '<div class="dice-summary" id="bs-result-summary"></div>' +
+      '<button class="roll-cta" id="bs-roll-btn">Click to roll</button>';
     overlay.classList.remove('hidden');
+
+    // Pin overlay position (matching advance-dice.js)
+    overlay.style.left = '50%';
+    overlay.style.top = 'auto';
+    overlay.style.bottom = '68px';
 
     const rollBtn = document.getElementById('bs-roll-btn');
     rollBtn.addEventListener('click', function onRoll() {
       rollBtn.removeEventListener('click', onRoll);
-      rollBtn.style.display = 'none';
+      rollBtn.disabled = true;
+      rollBtn.textContent = 'Rolling\u2026';
 
       const v1 = d6(), v2 = d6();
       const total = v1 + v2;
       const passed = total >= ld;
 
-      const d1El = document.getElementById('bs-d1');
-      const d2El = document.getElementById('bs-d2');
-      d1El.textContent = v1;
-      d1El.classList.add('rolled');
+      const dice = overlay.querySelectorAll('.die');
+      const d1El = dice[0], d2El = dice[1];
+
+      // Animate dice — matching shared .rolling → result pattern
       setTimeout(() => {
-        d2El.textContent = v2;
-        d2El.classList.add('rolled');
-      }, 150);
+        if (d1El) {
+          d1El.classList.remove('pre-roll');
+          d1El.classList.add('rolling');
+          setTimeout(() => {
+            d1El.classList.remove('rolling');
+            d1El.textContent = v1;
+            d1El.classList.add(passed ? 'success' : 'fail');
+          }, 80);
+        }
+      }, 100);
 
       setTimeout(() => {
-        // Color dice
-        const cls = passed ? 'success' : 'fail';
-        d1El.classList.add(cls);
-        d2El.classList.add(cls);
+        if (d2El) {
+          d2El.classList.remove('pre-roll');
+          d2El.classList.add('rolling');
+          setTimeout(() => {
+            d2El.classList.remove('rolling');
+            d2El.textContent = v2;
+            d2El.classList.add(passed ? 'success' : 'fail');
+          }, 80);
+        }
+      }, 250);
 
-        // Show result
-        const resultEl = document.getElementById('bs-result');
-        resultEl.textContent = total + ' — ' + (passed ? 'PASSED' : 'FAILED / BATTLE-SHOCKED');
-        resultEl.classList.add(passed ? 'passed' : 'failed');
+      // Show result after dice settle
+      setTimeout(() => {
+        const resultEl = document.getElementById('bs-result-summary');
+        if (resultEl) {
+          resultEl.innerHTML = '<span class="' + (passed ? 'hi' : 'lo') + '">' +
+            total + ' — ' + (passed ? 'PASSED' : 'BATTLE-SHOCKED') + '</span>';
+        }
 
         // Update unit state
         state.testedUnits.add(uid);
@@ -206,20 +245,24 @@ function showBattleShockRoll(uid) {
         }
         paintHulls();
 
-        // OK button
-        const okBtn = document.createElement('button');
-        okBtn.className = 'bs-roll-btn';
-        okBtn.textContent = 'OK';
-        okBtn.style.marginTop = '12px';
-        overlay.appendChild(okBtn);
+        // Update banner
+        const remaining = state.unitsNeedingTest.filter(id => !state.testedUnits.has(id));
+        if (remaining.length > 0) {
+          updateBanner('⚡ ' + remaining.length + ' UNIT' + (remaining.length > 1 ? 'S' : '') + ' NEED BATTLE-SHOCK TESTS');
+        } else {
+          updateBanner(null);
+        }
 
-        okBtn.addEventListener('click', () => {
+        // Replace button with OK
+        rollBtn.textContent = 'OK';
+        rollBtn.disabled = false;
+        rollBtn.onclick = () => {
           overlay.classList.add('hidden');
           overlay.innerHTML = '';
           checkBattleShockComplete().then(resolve);
-        });
-      }, 500);
-    });
+        };
+      }, 600);
+    }, { once: true });
   });
 }
 
@@ -231,6 +274,7 @@ async function checkBattleShockComplete() {
     return;
   }
   // All tested — advance to CP gain
+  updateBanner(null);
   await wait(500);
   await enterCpGain();
 }
@@ -239,16 +283,17 @@ async function checkBattleShockComplete() {
 function enterBattleShock() {
   state.phase = 'battle-shock';
 
-  // Scan for units below half strength
+  // Scan for FRIENDLY units below half strength only
   state.unitsNeedingTest = [];
   simState.units.forEach(u => {
+    if (u.faction !== ACTIVE) return;  // ← FRIENDLY ONLY
     if (isBelowHalf(u.id)) {
       state.unitsNeedingTest.push(u.id);
     }
   });
 
   if (state.unitsNeedingTest.length === 0) {
-    // No tests needed — flash message and skip
+    updateBanner(null);
     const flash = document.createElement('div');
     flash.className = 'cmd-flash-msg';
     flash.textContent = 'NO BATTLE-SHOCK TESTS NEEDED';
@@ -266,6 +311,9 @@ function enterBattleShock() {
   if (subtitle) subtitle.textContent = state.unitsNeedingTest.length + ' units need Battle-shock tests';
 
   setStatus('— SELECT UNIT TO TEST —', 'cmd-battle-shock');
+
+  // Show banner below phase header
+  updateBanner('⚡ ' + state.unitsNeedingTest.length + ' UNITS NEED BATTLE-SHOCK TESTS');
 
   // Mark units with pills and hull highlights
   state.unitsNeedingTest.forEach(uid => {
@@ -289,7 +337,7 @@ async function enterCpGain() {
     await animateScoreTick(cpEl, state.cpVal);
   }
 
-  // Center-screen announce
+  // Announce (inside battlefield, aligned with board center)
   await showAnnounce('cp-announce', '+1 COMMAND POINT', 'cp', 1500);
 
   // Auto-advance to VP scoring
@@ -298,6 +346,11 @@ async function enterCpGain() {
 }
 
 // ── VP SCORING PHASE ────────────────────────────────────
+// WH40K 10th Edition Standard Method:
+//   5 VP for holding 1+ objectives
+//   5 VP for holding 2+ objectives
+//   5 VP for holding MORE than opponent
+//   Max 15 VP per turn
 async function enterVpScoring() {
   state.phase = 'vp-scoring';
   setStatus('SCORING OBJECTIVES...', 'cmd-vp-scoring');
@@ -305,68 +358,102 @@ async function enterVpScoring() {
   const subtitle = $('.phase-subtitle');
   if (subtitle) subtitle.textContent = 'VP Scoring · Checking objectives';
 
-  // Determine held objectives
-  // OBJ 02 is at ~120, 264 and OBJ 03 at ~360, 264 in SVG coords
-  // Imperium units are positioned near both — check which objectives have nearest Imperium unit within 3" (36px)
-  const objectives = [
-    { id: 'obj-02', x: 120, y: 264, label: 'OBJ 02' },
-    { id: 'obj-03', x: 360, y: 264, label: 'OBJ 03' }
+  // All 5 objectives
+  const ALL_OBJECTIVES = [
+    { id: null, x: 360, y: 72,  label: 'OBJ 01' },   // neutral top
+    { id: 'obj-02', x: 120, y: 264, label: 'OBJ 02' }, // controlled (imp)
+    { id: 'obj-03', x: 360, y: 264, label: 'OBJ 03' }, // neutral center
+    { id: null, x: 600, y: 264, label: 'OBJ 04' },      // enemy (ork)
+    { id: null, x: 360, y: 456, label: 'OBJ 05' }       // neutral bottom
   ];
 
-  const heldObjectives = [];
-  const VP_PER_OBJ = 4;
-
-  for (const obj of objectives) {
-    let held = false;
-    for (const unit of simState.units) {
-      if (unit.faction !== 'imp') continue;
-      for (const model of unit.models) {
-        const dx = model.x - obj.x;
-        const dy = model.y - obj.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) - (model.r || 8);
-        if (dist <= 3 * PX_PER_INCH) { // 3" = 36px
-          held = true;
-          break;
+  // Check which objectives each faction holds (nearest unit within 3")
+  function countHeld(faction) {
+    let count = 0;
+    for (const obj of ALL_OBJECTIVES) {
+      for (const unit of simState.units) {
+        if (unit.faction !== faction) continue;
+        // Battle-shocked units can't hold objectives
+        if (state.battleshockedUnits.has(unit.id)) continue;
+        let holds = false;
+        for (const model of unit.models) {
+          const dx = model.x - obj.x;
+          const dy = model.y - obj.y;
+          const dist = Math.sqrt(dx * dx + dy * dy) - (model.r || 8);
+          if (dist <= 3 * PX_PER_INCH) { holds = true; break; }
         }
+        if (holds) { count++; break; }
       }
-      if (held) break;
     }
-    if (held) heldObjectives.push(obj);
+    return count;
   }
 
-  const totalVP = heldObjectives.length * VP_PER_OBJ;
+  const impHeld = countHeld('imp');
+  const orkHeld = countHeld('ork');
 
-  if (heldObjectives.length === 0) {
+  // Standard method scoring
+  let vpGained = 0;
+  const scoringBreakdown = [];
+
+  if (impHeld >= 1) {
+    vpGained += 5;
+    scoringBreakdown.push('1+ OBJ: +5 VP');
+  }
+  if (impHeld >= 2) {
+    vpGained += 5;
+    scoringBreakdown.push('2+ OBJ: +5 VP');
+  }
+  if (impHeld > orkHeld) {
+    vpGained += 5;
+    scoringBreakdown.push('MORE THAN OPPONENT: +5 VP');
+  }
+
+  if (vpGained === 0) {
     setStatus('NO OBJECTIVES HELD', 'cmd-vp-scoring');
     await wait(1000);
     await enterDone();
     return;
   }
 
-  // Flash each held objective
-  for (const obj of heldObjectives) {
-    const el = document.getElementById(obj.id);
-    if (el) {
-      el.classList.add('obj-scoring');
-      await wait(600);
+  // Flash held objectives
+  for (const obj of ALL_OBJECTIVES) {
+    if (!obj.id) continue;
+    // Check if this specific obj is held by imp
+    let held = false;
+    for (const unit of simState.units) {
+      if (unit.faction !== 'imp') continue;
+      if (state.battleshockedUnits.has(unit.id)) continue;
+      for (const model of unit.models) {
+        const dx = model.x - obj.x;
+        const dy = model.y - obj.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) - (model.r || 8);
+        if (dist <= 3 * PX_PER_INCH) { held = true; break; }
+      }
+      if (held) break;
+    }
+    if (held) {
+      const el = document.getElementById(obj.id);
+      if (el) {
+        el.classList.add('obj-scoring');
+        await wait(600);
+      }
     }
   }
 
-  // Animate VP ticks sequentially
+  // Animate VP score tick
   const vpEl = document.getElementById('vp-imp');
   if (vpEl) {
-    for (let i = 0; i < heldObjectives.length; i++) {
-      state.vpImp += VP_PER_OBJ;
-      await animateScoreTick(vpEl, state.vpImp);
-      await wait(200);
-    }
+    state.vpImp += vpGained;
+    await animateScoreTick(vpEl, state.vpImp);
   }
 
-  // Show center announce
-  await showAnnounce('vp-announce',
-    '+' + totalVP + ' VP — ' + heldObjectives.length + ' OBJECTIVES HELD', 'vp', 1800);
+  // Build summary text
+  const summaryText = '+' + vpGained + ' VP — ' + impHeld + ' OBJ HELD' +
+    (impHeld > orkHeld ? ' (MORE THAN OPPONENT)' : '');
 
-  setStatus('+' + totalVP + ' VP — ' + heldObjectives.length + ' OBJECTIVES HELD', 'cmd-vp-scoring');
+  // Announce
+  await showAnnounce('vp-announce', summaryText, 'vp', 2000);
+  setStatus(summaryText, 'cmd-vp-scoring');
 
   await wait(500);
   await enterDone();
@@ -383,6 +470,25 @@ async function enterDone() {
   // Enable end button
   const endBtn = document.getElementById('btn-end-cmd');
   if (endBtn) endBtn.disabled = false;
+}
+
+// ── Drag interceptor (no movement in command phase) ─────
+function installDragInterceptor() {
+  const svg = document.getElementById('bf-svg');
+  if (!svg) return;
+
+  // Capture phase mousedown to prevent drag initiation
+  svg.addEventListener('mousedown', (e) => {
+    // Allow click-to-select (handled by shared code) but block drag
+    // We'll nullify drag state on the next frame
+    requestAnimationFrame(() => {
+      if (simState.drag) {
+        simState.drag = null;
+        simState.anim.liftUnitId = null;
+        simState.anim.liftModelId = null;
+      }
+    });
+  }, true); // capture phase — runs before shared handler
 }
 
 // ── Unit selection handler for battle-shock ─────────────
@@ -411,12 +517,20 @@ export function initCommand() {
     });
   });
 
+  // Create battle-shock banner inside #phase-header
+  const phaseHeader = document.getElementById('phase-header');
+  if (phaseHeader && !document.getElementById('bs-banner')) {
+    const banner = document.createElement('div');
+    banner.id = 'bs-banner';
+    banner.style.display = 'none';
+    phaseHeader.appendChild(banner);
+  }
+
   // Wire end button
   const endBtn = document.getElementById('btn-end-cmd');
   if (endBtn) {
     endBtn.addEventListener('click', () => {
       if (state.phase !== 'done') return;
-      // Mark CMD as done in phase row
       const cmdItem = $('.ph-item.active');
       if (cmdItem) {
         cmdItem.classList.remove('active');
@@ -426,6 +540,19 @@ export function initCommand() {
       setStatus('COMMAND PHASE ENDED', 'cmd-done');
     });
   }
+
+  // Install drag interceptor — no unit movement in command phase
+  installDragInterceptor();
+
+  // Re-apply battleshocked token highlights after renderModels rebuilds DOM
+  callbacks.afterRender = () => {
+    if (state.battleshockedUnits.size > 0) {
+      $$('#layer-models .model-base').forEach(g => {
+        const uid = g.dataset.unitId;
+        g.classList.toggle('cmd-bs-token', state.battleshockedUnits.has(uid));
+      });
+    }
+  };
 
   // Start the state machine
   enterBattleShock();
