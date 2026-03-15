@@ -349,7 +349,7 @@
 
   // ESC to dismiss
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') dismissOverlay();
+    if (e.key === 'Escape' && overlayVisible) { e.stopImmediatePropagation(); dismissOverlay(); }
   });
 
   // Click backdrop (not content children) to dismiss
