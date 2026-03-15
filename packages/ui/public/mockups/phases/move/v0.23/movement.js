@@ -9,7 +9,7 @@ import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion } from '../../../shared/world/svg-renderer.js';
 import { resolveTerrainCollision, resolveUnitDragCollisions, canBreachTerrain } from '../../../shared/world/collision.js';
-import { aabbsToWorldPolygons, buildNavGraph, findShortestPath } from '../../../shared/world/pathfinding.js';
+import { getGrid, findPath, renderGridDebug, renderPathDebug } from '../../../shared/world/pathfinding.js';
 import { rollAdvanceDie } from './advance-dice.js';
 import { clearRangeRings, drawPerModelRangeRings } from '../../../shared/world/range-rings.js';
 
@@ -67,36 +67,19 @@ var moveState = {
 };
 window.__movedUnitIds = moveState.unitsMoved;
 
-// ── Pathfinding state ──────────────────────────────────
-var _worldPolygons = null;   // cached world-space obstacle polygons
-var _navGraphCache = {};     // keyed by model radius → navGraph
+// ── Pathfinding state (grid-based) ─────────────────────
 var _modelPathCache = {};    // modelId → { path: [{x,y}], cost: number } | null
-
-function getWorldPolygons() {
-  if (!_worldPolygons) {
-    var aabbs = window._terrainAABBs || [];
-    _worldPolygons = aabbsToWorldPolygons(aabbs);
-  }
-  return _worldPolygons;
-}
-
-function getNavGraph(modelRadius) {
-  var key = Math.round(modelRadius * 10);
-  if (!_navGraphCache[key]) {
-    _navGraphCache[key] = buildNavGraph(getWorldPolygons(), modelRadius + 1);
-  }
-  return _navGraphCache[key];
-}
+var _debugGridVisible = false;
 
 function computeModelPaths(unit) {
   _modelPathCache = {};
   if (!unit || canBreachTerrain(unit)) return;
-  var polys = getWorldPolygons();
+  var aabbs = window._terrainAABBs || [];
   unit.models.forEach(function(m) {
     var ts = phaseTurnStarts[m.id];
     if (!ts) return;
-    var graph = getNavGraph(m.r);
-    var result = findShortestPath(graph, polys, { x: ts.x, y: ts.y }, { x: m.x, y: m.y }, m.r + 1);
+    var grid = getGrid(aabbs, m.r, resolveTerrainCollision);
+    var result = findPath(grid, { x: ts.x, y: ts.y }, { x: m.x, y: m.y });
     _modelPathCache[m.id] = result;
   });
 }
@@ -105,6 +88,26 @@ function getModelPathCost(modelId) {
   var entry = _modelPathCache[modelId];
   if (!entry) return 0;
   return entry.cost;
+}
+
+function toggleGridDebug() {
+  _debugGridVisible = !_debugGridVisible;
+  var layer = document.getElementById('layer-debug-grid');
+  if (!layer) return;
+  if (_debugGridVisible) {
+    // Show grid for a default radius (R32 = ~13px)
+    var aabbs = window._terrainAABBs || [];
+    var uid = currentUnit;
+    var modelRadius = 13; // default
+    if (uid) {
+      var unit = simState.units.find(function(u) { return u.id === uid; });
+      if (unit && unit.models[0]) modelRadius = unit.models[0].r;
+    }
+    var grid = getGrid(aabbs, modelRadius, resolveTerrainCollision);
+    renderGridDebug(grid, layer);
+  } else {
+    layer.innerHTML = '';
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────
@@ -594,6 +597,20 @@ function installDragEnforcement() {
     // Compute pathfinding costs for non-breachable units
     if (dragUnit && !canBreachTerrain(dragUnit)) {
       computeModelPaths(dragUnit);
+
+      // Render debug paths if enabled
+      if (window.__debugPaths) {
+        var debugLayer = document.getElementById('layer-debug-paths');
+        if (debugLayer) {
+          debugLayer.innerHTML = '';
+          dragUnit.models.forEach(function(m) {
+            var pathData = _modelPathCache[m.id];
+            if (pathData && pathData.path) {
+              renderPathDebug(pathData.path, debugLayer, '#ff0');
+            }
+          });
+        }
+      }
     }
 
     // Re-render: models first, then overlays, then z-lift (matches v1 patched renderModels order)
@@ -643,6 +660,17 @@ function movementSelectUnit(uid) {
   updateMoveButtons();
   syncMovedUI();
   renderCardRangeRings(uid);
+
+  // Refresh debug grid for the selected unit's model radius
+  if (_debugGridVisible && uid) {
+    var dbgUnit = simState.units.find(function(u) { return u.id === uid; });
+    if (dbgUnit && dbgUnit.models[0]) {
+      var aabbs = window._terrainAABBs || [];
+      var grid = getGrid(aabbs, dbgUnit.models[0].r, resolveTerrainCollision);
+      renderGridDebug(grid, document.getElementById('layer-debug-grid'));
+    }
+  }
+
   if (uid) {
     var unit = simState.units.find(function(u) { return u.id === uid; });
     if (unit && unit.faction === ACTIVE_PLAYER_FACTION && moveState.mode === null && !moveState.unitsMoved.has(uid)) {
@@ -738,4 +766,28 @@ export function initMovement() {
   const unitCard = document.getElementById('unit-card');
   if (unitCard) unitCard.classList.remove('visible');
   updateMoveButtons();
+
+  // Wire debug menu
+  var debugToggle = document.getElementById('debug-toggle');
+  var debugPanel = document.getElementById('debug-panel');
+  if (debugToggle && debugPanel) {
+    debugToggle.addEventListener('click', function() {
+      debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
+    });
+  }
+  var dbgGrid = document.getElementById('dbg-grid');
+  if (dbgGrid) {
+    dbgGrid.addEventListener('change', function() {
+      toggleGridDebug();
+    });
+  }
+  var dbgPaths = document.getElementById('dbg-paths');
+  if (dbgPaths) {
+    window.__debugPaths = false;
+    dbgPaths.addEventListener('change', function() {
+      window.__debugPaths = dbgPaths.checked;
+      var layer = document.getElementById('layer-debug-paths');
+      if (layer && !dbgPaths.checked) layer.innerHTML = '';
+    });
+  }
 }
