@@ -125,6 +125,20 @@ export const UNITS = {
     ],
     abilities:[{name:"'ERE WE GO",desc:"This unit can make a charge move after Advancing. Add 1 to charge rolls."}]
   },
+  'outriders': {
+    name:'OUTRIDERS', faction:'✠ SPACE MARINES · MOUNTED',
+    stats:{M:'12"',T:5,Sv:'3+',W:4,Ld:7,OC:2}, M:12, faction_side:'imp',
+    wargear:[],
+    weapons:[
+      {type:'RANGED',name:'Heavy Bolt Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']},
+      {type:'RANGED',name:'Twin Bolt Rifle',rng:'30"',a:4,s:4,ap:-1,d:1,kw:['ASSAULT']},
+      {type:'MELEE',name:'Astartes Chainsword',rng:'—',a:4,s:4,ap:-1,d:1,kw:['MELEE']}
+    ],
+    abilities:[
+      {name:'TURBO-BOOST',desc:'Each time this unit Advances, add 6" to the Move characteristic of models in this unit until the end of the phase instead of rolling.'},
+      {name:'AND THEY SHALL KNOW NO FEAR',desc:'Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.'}
+    ]
+  },
   'gretchin': {
     name:'GRETCHIN', faction:'☠ ORKS · BATTLELINE',
     stats:{M:'5"',T:2,Sv:'7+',W:1,Ld:8,OC:2}, M:5, faction_side:'ork',
