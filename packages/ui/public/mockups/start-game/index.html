@@ -174,7 +174,7 @@
       else alpha = 1;
 
       // Visible atmospheric smoke — dense enough to read as fog
-      alpha *= 0.11;
+      alpha *= 0.045;
 
       if (alpha <= 0 || s.life >= s.maxLife || s.y < -s.size) {
         smokePuffs.splice(i, 1);

@@ -63,7 +63,6 @@ simState.units = [
 
 // ── Initialise shared modules ────────────────────────────
 renderTerrain();
-buildCard('assault-intercessors');
 initAllTooltips();
 initBoard({ initialScale: 0.5 });
 initBattleControls();
