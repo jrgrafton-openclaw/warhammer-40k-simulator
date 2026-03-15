@@ -219,60 +219,62 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   AUDIO — soft fade mute/unmute (no click/pop)
+   AUDIO — Web Audio API for click/crackle-free mute/unmute
+   Uses AudioContext + GainNode + linearRampToValueAtTime()
+   for sample-level smooth volume transitions.
 ═══════════════════════════════════════════════════════════ */
 (function() {
   var audio = document.getElementById('ambient-audio');
   var muteBtn = document.getElementById('mute-toggle');
   var TARGET_VOL = 0.85;
+  var FADE_IN_SEC = 1.0;
+  var FADE_MUTE_SEC = 0.15;
+  var FADE_UNMUTE_SEC = 0.2;
   var muted = localStorage.getItem('wh40k-splash-muted') === 'true';
-  var fadeTick = null;
+  var audioCtx = null;
+  var gainNode = null;
 
-  audio.volume = 0;
   muteBtn.textContent = muted ? '🔇' : '🔊';
 
-  /* Smooth volume ramp — avoids audible click/pop */
-  function fadeVolume(from, to, durationMs, cb) {
-    if (fadeTick) clearInterval(fadeTick);
-    var steps = Math.max(1, Math.round(durationMs / 16));
-    var step = (to - from) / steps;
-    var current = from;
-    var i = 0;
-    fadeTick = setInterval(function() {
-      i++;
-      current = (i >= steps) ? to : current + step;
-      audio.volume = Math.max(0, Math.min(1, current));
-      if (i >= steps) {
-        clearInterval(fadeTick);
-        fadeTick = null;
-        if (cb) cb();
-      }
-    }, 16);
+  /* Lazy-init AudioContext on first user gesture (required by browsers) */
+  function ensureAudioContext() {
+    if (audioCtx) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var source = audioCtx.createMediaElementSource(audio);
+    gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+  }
+
+  /* Smooth ramp via Web Audio API — zero crackling */
+  function rampGain(targetValue, durationSec) {
+    if (!gainNode) return;
+    gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(targetValue, audioCtx.currentTime + durationSec);
   }
 
   /* Fade in from silence on first play */
   window.fadeInAudio = function() {
+    ensureAudioContext();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     audio.play().catch(function() {});
-    if (muted) {
-      audio.volume = 0;
-    } else {
-      fadeVolume(0, TARGET_VOL, 1000);
-    }
+    rampGain(muted ? 0 : TARGET_VOL, FADE_IN_SEC);
   };
 
-  /* Mute toggle: fade to 0 then set flag (or reverse) */
+  /* Mute toggle: smooth gain ramp, no audio.muted touching */
   muteBtn.addEventListener('click', function(e) {
     e.stopPropagation();
+    if (!gainNode) return;
     if (muted) {
-      /* Unmute: fade volume back up */
       muted = false;
       muteBtn.textContent = '🔊';
-      fadeVolume(audio.volume, TARGET_VOL, 200);
+      rampGain(TARGET_VOL, FADE_UNMUTE_SEC);
     } else {
-      /* Mute: fade volume to 0 */
       muted = true;
       muteBtn.textContent = '🔇';
-      fadeVolume(audio.volume, 0, 150);
+      rampGain(0, FADE_MUTE_SEC);
     }
     localStorage.setItem('wh40k-splash-muted', String(muted));
   });
