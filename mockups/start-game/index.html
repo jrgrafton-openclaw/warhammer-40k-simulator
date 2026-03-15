@@ -201,18 +201,28 @@
     new Audio('assets/lightning-2.mp3'),
     new Audio('assets/lightning-3.mp3')
   ];
-  lightningSfx.forEach(function(a) { a.preload = 'auto'; a.volume = 0.25; });
+  lightningSfx.forEach(function(a) { a.preload = 'auto'; });
+  /* Per-clip volume scaling: [base, range] — lightning-2 is the loud close crack, dial it back */
+  var sfxVolume = [
+    [0.20, 0.12],  /* lightning-1: distant rumble */
+    [0.12, 0.08],  /* lightning-2: close crack — quieter to avoid jarring */
+    [0.18, 0.10]   /* lightning-3: rolling rumble */
+  ];
   var lastSfxIndex = -1;
+  var secondLastSfxIndex = -1;
 
   function playLightningSfx() {
     if (window._audioMuted) return;
-    /* Pick a random variation, avoid repeating the same one */
+    /* True random: avoid repeating last two to prevent perceived patterns */
     var idx;
-    do { idx = Math.floor(Math.random() * lightningSfx.length); } while (idx === lastSfxIndex && lightningSfx.length > 1);
+    do { idx = Math.floor(Math.random() * lightningSfx.length); } while (
+      (idx === lastSfxIndex || idx === secondLastSfxIndex) && lightningSfx.length > 2
+    );
+    secondLastSfxIndex = lastSfxIndex;
     lastSfxIndex = idx;
     var sfx = lightningSfx[idx];
-    /* Vary volume — bassy thunder needs more headroom */
-    sfx.volume = 0.2 + Math.random() * 0.15;
+    var vol = sfxVolume[idx];
+    sfx.volume = vol[0] + Math.random() * vol[1];
     sfx.currentTime = 0;
     sfx.play().catch(function() {});
   }
