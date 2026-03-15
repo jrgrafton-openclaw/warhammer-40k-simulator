@@ -187,17 +187,18 @@
   position: absolute;
   width: 0;
   height: 0;
+  background: transparent;
   pointer-events: none;
   transition: width 0.4s ease-out, height 0.4s ease-out;
 }
 .splash-panel.visible::before {
-  top: 0; left: 0;
+  top: -1px; left: -1px;
   width: 24px; height: 24px;
   border-top: 2px solid var(--imp);
   border-left: 2px solid var(--imp);
 }
 .splash-panel.visible::after {
-  bottom: 0; right: 0;
+  bottom: -1px; right: -1px;
   width: 24px; height: 24px;
   border-bottom: 2px solid var(--imp);
   border-right: 2px solid var(--imp);
@@ -208,17 +209,18 @@
   position: absolute;
   width: 0;
   height: 0;
+  background: transparent;
   pointer-events: none;
   transition: width 0.4s ease-out 0.1s, height 0.4s ease-out 0.1s;
 }
 .splash-panel.visible .splash-corners::before {
-  top: 0; right: 0;
+  top: -1px; right: -1px;
   width: 24px; height: 24px;
   border-top: 2px solid var(--imp);
   border-right: 2px solid var(--imp);
 }
 .splash-panel.visible .splash-corners::after {
-  bottom: 0; left: 0;
+  bottom: -1px; left: -1px;
   width: 24px; height: 24px;
   border-bottom: 2px solid var(--imp);
   border-left: 2px solid var(--imp);
