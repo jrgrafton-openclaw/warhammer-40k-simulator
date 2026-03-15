@@ -201,7 +201,7 @@
     new Audio('assets/lightning-2.mp3'),
     new Audio('assets/lightning-3.mp3')
   ];
-  lightningSfx.forEach(function(a) { a.preload = 'auto'; a.volume = 0.15; });
+  lightningSfx.forEach(function(a) { a.preload = 'auto'; a.volume = 0.25; });
   var lastSfxIndex = -1;
 
   function playLightningSfx() {
@@ -211,8 +211,8 @@
     do { idx = Math.floor(Math.random() * lightningSfx.length); } while (idx === lastSfxIndex && lightningSfx.length > 1);
     lastSfxIndex = idx;
     var sfx = lightningSfx[idx];
-    /* Vary volume slightly for natural feel */
-    sfx.volume = 0.1 + Math.random() * 0.1;
+    /* Vary volume — bassy thunder needs more headroom */
+    sfx.volume = 0.2 + Math.random() * 0.15;
     sfx.currentTime = 0;
     sfx.play().catch(function() {});
   }
@@ -224,8 +224,8 @@
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0.05)'; }, 150);
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 220);
 
-    /* Play SFX with slight delay to match the visual crack */
-    setTimeout(playLightningSfx, 30);
+    /* Play SFX with delay — thunder travels ~330m/s, slight lag feels more natural */
+    setTimeout(playLightningSfx, 80 + Math.random() * 150);
 
     if (Math.random() < 0.4) {
       setTimeout(function() {
