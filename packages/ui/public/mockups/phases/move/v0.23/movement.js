@@ -247,12 +247,12 @@ function updateMoveButtons() {
 
   if (btnMove) {
     btnMove.classList.toggle('active', moveState.mode === 'move');
-    btnMove.disabled = isEnemy || alreadyMoved || hasAdvanced || (moveState.mode === 'advance');
+    btnMove.disabled = !uid || isEnemy || alreadyMoved || hasAdvanced || (moveState.mode === 'advance');
   }
   if (btnAdvance) {
     var advIsActive = moveState.mode === 'advance';
     btnAdvance.classList.toggle('active', advIsActive);
-    btnAdvance.disabled = advIsActive ? false : (isEnemy || alreadyMoved || hasAdvanced);
+    btnAdvance.disabled = advIsActive ? false : (!uid || isEnemy || alreadyMoved || hasAdvanced);
   }
   if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode || !isCurrentMoveLegal(uid);
   if (btnCancel)  btnCancel.disabled  = isEnemy || !inMode;
@@ -560,6 +560,12 @@ function movementSelectUnit(uid) {
     if (unit && unit.faction === ACTIVE_PLAYER_FACTION && moveState.mode === null && !moveState.unitsMoved.has(uid)) {
       if (moveState.unitsAdvanced[uid] !== undefined) {
         moveState.advanceDie = moveState.unitsAdvanced[uid];
+        // Update card range button: show actual ADV total (not AVG)
+        var advBtn = document.getElementById('rt-advance');
+        var uData = UNITS[uid];
+        if (advBtn && uData) {
+          advBtn.innerHTML = 'ADV<br>' + (uData.M + moveState.advanceDie) + '"';
+        }
         enterMoveMode('advance');
       } else {
         moveState.advanceDie = null;
@@ -572,7 +578,7 @@ function movementSelectUnit(uid) {
 // ── Click outside: soft-exit ──────────────────────────
 function setupClickOutside() {
   document.getElementById('battlefield').addEventListener('mousedown', function(e) {
-    if (e.target.closest('#bf-svg, #bf-svg-terrain, #unit-card, #vp-bar, #action-bar, #phase-header, .obj-hex-wrap, #advance-dice-overlay')) return;
+    if (e.target.closest('#bf-svg, #bf-svg-terrain, #unit-card, #vp-bar, #action-bar, #phase-header, .obj-hex-wrap, #advance-dice-overlay, #roll-overlay')) return;
     if (moveState.mode !== null) {
       moveState.mode = null; moveState.advanceDie = null;
       clearMoveOverlays(); clearRangeRings(); updateMoveButtons(); renderModels();
@@ -604,6 +610,12 @@ function wireButtons() {
     rollAdvanceDie(uid, function(die) {
       moveState.advanceDie = die;
       moveState.unitsAdvanced[uid] = die; // persist across deselect/reselect
+      // Update card range button: "AVG ADV" → "ADV" with actual total
+      var advBtn = document.getElementById('rt-advance');
+      var u = UNITS[uid];
+      if (advBtn && u) {
+        advBtn.innerHTML = 'ADV<br>' + (u.M + die) + '"';
+      }
       enterMoveMode('advance');
       updateMoveButtons();
     });
