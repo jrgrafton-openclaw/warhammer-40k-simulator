@@ -634,6 +634,8 @@ export function initMovement() {
 
   activeRangeTypes.clear();
 
-  // Select the first unit
-  movementSelectUnit('assault-intercessors');
+  // No unit selected by default — user clicks to select
+  const unitCard = document.getElementById('unit-card');
+  if (unitCard) unitCard.classList.remove('visible');
+  updateMoveButtons();
 }
