@@ -1,0 +1,212 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1 Command Phase — Overrides
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY command-phase-specific overrides.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Backlink lowered to avoid VP bar overlap ── */
+.backlink { top: 40px !important; }
+
+/* ── Override shared action-bar label ── */
+#move-mode-label {
+  flex: 0 0 auto !important;
+  color: var(--imp) !important;
+  min-width: auto !important;
+}
+#move-mode-label.cmd-battle-shock { color: #ffaa00 !important; }
+#move-mode-label.cmd-cp-gain     { color: #00d4ff !important; }
+#move-mode-label.cmd-vp-scoring  { color: #00ff80 !important; }
+#move-mode-label.cmd-done        { color: var(--text-sec) !important; }
+
+/* ── Roll overlay max width ── */
+#roll-overlay { max-width: 560px; }
+
+/* ── Battle-shock: amber pulse pill in roster ── */
+.roster-state-pill.needs-test {
+  background: rgba(255,170,0,0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255,170,0,0.4);
+  animation: pill-pulse 1.2s ease-in-out infinite;
+}
+@keyframes pill-pulse {
+  0%, 100% { opacity: 0.8; box-shadow: 0 0 4px rgba(255,170,0,0.2); }
+  50%      { opacity: 1;   box-shadow: 0 0 12px rgba(255,170,0,0.5); }
+}
+
+/* ── Battle-shocked (failed test): red pill ── */
+.roster-state-pill.shocked {
+  background: rgba(204,32,32,0.2);
+  color: #cc2020;
+  border: 1px solid rgba(204,32,32,0.4);
+}
+
+/* ── Battle-shocked (passed): green pill ── */
+.roster-state-pill.bs-passed {
+  background: rgba(0,200,80,0.15);
+  color: #00c850;
+  border: 1px solid rgba(0,200,80,0.4);
+}
+
+/* ── Amber hull pulse for needs-test units on battlefield ── */
+.unit-hull.cmd-needs-test {
+  filter: drop-shadow(0 0 8px rgba(255,170,0,0.6));
+  animation: hull-amber-pulse 1.2s ease-in-out infinite;
+}
+@keyframes hull-amber-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,170,0,0.4)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(255,170,0,0.8)); }
+}
+
+/* ── Battleshocked hull animation ── */
+.unit-hull.cmd-battleshocked {
+  animation: bs-enter 0.6s ease-out forwards, bs-pulse 2s ease-in-out 0.6s infinite;
+}
+@keyframes bs-enter {
+  0%   { filter: brightness(1); }
+  15%  { filter: brightness(2.5); background: #440000; }
+  35%  { filter: brightness(0.6); }
+  55%  { filter: brightness(1.8); }
+  75%  { filter: brightness(0.7); }
+  100% { filter: brightness(1); background: #120808; }
+}
+@keyframes bs-pulse {
+  0%, 100% { box-shadow: 0 0 8px #cc202030, 0 0 20px #cc202010; }
+  50%      { box-shadow: 0 0 14px #cc202055, 0 0 30px #cc202020; }
+}
+
+/* ── Score tick animations ── */
+@keyframes score-out {
+  0%   { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(1.4) translateY(-8px); }
+}
+@keyframes score-in {
+  0%   { opacity: 0; transform: scale(.6) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes score-flash {
+  0%, 100% { color: var(--imp); }
+  40%      { color: #fff; text-shadow: 0 0 14px var(--imp), 0 0 30px var(--imp); }
+}
+.ticking-out { animation: score-out 0.2s ease-out forwards; }
+.ticking-in  { animation: score-in 0.2s ease-out forwards, score-flash 0.5s ease-out forwards; }
+
+/* ── Dice roll-in animation ── */
+@keyframes die-roll-in {
+  0%   { transform: scale(.5) rotate(-20deg); opacity: 0; }
+  60%  { transform: scale(1.1) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); }
+}
+
+/* ── Roll overlay dice styling ── */
+.bs-dice-row {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin: 16px 0;
+}
+.bs-die {
+  width: 52px; height: 52px;
+  background: var(--bg-raised);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font: 400 28px/1 'Anton', sans-serif;
+  color: var(--text-sec);
+  opacity: 0;
+}
+.bs-die.rolled {
+  animation: die-roll-in 0.35s ease-out forwards;
+}
+.bs-die.success { border-color: #00c850; color: #00c850; box-shadow: 0 0 12px rgba(0,200,80,0.3); }
+.bs-die.fail    { border-color: #cc2020; color: #cc2020; box-shadow: 0 0 12px rgba(204,32,32,0.3); }
+
+.bs-roll-title {
+  font: 400 18px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: 4px;
+}
+.bs-roll-info {
+  font: 500 11px/1.4 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: 1px;
+}
+.bs-roll-result {
+  font: 400 22px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  text-align: center;
+  margin-top: 12px;
+}
+.bs-roll-result.passed { color: #00c850; text-shadow: 0 0 14px rgba(0,200,80,0.4); }
+.bs-roll-result.failed { color: #cc2020; text-shadow: 0 0 14px rgba(204,32,32,0.4); }
+
+.bs-roll-btn {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 28px;
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  border: 1px solid var(--imp);
+  background: rgba(0,212,255,0.08);
+  color: var(--imp);
+  transition: all 0.15s;
+}
+.bs-roll-btn:hover {
+  background: rgba(0,212,255,0.15);
+  box-shadow: 0 0 12px rgba(0,212,255,0.2);
+}
+
+/* ── Center-screen announce overlays ── */
+.cmd-announce {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  pointer-events: none;
+  text-align: center;
+}
+.cmd-announce.hidden { display: none; }
+
+.cmd-announce-text {
+  font: 400 32px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  animation: announce-fade 1.5s ease-out forwards;
+}
+.cmd-announce-text.cp { color: #00d4ff; text-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 60px rgba(0,212,255,0.2); }
+.cmd-announce-text.vp { color: #00ff80; text-shadow: 0 0 30px rgba(0,255,128,0.5), 0 0 60px rgba(0,255,128,0.2); }
+
+@keyframes announce-fade {
+  0%   { opacity: 0; transform: scale(0.8); }
+  15%  { opacity: 1; transform: scale(1); }
+  70%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* ── Objective flash for VP scoring ── */
+.obj-hex-wrap.obj-scoring .obj-ring {
+  animation: obj-score-pulse 0.8s ease-out;
+}
+@keyframes obj-score-pulse {
+  0%   { stroke: rgba(0,255,128,0.2); stroke-width: 2; }
+  40%  { stroke: rgba(0,255,128,0.9); stroke-width: 4; }
+  100% { stroke: rgba(0,255,128,0.3); stroke-width: 2; }
+}
+
+/* ── No-tests flash message ── */
+.cmd-flash-msg {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  font: 400 20px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  color: var(--text-sec);
+  text-shadow: 0 0 20px rgba(0,212,255,0.3);
+  pointer-events: none;
+  animation: announce-fade 1.5s ease-out forwards;
+}
