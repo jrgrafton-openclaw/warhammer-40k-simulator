@@ -40,21 +40,21 @@ simState.units = [
   { id:'redemptor-dreadnought', rosterIndex:4, faction:'imp',
     models:[{id:'rd1',x:150,y:278,r:22,shape:'rect',w:43,h:25}], broken:false },
 
-  // ── ORKS (repositioned for edge cases) ──
-  // Boss Nob — open ground, medium range (~29")
+  // ── ORKS ──
+  // Boss Nob — right flank, long range
   { id:'boss-nob', rosterIndex:6, faction:'ork',
-    models:[{id:'bn1',x:440,y:145,r:R40}], broken:false },
-  // Nobz Mob — just right of t6 ruin edge (t6 SVG: x262-360, y149-246)
-  // LoS from Imperial left must pass through/around t6 → partial obstruction
+    models:[{id:'bn1',x:560,y:118,r:R40}], broken:false },
+  // Nobz Mob — pushed close to t6 ruin right edge (polygon ends ~x:360)
+  // Creates partial LoS: some Imperial models see around t6, some are blocked
   { id:'nobz-mob', rosterIndex:7, faction:'ork',
-    models:[{id:'nm1',x:365,y:180,r:R40},{id:'nm2',x:380,y:185,r:R40},{id:'nm3',x:372,y:200,r:R40}], broken:false },
-  // Mekboy — inside t14 ruin footprint (t14 SVG: x360-458, y282-379)
-  // Tests Benefit of Cover (+1 save) and inside-ruin LoS exception
+    models:[{id:'nm1',x:400,y:128,r:R40},{id:'nm2',x:420,y:136,r:R40},{id:'nm3',x:410,y:158,r:R40}], broken:false },
+  // Mekboy — positioned at t6/t14 ruin border for partial cover interaction
   { id:'mekboy', rosterIndex:8, faction:'ork',
-    models:[{id:'mb1',x:410,y:320,r:R32}], broken:false },
-  // Gretchin — open ground, clear LoS (easy targets, ~27")
+    models:[{id:'mb1',x:338,y:258,r:R32}], broken:false },
+  // Gretchin — near t6 ruin right edge, partial terrain obstruction
+  // Some models just right of the ruin polygon, testing edge-of-ruin LoS
   { id:'gretchin', rosterIndex:9, faction:'ork',
-    models:[{id:'gr1',x:400,y:220,r:R32},{id:'gr2',x:418,y:215,r:R32},{id:'gr3',x:436,y:220,r:R32}], broken:false }
+    models:[{id:'gr1',x:370,y:250,r:R32},{id:'gr2',x:388,y:245,r:R32},{id:'gr3',x:406,y:250,r:R32}], broken:false }
 ];
 
 // ── Initialise shared modules ────────────────────────────
