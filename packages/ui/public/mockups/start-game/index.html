@@ -189,11 +189,33 @@
 })();
 
 /* ═══════════════════════════════════════════════════════════
-   LIGHTNING SYSTEM (inherently JS — random timing)
+   LIGHTNING SYSTEM (inherently JS — random timing + SFX)
 ═══════════════════════════════════════════════════════════ */
 (function() {
   var el = document.getElementById('lightning');
   var active = false;
+
+  /* Pre-load lightning SFX variations */
+  var lightningSfx = [
+    new Audio('assets/lightning-1.mp3'),
+    new Audio('assets/lightning-2.mp3'),
+    new Audio('assets/lightning-3.mp3')
+  ];
+  lightningSfx.forEach(function(a) { a.preload = 'auto'; a.volume = 0.15; });
+  var lastSfxIndex = -1;
+
+  function playLightningSfx() {
+    if (window._audioMuted) return;
+    /* Pick a random variation, avoid repeating the same one */
+    var idx;
+    do { idx = Math.floor(Math.random() * lightningSfx.length); } while (idx === lastSfxIndex && lightningSfx.length > 1);
+    lastSfxIndex = idx;
+    var sfx = lightningSfx[idx];
+    /* Vary volume slightly for natural feel */
+    sfx.volume = 0.1 + Math.random() * 0.1;
+    sfx.currentTime = 0;
+    sfx.play().catch(function() {});
+  }
 
   window.triggerLightning = function() {
     if (!active) return;
@@ -201,6 +223,10 @@
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 80);
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0.05)'; }, 150);
     setTimeout(function() { el.style.background = 'rgba(180,210,240,0)'; }, 220);
+
+    /* Play SFX with slight delay to match the visual crack */
+    setTimeout(playLightningSfx, 30);
+
     if (Math.random() < 0.4) {
       setTimeout(function() {
         el.style.background = 'rgba(180,210,240,0.06)';
@@ -233,6 +259,9 @@
   var muted = localStorage.getItem('wh40k-splash-muted') === 'true';
   var audioCtx = null;
   var gainNode = null;
+
+  /* Expose mute state for lightning SFX */
+  window._audioMuted = muted;
 
   muteBtn.textContent = muted ? '🔇' : '🔊';
 
@@ -276,6 +305,7 @@
       muteBtn.textContent = '🔇';
       rampGain(0, FADE_MUTE_SEC);
     }
+    window._audioMuted = muted;
     localStorage.setItem('wh40k-splash-muted', String(muted));
   });
 })();
