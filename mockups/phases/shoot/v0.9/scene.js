@@ -11,7 +11,7 @@ import { buildTerrainAABBs } from '../../../shared/world/collision.js';
 import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
          selectUnit } from '../../../shared/world/svg-renderer.js';
 // Import shooting to register its selectUnit override and init
-import { initShooting } from './shooting.js?v=4';
+import { initShooting } from './shooting.js?v=5';
 // Import WorldAPI so it's available (side-effect: wires up the facade)
 import '../../../shared/world/world-api.js';
 
