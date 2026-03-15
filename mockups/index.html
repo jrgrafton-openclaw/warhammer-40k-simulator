@@ -109,6 +109,7 @@
       <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
       <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
       <button class="tab-btn" data-tab="game-end" onclick="switchTab('game-end')">GAME END</button>
+      <button class="tab-btn" data-tab="integrated" onclick="switchTab('integrated')">INTEGRATED</button>
     </div>
 
     <!-- START GAME -->
@@ -458,6 +459,30 @@
             <li>Known: border-top interferes with corner highlights</li>
           </ul>
           <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- INTEGRATED PROTOTYPE -->
+    <div id="tab-integrated" class="tab-pane hidden">
+      <div class="section-title">Integrated Prototype</div>
+      <div class="section-desc">
+        Multi-phase prototype combining individual mockup phases into a single continuous game flow.
+        Phases share state, units persist across transitions, and the full turn cycle is playable.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">DEPLOY → MOVE</div>
+          <div class="card-title">First two phases in continuous flow</div>
+          <ul class="card-features">
+            <li>Deploy units → transition → Move units (shared state)</li>
+            <li>Unified scene.js with phase state machine</li>
+            <li>All shared CSS/JS modules reused</li>
+            <li>Phase transition animation from v4 design system</li>
+          </ul>
+          <span class="card-link" style="opacity:0.3">In Planning</span>
         </a>
       </div>
     </div>
