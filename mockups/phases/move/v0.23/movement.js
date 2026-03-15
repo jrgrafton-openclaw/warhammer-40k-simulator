@@ -9,6 +9,7 @@ import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion } from '../../../shared/world/svg-renderer.js';
 import { resolveTerrainCollision, resolveUnitDragCollisions, canBreachTerrain } from '../../../shared/world/collision.js';
+import { aabbsToWorldPolygons, buildNavGraph, findShortestPath } from '../../../shared/world/pathfinding.js';
 import { rollAdvanceDie } from './advance-dice.js';
 import { clearRangeRings, drawPerModelRangeRings } from '../../../shared/world/range-rings.js';
 
@@ -66,6 +67,46 @@ var moveState = {
 };
 window.__movedUnitIds = moveState.unitsMoved;
 
+// ── Pathfinding state ──────────────────────────────────
+var _worldPolygons = null;   // cached world-space obstacle polygons
+var _navGraphCache = {};     // keyed by model radius → navGraph
+var _modelPathCache = {};    // modelId → { path: [{x,y}], cost: number } | null
+
+function getWorldPolygons() {
+  if (!_worldPolygons) {
+    var aabbs = window._terrainAABBs || [];
+    _worldPolygons = aabbsToWorldPolygons(aabbs);
+  }
+  return _worldPolygons;
+}
+
+function getNavGraph(modelRadius) {
+  var key = Math.round(modelRadius * 10);
+  if (!_navGraphCache[key]) {
+    _navGraphCache[key] = buildNavGraph(getWorldPolygons(), modelRadius + 1);
+  }
+  return _navGraphCache[key];
+}
+
+function computeModelPaths(unit) {
+  _modelPathCache = {};
+  if (!unit || canBreachTerrain(unit)) return;
+  var polys = getWorldPolygons();
+  unit.models.forEach(function(m) {
+    var ts = phaseTurnStarts[m.id];
+    if (!ts) return;
+    var graph = getNavGraph(m.r);
+    var result = findShortestPath(graph, polys, { x: ts.x, y: ts.y }, { x: m.x, y: m.y }, m.r + 1);
+    _modelPathCache[m.id] = result;
+  });
+}
+
+function getModelPathCost(modelId) {
+  var entry = _modelPathCache[modelId];
+  if (!entry) return 0;
+  return entry.cost;
+}
+
 // ── Helpers ────────────────────────────────────────────
 function getMoveRangePx(unitId, isAdvance) {
   var u = UNITS[unitId]; if (!u) return 0;
@@ -115,11 +156,21 @@ function isCurrentMoveLegal(uid) {
 
   var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
 
+  var usePathCost = !canBreachTerrain(unit);
+
   for (var i = 0; i < unit.models.length; i++) {
     var m = unit.models[i];
     var ts = phaseTurnStarts[m.id];
     if (!ts) return false;
-    if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
+    if (usePathCost) {
+      // Non-breachable: use pathfinding cost (distance around walls)
+      var pathCost = getModelPathCost(m.id);
+      if (pathCost > rangePx + 0.5) return false;
+      if (_modelPathCache[m.id] === null) return false; // no valid path (inside obstacle)
+    } else {
+      // Breachable (Infantry): straight-line distance
+      if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
+    }
     if (modelCollidesTerrain(m)) return false;
 
     for (var j = i + 1; j < unit.models.length; j++) {
@@ -314,25 +365,66 @@ function renderMoveRulers(uid) {
   var NS = 'http://www.w3.org/2000/svg';
   var color = getFactionColor(uid);
   var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+  var usePathCost = !canBreachTerrain(unit);
 
   unit.models.forEach(function(m) {
     var ts = phaseTurnStarts[m.id]; if (!ts) return;
-    var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
-    if (dist < 1) return;
-    var overRange = dist > rangePx + 0.5;
+    var dx = m.x - ts.x, dy = m.y - ts.y, straightDist = Math.hypot(dx, dy);
+    if (straightDist < 1) return;
 
-    var line = document.createElementNS(NS, 'line');
-    line.setAttribute('x1', ts.x); line.setAttribute('y1', ts.y);
-    line.setAttribute('x2', m.x); line.setAttribute('y2', m.y);
-    line.setAttribute('class', 'move-ruler');
-    line.style.stroke = overRange ? '#ff3333' : color;
-    layerRulers.appendChild(line);
+    if (usePathCost && _modelPathCache[m.id]) {
+      // Draw path polyline for non-breachable units
+      var pathData = _modelPathCache[m.id];
+      var pathCost = pathData.cost;
+      var overRange = pathCost > rangePx + 0.5;
+      var waypoints = pathData.path;
 
-    var label = document.createElementNS(NS, 'text');
-    label.setAttribute('x', (ts.x + m.x) / 2); label.setAttribute('y', (ts.y + m.y) / 2 - 4);
-    label.setAttribute('class', 'move-ruler-label'); label.setAttribute('text-anchor', 'middle');
-    label.textContent = (dist / PX_PER_INCH).toFixed(1) + '"';
-    layerRulers.appendChild(label);
+      if (waypoints.length >= 2) {
+        var points = waypoints.map(function(p) { return p.x + ',' + p.y; }).join(' ');
+        var polyline = document.createElementNS(NS, 'polyline');
+        polyline.setAttribute('points', points);
+        polyline.setAttribute('class', 'move-ruler');
+        polyline.setAttribute('fill', 'none');
+        polyline.style.stroke = overRange ? '#ff3333' : color;
+        polyline.style.strokeDasharray = '4,3';
+        layerRulers.appendChild(polyline);
+      }
+
+      // Label at midpoint of path
+      var midIdx = Math.floor(waypoints.length / 2);
+      var labelPt = waypoints[midIdx] || { x: (ts.x + m.x) / 2, y: (ts.y + m.y) / 2 };
+      var label = document.createElementNS(NS, 'text');
+      label.setAttribute('x', labelPt.x); label.setAttribute('y', labelPt.y - 4);
+      label.setAttribute('class', 'move-ruler-label'); label.setAttribute('text-anchor', 'middle');
+      label.textContent = (pathCost / PX_PER_INCH).toFixed(1) + '"';
+      if (overRange) label.style.fill = '#ff3333';
+      layerRulers.appendChild(label);
+    } else if (usePathCost && _modelPathCache[m.id] === null) {
+      // No valid path — draw red X indicator
+      var line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', ts.x); line.setAttribute('y1', ts.y);
+      line.setAttribute('x2', m.x); line.setAttribute('y2', m.y);
+      line.setAttribute('class', 'move-ruler');
+      line.style.stroke = '#ff3333';
+      line.style.strokeDasharray = '2,4';
+      layerRulers.appendChild(line);
+    } else {
+      // Breachable units: straight-line ruler (unchanged)
+      var overRange = straightDist > rangePx + 0.5;
+
+      var line = document.createElementNS(NS, 'line');
+      line.setAttribute('x1', ts.x); line.setAttribute('y1', ts.y);
+      line.setAttribute('x2', m.x); line.setAttribute('y2', m.y);
+      line.setAttribute('class', 'move-ruler');
+      line.style.stroke = overRange ? '#ff3333' : color;
+      layerRulers.appendChild(line);
+
+      var label = document.createElementNS(NS, 'text');
+      label.setAttribute('x', (ts.x + m.x) / 2); label.setAttribute('y', (ts.y + m.y) / 2 - 4);
+      label.setAttribute('class', 'move-ruler-label'); label.setAttribute('text-anchor', 'middle');
+      label.textContent = (straightDist / PX_PER_INCH).toFixed(1) + '"';
+      layerRulers.appendChild(label);
+    }
   });
 }
 
@@ -472,43 +564,36 @@ function installDragEnforcement() {
     var uid = currentUnit; if (!uid) return;
     var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
 
+    var dragUnit = null;
     if (drag.type === 'model') {
       var m = drag.model, ts = phaseTurnStarts[m.id]; if (!ts) return;
-      // Zone clamp from turn-start
+      dragUnit = simState.units.find(function(u) { return u.models.includes(m); });
+      // Zone clamp from turn-start (straight-line — generous for non-breachable, path cost enforces on confirm)
       var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
       if (dist > rangePx) {
         var sc = rangePx / dist; m.x = ts.x + dx * sc; m.y = ts.y + dy * sc;
         var reRes = resolveOverlaps(m, m.x, m.y); m.x = reRes.x; m.y = reRes.y;
       }
-      // Terrain collision (continuous) — skip for breachable units
-      var dragModelUnit = simState.units.find(function(u) { return u.models.includes(m); });
-      if (!canBreachTerrain(dragModelUnit)) {
-        var tr = doTerrainCollision(m.x, m.y, m.r); m.x = tr.x; m.y = tr.y;
-      }
+      // Terrain collision (continuous) — only for breachable-false units that CAN'T pathfind yet
+      // Now: ALL units can drag through walls freely. Terrain enforcement is via path cost + confirm validation.
     }
     else if (drag.type === 'unit') {
+      dragUnit = drag.unit;
       // Cross-unit collision
       doUnitDragCollisions(drag.unit);
-      // Zone clamp per model
+      // Zone clamp per model (straight-line)
       drag.unit.models.forEach(function(m) {
         var ts = phaseTurnStarts[m.id]; if (!ts) return;
         var dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
         if (dist > rangePx) { var sc = rangePx/dist; m.x = ts.x+dx*sc; m.y = ts.y+dy*sc; }
       });
-      // Terrain: push entire unit as block — skip for breachable units
-      if (!canBreachTerrain(drag.unit)) {
-        var maxPX = 0, maxPY = 0;
-        drag.unit.models.forEach(function(m) {
-          var tr = doTerrainCollision(m.x, m.y, m.r);
-          var px = tr.x - m.x, py = tr.y - m.y;
-          if (Math.abs(px) > Math.abs(maxPX)) maxPX = px;
-          if (Math.abs(py) > Math.abs(maxPY)) maxPY = py;
-        });
-        if (maxPX !== 0 || maxPY !== 0) {
-          drag.unit.models.forEach(function(m) { m.x += maxPX; m.y += maxPY; });
-        }
-      }
+      // No terrain collision push-back during drag — path cost handles enforcement
       doUnitDragCollisions(drag.unit);
+    }
+
+    // Compute pathfinding costs for non-breachable units
+    if (dragUnit && !canBreachTerrain(dragUnit)) {
+      computeModelPaths(dragUnit);
     }
 
     // Re-render: models first, then overlays, then z-lift (matches v1 patched renderModels order)
