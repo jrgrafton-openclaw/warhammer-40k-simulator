@@ -155,13 +155,41 @@ function lineLineIntersection(l1, l2) {
 }
 
 /**
+ * Check if point p lies within `tol` of segment (a, b).
+ * Used to catch segments that pass through polygon vertices (corners),
+ * which segmentsIntersectStrict misses due to strict inequality.
+ */
+function pointNearSegment(p, a, b, tol) {
+  var abx = b.x - a.x, aby = b.y - a.y;
+  var apx = p.x - a.x, apy = p.y - a.y;
+  var abLenSq = abx * abx + aby * aby;
+  if (abLenSq < EPSILON) return dist(p, a) < tol;
+  var t = (apx * abx + apy * aby) / abLenSq;
+  if (t < 0.01 || t > 0.99) return false; // exclude endpoints
+  var projX = a.x + t * abx, projY = a.y + t * aby;
+  var dx = p.x - projX, dy = p.y - projY;
+  return Math.sqrt(dx * dx + dy * dy) < tol;
+}
+
+/**
+ * Check if segment (a, b) passes through any vertex of the given expanded polygons,
+ * skipping polygons at skipPolyA/skipPolyB indices.
+ */
+function segmentPassesThroughVertex(a, b, expandedPolys, skipPolyA, skipPolyB) {
+  for (var pi = 0; pi < expandedPolys.length; pi++) {
+    if (pi === skipPolyA || pi === skipPolyB) continue;
+    var poly = expandedPolys[pi];
+    for (var vi = 0; vi < poly.length; vi++) {
+      if (pointNearSegment(poly[vi], a, b, 0.5)) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Check if segment (a, b) intersects any edge of the expanded polygon at index `skipIdx`,
  * or any edge of other expanded polygons.
- * expandedPolys: array of expanded polygon vertex arrays
- * polyOwnership: for each vertex index in the flat vertex list, which polygon it belongs to
- *
- * We check against ALL expanded polygon edges. If the segment's two endpoints both
- * belong to the same polygon, we skip that polygon's edges.
+ * Also checks if the segment passes through any polygon vertex (corner case).
  */
 function segmentBlockedByExpandedPolys(a, b, expandedPolys, skipPolyA, skipPolyB) {
   for (var pi = 0; pi < expandedPolys.length; pi++) {
@@ -176,6 +204,8 @@ function segmentBlockedByExpandedPolys(a, b, expandedPolys, skipPolyA, skipPolyB
       }
     }
   }
+  // Also check if segment passes through any polygon vertex
+  if (segmentPassesThroughVertex(a, b, expandedPolys, skipPolyA, skipPolyB)) return true;
   return false;
 }
 
@@ -194,6 +224,8 @@ function segmentBlockedByAllExpandedPolys(a, b, expandedPolys) {
       }
     }
   }
+  // Also check vertex proximity for all polygons
+  if (segmentPassesThroughVertex(a, b, expandedPolys, -1, -1)) return true;
   return false;
 }
 
@@ -284,18 +316,21 @@ export function buildNavGraph(polygons, radius) {
 
       // Check if segment crosses any expanded polygon edge (skip owning polygons)
       if (!segmentBlockedByExpandedPolys(a, b, expandedPolys, polyA, polyB)) {
-        // Also verify the midpoint isn't inside any expanded polygon
-        // (handles cases where segment passes through polygon interior without crossing edges)
-        var mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        var midBlocked = false;
-        for (var pi = 0; pi < expandedPolys.length; pi++) {
-          if (pi === polyA || pi === polyB) continue;
-          if (pointInConvexPolygon(mid, expandedPolys[pi])) {
-            midBlocked = true;
-            break;
+        // Verify sample points along the segment aren't inside any expanded polygon
+        // Sample at 25%, 50%, 75% to catch thin-wall passes
+        var sampleBlocked = false;
+        for (var si = 1; si <= 3 && !sampleBlocked; si++) {
+          var t = si * 0.25;
+          var sp = { x: a.x + t * (b.x - a.x), y: a.y + t * (b.y - a.y) };
+          for (var pi = 0; pi < expandedPolys.length; pi++) {
+            if (pi === polyA || pi === polyB) continue;
+            if (pointInConvexPolygon(sp, expandedPolys[pi])) {
+              sampleBlocked = true;
+              break;
+            }
           }
         }
-        if (!midBlocked) {
+        if (!sampleBlocked) {
           var cost = dist(a, b);
           edges.get(i).push({ to: j, cost: cost });
           edges.get(j).push({ to: i, cost: cost });
