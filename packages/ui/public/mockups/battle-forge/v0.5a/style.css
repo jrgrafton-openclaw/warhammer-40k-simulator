@@ -1,0 +1,881 @@
+/* ══════════════════════════════════════════════════════════════
+   Battle Forge v0.5a — COMMAND TABLE v3
+   Merges v0.3a centred visual design + v0.4a empty-state UX
+   Two-phase faction -> army selection overlay
+══════════════════════════════════════════════════════════════ */
+
+/* ── HOLOGRAPHIC MAP BACKGROUND ── */
+.holo-map {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 50%, #0a1520 0%, #060a0f 70%, #020406 100%);
+  overflow: hidden;
+  transition: filter 1.5s ease;
+  filter: brightness(0.5);
+}
+.holo-map.map-active { filter: brightness(0.75); }
+.holo-map.map-full   { filter: brightness(1); }
+
+.holo-grid {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-drift 25s linear infinite;
+  opacity: 0;
+  animation: grid-drift 25s linear infinite, fade-in 0.5s ease-out 0s both;
+}
+.holo-grid::after {
+  content: ''; position: absolute; inset: 0;
+  background:
+    linear-gradient(rgba(0,212,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.015) 1px, transparent 1px);
+  background-size: 15px 15px;
+}
+@keyframes grid-drift {
+  0%   { transform: perspective(800px) rotateX(1deg) translateY(0); }
+  100% { transform: perspective(800px) rotateX(1deg) translateY(60px); }
+}
+
+.holo-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg, transparent 0, transparent 2px,
+    rgba(0,212,255,0.012) 2px, rgba(0,212,255,0.012) 4px
+  );
+  animation: scan-flicker 8s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes scan-flicker {
+  0%, 92%, 100% { opacity: 1; }
+  93% { opacity: 0.6; }
+  94% { opacity: 1; }
+  96% { opacity: 0.7; }
+  97% { opacity: 1; }
+}
+
+.holo-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%);
+  pointer-events: none;
+}
+
+.holo-grain {
+  position: absolute; inset: 0;
+  opacity: 0.025; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Scan bar */
+.holo-map::before {
+  content: ''; position: absolute; left: 0; right: 0;
+  height: 2px; z-index: 1;
+  background: linear-gradient(90deg, transparent 0%, var(--imp) 50%, transparent 100%);
+  opacity: 0.15;
+  animation: scan-bar 12s linear infinite;
+}
+@keyframes scan-bar { 0%{top:-2px} 100%{top:100%} }
+
+/* Ambient glow */
+.holo-map::after {
+  content: ''; position: absolute; inset: 0; z-index: 1;
+  background: radial-gradient(circle at 50% 45%, rgba(0,212,255,0.03) 0%, transparent 60%);
+  animation: glow-pulse 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes glow-pulse { 0%{opacity:.5} 100%{opacity:1} }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+
+/* ── DEPLOYMENT ZONES ── */
+.dz {
+  position: absolute; top: 8%; bottom: 8%; width: 18%; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+  opacity: 0; transition: opacity 1s ease;
+}
+.dz.dz-visible { opacity: 1; }
+
+.dz-imp {
+  left: 2%;
+  background: linear-gradient(90deg, rgba(0,212,255,0.06) 0%, transparent 100%);
+  border-right: 1px solid rgba(0,212,255,0.12);
+  animation: dz-pulse-imp 4s ease-in-out infinite alternate;
+}
+.dz-ork {
+  right: 2%;
+  background: linear-gradient(270deg, rgba(255,64,32,0.06) 0%, transparent 100%);
+  border-left: 1px solid rgba(255,64,32,0.12);
+  animation: dz-pulse-ork 4s ease-in-out infinite alternate;
+}
+.dz-glow.dz-imp {
+  background: linear-gradient(90deg, rgba(0,212,255,0.12), rgba(0,212,255,0.02));
+  border-right-color: rgba(0,212,255,0.25);
+  box-shadow: inset -30px 0 60px rgba(0,212,255,0.05);
+}
+.dz-glow.dz-ork {
+  background: linear-gradient(270deg, rgba(255,64,32,0.12), rgba(255,64,32,0.02));
+  border-left-color: rgba(255,64,32,0.25);
+  box-shadow: inset 30px 0 60px rgba(255,64,32,0.05);
+}
+@keyframes dz-pulse-imp { 0%{border-color:rgba(0,212,255,.08)} 100%{border-color:rgba(0,212,255,.2)} }
+@keyframes dz-pulse-ork { 0%{border-color:rgba(255,64,32,.08)} 100%{border-color:rgba(255,64,32,.2)} }
+
+.dz-label {
+  writing-mode: vertical-rl; text-orientation: mixed;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px; text-transform: uppercase;
+  opacity: 0.35;
+}
+.dz-imp .dz-label { color: var(--imp); }
+.dz-ork .dz-label { color: var(--ork); }
+
+
+/* ── OBJECTIVES ── */
+.obj {
+  position: absolute; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gold); border: 1.5px solid var(--gold);
+  transform: translate(-50%, -50%); z-index: 2;
+  box-shadow: 0 0 8px rgba(201,163,82,0.4);
+  animation: obj-pulse 3s ease-in-out infinite alternate;
+  opacity: 0; transition: opacity 1s ease;
+}
+.obj.obj-visible { opacity: 1; }
+.obj-centre { width: 16px; height: 16px; border-width: 2px; }
+@keyframes obj-pulse { 0%{box-shadow:0 0 6px rgba(201,163,82,.3)} 100%{box-shadow:0 0 16px rgba(201,163,82,.6)} }
+
+
+/* ── TERRAIN ── */
+.terrain {
+  position: absolute; z-index: 2; pointer-events: none;
+}
+.terrain-ruin {
+  border: 1px dashed rgba(0,212,255,0.12);
+  background: rgba(0,212,255,0.02);
+}
+.terrain-crate {
+  border: 1px solid rgba(0,212,255,0.08);
+  background: rgba(0,212,255,0.015);
+}
+.terrain-tag {
+  position: absolute; top: -14px; left: 4px;
+  font: 500 7px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 1px;
+  text-transform: uppercase; white-space: nowrap;
+}
+
+
+/* ── COMPASS + DIMS ── */
+.compass {
+  position: absolute; top: 16px; right: 20px; z-index: 2;
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.15);
+  display: flex; align-items: center; justify-content: center;
+}
+.compass-n { font: 600 10px/1 'Rajdhani', sans-serif; color: var(--imp-dim); }
+.map-dims {
+  position: absolute; bottom: 16px; right: 20px; z-index: 2;
+  font: 500 9px/1 'Rajdhani', sans-serif; color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION CHROME
+   ═══════════════════════════════════════════════════════ */
+.nav-back, .nav-mockups {
+  position: fixed; z-index: 50;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); text-decoration: none;
+  letter-spacing: 1px; transition: color 0.2s;
+  opacity: 0; animation: fade-in 0.4s ease-out 1.0s both;
+}
+.nav-back:hover, .nav-mockups:hover { color: var(--imp); }
+.nav-back    { top: 14px; left: 16px; }
+.nav-mockups { top: 14px; right: 16px; }
+.version-badge {
+  position: fixed; bottom: 12px; left: 16px; z-index: 50;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 1px;
+  opacity: 0; animation: fade-in 0.4s ease-out 1.0s both;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════════════════════ */
+.os-header {
+  position: fixed; top: 28px; left: 50%; transform: translateX(-50%);
+  z-index: 30; text-align: center;
+}
+.os-title {
+  font: 700 32px/1 'Anton', sans-serif;
+  color: var(--text-primary); letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0,212,255,0.25);
+}
+.os-subtitle {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 4px;
+  text-transform: uppercase; margin-top: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   ARMY SELECTION — CENTRED FACTION CARDS
+   ═══════════════════════════════════════════════════════ */
+.army-select {
+  position: fixed; z-index: 20;
+  top: 100px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 24px;
+}
+
+/* ── Shared card base ── */
+.faction-card {
+  position: relative; width: 280px; padding: 28px 24px 20px;
+  background: rgba(15,21,32,0.85);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.25s;
+  text-align: center;
+}
+.faction-card:hover {
+  background: rgba(20,28,42,0.9);
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
+}
+
+/* Corner brackets */
+.card-corner {
+  position: absolute; width: 14px; height: 14px;
+  pointer-events: none;
+}
+.card-corner.tl { top: -1px; left: -1px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.card-corner.tr { top: -1px; right: -1px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.card-corner.bl { bottom: -1px; left: -1px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.card-corner.br { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+.faction-imp .card-corner { border-color: var(--imp); }
+.faction-ork .card-corner { border-color: var(--ork); }
+
+.card-tag {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.imp-tag { color: var(--imp-dim); }
+.ork-tag { color: var(--ork-dim); }
+
+.card-icon {
+  font-size: 42px; line-height: 1; margin-bottom: 10px;
+}
+.faction-imp .card-icon { filter: drop-shadow(0 0 12px rgba(0,212,255,0.3)); }
+.faction-ork .card-icon { filter: drop-shadow(0 0 12px rgba(255,64,32,0.3)); }
+
+.card-name {
+  font: 700 18px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.card-sub {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); margin-top: 4px;
+}
+.card-pts {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  color: var(--gold); margin-top: 10px;
+  letter-spacing: 1px;
+}
+.card-hint {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 12px;
+  transition: color 0.2s;
+}
+.faction-card:hover .card-hint { color: var(--text-sec); }
+
+/* ── Empty card state ── */
+.faction-card.card-empty {
+  min-height: 180px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.faction-card.card-empty .card-corner { border-color: rgba(26,37,53,0.5); }
+.faction-card.card-empty:hover .card-corner { border-color: var(--text-muted); }
+
+.card-empty.faction-imp .card-corner { border-color: rgba(0,212,255,0.15); }
+.card-empty.faction-imp:hover .card-corner { border-color: rgba(0,212,255,0.4); }
+.card-empty.faction-ork .card-corner { border-color: rgba(255,64,32,0.15); }
+.card-empty.faction-ork:hover .card-corner { border-color: rgba(255,64,32,0.4); }
+
+.empty-plus {
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  font: 300 32px/1 'Rajdhani', sans-serif;
+  border: 1.5px dashed var(--border); border-radius: 4px;
+  margin-bottom: 12px;
+  transition: all 0.3s;
+}
+.faction-imp .empty-plus {
+  color: var(--imp-dim); border-color: rgba(0,212,255,0.2);
+  animation: plus-pulse-imp 3s ease-in-out infinite;
+}
+.faction-ork .empty-plus {
+  color: var(--ork-dim); border-color: rgba(255,64,32,0.2);
+  animation: plus-pulse-ork 3s ease-in-out infinite;
+}
+@keyframes plus-pulse-imp {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 16px rgba(0,212,255,0.15); }
+}
+@keyframes plus-pulse-ork {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 16px rgba(255,64,32,0.15); }
+}
+
+.empty-label {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-sec);
+}
+.empty-sub {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 6px;
+}
+
+/* ── Filled card state ── */
+.faction-card.card-filled { }
+.card-change {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 12px;
+  cursor: pointer; transition: color 0.2s;
+}
+.faction-card:hover .card-change { color: var(--text-sec); }
+
+
+/* ── VS DIVIDER ── */
+.vs-divider {
+  display: flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; flex-shrink: 0;
+}
+.vs-text {
+  font: 700 22px/1 'Anton', sans-serif;
+  color: var(--text-dis); letter-spacing: 2px;
+  transition: all 0.6s ease;
+}
+.vs-divider.vs-active .vs-text {
+  color: var(--text-muted);
+  text-shadow: 0 0 16px rgba(0,212,255,0.25);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   EXPANDABLE ROSTERS
+   ═══════════════════════════════════════════════════════ */
+.roster-panels {
+  position: fixed; z-index: 20;
+  top: 320px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 20px;
+  width: 640px;
+}
+
+.roster-panel {
+  flex: 1; min-width: 0;
+  background: rgba(15,21,32,0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  display: none; /* hidden until filled */
+}
+.roster-panel.roster-visible { display: block; }
+.roster-imp { border-top: 2px solid var(--imp-dim); }
+.roster-ork { border-top: 2px solid var(--ork-dim); }
+
+.roster-toggle {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 10px 14px;
+  background: none; border: none; cursor: pointer;
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 1px;
+  text-transform: uppercase; text-align: left;
+  transition: color 0.2s;
+}
+.roster-toggle:hover { color: var(--text-primary); }
+
+.roster-toggle-icon {
+  font-size: 10px; color: var(--text-muted);
+  transition: transform 0.2s;
+  display: inline-block; width: 10px;
+}
+
+.roster-count {
+  margin-left: auto;
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 0.5px;
+}
+
+.roster-list {
+  border-top: 1px solid var(--border);
+  max-height: 180px; overflow-y: auto;
+  padding: 4px 0;
+}
+.roster-list::-webkit-scrollbar { width: 3px; }
+.roster-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+.ru {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 14px;
+  font: 400 11px/1.3 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  border-bottom: 1px solid rgba(26,37,53,0.5);
+}
+.ru:last-child { border-bottom: none; }
+.ru-name { color: var(--text-primary); font-weight: 500; }
+.ru-meta { color: var(--text-muted); font-size: 10px; }
+
+
+/* ═══════════════════════════════════════════════════════
+   BOTTOM SECTION
+   ═══════════════════════════════════════════════════════ */
+.bottom-section {
+  position: fixed; z-index: 30;
+  bottom: 20px; left: 50%; transform: translateX(-50%);
+  width: min(740px, calc(100% - 40px));
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+/* ── MAP + DEPLOYMENT ROW ── */
+.map-deploy-row {
+  display: flex; gap: 10px;
+}
+.map-deploy-row > div { flex: 1; min-width: 0; }
+
+.config-panel {
+  background: rgba(15,21,32,0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  padding: 12px 14px;
+}
+
+.section-label {
+  font: 600 12px/1 'Anton', sans-serif;
+  color: var(--text-muted); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+
+/* Map thumbnails */
+.map-thumbs {
+  display: flex; gap: 8px;
+}
+.map-thumb {
+  flex: 1; padding: 8px; border: 1px solid var(--border);
+  background: var(--bg-surface); cursor: pointer;
+  transition: all 0.2s; min-height: 44px;
+}
+.map-thumb-active {
+  border-color: var(--imp-dim);
+  background: rgba(0,212,255,0.06);
+}
+.map-thumb-disabled {
+  opacity: 0.35; cursor: not-allowed;
+}
+.thumb-visual {
+  height: 28px; margin-bottom: 5px; border: 1px solid rgba(0,212,255,0.08);
+}
+.thumb-ha {
+  background:
+    linear-gradient(90deg, rgba(0,212,255,0.08) 20%, transparent 20%, transparent 80%, rgba(255,64,32,0.08) 80%);
+}
+.thumb-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 0.5px;
+}
+.thumb-info {
+  font: 400 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 2px;
+}
+
+/* Deployment thumbnails */
+.deploy-thumbs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.deploy-card {
+  flex: 0 0 auto; width: 68px; text-align: center;
+  cursor: pointer; padding: 5px;
+  border: 1px solid transparent; transition: all 0.2s;
+}
+.deploy-card:hover:not(.deploy-locked) { border-color: rgba(0,212,255,0.15); }
+.deploy-active { border-color: rgba(0,212,255,0.3) !important; background: rgba(0,212,255,0.04); }
+.deploy-locked { opacity: 0.3; cursor: not-allowed; }
+
+.deploy-thumb {
+  width: 100%; height: 30px;
+  background: rgba(8,12,16,0.9); border: 1px solid var(--border);
+  position: relative; overflow: hidden; margin-bottom: 3px;
+}
+.deploy-active .deploy-thumb { border-color: rgba(0,212,255,0.25); }
+.deploy-thumb-locked {
+  background: repeating-linear-gradient(
+    45deg, rgba(8,12,16,0.9), rgba(8,12,16,0.9) 3px,
+    rgba(26,37,53,0.2) 3px, rgba(26,37,53,0.2) 6px
+  );
+}
+.dt-zone { position: absolute; top: 0; bottom: 0; width: 22%; }
+.dt-imp { left: 0; background: rgba(0,212,255,0.15); border-right: 1px dashed rgba(0,212,255,0.3); }
+.dt-ork { right: 0; background: rgba(255,64,32,0.15); border-left: 1px dashed rgba(255,64,32,0.3); }
+
+.deploy-name {
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-sec);
+}
+.deploy-active .deploy-name { color: var(--imp); }
+.deploy-locked .deploy-name { color: var(--text-dis); }
+.deploy-soon {
+  font: 600 7px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px;
+}
+
+
+/* ── SETTINGS ROW ── */
+.settings-row {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(15,21,32,0.8);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  min-height: 44px;
+}
+.setting-group { display: flex; flex-direction: column; gap: 4px; }
+.setting-value {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 0.5px;
+}
+.setting-divider {
+  width: 1px; height: 28px;
+  background: var(--border); flex-shrink: 0;
+}
+
+.mode-toggle { display: flex; gap: 6px; }
+.mode-btn {
+  padding: 5px 12px; border: 1px solid var(--border);
+  background: var(--bg-surface); cursor: pointer;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 0.5px;
+  transition: all 0.2s; min-height: 30px;
+}
+.mode-active {
+  border-color: var(--imp-dim);
+  color: var(--imp);
+  background: rgba(0,212,255,0.06);
+}
+.mode-disabled {
+  opacity: 0.4; cursor: not-allowed;
+  color: var(--text-muted);
+}
+.soon-tag {
+  font-size: 8px; color: var(--text-muted);
+  vertical-align: super; margin-left: 2px;
+}
+
+.setting-chips {
+  display: flex; gap: 6px; margin-left: auto;
+}
+.chip {
+  padding: 4px 10px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.chip-dis { color: var(--text-muted); opacity: 0.5; }
+
+
+/* ── BEGIN BATTLE BUTTON ── */
+.begin-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 56px;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px; text-transform: uppercase;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none;
+}
+.begin-btn:hover:not(.disabled) {
+  background: #18eaff;
+  box-shadow: 0 0 30px rgba(0,212,255,0.4);
+}
+.begin-btn:active:not(.disabled) {
+  background: var(--imp-dim);
+}
+.begin-btn.disabled {
+  opacity: 0.3; pointer-events: none; cursor: not-allowed;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   FACTION BROWSER OVERLAY
+   ═══════════════════════════════════════════════════════ */
+.faction-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.faction-overlay.open {
+  opacity: 1; pointer-events: auto;
+}
+
+.overlay-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(4,6,8,0.88);
+  backdrop-filter: blur(8px);
+}
+
+.overlay-content {
+  position: relative; z-index: 1;
+  width: min(720px, calc(100% - 40px));
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+  transform: scale(0.95);
+  transition: transform 0.25s;
+}
+.faction-overlay.open .overlay-content {
+  transform: scale(1);
+}
+.overlay-content::-webkit-scrollbar { width: 4px; }
+.overlay-content::-webkit-scrollbar-thumb { background: var(--border); }
+
+.overlay-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.overlay-title {
+  font: 700 20px/1 'Anton', sans-serif;
+  color: var(--text-primary); letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.overlay-close {
+  width: 36px; height: 36px;
+  background: none; border: 1px solid var(--border);
+  color: var(--text-sec); font-size: 16px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.overlay-close:hover {
+  border-color: var(--ork); color: var(--ork);
+}
+
+/* ── Phase 1: Faction Grid ── */
+.overlay-phase { display: none; }
+.overlay-phase.phase-active { display: block; }
+
+.faction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.fg-card {
+  position: relative;
+  padding: 20px 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 44px;
+  opacity: 0;
+  animation: card-pop 0.4s ease-out both;
+}
+.fg-card:hover:not(.fg-locked) {
+  border-color: var(--imp-dim);
+  background: var(--bg-selected);
+  transform: translateY(-2px);
+}
+.fg-locked {
+  opacity: 0; cursor: not-allowed;
+  animation: card-pop-dim 0.4s ease-out both;
+}
+@keyframes card-pop {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes card-pop-dim {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 0.35; transform: scale(1) translateY(0); }
+}
+
+.fg-icon {
+  font-size: 28px; line-height: 1; margin-bottom: 8px;
+}
+.fg-card:not(.fg-locked) .fg-icon { filter: drop-shadow(0 0 10px rgba(0,212,255,0.25)); }
+.fg-locked .fg-icon { opacity: 0.4; }
+
+.fg-name {
+  font: 600 13px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.fg-pts {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--gold); margin-top: 6px;
+}
+.fg-lock {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+.fg-locked .fg-name { color: var(--text-muted); }
+.fg-upload { border-style: dashed; }
+
+/* ── Phase 2: Army Selection ── */
+.phase2-back {
+  display: flex; align-items: center; gap: 6px;
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 1px;
+  text-transform: uppercase;
+  background: none; border: none; cursor: pointer;
+  padding: 0; margin-bottom: 20px; transition: color 0.2s;
+}
+.phase2-back:hover { color: var(--imp); }
+
+.phase2-header {
+  text-align: center; margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.phase2-icon {
+  font-size: 60px; line-height: 1; margin-bottom: 8px;
+  filter: drop-shadow(0 0 16px rgba(0,212,255,0.3));
+}
+.phase2-faction-name {
+  font: 400 20px/1 'Anton', sans-serif;
+  color: var(--text-primary); letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.phase2-faction-sub {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 2px;
+  text-transform: uppercase; margin-top: 6px;
+}
+
+.army-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.army-card {
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  cursor: pointer; transition: all 0.25s;
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 56px;
+}
+.army-card:hover:not(.army-locked) {
+  border-color: var(--imp-dim);
+  background: var(--bg-selected);
+  transform: translateX(4px);
+}
+.army-card:active:not(.army-locked) {
+  background: rgba(0,212,255,0.08);
+}
+.army-locked {
+  opacity: 0.35; cursor: not-allowed;
+}
+
+.army-card-left { display: flex; flex-direction: column; gap: 3px; }
+.army-card-name {
+  font: 600 15px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.army-card-info {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 0.5px;
+}
+.army-card-pts {
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  color: var(--gold); letter-spacing: 1px;
+  white-space: nowrap;
+}
+.army-locked .army-card-name { color: var(--text-muted); }
+.army-locked .army-card-pts { color: var(--text-dis); }
+.army-card-badge {
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis); letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.army-upload {
+  border-style: dashed;
+  justify-content: center; text-align: center;
+}
+.army-upload .army-card-left { align-items: center; }
+.army-upload-icon {
+  font-size: 20px; margin-bottom: 2px; opacity: 0.5;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+.anim-fade {
+  animation: anim-fade-down 0.8s ease-out 0.2s both;
+}
+@keyframes anim-fade-down {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.anim-cards {
+  animation: cards-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.5s both;
+}
+@keyframes cards-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.92); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+.anim-cards-delay {
+  animation: cards-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.65s both;
+}
+
+.anim-rise {
+  animation: rise-up 0.6s ease-out 0.7s both;
+}
+@keyframes rise-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .faction-card { width: 220px; padding: 20px 16px 16px; }
+  .card-icon { font-size: 32px; }
+  .card-name { font-size: 15px; }
+  .roster-panels { width: calc(100% - 40px); }
+  .setting-chips { display: none; }
+  .faction-grid { grid-template-columns: repeat(2, 1fr); }
+  .map-deploy-row { flex-direction: column; }
+}
+
+@media (max-width: 640px) {
+  .army-select { flex-direction: column; gap: 12px; }
+  .faction-card { width: 260px; }
+  .vs-divider { width: auto; height: 24px; }
+  .vs-text { font-size: 16px; }
+  .roster-panels { flex-direction: column; top: 400px; }
+  .os-title { font-size: 24px; }
+  .settings-row { flex-wrap: wrap; }
+  .setting-divider { display: none; }
+  .faction-grid { grid-template-columns: 1fr 1fr; }
+  .deploy-thumbs { gap: 4px; }
+  .deploy-card { width: 58px; }
+}
