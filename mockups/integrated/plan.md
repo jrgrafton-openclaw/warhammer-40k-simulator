@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a single-page integrated prototype that runs all game phases in sequence (Deploy → Move → Shoot → Charge → Fight → Game End) in one continuous session. This validates the phase transition pattern, event bus, and Web Component architecture before porting to the production engine.
+Build a single-page integrated prototype that runs all game phases in sequence (Deploy → Move → Shoot → Charge → Fight → Game End) in one continuous session. This validates the phase transition pattern and scene architecture before porting to the production engine.
 
 ---
 
@@ -25,11 +25,13 @@ Routes:
 
 For the integrated prototype, we only build `#/game`. The phase state machine handles all transitions internally.
 
-### Componentization: Web Components (Custom Elements)
+### Componentization: Direct DOM (v0.1), Web Components (v0.2+)
 
-Native browser API (stable since 2018, all browsers). Each component is a small, self-contained file (50-200 lines). No Shadow DOM — use existing BEM-like CSS conventions for styling.
+**v0.1:** No Web Components. Direct DOM manipulation with `innerHTML` swaps and `textContent` updates. Two phases don't justify abstraction — the HTML diff between deploy and move action bars is ~10 lines. We swap `innerHTML` on transition, update `textContent` for headers/pills, and call it done.
 
-Components to extract:
+**v0.2+:** When we add phase 3, extract Web Components based on the real patterns that emerged from v0.1. By then we'll have 3 concrete examples of each component's interface instead of guessing from 2.
+
+Components to extract in v0.2+:
 
 | Component | Source | Lines (est) | Used by |
 |---|---|---|---|
@@ -41,41 +43,11 @@ Components to extract:
 | `<wh-roster-panel>` | Roster sidebar HTML from each phase | ~80 | All phases |
 | `<wh-vp-bar>` | VP tracker from game-end | ~40 | Command, Game End |
 
-### Reactive Updates: EventTarget Event Bus
+### Reactive Updates: Callbacks (v0.1), EventTarget (v0.2+)
 
-Lightweight pub/sub for cross-component synchronization. Native browser API, zero dependencies.
+**v0.1:** Existing `callbacks.selectUnit` pattern works fine for 2 phases. Phase machine uses a plain callback for transition notification.
 
-```js
-// shared/events.js (~30 lines)
-const bus = new EventTarget();
-
-export function emit(name, detail) {
-  bus.dispatchEvent(new CustomEvent(name, { detail }));
-}
-
-export function on(name, fn) {
-  bus.addEventListener(name, (e) => fn(e.detail));
-}
-
-export function off(name, fn) {
-  bus.removeEventListener(name, fn);
-}
-```
-
-Core events:
-
-| Event | Payload | Emitted by | Consumed by |
-|---|---|---|---|
-| `phase:transition` | `{ from, to }` | State machine | All components |
-| `unit:selected` | `{ unit }` | svg-renderer | wh-unit-card, wh-action-bar, phase logic |
-| `unit:deselected` | `{}` | svg-renderer | wh-unit-card, wh-action-bar |
-| `unit:moved` | `{ unit, from, to }` | movement.js | wh-unit-card (range update), range-rings |
-| `unit:advance-toggled` | `{ unit, advanced }` | movement.js | wh-unit-card, range-rings |
-| `unit:damaged` | `{ unit, wounds }` | shooting/fight.js | wh-unit-card, wh-roster-panel |
-| `unit:destroyed` | `{ unit }` | shooting/fight.js | wh-roster-panel, svg-renderer |
-| `roll:started` | `{ type, data }` | phase logic | wh-dice-overlay |
-| `roll:complete` | `{ results }` | wh-dice-overlay | phase logic |
-| `action:confirmed` | `{ phase }` | wh-action-bar | State machine |
+**v0.2+:** When there are 3+ listeners on a transition event, upgrade to EventTarget bus. The interface is simple — `emit(name, detail)`, `on(name, fn)`, `off(name, fn)`.
 
 ---
 
@@ -86,24 +58,15 @@ mockups/integrated/
 ├── plan.md                  ← this file
 ├── index.html               ← single page, loads all modules
 ├── style.css                ← integration-specific styles (phase transitions, layout)
-├── app.js                   ← entry point: hash router, phase state machine
-├── events.js                ← EventTarget bus (emit/on/off)
-├── phase-machine.js         ← state machine: phase enum, transition logic, cleanup
-├── components/
-│   ├── wh-action-bar.js
-│   ├── wh-phase-header.js
-│   ├── wh-unit-card.js
-│   ├── wh-dice-overlay.js
-│   ├── wh-model-tooltip.js
-│   ├── wh-roster-panel.js
-│   └── wh-vp-bar.js
+├── app.js                   ← entry point: init, phase state, transition logic
+├── phase-machine.js         ← state machine: phase enum, transition logic, cleanup hooks
 └── scenes/
-    ├── scene-deploy.js      ← adapted from phases/deploy/v0.4/deployment.js
-    ├── scene-move.js         ← adapted from phases/move/v0.23/movement.js + advance-dice.js
-    ├── scene-shoot.js        ← adapted from phases/shoot/v0.9/shooting.js
-    ├── scene-charge.js       ← adapted from phases/charge/v0.1/charge.js
-    ├── scene-fight.js        ← adapted from phases/fight/v0.1/fight.js
-    └── scene-game-end.js     ← adapted from phases/game-end/v0.2/scene.js
+    ├── scene-deploy.js      ← thin wrapper around phases/deploy/v0.4/deployment.js
+    ├── scene-move.js         ← thin wrapper around phases/move/v0.23/movement.js + advance-dice.js
+    ├── scene-shoot.js        ← adapted from phases/shoot/v0.9/shooting.js (v0.2)
+    ├── scene-charge.js       ← adapted from phases/charge/v0.1/charge.js (v0.3)
+    ├── scene-fight.js        ← adapted from phases/fight/v0.1/fight.js (v0.3)
+    └── scene-game-end.js     ← adapted from phases/game-end/v0.2/scene.js (v0.4)
 ```
 
 Shared modules imported from existing paths (`../../shared/`). No duplication.
@@ -119,19 +82,22 @@ DEPLOY → MOVE → SHOOT → CHARGE → FIGHT → GAME_END
 ```
 
 ```js
-// phase-machine.js
+// phase-machine.js (~30 lines)
 const PHASES = ['deploy', 'move', 'shoot', 'charge', 'fight', 'game-end'];
 
 let currentIndex = 0;
+let onTransition = null; // plain callback, upgrade to EventTarget in v0.2+
 
 export function currentPhase() { return PHASES[currentIndex]; }
+
+export function setTransitionCallback(fn) { onTransition = fn; }
 
 export function nextPhase() {
   if (currentIndex >= PHASES.length - 1) return null;
   const from = PHASES[currentIndex];
   currentIndex++;
   const to = PHASES[currentIndex];
-  emit('phase:transition', { from, to });
+  if (onTransition) onTransition({ from, to });
   return to;
 }
 ```
@@ -143,90 +109,122 @@ Each scene module exports:
 Transition sequence:
 1. Current scene `cleanup()`
 2. State machine advances
-3. `wh-phase-header` updates (animated pill transition from v0.4 mockup)
-4. `wh-action-bar` swaps button set
-5. New scene `init(simState)` — unit positions carry over untouched
+3. Phase header `textContent` updated (animated pill transition)
+4. Action bar `innerHTML` swapped to new phase's buttons
+5. Roster pills `textContent` cleared/updated
+6. New scene `init(simState)` — unit positions carry over untouched
 
 ---
 
 ## Implementation Phases
 
-### v0.1 — Deploy → Move + Architecture Foundation
+### v0.1 — Deploy → Move (Minimal Integration)
 
-**Scope:** Two-phase integration with full event bus and Web Components.
+**Scope:** Two-phase integration. No Web Components, no EventTarget bus. Direct DOM manipulation. Phase machine with plain callback.
+
+**Army:** 6 Imperium units (including Outriders for wall-collision edge case) + 3 Ork units = 9 total.
 
 **Steps:**
 
-1. **Create `events.js`** — EventTarget bus with `emit()`, `on()`, `off()`
+1. **Create `phase-machine.js`** (~30 lines)
+   - Phase enum, `currentPhase()`, `nextPhase()`, `setTransitionCallback()`
+   - Plain callback for transition notification (not EventTarget yet)
 
-2. **Create `phase-machine.js`** — Phase enum, `currentPhase()`, `nextPhase()`, transition emission
+2. **Create `scene-deploy.js`** (~40 lines, thin wrapper)
+   - Imports from `../../phases/deploy/v0.4/deployment.js`
+   - Exports `initDeploy(simState)` and `cleanupDeploy()`
+   - `cleanupDeploy()`: `delete simState.drag`, remove deploy event listeners, clear deploy overlays
 
-3. **Extract `<wh-action-bar>`** — Web Component from shared action-bar HTML pattern
-   - Accepts `phase` attribute, renders appropriate buttons
-   - Listens to `phase:transition` to swap buttons
-   - Emits `action:confirmed` on primary button click
+3. **Create `scene-move.js`** (~40 lines, thin wrapper)
+   - Imports from `../../phases/move/v0.23/movement.js` + `advance-dice.js`
+   - Exports `initMove(simState)` and `cleanupMove()`
 
-4. **Extract `<wh-phase-header>`** — Web Component from phase pill pattern
-   - Accepts `phase` + `subtitle` attributes
-   - Animated transition (dot pulse + label slide from v0.4 mockup)
-   - Listens to `phase:transition` to update
+4. **Add `cleanupDeployment()` to `deployment.js`** (~15 lines)
+   - New export in existing file: resets deploy state, removes event listeners
+   - The only modification to an existing phase file
 
-5. **Extract `<wh-unit-card>`** — Web Component wrapping `buildCard()`
-   - Listens to `unit:selected`, `unit:deselected`, `unit:advance-toggled`
-   - Renders in card slot area
+5. **Create `app.js`** (~150 lines)
+   - Define `simState.units` — 6 imp units (Assault Intercessors, Primaris Lieutenant, Intercessor Squad A, Hellblasters, Redemptor Dreadnought, Outriders) in staging zone + 3 Orks pre-deployed
+   - Init shared modules once: `renderTerrain()`, `initBoard()`, `initBattleControls()`, `initModelInteraction()`
+   - Set initial camera pan (deploy's `translate(350px, 0px) scale(0.5)`)
+   - `let currentPhase = 'deploy'`; register transition callback
+   - `transitionToMove()`:
+     1. `cleanupDeploy()` — remove deploy drag interceptor
+     2. Update `.phase-title` textContent: "DEPLOYMENT PHASE" → "MOVEMENT PHASE"
+     3. Update `.phase-subtitle` textContent
+     4. Swap action bar innerHTML (remove deploy-status, add mode-group, swap confirm/cancel IDs)
+     5. Update phase dots (MOVE goes `.active`)
+     6. Add `.phase-move` class to body → hides deployment zone SVGs via CSS
+     7. Clear roster deploy-state pills
+     8. `initMovement()` — movement.js takes over
 
-6. **Create `scene-deploy.js`** — Adapt from `phases/deploy/v0.4/deployment.js` (675 lines)
-   - Import deployment logic, wire to event bus instead of direct DOM manipulation
-   - On "CONFIRM DEPLOYMENT" → emit `action:confirmed`
-
-7. **Create `scene-move.js`** — Adapt from `phases/move/v0.23/movement.js` (793 lines) + `advance-dice.js` (83 lines)
-   - Import movement logic, wire to event bus
-   - Emit `unit:moved`, `unit:advance-toggled` events
-   - On "END MOVEMENT" → emit `action:confirmed`
-
-8. **Create `app.js`** — Entry point
-   - Define `simState.units` (once, from deploy scene.js data)
-   - Init shared modules (renderTerrain, initBoard, etc. — once)
-   - Register phase machine listener: on `action:confirmed`, call `nextPhase()`
-   - Start with `scene-deploy.init()`
-
-9. **Create `index.html`** — Single page
-   - Links all shared CSS files (9 files from `shared/components/`)
-   - Links integration `style.css` (phase transition animations)
-   - Uses Web Components in markup: `<wh-phase-header>`, `<wh-action-bar>`, `<wh-unit-card>`
-   - SVG battlefield (same structure as individual phase pages)
+6. **Create `index.html`** (~220 lines)
+   - Base: deploy v0.4's HTML structure
+   - Add: `#roll-overlay` div (for advance dice), Outriders roster entry
+   - Deploy-specific SVG (staging zone, deployment zones, NML labels) stays in HTML — hidden via CSS class on transition
+   - Links all shared CSS + both phase CSS files + integration style.css
    - `<script type="module" src="app.js">`
 
-10. **Create `style.css`** — Phase transition animations, layout for integrated view
+7. **Create `style.css`** (~60 lines)
+   - Phase transition animation (pill fade/slide for header)
+   - `.phase-move` class that hides deployment zone SVGs (staging, zones, NML labels)
+   - Camera transition easing
+
+**Key risk: Drag interceptor handoff.**
+Both deploy and move use `Object.defineProperty(simState, 'drag', {...})` with `configurable: true`. On transition:
+1. `cleanupDeploy()` calls `delete simState.drag` to remove deploy's interceptor
+2. `initMovement()` installs move's interceptor via its own `Object.defineProperty`
+This must be tested carefully — the `delete` must happen before the new `defineProperty`.
 
 **Acceptance criteria:**
-- [ ] Page loads showing Deploy phase with staging zone
+- [ ] Page loads showing Deploy with 6 imp units in staging + 3 orks on board
+- [ ] Outriders visible in roster and staging zone (3 models, R32 bases)
 - [ ] User deploys units via drag (existing deployment mechanics)
 - [ ] "CONFIRM DEPLOYMENT" transitions to Move phase with animation
 - [ ] Phase header pill animates from "DEPLOYMENT" to "MOVEMENT"
-- [ ] Action bar swaps to movement buttons
+- [ ] Action bar swaps to movement buttons (mode group + confirm/cancel)
+- [ ] Deployment zone SVGs hidden after transition
 - [ ] Unit positions carry over from Deploy to Move
 - [ ] Movement mechanics work (drag, range rings, advance toggle, ghosts)
-- [ ] Unit card updates reactively via event bus when advance toggled
+- [ ] Outriders: 14" move range, wall collision blocks path through gaps
 - [ ] "END MOVEMENT" shows completion state
 - [ ] All shared CSS renders correctly (no missing styles)
 - [ ] Each file is <300 lines (LLM-friendly)
+- [ ] Unit tests pass (6 tests)
+- [ ] Visual tests pass (4 tests)
 
-**Key risk:** The drag interceptor pattern (`Object.defineProperty` on callbacks) is set differently per phase. The integration layer needs a single interceptor that delegates to the current phase. Test this carefully during Deploy → Move transition.
+**Testing:**
+
+*Unit tests (Vitest, ~6 tests):*
+1. `nextPhase()` advances from 'deploy' to 'move' and fires transition callback
+2. After transition, body has `.phase-move` class
+3. Phase header text reads "MOVEMENT PHASE" after transition
+4. Action bar contains move/advance mode buttons after transition
+5. Unit positions from deploy carry over unchanged to move phase state
+6. Drag interceptor cleanly swapped (deploy interceptor removed, move interceptor installed — no throw)
+
+*Visual tests (Playwright screenshot comparison, ~4 tests):*
+1. Initial load — deploy phase with staging zone, 6 imp units + 3 ork units visible
+2. All units deployed — confirm button enabled, correct roster pill states
+3. Post-transition — move phase UI: pill says MOVEMENT, action bar has mode buttons, deployment zones hidden
+4. Outriders selected — range rings show 14" move, correct card stats
 
 ---
 
-### v0.2 — + Shoot
+### v0.2 — + Shoot + Extract Web Components
 
 **Add:** `scene-shoot.js` adapted from `phases/shoot/v0.9/shooting.js` (951 lines)
 
-**New component:** `<wh-dice-overlay>` — shared roll overlay for shoot/charge/fight
+**Architecture upgrade:** Extract Web Components + EventTarget bus based on patterns from v0.1.
 
 **Steps:**
-1. Extract `<wh-dice-overlay>` from shooting HTML
-2. Create `scene-shoot.js` — wire shooting logic to event bus
-3. Add `shoot` to phase machine transition
-4. Wire "END MOVEMENT" → Shoot transition
+1. Create `events.js` — EventTarget bus with `emit()`, `on()`, `off()`
+2. Extract `<wh-action-bar>` Web Component (now we have 3 phase examples)
+3. Extract `<wh-phase-header>` Web Component
+4. Extract `<wh-dice-overlay>` from shooting HTML
+5. Create `scene-shoot.js` — wire shooting logic to event bus
+6. Add `shoot` to phase machine transition
+7. Wire "END MOVEMENT" → Shoot transition
 
 **New events:** `roll:started`, `roll:complete`, `unit:damaged`, `unit:destroyed`
 
@@ -308,23 +306,22 @@ All shared modules are imported directly from `../../shared/` — zero duplicati
 
 ---
 
-## Integration Layer Size Estimate
+## Integration Layer Size Estimate (v0.1)
 
 | New file | Lines (est) | Purpose |
 |---|---|---|
-| `events.js` | ~30 | Event bus |
-| `phase-machine.js` | ~60 | State machine + transition logic |
-| `app.js` | ~100 | Entry point, init, router |
-| `style.css` | ~80 | Phase transition animations |
-| `index.html` | ~150 | Single page shell |
-| 7 Web Components | ~600 total | UI componentization |
-| **Total new integration code** | **~1,020** | |
+| `phase-machine.js` | ~30 | State machine + transition logic |
+| `app.js` | ~150 | Entry point, init, army data, transition DOM manipulation |
+| `style.css` | ~60 | Phase transition animations, deploy-zone hiding |
+| `index.html` | ~220 | Single page shell (deploy base + move additions) |
+| `scenes/scene-deploy.js` | ~40 | Thin wrapper: init + cleanup for deploy |
+| `scenes/scene-move.js` | ~40 | Thin wrapper: init + cleanup for move |
+| **Total new integration code** | **~540** | |
 
-Each phase scene file is adapted (not rewritten) from its mockup counterpart. The adaptation is primarily:
-- Remove `simState.units` definition (shared across phases now)
-- Remove shared module init calls (done once in `app.js`)
-- Replace direct DOM manipulation for action bar / phase header with event emissions
-- Export `init()` and `cleanup()` functions
+**Modified existing file:**
+| File | Change | Lines added |
+|---|---|---|
+| `deployment.js` | Add `cleanupDeployment()` export | ~15 |
 
 ---
 
@@ -338,7 +335,7 @@ After the integrated prototype validates the architecture:
 4. **Fight** — mirrors shooting. Engine resolves melee damage.
 5. **Command** — battle-shock, VP scoring. Mostly UI animation.
 
-The Web Components and event bus carry over to production unchanged. Only the scene files change: instead of manipulating `simState` directly, they call `engine.dispatch()` and read the returned state.
+Scene files and (future) Web Components carry over to production unchanged. Only the state mutation changes: instead of manipulating `simState` directly, scenes call `engine.dispatch()` and read the returned state.
 
 ---
 
@@ -348,8 +345,10 @@ The Web Components and event bus carry over to production unchanged. Only the sc
 2. **One version at a time.** Complete v0.1 before starting v0.2.
 3. **No file over 300 lines.** Split if approaching.
 4. **Import shared modules from `../../shared/`.** Never copy them.
-5. **Use the event bus for cross-component updates.** No direct DOM queries between components.
-6. **Test each phase transition manually** — deploy units, confirm, verify state carries.
-7. **The drag interceptor is the hardest part.** The current pattern uses `Object.defineProperty` on a callbacks object. The integration needs a single interceptor that delegates to the current phase's handler. Get this right in v0.1.
-8. **Phase-specific CSS goes in the phase's existing `style.css`** (linked from index.html). Integration CSS goes in `integrated/style.css`.
-9. **Keep the scene files recognizable.** Someone should be able to diff `scene-deploy.js` against `phases/deploy/v0.4/deployment.js` and see the adaptation, not a rewrite.
+5. **v0.1: Direct DOM manipulation.** No Web Components, no EventTarget bus. `innerHTML` swaps and `textContent` updates.
+6. **v0.2+: Extract Web Components** based on real patterns from v0.1. Not before.
+7. **Test each phase transition manually** — deploy units, confirm, verify state carries.
+8. **The drag interceptor is the hardest part.** Both phases use `Object.defineProperty` on callbacks with `configurable: true`. `delete` the old one before installing the new one. Get this right in v0.1.
+9. **Phase-specific CSS goes in the phase's existing `style.css`** (linked from index.html). Integration CSS goes in `integrated/style.css`.
+10. **Keep the scene files recognizable.** Someone should be able to diff `scene-deploy.js` against `phases/deploy/v0.4/deployment.js` and see the adaptation, not a rewrite.
+11. **Army: 6 Imperium + 3 Orks.** Outriders are required for wall-collision edge case testing. Do not drop them.
