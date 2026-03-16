@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge — War Table — WH40K Simulator</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Shared tokens -->
+  <link rel="stylesheet" href="../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../shared/tokens/typography.css">
+
+  <!-- Page styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wt-root">
+  <div class="wt-vignette"></div>
+  <div class="wt-grain"></div>
+
+  <!-- Navigation chrome -->
+  <a class="nav-back" href="../start-game/index.html">&larr; Back</a>
+  <a class="nav-mockups" href="../index.html#battle-forge">&larr; Mockups</a>
+  <div class="version-badge">v0.1b &middot; War Table</div>
+
+  <!-- ═══ TOP BAR — Faction Emblems ═══ -->
+  <header class="faction-bar anim-row" style="--i:0">
+    <div class="faction-emblem selected-imp">
+      <span class="emblem-icon">⚜</span>
+      <div class="emblem-info">
+        <div class="emblem-name">Adeptus Custodes</div>
+        <div class="emblem-sub">2000 pts &middot; Shield Host</div>
+      </div>
+      <span class="emblem-check">&#10003;</span>
+    </div>
+
+    <div class="faction-emblem disabled" data-tooltip="Coming in future update">
+      <span class="emblem-icon dim">&#9876;</span>
+      <div class="emblem-info">
+        <div class="emblem-name">Space Marines</div>
+        <div class="emblem-sub">--</div>
+      </div>
+      <span class="coming-tag">Coming Soon</span>
+    </div>
+
+    <div class="faction-bar-divider">
+      <div class="divider-ornament">&#9876;</div>
+      <div class="divider-text">VS</div>
+      <div class="divider-ornament">&#9876;</div>
+    </div>
+
+    <div class="faction-emblem selected-ork">
+      <span class="emblem-icon">☠</span>
+      <div class="emblem-info">
+        <div class="emblem-name">Orks</div>
+        <div class="emblem-sub">2000 pts &middot; Waaagh! Tribe</div>
+      </div>
+      <span class="emblem-check">&#10003;</span>
+    </div>
+
+    <div class="faction-emblem disabled" data-tooltip="Coming in future update">
+      <span class="emblem-icon dim">&#9763;</span>
+      <div class="emblem-info">
+        <div class="emblem-name">Chaos Marines</div>
+        <div class="emblem-sub">--</div>
+      </div>
+      <span class="coming-tag">Coming Soon</span>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN WAR TABLE — Map + Flanking Rosters ═══ -->
+  <div class="war-table anim-row" style="--i:1">
+
+    <!-- LEFT ROSTER — Imperium -->
+    <div class="roster-scroll imp-scroll">
+      <div class="roster-banner">
+        <div class="banner-icon">⚜</div>
+        <div class="banner-title">Adeptus Custodes</div>
+        <div class="banner-pts">1985 / 2000 pts</div>
+      </div>
+      <div class="roster-entries">
+        <div class="r-entry"><span class="r-name">Blade Champion</span><span class="r-detail">1 model</span><span class="r-pts">120</span></div>
+        <div class="r-entry"><span class="r-name">Blade Champion</span><span class="r-detail">1 model</span><span class="r-pts">120</span></div>
+        <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-detail">5 models</span><span class="r-pts">190</span></div>
+        <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-detail">5 models</span><span class="r-pts">190</span></div>
+        <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-detail">5 models</span><span class="r-pts">190</span></div>
+        <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-detail">5 models</span><span class="r-pts">190</span></div>
+        <div class="r-entry"><span class="r-name">Allarus Custodians</span><span class="r-detail">3 models</span><span class="r-pts">165</span></div>
+        <div class="r-entry"><span class="r-name">Allarus Custodians</span><span class="r-detail">2 models</span><span class="r-pts">110</span></div>
+        <div class="r-entry"><span class="r-name">Prosecutors</span><span class="r-detail">5 models</span><span class="r-pts">85</span></div>
+        <div class="r-entry"><span class="r-name">Prosecutors</span><span class="r-detail">5 models</span><span class="r-pts">85</span></div>
+        <div class="r-entry"><span class="r-name">Caladius Grav-tank</span><span class="r-detail">1 model</span><span class="r-pts">215</span></div>
+        <div class="r-entry"><span class="r-name">Caladius Grav-tank</span><span class="r-detail">1 model</span><span class="r-pts">215</span></div>
+        <div class="r-entry"><span class="r-name">Inquisitor Draxus</span><span class="r-detail">1 model</span><span class="r-pts">95</span></div>
+      </div>
+    </div>
+
+    <!-- CENTRE — The War Table Map -->
+    <div class="table-centre">
+      <div class="table-title-bar">
+        <span class="table-label">Operational Theatre</span>
+        <span class="table-dim">60&Prime; &times; 44&Prime;</span>
+      </div>
+
+      <div class="war-map">
+        <!-- Grid lines -->
+        <div class="map-grid"></div>
+
+        <!-- Deployment zones — LEFT / RIGHT -->
+        <div class="dz dz-imp">
+          <span class="dz-label">Imperium<br>Deploy</span>
+        </div>
+        <div class="dz dz-ork">
+          <span class="dz-label">Ork<br>Deploy</span>
+        </div>
+
+        <!-- No Man's Land label -->
+        <div class="nml">No Man's Land</div>
+
+        <!-- Objectives -->
+        <span class="obj" style="top:22%; left:50%"></span>
+        <span class="obj" style="top:50%; left:22%"></span>
+        <span class="obj obj-centre" style="top:50%; left:50%"></span>
+        <span class="obj" style="top:50%; left:78%"></span>
+        <span class="obj" style="top:78%; left:50%"></span>
+
+        <!-- Terrain features (decorative) -->
+        <div class="terrain-ruin" style="top:15%; left:38%; width:10%; height:14%">
+          <span class="terrain-tag">Ruin</span>
+        </div>
+        <div class="terrain-ruin" style="top:60%; left:55%; width:12%; height:10%">
+          <span class="terrain-tag">Ruin</span>
+        </div>
+        <div class="terrain-crate" style="top:40%; left:45%; width:8%; height:6%">
+          <span class="terrain-tag">Crates</span>
+        </div>
+        <div class="terrain-ruin" style="top:30%; left:68%; width:8%; height:12%">
+          <span class="terrain-tag">Ruin</span>
+        </div>
+        <div class="terrain-crate" style="top:72%; left:32%; width:6%; height:5%">
+          <span class="terrain-tag">Crate</span>
+        </div>
+
+        <!-- Compass rose -->
+        <div class="compass">N</div>
+      </div>
+
+      <div class="table-footer">
+        <span class="table-mission">Mission: Take and Hold</span>
+        <span class="table-deploy-type">Hammer &amp; Anvil &middot; Layout 1</span>
+      </div>
+    </div>
+
+    <!-- RIGHT ROSTER — Orks -->
+    <div class="roster-scroll ork-scroll">
+      <div class="roster-banner ork-banner">
+        <div class="banner-icon">☠</div>
+        <div class="banner-title">Orks</div>
+        <div class="banner-pts">1960 / 2000 pts</div>
+      </div>
+      <div class="roster-entries">
+        <div class="r-entry"><span class="r-name">Warboss</span><span class="r-detail">1 model</span><span class="r-pts">90</span></div>
+        <div class="r-entry"><span class="r-name">Boss Nob</span><span class="r-detail">1 model</span><span class="r-pts">95</span></div>
+        <div class="r-entry"><span class="r-name">Boyz Mob</span><span class="r-detail">10 models</span><span class="r-pts">150</span></div>
+        <div class="r-entry"><span class="r-name">Boyz Mob</span><span class="r-detail">10 models</span><span class="r-pts">150</span></div>
+        <div class="r-entry"><span class="r-name">Mekboy</span><span class="r-detail">1 model</span><span class="r-pts">75</span></div>
+        <div class="r-entry"><span class="r-name">Nobz Mob</span><span class="r-detail">5 models</span><span class="r-pts">115</span></div>
+        <div class="r-entry"><span class="r-name">Nobz Mob</span><span class="r-detail">5 models</span><span class="r-pts">115</span></div>
+        <div class="r-entry"><span class="r-name">Gretchin</span><span class="r-detail">10 models</span><span class="r-pts">50</span></div>
+        <div class="r-entry"><span class="r-name">Gretchin</span><span class="r-detail">10 models</span><span class="r-pts">50</span></div>
+        <div class="r-entry"><span class="r-name">Deff Dread</span><span class="r-detail">1 model</span><span class="r-pts">150</span></div>
+        <div class="r-entry"><span class="r-name">Battlewagon</span><span class="r-detail">1 model</span><span class="r-pts">185</span></div>
+        <div class="r-entry"><span class="r-name">Lootas</span><span class="r-detail">5 models</span><span class="r-pts">100</span></div>
+        <div class="r-entry"><span class="r-name">Stormboyz</span><span class="r-detail">5 models</span><span class="r-pts">80</span></div>
+        <div class="r-entry"><span class="r-name">Weirdboy</span><span class="r-detail">1 model</span><span class="r-pts">70</span></div>
+        <div class="r-entry"><span class="r-name">Meganobz</span><span class="r-detail">3 models</span><span class="r-pts">200</span></div>
+        <div class="r-entry"><span class="r-name">Trukk</span><span class="r-detail">1 model</span><span class="r-pts">65</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAP SELECTION THUMBNAILS ═══ -->
+  <div class="map-row anim-row" style="--i:2">
+    <div class="map-row-label">Select Theatre</div>
+    <div class="map-thumbs">
+
+      <div class="map-thumb selected">
+        <div class="thumb-preview">
+          <div class="thumb-zone thumb-imp"></div>
+          <div class="thumb-zone thumb-ork"></div>
+        </div>
+        <div class="thumb-name">Hammer &amp; Anvil</div>
+        <div class="thumb-size">60&Prime; &times; 44&Prime;</div>
+      </div>
+
+      <div class="map-thumb disabled" data-tooltip="Coming in future update">
+        <div class="thumb-preview disabled-preview"></div>
+        <div class="thumb-name">Search &amp; Destroy</div>
+        <div class="thumb-size">Coming Soon</div>
+      </div>
+
+      <div class="map-thumb disabled" data-tooltip="Coming in future update">
+        <div class="thumb-preview disabled-preview"></div>
+        <div class="thumb-name">Sweeping Engagement</div>
+        <div class="thumb-size">Coming Soon</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS BAR ═══ -->
+  <div class="settings-bar anim-row" style="--i:3">
+    <div class="setting-chip">
+      <span class="chip-label">Turn Limit</span>
+      <span class="chip-value">5</span>
+    </div>
+    <div class="setting-chip">
+      <span class="chip-label">First Turn</span>
+      <span class="chip-value">Roll-off</span>
+    </div>
+    <div class="setting-chip">
+      <span class="chip-label">Battle Size</span>
+      <span class="chip-value">Strike Force</span>
+    </div>
+    <div class="setting-chip">
+      <span class="chip-label">Mission</span>
+      <span class="chip-value">Take and Hold</span>
+    </div>
+  </div>
+
+  <!-- ═══ BEGIN BATTLE ═══ -->
+  <a class="begin-btn anim-row" style="--i:4" href="../phases/deploy/v0.4/index.html">
+    <span class="btn-ornament">&laquo;</span>
+    <span class="btn-text">&#9876; Begin Battle</span>
+    <span class="btn-ornament">&raquo;</span>
+  </a>
+
+</div>
+
+<!-- Tooltip -->
+<div class="wt-tooltip" id="tooltip"></div>
+
+<script>
+  const tooltip = document.getElementById('tooltip');
+  document.querySelectorAll('[data-tooltip]').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      tooltip.textContent = el.dataset.tooltip;
+      tooltip.classList.add('visible');
+    });
+    el.addEventListener('mousemove', e => {
+      tooltip.style.left = e.clientX + 12 + 'px';
+      tooltip.style.top  = e.clientY - 8 + 'px';
+    });
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+  });
+</script>
+
+</body>
+</html>
