@@ -17,8 +17,8 @@
  * by staggerMs and volume reduced by diminishing factor to avoid clipping.
  */
 
-// ── Asset path (relative to any phase's index.html) ──
-const SFX_BASE = '../../../shared/audio/sfx/';
+// ── Asset path (resolved relative to this module, works from any page) ──
+const SFX_BASE = new URL('./sfx/', import.meta.url).href;
 
 // ── Sound registry ──
 const SOUNDS = {

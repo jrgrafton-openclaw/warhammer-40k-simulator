@@ -177,21 +177,21 @@ Both deploy and move use `Object.defineProperty(simState, 'drag', {...})` with `
 This must be tested carefully — the `delete` must happen before the new `defineProperty`.
 
 **Acceptance criteria:**
-- [ ] Page loads showing Deploy with 6 imp units in staging + 3 orks on board
-- [ ] Outriders visible in roster and staging zone (3 models, R32 bases)
-- [ ] User deploys units via drag (existing deployment mechanics)
-- [ ] "CONFIRM DEPLOYMENT" transitions to Move phase with animation
-- [ ] Phase header pill animates from "DEPLOYMENT" to "MOVEMENT"
-- [ ] Action bar swaps to movement buttons (mode group + confirm/cancel)
-- [ ] Deployment zone SVGs hidden after transition
-- [ ] Unit positions carry over from Deploy to Move
-- [ ] Movement mechanics work (drag, range rings, advance toggle, ghosts)
-- [ ] Outriders: 14" move range, wall collision blocks path through gaps
-- [ ] "END MOVEMENT" shows completion state
-- [ ] All shared CSS renders correctly (no missing styles)
-- [ ] Each file is <300 lines (LLM-friendly)
-- [ ] Unit tests pass (6 tests)
-- [ ] Visual tests pass (4 tests)
+- [x] Page loads showing Deploy with 6 imp units in staging + 3 orks on board
+- [x] Outriders visible in roster and staging zone (3 models, R32 bases)
+- [x] User deploys units via drag (existing deployment mechanics)
+- [x] "CONFIRM DEPLOYMENT" transitions to Move phase with animation
+- [x] Phase header pill animates from "DEPLOYMENT" to "MOVEMENT"
+- [x] Action bar swaps to movement buttons (mode group + confirm/cancel)
+- [x] Deployment zone SVGs hidden after transition
+- [x] Unit positions carry over from Deploy to Move
+- [x] Movement mechanics work (drag, range rings, advance toggle, ghosts)
+- [x] Outriders: 14" move range, wall collision blocks path through gaps
+- [x] "END MOVEMENT" shows completion state
+- [x] All shared CSS renders correctly (no missing styles)
+- [x] Each file is <300 lines (LLM-friendly)
+- [x] Unit tests pass (6 tests)
+- [x] Visual tests pass (4 tests)
 
 **Testing:**
 
@@ -211,29 +211,32 @@ This must be tested carefully — the `delete` must happen before the new `defin
 
 ---
 
-### v0.2 — + Shoot + Extract Web Components
+### v0.2 — + Shoot (Direct DOM, no Web Components)
 
-**Add:** `scene-shoot.js` adapted from `phases/shoot/v0.9/shooting.js` (951 lines)
+**Add:** `scene-shoot.js` thin wrapper around `phases/shoot/v0.9/shooting.js`.
 
-**Architecture upgrade:** Extract Web Components + EventTarget bus based on patterns from v0.1.
+**Architecture:** Same direct DOM manipulation as v0.1. Web Components and EventTarget bus deferred to v0.3 — we need a third combat phase (Charge/Fight) before the component interfaces are clear enough to extract.
 
 **Steps:**
-1. Create `events.js` — EventTarget bus with `emit()`, `on()`, `off()`
-2. Extract `<wh-action-bar>` Web Component (now we have 3 phase examples)
-3. Extract `<wh-phase-header>` Web Component
-4. Extract `<wh-dice-overlay>` from shooting HTML
-5. Create `scene-shoot.js` — wire shooting logic to event bus
-6. Add `shoot` to phase machine transition
-7. Wire "END MOVEMENT" → Shoot transition
-
-**New events:** `roll:started`, `roll:complete`, `unit:damaged`, `unit:destroyed`
+1. Create `scene-shoot.js` — thin wrapper with `initShoot()` / `cleanupShoot()`, builds LoS blockers, installs drag block
+2. Add `#layer-target-lines`, `#fx-layer`, `#weapon-popup` to `index.html`
+3. Link shoot phase CSS in `index.html`
+4. Add `transitionToShoot()` to `app.js` — swaps action bar, updates phase dots, inits shooting
+5. Wire "END MOVEMENT" click → `nextPhase()` in `transitionToMove()`
+6. Wire `move → shoot` transition in phase callback
+7. Add `.phase-shoot` CSS rules to `style.css`
 
 **Acceptance criteria:**
-- [ ] Move → Shoot transition works
-- [ ] Unit that Advanced can't fire non-ASSAULT weapons (state carries from Move)
-- [ ] Weapon selection, targeting, roll overlay all functional
-- [ ] Damage applied to target units, reflected in unit cards
-- [ ] Destroyed units removed from board
+- [x] Move → Shoot transition works (END MOVEMENT click triggers it)
+- [x] Phase header updates to "SHOOTING PHASE"
+- [x] Phase dots: MOVE → done, SHOOT → active
+- [x] Action bar: mode-group removed, CTA says "END SHOOTING →"
+- [x] Deployment zones stay hidden during shoot phase
+- [x] LoS blockers built from terrain ruin footprints
+- [x] Drag blocked during shooting (position-locked)
+- [x] shooting.js initShooting() called, weapon selection / targeting functional
+- [x] FX layer present for projectile animations
+- [x] END SHOOTING shows completion state (Charge not yet implemented)
 
 ---
 

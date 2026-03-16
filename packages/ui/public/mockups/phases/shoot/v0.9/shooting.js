@@ -795,7 +795,7 @@ function onEnemyInteract(unitId){
 
 function bindShootOverrides(){
   const svg = $('#bf-svg'); if (!svg) return;
-  svg.addEventListener('mousemove', (e) => {
+  _svgMousemove = (e) => {
     if (!state.attackerId || state.shotUnits.has(state.attackerId)) return;
     let node = e.target;
     while (node && !(node.classList?.contains('model-base') || node.classList?.contains('unit-hull'))) node = node.parentElement;
@@ -804,13 +804,15 @@ function bindShootOverrides(){
     if (!isEnemy(uid)) return;
     const options = getValidProfilesForTarget(uid); if (!options.length) return;
     state.hoveredTargetId = uid; drawHoverLines(uid); paint();
-  }, true);
-  svg.addEventListener('mouseleave', () => {
+  };
+  svg.addEventListener('mousemove', _svgMousemove, true);
+  _svgMouseleave = () => {
     // Don't clear lines if an attack is in progress (targetId is set)
     if (state.targetId) return;
     state.hoveredTargetId = null; clearLines(); paint();
-  }, true);
-  const intercept = (e) => {
+  };
+  svg.addEventListener('mouseleave', _svgMouseleave, true);
+  _svgIntercept = (e) => {
     if (!state.attackerId || state.shotUnits.has(state.attackerId)) return;
     let node = e.target;
     while (node && !(node.classList?.contains('model-base') || node.classList?.contains('unit-hull'))) node = node.parentElement;
@@ -821,8 +823,8 @@ function bindShootOverrides(){
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     if (e.type === 'click') onEnemyInteract(uid);
   };
-  svg.addEventListener('mousedown', intercept, true);
-  svg.addEventListener('click', intercept, true);
+  svg.addEventListener('mousedown', _svgIntercept, true);
+  svg.addEventListener('click', _svgIntercept, true);
 }
 
 function selectAttacker(uid){
@@ -929,19 +931,28 @@ function wrappedSelectUnit(uid) {
   }
 }
 
-// Register the wrapped selectUnit via the callbacks registry
-callbacks.selectUnit = wrappedSelectUnit;
-window.selectUnit = wrappedSelectUnit;
+// ── Stored handler refs (for cleanup) ───────────────────
+let _svgMousemove = null;
+let _svgMouseleave = null;
+let _svgIntercept = null;
+let _docKeydown = null;
+let _btnEndShoot = null;
 
 // ── Init ───────────────────────────────────────────────
 export function initShooting() {
-  $('#btn-end-shoot')?.addEventListener('click', () => setStatus('END SHOOTING NOT WIRED IN MOCKUP'));
+  // Register selectUnit callback (deferred from import time for integrated use)
+  callbacks.selectUnit = wrappedSelectUnit;
+  window.selectUnit = wrappedSelectUnit;
+
+  _btnEndShoot = () => setStatus('END SHOOTING NOT WIRED IN MOCKUP');
+  $('#btn-end-shoot')?.addEventListener('click', _btnEndShoot);
   $('#card-close')?.addEventListener('click', () => baseSelectUnit(null));
 
   // Escape key deselects
-  document.addEventListener('keydown', (e) => {
+  _docKeydown = (e) => {
     if (e.key === 'Escape') { baseSelectUnit(null); }
-  });
+  };
+  document.addEventListener('keydown', _docKeydown);
 
   window.__shootDebug = {
     state,
@@ -957,4 +968,29 @@ export function initShooting() {
 
   bindShootOverrides();
   paint();
+}
+
+export function cleanupShooting() {
+  const svg = $('#bf-svg');
+  if (svg) {
+    if (_svgMousemove) svg.removeEventListener('mousemove', _svgMousemove, true);
+    if (_svgMouseleave) svg.removeEventListener('mouseleave', _svgMouseleave, true);
+    if (_svgIntercept) { svg.removeEventListener('mousedown', _svgIntercept, true); svg.removeEventListener('click', _svgIntercept, true); }
+  }
+  _svgMousemove = _svgMouseleave = _svgIntercept = null;
+  if (_docKeydown) document.removeEventListener('keydown', _docKeydown);
+  _docKeydown = null;
+  if (_btnEndShoot) $('#btn-end-shoot')?.removeEventListener('click', _btnEndShoot);
+  _btnEndShoot = null;
+
+  state.attackerId = null; state.targetId = null; state.hoveredTargetId = null;
+  state.selectedProfileIx = 0; state.shotUnits.clear();
+  state.pinnedPopupTargetId = null; state.pinnedRollTargetId = null;
+  if (state.overlayRaf) { cancelAnimationFrame(state.overlayRaf); state.overlayRaf = null; }
+
+  clearLines(); clearEffects(); closeWeaponPopup(); clearRangeRings();
+  $$('#layer-hulls .unit-hull').forEach(h => h.classList.remove('shoot-valid', 'shoot-invalid', 'shoot-target', 'shoot-attacker', 'shoot-partial'));
+  $$('.wound-ring-layer').forEach(el => el.remove());
+  callbacks.selectUnit = null; delete window.selectUnit;
+  delete window.__shootDebug; delete window.__spentUnitIds;
 }
