@@ -204,53 +204,53 @@
         <!-- ═══ DEFS: gradients, filters ═══ -->
         <defs>
           <!-- Light pool gradients for each ruin -->
-          <radialGradient id="lp-t1" cx="216" cy="96" r="120" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t1" cx="216" cy="96" r="180" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t2" cx="336" cy="372" r="110" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t2" cx="336" cy="372" r="170" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t3" cx="240" cy="300" r="100" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t3" cx="240" cy="300" r="160" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t6" cx="399" cy="234" r="90" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t6" cx="399" cy="234" r="160" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t9" cx="648" cy="504" r="120" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t9" cx="648" cy="504" r="180" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t10" cx="528" cy="228" r="110" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t10" cx="528" cy="228" r="170" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t11" cx="576" cy="300" r="100" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t11" cx="576" cy="300" r="160" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
-          <radialGradient id="lp-t14" cx="399" cy="354" r="90" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stop-color="rgba(255,160,40,0.10)"/>
-            <stop offset="60%" stop-color="rgba(255,140,20,0.04)"/>
+          <radialGradient id="lp-t14" cx="399" cy="354" r="160" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="rgba(255,160,40,0.20)"/>
+            <stop offset="60%" stop-color="rgba(255,140,20,0.10)"/>
             <stop offset="100%" stop-color="rgba(255,140,20,0)"/>
           </radialGradient>
 
-          <!-- Ground noise filter -->
+          <!-- Ground noise filter — very subtle concrete texture -->
           <filter id="ground-noise" x="0" y="0" width="100%" height="100%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="4" stitchTiles="stitch" result="noise"/>
+            <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="3" stitchTiles="stitch" result="noise"/>
             <feColorMatrix type="saturate" values="0" in="noise" result="grey"/>
             <feComponentTransfer in="grey" result="faint">
-              <feFuncA type="linear" slope="0.06"/>
+              <feFuncA type="linear" slope="0.018"/>
             </feComponentTransfer>
             <feBlend in="SourceGraphic" in2="faint" mode="screen"/>
           </filter>
@@ -274,14 +274,14 @@
 
         <!-- ═══ LIGHT POOLS (behind building detail) ═══ -->
         <g id="light-pools" pointer-events="none">
-          <circle cx="216" cy="96" r="120" fill="url(#lp-t1)"/>
-          <circle cx="336" cy="372" r="110" fill="url(#lp-t2)"/>
-          <circle cx="240" cy="300" r="100" fill="url(#lp-t3)"/>
-          <circle cx="399" cy="234" r="90" fill="url(#lp-t6)"/>
-          <circle cx="648" cy="504" r="120" fill="url(#lp-t9)"/>
-          <circle cx="528" cy="228" r="110" fill="url(#lp-t10)"/>
-          <circle cx="576" cy="300" r="100" fill="url(#lp-t11)"/>
-          <circle cx="399" cy="354" r="90" fill="url(#lp-t14)"/>
+          <circle cx="216" cy="96" r="180" fill="url(#lp-t1)"/>
+          <circle cx="336" cy="372" r="170" fill="url(#lp-t2)"/>
+          <circle cx="240" cy="300" r="160" fill="url(#lp-t3)"/>
+          <circle cx="399" cy="234" r="160" fill="url(#lp-t6)"/>
+          <circle cx="648" cy="504" r="180" fill="url(#lp-t9)"/>
+          <circle cx="528" cy="228" r="170" fill="url(#lp-t10)"/>
+          <circle cx="576" cy="300" r="160" fill="url(#lp-t11)"/>
+          <circle cx="399" cy="354" r="160" fill="url(#lp-t14)"/>
         </g>
 
         <!-- ═══ BUILDING ARCHITECTURAL DETAIL ═══ -->
@@ -606,5 +606,31 @@
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script type="module" src="scene.js?v=20260314-deploy5"></script>
+<script>
+// v0.5b: Enhance unit glow filters after shared renderer has created them
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var svg = document.getElementById('bf-svg');
+    if (!svg) return;
+    // Replace mf-imp filter with enhanced version (bigger glow, more vivid)
+    var filters = {
+      'mf-imp': { color: '#00d4ff', opacity: '0.85', blur: '4.5' },
+      'mf-ork': { color: '#ff4020', opacity: '0.85', blur: '4.5' },
+      'mf-sel': { color: '#00d4ff', opacity: '1.0',  blur: '6.0' }
+    };
+    Object.keys(filters).forEach(function(id) {
+      var el = svg.querySelector('#' + id);
+      if (!el) return;
+      var f = filters[id];
+      el.innerHTML =
+        '<feFlood flood-color="' + f.color + '" flood-opacity="' + f.opacity + '" result="col"/>' +
+        '<feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>' +
+        '<feGaussianBlur in="clipped" stdDeviation="' + f.blur + '" result="blur"/>' +
+        '<feGaussianBlur in="clipped" stdDeviation="8" result="outerBlur"/>' +
+        '<feMerge><feMergeNode in="outerBlur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>';
+    });
+  }, 200);
+});
+</script>
 </body>
 </html>
