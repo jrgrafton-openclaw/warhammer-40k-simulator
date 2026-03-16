@@ -164,35 +164,36 @@
 .god-ray:nth-child(4) { animation-delay: -6s; }
 
 @keyframes god-ray-flicker {
-  0%, 100% { opacity: 0.03; }
-  50% { opacity: 0.07; }
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.22; }
 }
 
 /* ── Terrain Detail Classes ── */
 .terrain-window {
+  filter: drop-shadow(0 0 4px rgba(255,160,40,0.6)) drop-shadow(0 0 10px rgba(255,120,20,0.4));
   animation: window-pulse var(--pulse-dur, 3s) ease-in-out infinite;
   animation-delay: var(--pulse-delay, 0s);
 }
 @keyframes window-pulse {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 0.8; }
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1.0; }
 }
 
 .terrain-beam {
-  stroke-width: 0.5;
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
-  opacity: 0.15;
+  opacity: 0.3;
 }
 
 .terrain-crack {
-  stroke-width: 0.5;
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
-  opacity: 0.2;
+  opacity: 0.35;
   fill: none;
 }
 
 .faction-symbol {
-  opacity: 0.12;
+  opacity: 0.25;
   pointer-events: none;
 }
 
@@ -308,14 +309,14 @@
   pointer-events: none;
   z-index: 4;
   background:
-    /* Bottom mist */
-    linear-gradient(0deg, rgba(140,130,110,0.04) 0%, transparent 15%),
-    /* Top darkness (destroyed ceiling) */
-    linear-gradient(180deg, rgba(0,0,0,0.15) 0%, transparent 12%),
+    /* Bottom mist — visible fog rising */
+    linear-gradient(0deg, rgba(140,140,120,0.08) 0%, rgba(100,110,100,0.03) 8%, transparent 18%),
+    /* Top darkness (destroyed ceiling above) */
+    linear-gradient(180deg, rgba(0,0,0,0.25) 0%, transparent 15%),
     /* Left faction glow (Imperium cyan) */
-    linear-gradient(90deg, rgba(0,180,220,0.03) 0%, transparent 20%),
-    /* Right faction glow (Ork red) */
-    linear-gradient(270deg, rgba(255,50,20,0.03) 0%, transparent 20%);
+    linear-gradient(90deg, rgba(0,180,220,0.06) 0%, transparent 25%),
+    /* Right faction glow (Ork red-orange) */
+    linear-gradient(270deg, rgba(255,50,20,0.06) 0%, transparent 25%);
 }
 
 /* ── Ground Scorch/Stain Overlays (SVG positioned) ── */
