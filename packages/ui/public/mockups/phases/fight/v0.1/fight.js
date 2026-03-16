@@ -946,12 +946,20 @@ function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, m
     renderDiceStage(title, rolls.length, threshold, auto, message, ctaLabel);
     const cta = overlay.querySelector('.roll-cta');
     const fire = async () => {
+      playDiceRoll();
       revealDice(rolls, threshold, stageKind);
       const diceFinishMs = 80 + rolls.length * 40 + 200; // last die reveals + settle
       if (typeof onTrigger === 'function') {
         // Wait for dice to finish revealing, THEN run trigger (e.g. weapon strike animation)
         await new Promise(r => setTimeout(r, diceFinishMs));
         await onTrigger();
+      }
+      // Play save-failed SFX after save dice reveal settles
+      if (stageKind === 'save' && threshold) {
+        const failCount = rolls.filter(r => r < threshold).length;
+        if (failCount > 0) {
+          setTimeout(() => playSaveFailed(failCount), diceFinishMs + 100);
+        }
       }
       const remainingMs = onTrigger ? 200 : (480 + rolls.length * 40);
       setTimeout(() => {
@@ -963,7 +971,7 @@ function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, m
         }
       }, remainingMs);
     };
-    if (auto) { cta.disabled = true; setTimeout(() => fire(), 140); }
+    if (auto) { cta.disabled = true; setTimeout(() => { playDiceRoll(); fire(); }, 140); }
     else cta.addEventListener('click', () => { cta.disabled = true; fire(); }, { once: true });
   });
 }
@@ -1049,8 +1057,9 @@ async function resolveAttack(targetId){
   const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId,
     `WS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds',
     async () => {
-      // Dice have already finished revealing — play weapon strike animations
+      // Dice have already finished revealing — play weapon strike animations + SFX
       if (successCount > 0) {
+        playMeleeStrike(successCount);
         await playMeleeVolley(attacker, target, successCount);
       }
     });

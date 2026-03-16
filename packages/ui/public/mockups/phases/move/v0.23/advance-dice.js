@@ -16,6 +16,7 @@
  */
 
 import { UNITS } from '../../../shared/state/units.js';
+import { playDiceRoll } from '../../../shared/audio/sfx.js';
 
 export function rollAdvanceDie(unitId, onComplete) {
   var u = UNITS[unitId];
@@ -49,6 +50,7 @@ export function rollAdvanceDie(unitId, onComplete) {
   cta.addEventListener('click', function() {
     cta.disabled = true;
     cta.textContent = 'Rolling\u2026';
+    playDiceRoll();
 
     var chip = overlay.querySelector('.die');
 
