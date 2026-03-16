@@ -795,6 +795,13 @@ export function initMovement() {
   // Register the movement selectUnit override via the callback system
   callbacks.selectUnit = movementSelectUnit;
 
+  // After every renderModels(), reapply wall collision highlights
+  callbacks.afterRender = function() {
+    if (!moveState.mode || !currentUnit) return;
+    var unit = simState.units.find(function(u) { return u.id === currentUnit; });
+    if (unit) updateWallCollisionWarning(unit);
+  };
+
   wireButtons();
   wireCardRangeButtons();
   setupClickOutside();
