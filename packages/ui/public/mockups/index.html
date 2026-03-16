@@ -101,7 +101,8 @@
   <div style="max-width:1200px; margin:0 auto;">
 
     <div class="tab-nav" id="phase-tabs">
-      <button class="tab-btn active" data-tab="start-game" onclick="switchTab('start-game')">START GAME</button>
+      <button class="tab-btn active" data-tab="integrated" onclick="switchTab('integrated')">INTEGRATED</button>
+      <button class="tab-btn" data-tab="start-game" onclick="switchTab('start-game')">START GAME</button>
       <button class="tab-btn" data-tab="battle-forge" onclick="switchTab('battle-forge')">BATTLE FORGE</button>
       <button class="tab-btn" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
       <button class="tab-btn" data-tab="command" onclick="switchTab('command')">CMD</button>
@@ -110,11 +111,10 @@
       <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
       <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
       <button class="tab-btn" data-tab="game-end" onclick="switchTab('game-end')">GAME END</button>
-      <button class="tab-btn" data-tab="integrated" onclick="switchTab('integrated')">INTEGRATED</button>
     </div>
 
     <!-- START GAME -->
-    <div id="tab-start-game" class="tab-pane">
+    <div id="tab-start-game" class="tab-pane hidden">
       <div class="section-title">Start Game — Splash Screen</div>
       <div class="section-desc">
         Initial splash screen with parallax animated battlefield background,
@@ -692,7 +692,7 @@
     </div>
 
     <!-- INTEGRATED PROTOTYPE -->
-    <div id="tab-integrated" class="tab-pane hidden">
+    <div id="tab-integrated" class="tab-pane">
       <div class="section-title">Integrated Prototype</div>
       <div class="section-desc">
         Multi-phase prototype combining individual mockup phases into a single continuous game flow.
