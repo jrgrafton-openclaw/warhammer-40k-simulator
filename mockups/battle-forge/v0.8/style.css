@@ -818,7 +818,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 ══════════════════════════════════════════════════════════════ */
 .bf-glass {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  background: rgba(0, 20, 40, 0.25);
+  background: rgba(0, 16, 32, 0.15);
+  backdrop-filter: blur(1.5px) saturate(0.8);
+  -webkit-backdrop-filter: blur(1.5px) saturate(0.8);
 }
 .bf-edge-fade {
   position: fixed; inset: 0; z-index: 2; pointer-events: none;
