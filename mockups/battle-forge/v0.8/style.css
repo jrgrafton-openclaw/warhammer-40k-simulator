@@ -816,6 +816,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 /* ══════════════════════════════════════════════════════════════
    BATTLEFIELD EDGE FADE
 ══════════════════════════════════════════════════════════════ */
+.bf-glass {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: rgba(0, 20, 40, 0.25);
+}
 .bf-edge-fade {
   position: fixed; inset: 0; z-index: 2; pointer-events: none;
   background: linear-gradient(90deg,
