@@ -197,10 +197,8 @@ function finishPlacement() {
   if (btnConfirm) btnConfirm.disabled = true;
   if (btnCancel) btnCancel.disabled = true;
   highlightZones(false);
-  renderModels();
+  renderModels();  // callbacks.afterRender → _updateDeployWallCollisions()
   updateUI();
-  // Recheck wall collisions after every placement (orange glow + banner)
-  _updateDeployWallCollisions();
 }
 
 function cancelPlacement() {
@@ -435,9 +433,7 @@ function installDragEnforcement() {
       resolveUnitDragCollisions(unit, simState.units);
     }
 
-    renderModels();
-    // Live wall collision highlights during drag
-    _updateDeployWallCollisions();
+    renderModels();  // callbacks.afterRender → _updateDeployWallCollisions()
   });
 }
 
@@ -512,20 +508,14 @@ function _deployMouseupHandler() {
   var anchor = getAnchorPos(unit);
   var zone = detectZone(anchor.x, anchor.y);
 
-  if (zone === 'imp') {
-    // Validate all models within imp zone
-    if (!isUnitInZone(unit, IMP_ZONE)) {
-      _snapBack(uid, unit);
-      return;
-    }
-    // Place the unit even if overlapping terrain (user can reposition)
+  if (zone === 'imp' || zone === 'nml' || zone === 'ork' || zone === 'none') {
+    // Clamp all models into the imp deployment zone (nearest legal position)
+    _clampToZone(unit, IMP_ZONE);
     deployState.deployedUnits.add(uid);
     unit.deployed = true;
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
-    // Show wall collision warnings (orange glow + banner) after render
-    _updateDeployWallCollisions();
 
   } else if (zone === 'ds') {
     deployState.deepStrikeUnits.add(uid);
@@ -547,9 +537,31 @@ function _deployMouseupHandler() {
     checkDeploymentComplete();
 
   } else {
-    // Invalid zone (NML, ork, none) — snap back to pre-drag position
-    _snapBack(uid, unit);
+    // Fallback: clamp to imp zone
+    _clampToZone(unit, IMP_ZONE);
+    deployState.deployedUnits.add(uid);
+    unit.deployed = true;
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
   }
+}
+
+// ── Clamp unit into a zone (nearest legal position) ─────
+function _clampToZone(unit, zone) {
+  unit.models.forEach(function(m) {
+    var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
+    m.x = Math.max(zone.xMin + r, Math.min(zone.xMax - r, m.x));
+    m.y = Math.max(zone.yMin + r, Math.min(zone.yMax - r, m.y));
+  });
+  // Resolve terrain collision after clamping
+  var aabbs = window._terrainAABBs || [];
+  unit.models.forEach(function(m) {
+    if (m.shape === 'rect') return;
+    var resolved = resolveTerrainCollision(m.x, m.y, m.r, aabbs);
+    m.x = resolved.x; m.y = resolved.y;
+  });
+  resolveUnitDragCollisions(unit, simState.units);
 }
 
 function _snapBack(uid, unit) {
@@ -806,6 +818,11 @@ export function initDeployment() {
 
   // Register selection override
   callbacks.selectUnit = deploySelectUnit;
+
+  // After every renderModels(), reapply wall collision highlights (same pattern as movement.js)
+  callbacks.afterRender = function() {
+    _updateDeployWallCollisions();
+  };
 
   // Wire up UI
   wireButtons();
