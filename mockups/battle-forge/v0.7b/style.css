@@ -253,20 +253,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 /* VS divider */
 .vs-divider {
   display: flex; align-items: center; justify-content: center;
-  width: 56px; height: 34px; flex-shrink: 0;
-  background: rgba(10,16,22,0.75);
-  backdrop-filter: blur(16px) saturate(1.2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  width: 24px; height: 48px; flex-shrink: 0;
 }
 .vs-text {
-  font: 700 18px/1 'Anton', sans-serif;
-  color: var(--text-sec); letter-spacing: 2px;
+  display: none;
+}
+.vs-divider::before {
+  content: '✦';
+  font-size: 10px;
+  color: var(--text-dis);
   transition: all 0.6s ease;
 }
-.vs-divider.vs-active .vs-text {
-  color: var(--text-primary);
-  text-shadow: 0 0 16px rgba(0,212,255,0.25);
+.vs-divider.vs-active::before {
+  color: var(--imp-dim);
+  text-shadow: 0 0 8px rgba(0,212,255,0.2);
 }
 
 

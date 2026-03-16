@@ -131,10 +131,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 ══════════════════════════════════════════════════════════════ */
 .faction-cards {
   position: fixed; z-index: 20;
-  top: 80px; left: 50%;
-  transform: translateX(-50%);
+  top: 56px; left: 0; right: 0;
   display: flex; align-items: center; justify-content: center;
   gap: 24px;
+  padding: 12px 0;
+  background: linear-gradient(180deg, rgba(8,12,16,0.92) 0%, rgba(8,12,16,0.7) 80%, transparent 100%);
   animation: cards-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s both;
 }
 
@@ -253,15 +254,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 /* VS divider */
 .vs-divider {
   display: flex; align-items: center; justify-content: center;
-  width: 56px; height: 34px; flex-shrink: 0;
-  background: rgba(10,16,22,0.75);
-  backdrop-filter: blur(16px) saturate(1.2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  width: 48px; height: 48px; flex-shrink: 0;
 }
 .vs-text {
-  font: 700 18px/1 'Anton', sans-serif;
-  color: var(--text-sec); letter-spacing: 2px;
+  font: 700 22px/1 'Anton', sans-serif;
+  color: var(--text-muted); letter-spacing: 2px;
   transition: all 0.6s ease;
 }
 .vs-divider.vs-active .vs-text {
