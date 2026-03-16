@@ -8,6 +8,7 @@
 
 import { simState, PX_PER_INCH, callbacks } from '../../../shared/state/store.js';
 import { UNITS, KW_RULES, wgState, initAllTooltips, showTip, hideTip } from '../../../shared/state/units.js';
+import { playDiceRoll, playMeleeStrike, playSaveFailed } from '../../../shared/audio/sfx.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion } from '../../../shared/world/svg-renderer.js';
 import { center, projectileAnchor, getModelRadius } from '../../../shared/lib/coord-helpers.js';
