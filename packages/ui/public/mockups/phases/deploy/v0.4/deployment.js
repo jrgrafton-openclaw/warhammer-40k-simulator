@@ -548,12 +548,24 @@ function _deployMouseupHandler() {
 }
 
 // ── Clamp unit into a zone (nearest legal position) ─────
+// ── Clamp unit into zone as a GROUP (preserve relative layout) ─
 function _clampToZone(unit, zone) {
+  // Find the minimum shift to bring ALL models inside the zone
+  var needRight = 0, needLeft = 0, needDown = 0, needUp = 0;
   unit.models.forEach(function(m) {
     var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
-    m.x = Math.max(zone.xMin + r, Math.min(zone.xMax - r, m.x));
-    m.y = Math.max(zone.yMin + r, Math.min(zone.yMax - r, m.y));
+    var minX = zone.xMin + r, maxX = zone.xMax - r;
+    var minY = zone.yMin + r, maxY = zone.yMax - r;
+    if (m.x < minX) needRight = Math.max(needRight, minX - m.x);
+    if (m.x > maxX) needLeft  = Math.max(needLeft,  m.x - maxX);
+    if (m.y < minY) needDown  = Math.max(needDown,  minY - m.y);
+    if (m.y > maxY) needUp    = Math.max(needUp,    m.y - maxY);
   });
+  var dx = needRight - needLeft;
+  var dy = needDown - needUp;
+  if (dx !== 0 || dy !== 0) {
+    unit.models.forEach(function(m) { m.x += dx; m.y += dy; });
+  }
   // Resolve terrain collision after clamping
   var aabbs = window._terrainAABBs || [];
   unit.models.forEach(function(m) {
@@ -731,6 +743,12 @@ window.toggleAA = function(header) {
 // ── Single-select range toggles ──────────────────────────
 function wireRangeToggleSingleSelect() {
   var types = ['move', 'advance', 'charge', 'ds'];
+  var RANGE_COLORS = {
+    move:    { fill: 'rgba(0,212,255,0.06)', stroke: 'rgba(0,212,255,0.3)' },
+    advance: { fill: 'rgba(204,136,0,0.06)', stroke: 'rgba(204,136,0,0.3)' },
+    charge:  { fill: 'rgba(204,100,0,0.06)', stroke: 'rgba(204,100,0,0.3)' },
+    ds:      { fill: 'rgba(186,126,255,0.06)', stroke: 'rgba(186,126,255,0.3)' }
+  };
   var buttons = {};
   types.forEach(function(t) {
     buttons[t] = document.getElementById('rt-' + t);
@@ -740,7 +758,6 @@ function wireRangeToggleSingleSelect() {
     var btn = buttons[t];
     if (!btn) return;
 
-    // Clone to remove existing listeners from initBattleControls
     var newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
     buttons[t] = newBtn;
@@ -749,25 +766,32 @@ function wireRangeToggleSingleSelect() {
       e.stopPropagation();
       var wasActive = newBtn.classList.contains('active');
 
-      // Deactivate ALL range toggles and hide ALL range circles
+      // Deactivate ALL range toggles + clear SVG per-model rings
       types.forEach(function(ot) {
         var ob = buttons[ot];
         if (ob) ob.classList.remove('active');
-        var circle = document.getElementById('range-' + ot);
-        var label = document.getElementById('range-' + ot + '-label');
-        if (circle) circle.style.display = 'none';
-        if (label) label.style.display = 'none';
       });
+      clearRangeRings();
 
-      // If it wasn't active, activate this one
       if (!wasActive) {
         newBtn.classList.add('active');
         activeRangeTypes.clear();
         activeRangeTypes.add(t);
-        if (currentUnit) updateRangeCirclesFromUnit(currentUnit);
+        if (currentUnit) {
+          var u = UNITS[currentUnit]; if (!u) return;
+          var radiusInches;
+          if (t === 'move') radiusInches = u.M;
+          else if (t === 'advance') radiusInches = u.M + 3.5;
+          else if (t === 'charge') radiusInches = u.M + 7;
+          else if (t === 'ds') radiusInches = 9;
+          drawPerModelRangeRings(currentUnit, [{
+            radiusInches: radiusInches,
+            fill: RANGE_COLORS[t].fill,
+            stroke: RANGE_COLORS[t].stroke
+          }]);
+        }
       } else {
         activeRangeTypes.clear();
-        clearRangeCircles();
       }
     });
   });

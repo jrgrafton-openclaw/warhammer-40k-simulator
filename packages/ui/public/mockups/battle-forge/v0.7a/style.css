@@ -253,16 +253,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 /* VS divider */
 .vs-divider {
   display: flex; align-items: center; justify-content: center;
-  width: 48px; height: 48px; flex-shrink: 0;
+  width: 64px; height: 64px; flex-shrink: 0;
+  background: radial-gradient(circle, rgba(8,12,16,0.9) 0%, rgba(8,12,16,0.7) 50%, transparent 75%);
+  border-radius: 50%;
 }
 .vs-text {
-  font: 700 22px/1 'Anton', sans-serif;
-  color: var(--text-dis); letter-spacing: 2px;
+  font: 700 24px/1 'Anton', sans-serif;
+  color: var(--text-sec); letter-spacing: 2px;
   transition: all 0.6s ease;
+  text-shadow: 0 0 12px rgba(8,12,16,1), 0 0 24px rgba(8,12,16,0.8);
 }
 .vs-divider.vs-active .vs-text {
-  color: var(--text-muted);
-  text-shadow: 0 0 16px rgba(0,212,255,0.25);
+  color: var(--text-primary);
+  text-shadow: 0 0 16px rgba(0,212,255,0.35), 0 0 30px rgba(8,12,16,1);
 }
 
 
@@ -857,7 +860,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
   transition: background 0.12s;
 }
 .aa-row:hover { background: rgba(255,255,255,.04); }
-.aa-name { font: 600 11px/1 'Rajdhani', sans-serif; color: var(--text-sec); flex: 1; text-transform: uppercase; }
+.aa-name { font: 600 11px/1 'Rajdhani', sans-serif; color: var(--imp); flex: 1; text-transform: uppercase; }
 .aa-timing {
   font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 1px;
   padding: 2px 5px; background: rgba(255,255,255,.04);
