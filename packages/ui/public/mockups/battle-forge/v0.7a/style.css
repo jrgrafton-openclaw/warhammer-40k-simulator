@@ -806,12 +806,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 .bf-edge-fade {
   position: fixed; inset: 0; z-index: 2; pointer-events: none;
   background: linear-gradient(90deg,
-    rgba(8,12,16,0.95) 0%,
-    rgba(8,12,16,0.4) 12%,
-    transparent 25%,
-    transparent 75%,
-    rgba(8,12,16,0.4) 88%,
-    rgba(8,12,16,0.95) 100%
+    rgba(8,12,16,1) 0%,
+    rgba(8,12,16,0.85) 10%,
+    rgba(8,12,16,0.4) 20%,
+    transparent 35%,
+    transparent 65%,
+    rgba(8,12,16,0.4) 80%,
+    rgba(8,12,16,0.85) 90%,
+    rgba(8,12,16,1) 100%
   );
 }
 
@@ -840,12 +842,28 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 .ri.en { background: var(--ork-tint); border: 1px solid var(--ork-dim); color: var(--ork); }
 .ri svg { width: 12px; height: 12px; }
 .rn { flex: 1; font: 500 13px/1 'Rajdhani', sans-serif; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rc { font-size: 10px; font-weight: 600; color: var(--text-dis); flex-shrink: 0; }
+.rc { font-size: 11px; font-weight: 600; color: var(--text-sec); flex-shrink: 0; }
 .ru-pts { font: 600 10px/1 'Rajdhani', sans-serif; color: var(--gold); flex-shrink: 0; margin-left: 2px; }
 /* Army abilities */
 .aa-section { border-top: 1px solid var(--border); }
-.aa-header { display: flex; align-items: center; gap: 5px; padding: 5px 10px; cursor: pointer; user-select: none; background: rgba(255,255,255,.02); font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
-.aa-chev { font-size: 8px; margin-left: auto; }
+.aa-header { display: flex; align-items: center; gap: 5px; padding: 5px 10px; cursor: pointer; user-select: none; background: rgba(255,255,255,.02); font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; transition: color 0.15s; }
+.aa-header:hover { color: var(--text-sec); }
+.aa-chev { font-size: 8px; margin-left: auto; transition: transform 0.25s; }
+.aa-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+.aa-body.open { max-height: 300px; }
+.aa-row {
+  display: flex; align-items: center; padding: 5px 10px 5px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.03); gap: 6px; cursor: help;
+  transition: background 0.12s;
+}
+.aa-row:hover { background: rgba(255,255,255,.04); }
+.aa-name { font: 600 11px/1 'Rajdhani', sans-serif; color: var(--text-sec); flex: 1; text-transform: uppercase; }
+.aa-timing {
+  font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 1px;
+  padding: 2px 5px; background: rgba(255,255,255,.04);
+  border: 1px solid var(--text-dis); color: var(--text-muted);
+  text-transform: uppercase; white-space: nowrap;
+}
 
 
 /* ══════════════════════════════════════════════════════════════

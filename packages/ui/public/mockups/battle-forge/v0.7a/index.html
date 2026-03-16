@@ -127,7 +127,21 @@
           </div>
         </div>
         <div class="aa-section">
-          <div class="aa-header"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev">&#9656;</span></div>
+          <div class="aa-header" onclick="toggleAA(this)"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev">▸</span></div>
+          <div class="aa-body">
+            <div class="aa-row" data-tip="Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored.">
+              <span class="aa-name">AND THEY SHALL KNOW NO FEAR</span>
+              <span class="aa-timing">PASSIVE</span>
+            </div>
+            <div class="aa-row" data-tip="At the start of the battle round, select one Martial Ka'tah stance: melee crits on 5+ or improve melee AP by 1.">
+              <span class="aa-name">MARTIAL KA'TAH</span>
+              <span class="aa-timing">COMMAND</span>
+            </div>
+            <div class="aa-row" data-tip="Once per battle, in your Command phase. Until end of turn, Custodes units get +1 Attack and can re-roll charge rolls.">
+              <span class="aa-name">MARTIAL MASTERY</span>
+              <span class="aa-timing">COMMAND</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -180,7 +194,17 @@
           </div>
         </div>
         <div class="aa-section">
-          <div class="aa-header"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev">&#9656;</span></div>
+          <div class="aa-header" onclick="toggleAA(this)" style="color:var(--ork);"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev">▸</span></div>
+          <div class="aa-body">
+            <div class="aa-row" data-tip="Ork units can make a charge move after Advancing. Add 1 to charge rolls.">
+              <span class="aa-name" style="color:var(--ork);">'ERE WE GO</span>
+              <span class="aa-timing">PASSIVE</span>
+            </div>
+            <div class="aa-row" data-tip="Once per game, any phase. Until end of turn: Ork units get +1 Attack and +1 to charge rolls.">
+              <span class="aa-name" style="color:var(--ork);">WAAAGH!</span>
+              <span class="aa-timing">ANY PHASE</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -615,6 +639,42 @@ mapData.terrain.forEach(function(piece) {
       } else {
         closeBrowser();
       }
+    }
+  });
+
+  /* ── Toggle Army Abilities ── */
+  window.toggleAA = function(hdr) {
+    var body = hdr.nextElementSibling;
+    var chev = hdr.querySelector('.aa-chev');
+    var open = body.classList.toggle('open');
+    if (chev) chev.style.transform = open ? 'rotate(90deg)' : '';
+  };
+
+  /* ── Tooltip for data-tip elements ── */
+  var tipEl = document.createElement('div');
+  tipEl.id = 'global-tooltip';
+  tipEl.style.cssText = 'position:fixed;z-index:9999;padding:8px 12px;max-width:280px;font:500 11px/1.4 Rajdhani,sans-serif;color:var(--text-primary);background:rgba(10,16,22,0.95);border:1px solid var(--border);pointer-events:none;visibility:hidden;opacity:0;transition:opacity 0.15s;backdrop-filter:blur(8px);';
+  document.body.appendChild(tipEl);
+
+  document.addEventListener('mouseover', function(e) {
+    var row = e.target.closest('[data-tip]');
+    if (row) {
+      tipEl.textContent = row.dataset.tip;
+      tipEl.style.visibility = 'visible';
+      tipEl.style.opacity = '1';
+    }
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (tipEl.style.visibility === 'visible') {
+      tipEl.style.left = (e.clientX + 14) + 'px';
+      tipEl.style.top = (e.clientY - 10) + 'px';
+    }
+  });
+  document.addEventListener('mouseout', function(e) {
+    var row = e.target.closest('[data-tip]');
+    if (row) {
+      tipEl.style.visibility = 'hidden';
+      tipEl.style.opacity = '0';
     }
   });
 </script>
