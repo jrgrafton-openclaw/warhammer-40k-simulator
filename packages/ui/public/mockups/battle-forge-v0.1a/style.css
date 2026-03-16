@@ -3,6 +3,9 @@
    Shared tokens via ../shared/tokens/*.css
 ══════════════════════════════════════════════════════════════ */
 
+/* Override typography.css overflow:hidden on html/body */
+html, body { overflow: auto; height: auto; }
+
 /* ── Full-viewport layout ── */
 .forge-root {
   min-height: 100vh;
@@ -321,22 +324,22 @@
   overflow: hidden;
 }
 
-/* Deployment zone diagram */
+/* Deployment zone diagram — Hammer & Anvil: left/right zones */
 .deploy-zone {
   position: absolute;
-  left: 0;
-  right: 0;
-  height: 22%;
-}
-.deploy-zone.top {
   top: 0;
-  background: rgba(0, 212, 255, 0.12);
-  border-bottom: 1px dashed rgba(0, 212, 255, 0.25);
-}
-.deploy-zone.bottom {
   bottom: 0;
+  width: 22%;
+}
+.deploy-zone.left-zone {
+  left: 0;
+  background: rgba(0, 212, 255, 0.12);
+  border-right: 1px dashed rgba(0, 212, 255, 0.25);
+}
+.deploy-zone.right-zone {
+  right: 0;
   background: rgba(255, 64, 32, 0.12);
-  border-top: 1px dashed rgba(255, 64, 32, 0.25);
+  border-left: 1px dashed rgba(255, 64, 32, 0.25);
 }
 
 .deploy-label {
@@ -344,15 +347,16 @@
   font: 600 7px/1 'Rajdhani', sans-serif;
   letter-spacing: 1px;
   text-transform: uppercase;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
 }
 .deploy-label.imp-label {
-  top: 4px;
   color: rgba(0, 212, 255, 0.5);
 }
 .deploy-label.ork-label {
-  bottom: 4px;
   color: rgba(255, 64, 32, 0.5);
 }
 
@@ -425,6 +429,80 @@
   border: 1px solid var(--border);
   padding: 5px 12px;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   ARMY ROSTERS
+═══════════════════════════════════════════════════════════ */
+.roster-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.roster-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.roster-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.roster-faction-icon {
+  font-size: 16px;
+}
+
+.imp-roster .roster-faction-icon { color: var(--imp); }
+.ork-roster .roster-faction-icon { color: var(--ork); }
+
+.roster-faction-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.roster-total {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+}
+
+.roster-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.roster-unit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  border-bottom: 1px solid rgba(26, 37, 53, 0.5);
+}
+.roster-unit:last-child { border-bottom: none; }
+
+.unit-name {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--text-sec);
+}
+
+.unit-meta {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Scrollbar styling for roster */
+.roster-list::-webkit-scrollbar { width: 4px; }
+.roster-list::-webkit-scrollbar-track { background: var(--bg-primary); }
+.roster-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
 /* ═══════════════════════════════════════════════════════════
    ARMY LIST UPLOAD

@@ -123,8 +123,8 @@ function getMoveRangePx(unitId, isAdvance) {
 // ── Wall collision warning ─────────────────────────────
 function updateWallCollisionWarning(unit) {
   var banner = document.getElementById('wall-collision-banner');
-  // Clear previous highlights
-  document.querySelectorAll('.unit-hull.wall-collision').forEach(function(el) {
+  // Clear previous highlights on all model bases
+  document.querySelectorAll('#layer-models .model-base.wall-collision').forEach(function(el) {
     el.classList.remove('wall-collision');
   });
 
@@ -137,14 +137,23 @@ function updateWallCollisionWarning(unit) {
   unit.models.forEach(function(m) {
     if (modelCollidesTerrain(m)) {
       hasCollision = true;
+      // Find this model's <g class="model-base"> in layer-models by matching position
+      document.querySelectorAll('#layer-models .model-base').forEach(function(g) {
+        var base = g.querySelector('circle, rect');
+        if (!base) return;
+        var bx = parseFloat(base.getAttribute('cx') || base.getAttribute('x'));
+        var by = parseFloat(base.getAttribute('cy') || base.getAttribute('y'));
+        // rect uses x,y as top-left; circle uses cx,cy as center
+        if (base.tagName === 'rect') {
+          bx += parseFloat(base.getAttribute('width')) / 2;
+          by += parseFloat(base.getAttribute('height')) / 2;
+        }
+        if (Math.abs(bx - m.x) < 1 && Math.abs(by - m.y) < 1) {
+          g.classList.add('wall-collision');
+        }
+      });
     }
   });
-
-  if (hasCollision) {
-    document.querySelectorAll('.unit-hull[data-unit-id="' + unit.id + '"]').forEach(function(h) {
-      h.classList.add('wall-collision');
-    });
-  }
 
   if (banner) {
     banner.style.display = hasCollision ? 'block' : 'none';
