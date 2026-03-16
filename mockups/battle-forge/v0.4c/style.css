@@ -1,0 +1,503 @@
+/* ═══ Battle Forge v0.4c — WARBAND ═══ */
+
+/* --- Fallback tokens (shared/tokens may not exist yet) --- */
+:root {
+  --bg-primary: #080c10;
+  --bg-surface: #0f1520;
+  --bg-raised: #162030;
+  --bg-selected: #1e2d44;
+  --imp: #00d4ff;
+  --imp-dim: #0088aa;
+  --imp-tint: #00d4ff14;
+  --ork: #ff4020;
+  --ork-dim: #aa2810;
+  --ork-tint: #ff402012;
+  --text-primary: #e0e8f0;
+  --text-sec: #8090a0;
+  --text-muted: #4a6080;
+  --text-dis: #2a3a4a;
+  --border: #1a2535;
+  --gold: #c9a352;
+  --gold-dim: #5a4a28;
+  --strat: #cc8800;
+  --strat-dim: #886000;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+}
+
+/* ═══ ATMOSPHERE ═══ */
+.atmosphere {
+  position: fixed; inset: 0; z-index: 0;
+  transition: background 0.6s ease;
+}
+.atmo-gradient {
+  position: absolute; inset: 0;
+  transition: background 0.6s ease;
+}
+.atmosphere.neutral .atmo-gradient {
+  background: radial-gradient(ellipse at 50% 40%, #1a1028 0%, #080c10 70%);
+}
+.atmosphere.imp .atmo-gradient {
+  background: radial-gradient(ellipse at 50% 40%, #0a1a28 0%, #001822 30%, #080c10 70%);
+}
+.atmosphere.ork .atmo-gradient {
+  background: radial-gradient(ellipse at 50% 40%, #1a0a08 0%, #180808 30%, #080c10 70%);
+}
+.atmo-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.7) 100%);
+}
+.atmo-grain {
+  position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+}
+.atmo-scanlines {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+  pointer-events: none;
+}
+
+/* Embers */
+.ember {
+  position: fixed;
+  left: var(--x); bottom: 0;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 160, 60, 0.7);
+  box-shadow: 0 0 6px rgba(255, 120, 20, 0.5);
+  animation: ember-rise var(--d) var(--del) ease-out infinite;
+  z-index: 1;
+  pointer-events: none;
+}
+@keyframes ember-rise {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  10% { opacity: 0.8; }
+  80% { opacity: 0.3; }
+  100% { transform: translateY(-100vh) scale(0.3); opacity: 0; }
+}
+
+/* ═══ TOP BAR ═══ */
+.top-bar {
+  position: fixed; top: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px;
+  z-index: 10;
+}
+.nav-link {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  text-decoration: none;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+.nav-link:hover { color: var(--imp); }
+.top-centre { text-align: center; }
+.top-title {
+  font: 400 24px/1 'Anton', sans-serif;
+  color: var(--text-sec);
+  letter-spacing: 3px;
+}
+.top-subtitle {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+.version-badge {
+  position: fixed; top: 12px; right: 50%;
+  transform: translateX(50%) translateY(48px);
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 2px;
+  z-index: 10;
+}
+
+/* ═══ CARD SLOTS ═══ */
+.card-slots {
+  position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 16px;
+  z-index: 10;
+}
+.slot { text-align: center; }
+.slot-label {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.slot-card {
+  width: 130px; height: 80px;
+  border-radius: 4px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.slot-empty {
+  border: 1px dashed var(--text-dis);
+  background: rgba(255,255,255,0.02);
+}
+.slot-empty .slot-plus {
+  font: 300 28px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  animation: slot-pulse 2s ease-in-out infinite;
+}
+@keyframes slot-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+.slot-filled {
+  background: var(--bg-raised);
+}
+.slot-filled.slot-imp { border: 1px solid var(--imp); }
+.slot-filled.slot-ork { border: 1px solid var(--ork); }
+.slot-emblem { font-size: 22px; margin-bottom: 2px; }
+.slot-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+}
+.slot-pts {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  margin-top: 2px;
+}
+.slot-vs {
+  font: 400 14px/1 'Anton', sans-serif;
+  color: var(--text-dis);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.slot-vs.vs-visible { opacity: 1; color: var(--text-muted); }
+
+/* P1 = cyan accent, P2 = red accent */
+.slot-p1 .slot-label { color: var(--imp-dim); }
+.slot-p2 .slot-label { color: var(--ork-dim); }
+
+/* ═══ MAIN CARD STAGE ═══ */
+.card-stage {
+  position: fixed;
+  top: 180px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 20px;
+  z-index: 5;
+}
+.card-viewport {
+  width: 420px; height: 400px;
+  overflow: hidden;
+  position: relative;
+}
+.faction-card {
+  width: 100%; height: 100%;
+  background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-primary) 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 32px 28px;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.faction-card.card-imp { border-color: rgba(0,212,255,0.25); box-shadow: 0 0 40px rgba(0,212,255,0.06); }
+.faction-card.card-ork { border-color: rgba(255,64,32,0.25); box-shadow: 0 0 40px rgba(255,64,32,0.06); }
+.faction-card.card-locked { border-color: var(--border); }
+
+/* Card slide animations */
+.faction-card.slide-out-left { animation: slideOutLeft 0.28s ease-in forwards; }
+.faction-card.slide-out-right { animation: slideOutRight 0.28s ease-in forwards; }
+.faction-card.slide-in-right { animation: slideInRight 0.3s ease-out forwards; }
+.faction-card.slide-in-left { animation: slideInLeft 0.3s ease-out forwards; }
+
+@keyframes slideOutLeft { to { transform: translateX(-120%); opacity: 0; } }
+@keyframes slideOutRight { to { transform: translateX(120%); opacity: 0; } }
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideInLeft { from { transform: translateX(-120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Selection flash */
+.faction-card.card-select-flash {
+  animation: selectFlash 0.5s ease-out;
+}
+@keyframes selectFlash {
+  0% { transform: scale(1); box-shadow: 0 0 0 rgba(0,212,255,0); }
+  30% { transform: scale(1.03); box-shadow: 0 0 60px rgba(0,212,255,0.4); }
+  100% { transform: scale(1); box-shadow: 0 0 0 rgba(0,212,255,0); }
+}
+
+.card-emblem {
+  font-size: 100px;
+  line-height: 1;
+  margin-bottom: 16px;
+  transition: text-shadow 0.4s ease;
+}
+.card-name {
+  font: 400 28px/1 'Anton', sans-serif;
+  color: var(--text-primary);
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+.card-info {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+.card-lore {
+  font: 400 12px/1.5 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  max-width: 320px;
+  margin-bottom: 16px;
+}
+.card-army-count {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  color: var(--imp-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--imp-tint);
+  padding: 4px 14px;
+  border-radius: 3px;
+  margin-bottom: 20px;
+}
+.card-select-btn {
+  width: 200px; height: 48px;
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px; text-transform: uppercase;
+  background: var(--imp);
+  color: var(--bg-primary);
+  border: 1px solid var(--imp);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.card-select-btn:hover { background: #18eaff; box-shadow: 0 0 30px rgba(0,212,255,0.4); }
+.card-select-btn:active { background: var(--imp-dim); }
+.card-select-btn.selected {
+  background: transparent;
+  color: var(--imp);
+  border-color: var(--imp-dim);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Locked overlay */
+.card-locked-overlay {
+  position: absolute; inset: 0;
+  background: rgba(8,12,16,0.6);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+}
+.locked-icon { font-size: 32px; opacity: 0.5; }
+.locked-text {
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 4px;
+}
+
+/* Arrows */
+.card-arrow {
+  width: 44px; height: 64px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  color: var(--text-sec);
+  font-size: 32px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.card-arrow:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+/* Dots */
+.card-dots {
+  position: fixed;
+  top: 590px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px;
+  z-index: 5;
+}
+.dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--text-dis);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dot:hover { background: var(--text-sec); }
+.dot-active { background: var(--imp); box-shadow: 0 0 8px rgba(0,212,255,0.4); }
+
+/* ═══ ROSTER AREA ═══ */
+.roster-area {
+  position: fixed;
+  top: 612px; left: 50%; transform: translateX(-50%);
+  width: 440px;
+  max-height: 160px;
+  overflow-y: auto;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.roster-area.visible { opacity: 1; pointer-events: auto; }
+
+.roster-title {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  letter-spacing: 2px;
+  text-align: center;
+  margin-bottom: 8px;
+}
+.roster-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 16px;
+}
+.roster-unit {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 3px 8px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 2px;
+}
+.ru-name {
+  font: 500 11px/1.3 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+}
+.ru-pts {
+  font: 500 10px/1.3 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  white-space: nowrap;
+  margin-left: 6px;
+}
+/* Custom scrollbar */
+.roster-area::-webkit-scrollbar { width: 4px; }
+.roster-area::-webkit-scrollbar-track { background: transparent; }
+.roster-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ═══ BOTTOM BAR ═══ */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 10px 20px 16px;
+  background: linear-gradient(0deg, var(--bg-primary) 60%, transparent 100%);
+  z-index: 10;
+}
+.bottom-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.bottom-left, .bottom-centre, .bottom-right { display: flex; gap: 6px; align-items: center; }
+
+.chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+}
+.chip-label {
+  color: var(--text-muted);
+  margin-right: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.chip-value { color: var(--text-sec); }
+.chip-diagram { font-size: 12px; color: var(--text-muted); }
+.chip-active {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+}
+.chip-disabled {
+  background: transparent;
+  border: 1px solid rgba(26,37,53,0.5);
+  opacity: 0.4;
+}
+
+.mode-toggle { display: flex; gap: 2px; }
+.mode-btn {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mode-active {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+}
+.mode-locked {
+  background: transparent;
+  color: var(--text-dis);
+  cursor: not-allowed;
+}
+
+/* BEGIN BATTLE button */
+.begin-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 56px;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px; text-transform: uppercase;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none;
+  border-radius: 0;
+}
+.begin-btn:hover { background: #18eaff; box-shadow: 0 0 30px rgba(0,212,255,0.4); }
+.begin-btn:active { background: var(--imp-dim); }
+.begin-btn.disabled { opacity: 0.3; pointer-events: none; cursor: not-allowed; }
+
+/* ═══ ENTRANCE ANIMATIONS ═══ */
+.anim-title { animation: fadeDown 0.4s 0.2s ease both; }
+.anim-slots { animation: fadeIn 0.4s 0.3s ease both; }
+.anim-card { animation: slideUp 0.5s 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-bottom { animation: riseUp 0.4s 0.6s ease both; }
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(40px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes riseUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-height: 800px) {
+  .card-viewport { height: 340px; }
+  .card-emblem { font-size: 72px; }
+  .card-dots { top: 535px; }
+  .roster-area { top: 556px; max-height: 120px; }
+  .card-stage { top: 165px; }
+}
+@media (max-height: 700px) {
+  .card-viewport { height: 300px; }
+  .card-emblem { font-size: 56px; margin-bottom: 10px; }
+  .card-name { font-size: 22px; }
+  .card-lore { display: none; }
+  .card-dots { top: 490px; }
+  .roster-area { top: 510px; max-height: 100px; }
+  .card-stage { top: 160px; }
+}
