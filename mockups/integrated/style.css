@@ -58,11 +58,18 @@
   display: none !important;
 }
 
+/* ── Unit card: allow horizontal overflow for range carousel ── */
+#unit-card {
+  overflow: visible !important;
+  overflow-y: auto !important;
+}
+
 /* ── Card range toggles: horizontal scroll carousel ── */
 .card-ranges {
   display: flex !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
+  overflow-y: hidden !important;
   scrollbar-width: thin;
   scrollbar-color: rgba(0,212,255,0.2) transparent;
   gap: 4px;

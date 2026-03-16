@@ -616,6 +616,9 @@ function _addWeaponRangeButtons(uid) {
   var rangesEl = document.getElementById('card-ranges');
   if (!rangesEl) return;
 
+  // Remove any existing weapon buttons from previous selection
+  rangesEl.querySelectorAll('.range-toggle.weapon').forEach(function(b) { b.remove(); });
+
   // Collect unique ranged weapons with their ranges
   var weapons = [].concat(u.weapons || []);
   var seen = {};
@@ -679,6 +682,10 @@ function deploySelectUnit(uid) {
 
   var unit = simState.units.find(function(u) { return u.id === uid; });
   if (!unit) return;
+
+  // Clear range state from previous unit
+  activeRangeTypes.clear();
+  clearRangeRings();
 
   baseSelectUnit(uid);
   _addWeaponRangeButtons(uid);
