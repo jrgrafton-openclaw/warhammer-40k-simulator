@@ -27,9 +27,10 @@
 .move-center-line { opacity: 0; transition: opacity 0.5s ease; }
 .phase-move .move-center-line { opacity: 1; }
 
-/* ── .phase-move: hide deployment zone SVGs ── */
-.phase-move .offboard-zone,
-.phase-move .offboard-zone-label,
+/* ── .phase-move: hide deploy-specific SVGs ── */
+/* Only hide staging zone + deployment zones + NML. Keep DS + Reserves visible. */
+.phase-move .staging-zone-bg,
+.phase-move .offboard-zone-label:not(.ds-label):not(.reserves-label),
 .phase-move .board-edge-separator,
 .phase-move .deploy-zone-bg,
 .phase-move .deploy-zone-border,
@@ -41,9 +42,27 @@
   pointer-events: none;
   transition: opacity 0.5s ease;
 }
+/* DS + Reserves zones: keep visible but dim slightly */
+.phase-move .ds-zone-bg,
+.phase-move .reserves-zone-bg {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
 
 /* ── Hide zone warning during move phase ── */
 .phase-move .zone-warning { display: none !important; }
+
+/* ── Hide range circles during deploy (no move/advance/charge circles) ── */
+body:not(.phase-move) .range-circle,
+body:not(.phase-move) .range-label {
+  display: none !important;
+}
+
+/* ── Hide per-unit CONFIRM/CANCEL during deploy (auto-confirm on drop) ── */
+#btn-confirm-unit,
+#btn-cancel-unit {
+  display: none !important;
+}
 
 /* ── Version badge (overrides both deploy-badge and v23-badge) ── */
 .deploy-badge {
