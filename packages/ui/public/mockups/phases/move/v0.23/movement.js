@@ -121,29 +121,14 @@ function getMoveRangePx(unitId, isAdvance) {
 }
 
 // ── Wall collision warning ─────────────────────────────
-function updateWallCollisionWarning(unit) {
-  var banner = document.getElementById('wall-collision-banner');
-  // Clear previous highlights on all model bases
-  document.querySelectorAll('#layer-models .model-base.wall-collision').forEach(function(el) {
-    el.classList.remove('wall-collision');
-  });
-
-  if (!unit || !moveState.mode) {
-    if (banner) banner.style.display = 'none';
-    return;
-  }
-
-  var hasCollision = false;
+function applyModelWallHighlights(unit) {
   unit.models.forEach(function(m) {
     if (modelCollidesTerrain(m)) {
-      hasCollision = true;
-      // Find this model's <g class="model-base"> in layer-models by matching position
       document.querySelectorAll('#layer-models .model-base').forEach(function(g) {
         var base = g.querySelector('circle, rect');
         if (!base) return;
         var bx = parseFloat(base.getAttribute('cx') || base.getAttribute('x'));
         var by = parseFloat(base.getAttribute('cy') || base.getAttribute('y'));
-        // rect uses x,y as top-left; circle uses cx,cy as center
         if (base.tagName === 'rect') {
           bx += parseFloat(base.getAttribute('width')) / 2;
           by += parseFloat(base.getAttribute('height')) / 2;
@@ -154,9 +139,35 @@ function updateWallCollisionWarning(unit) {
       });
     }
   });
+}
+
+function updateWallCollisionWarning(unit) {
+  // Clear + recheck all units (so highlights persist when deselected)
+  updateAllWallCollisionWarnings();
+}
+
+function updateAllWallCollisionWarnings() {
+  var banner = document.getElementById('wall-collision-banner');
+  // Clear all highlights
+  document.querySelectorAll('#layer-models .model-base.wall-collision').forEach(function(el) {
+    el.classList.remove('wall-collision');
+  });
+
+  var anyCollision = false;
+  simState.units.forEach(function(unit) {
+    if (unit.faction !== ACTIVE_PLAYER_FACTION) return;
+    var unitHasCollision = false;
+    unit.models.forEach(function(m) {
+      if (modelCollidesTerrain(m)) {
+        unitHasCollision = true;
+        anyCollision = true;
+      }
+    });
+    if (unitHasCollision) applyModelWallHighlights(unit);
+  });
 
   if (banner) {
-    banner.style.display = hasCollision ? 'block' : 'none';
+    banner.style.display = anyCollision ? 'block' : 'none';
   }
 }
 
@@ -795,11 +806,9 @@ export function initMovement() {
   // Register the movement selectUnit override via the callback system
   callbacks.selectUnit = movementSelectUnit;
 
-  // After every renderModels(), reapply wall collision highlights
+  // After every renderModels(), reapply wall collision highlights for ALL units
   callbacks.afterRender = function() {
-    if (!moveState.mode || !currentUnit) return;
-    var unit = simState.units.find(function(u) { return u.id === currentUnit; });
-    if (unit) updateWallCollisionWarning(unit);
+    updateAllWallCollisionWarnings();
   };
 
   wireButtons();
