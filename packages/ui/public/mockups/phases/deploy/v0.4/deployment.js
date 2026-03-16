@@ -11,6 +11,7 @@ import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion, updateRangeCirclesFromUnit, clearRangeCircles,
          applyTx, getCamera } from '../../../shared/world/svg-renderer.js';
 import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
+import { drawPerModelRangeRings, clearRangeRings } from '../../../shared/world/range-rings.js';
 
 // ── Constants ────────────────────────────────────────────
 var BOARD_W = 720;
@@ -816,6 +817,12 @@ export function cleanupDeployment() {
   window.removeEventListener('mouseup', _deployMouseupHandler);
   var svg = document.getElementById('bf-svg');
   if (svg) svg.removeEventListener('click', _deployClickOutsideHandler);
+
+  // Clear SVG range rings + active range types + wall collision banner
+  clearRangeRings();
+  activeRangeTypes.clear();
+  var banner = document.getElementById('wall-collision-banner');
+  if (banner) banner.style.display = 'none';
 
   // Reset deploy state
   deployState.locked = false;
