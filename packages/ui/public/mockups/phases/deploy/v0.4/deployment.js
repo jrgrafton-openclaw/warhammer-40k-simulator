@@ -557,29 +557,33 @@ function wireButtons() {
 }
 
 // ── Keyboard shortcuts ───────────────────────────────────
+// Named handler so cleanupDeployment() can remove it
+function _deployKeyHandler(e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var key = e.key.toUpperCase();
+  if (key === 'ENTER' || key === 'C') {
+    if (deployState.placingUnit) confirmPlacement();
+  } else if (key === 'ESCAPE' || key === 'X') {
+    if (deployState.placingUnit) cancelPlacement();
+  }
+}
 function wireKeyboard() {
-  document.addEventListener('keydown', function(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-    var key = e.key.toUpperCase();
-    if (key === 'ENTER' || key === 'C') {
-      if (deployState.placingUnit) confirmPlacement();
-    } else if (key === 'ESCAPE' || key === 'X') {
-      if (deployState.placingUnit) cancelPlacement();
-    }
-  });
+  document.addEventListener('keydown', _deployKeyHandler);
 }
 
 // ── Click-on-empty deselect ──────────────────────────────
+// Named handler so cleanupDeployment() can remove it
+function _deployClickOutsideHandler(e) {
+  if (e.target === document.getElementById('bf-svg') || e.target.tagName === 'g') {
+    if (!deployState.placingUnit) {
+      deploySelectUnit(null);
+    }
+  }
+}
 function setupClickOutside() {
   var svg = document.getElementById('bf-svg');
   if (!svg) return;
-  svg.addEventListener('click', function(e) {
-    if (e.target === svg || e.target.tagName === 'g') {
-      if (!deployState.placingUnit) {
-        deploySelectUnit(null);
-      }
-    }
-  });
+  svg.addEventListener('click', _deployClickOutsideHandler);
 }
 
 // ── Global handlers needed by inline onclick in HTML ─────
@@ -654,6 +658,11 @@ export function cleanupDeployment() {
     var clone = el.cloneNode(true);
     el.parentNode.replaceChild(clone, el);
   });
+
+  // Remove global deploy listeners (keyboard + click-outside)
+  document.removeEventListener('keydown', _deployKeyHandler);
+  var svg = document.getElementById('bf-svg');
+  if (svg) svg.removeEventListener('click', _deployClickOutsideHandler);
 
   // Reset deploy state
   deployState.locked = false;
