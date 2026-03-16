@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.3d — THE ARMOURY</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../shared/tokens/typography.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Nav chrome -->
+<a class="nav-back" href="../start-game/index.html">← Back</a>
+<a class="nav-mockups" href="../index.html#battle-forge">← Mockups</a>
+<div class="version-badge">v0.3d · THE ARMOURY</div>
+
+<div class="armoury">
+  <div class="grain"></div>
+  <div class="vignette"></div>
+  <div class="embers" id="embers"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-title">Battle Forge</div>
+    <div class="header-sub">Select Your Forces</div>
+  </div>
+
+  <!-- Main scrollable area -->
+  <div class="main">
+
+    <!-- Faction Grid -->
+    <div class="faction-grid" id="factionGrid">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- VS Splash -->
+    <div class="vs-splash" id="vsSplash">
+      <div class="vs-p1">
+        <span class="vs-emblem" id="vsP1Emblem"></span>
+        <span class="vs-faction-name" id="vsP1Name"></span>
+      </div>
+      <div class="vs-divider">
+        <span class="vs-text">VS</span>
+      </div>
+      <div class="vs-p2">
+        <span class="vs-faction-name" id="vsP2Name"></span>
+        <span class="vs-emblem" id="vsP2Emblem"></span>
+      </div>
+    </div>
+
+    <!-- Roster Panels -->
+    <div class="roster-split" id="rosterSplit">
+      <div class="roster-panel p1">
+        <div class="roster-header">
+          <span class="roster-header-name" id="rosterP1Name">—</span>
+          <span class="roster-header-pts" id="rosterP1Pts"></span>
+        </div>
+        <div class="roster-list" id="rosterP1List"></div>
+      </div>
+      <div class="roster-panel p2">
+        <div class="roster-header">
+          <span class="roster-header-name" id="rosterP2Name">—</span>
+          <span class="roster-header-pts" id="rosterP2Pts"></span>
+        </div>
+        <div class="roster-list" id="rosterP2List"></div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <!-- Bottom Bar -->
+  <div class="bottom-bar">
+    <div class="bottom-row">
+      <div class="map-chips">
+        <div class="map-chip active">Hammer &amp; Anvil</div>
+        <div class="map-chip coming-soon">Search &amp; Destroy</div>
+        <div class="map-chip coming-soon">Sweeping Engage.</div>
+      </div>
+      <div class="setting-chips">
+        <div class="setting-chip">Turns: 5</div>
+        <div class="setting-chip">Roll-off</div>
+        <div class="setting-chip">Strike Force</div>
+        <div class="setting-chip">Take &amp; Hold</div>
+      </div>
+      <div class="mode-toggle">
+        <button class="mode-btn active">Single Player</button>
+        <button class="mode-btn disabled" title="Coming Soon">Multiplayer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BEGIN BATTLE -->
+  <div class="begin-bar">
+    <a class="begin-btn" href="../phases/deploy/v0.4/index.html" id="beginBtn">
+      <span class="btn-text-default">Begin Battle →</span>
+      <span class="btn-text-hover">⚔ Ready? Fight! →</span>
+    </a>
+  </div>
+
+</div><!-- /armoury -->
+
+<script>
+// ── Faction Data ──
+var FACTIONS = [
+  {
+    id: 'custodes', emblem: '⚜', name: 'Adeptus Custodes',
+    sub: 'Shield Host', pts: 1985,
+    available: true,
+    roster: [
+      { name: 'Blade Champion', qty: 2, models: 1, pts: 120 },
+      { name: 'Custodian Guard', qty: 4, models: 5, pts: 190 },
+      { name: 'Allarus Custodians', qty: 1, models: 3, pts: 165 },
+      { name: 'Allarus Custodians', qty: 1, models: 2, pts: 110 },
+      { name: 'Prosecutors', qty: 2, models: 5, pts: 85 },
+      { name: 'Caladius Grav-tank', qty: 2, models: 1, pts: 215 },
+      { name: 'Inquisitor Draxus', qty: 1, models: 1, pts: 95 },
+    ],
+  },
+  {
+    id: 'orks', emblem: '☠', name: 'Orks',
+    sub: 'Waaagh! Tribe', pts: 1960,
+    available: true,
+    roster: [
+      { name: 'Warboss', qty: 1, models: 1, pts: 90 },
+      { name: 'Boss Nob', qty: 1, models: 1, pts: 95 },
+      { name: 'Boyz Mob', qty: 2, models: 10, pts: 150 },
+      { name: 'Mekboy', qty: 1, models: 1, pts: 75 },
+      { name: 'Nobz Mob', qty: 2, models: 5, pts: 115 },
+      { name: 'Gretchin', qty: 2, models: 10, pts: 50 },
+      { name: 'Deff Dread', qty: 1, models: 1, pts: 150 },
+      { name: 'Battlewagon', qty: 1, models: 1, pts: 185 },
+      { name: 'Lootas', qty: 1, models: 5, pts: 100 },
+      { name: 'Stormboyz', qty: 1, models: 5, pts: 80 },
+      { name: 'Weirdboy', qty: 1, models: 1, pts: 70 },
+      { name: 'Meganobz', qty: 1, models: 3, pts: 200 },
+      { name: 'Trukk', qty: 1, models: 1, pts: 65 },
+    ],
+  },
+  { id: 'space_marines', emblem: '🦅', name: 'Space Marines', sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'chaos_marines', emblem: '⛧', name: 'Chaos Marines', sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'aeldari', emblem: '🌀', name: 'Aeldari', sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'tyranids', emblem: '🦷', name: 'Tyranids', sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'necrons', emblem: '💀', name: 'Necrons', sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'tau', emblem: '🔷', name: "T'au Empire", sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'death_guard', emblem: '☣', name: 'Death Guard', sub: 'Coming Soon', available: false, roster: [] },
+  { id: 'thousand_sons', emblem: '🔮', name: 'Thousand Sons', sub: 'Coming Soon', available: false, roster: [] },
+];
+
+// ── State ──
+var p1Selection = 'custodes';
+var p2Selection = 'orks';
+
+// ── Build Grid ──
+function buildGrid() {
+  var grid = document.getElementById('factionGrid');
+  var html = '';
+
+  for (var i = 0; i < FACTIONS.length; i++) {
+    var f = FACTIONS[i];
+    var classes = 'faction-tile';
+    var marker = '';
+
+    if (!f.available) classes += ' locked';
+    if (f.id === p1Selection) {
+      classes += ' selected-p1';
+      marker = '<span class="player-marker p1">P1</span>';
+    }
+    if (f.id === p2Selection) {
+      classes += ' selected-p2';
+      marker = '<span class="player-marker p2">P2</span>';
+    }
+
+    var lockHtml = '';
+    if (!f.available) {
+      lockHtml = '<span class="tile-lock">🔒</span><span class="locked-badge">LOCKED</span>';
+    }
+
+    var ptsHtml = f.pts ? '<div class="tile-pts">' + f.pts + ' pts</div>' : '';
+
+    html += '<div class="' + classes + '" data-id="' + f.id + '" onclick="selectFaction(\'' + f.id + '\')">'
+      + marker + lockHtml
+      + '<div class="tile-emblem">' + f.emblem + '</div>'
+      + '<div class="tile-name">' + f.name + '</div>'
+      + ptsHtml
+      + '</div>';
+  }
+
+  // Upload tile
+  html += '<div class="faction-tile upload-tile locked">'
+    + '<div class="upload-icon">📋</div>'
+    + '<div class="tile-name">Upload List</div>'
+    + '<div class="tile-pts">.ros file</div>'
+    + '<span class="locked-badge">LOCKED</span>'
+    + '</div>';
+
+  grid.innerHTML = html;
+}
+
+// ── Select Faction ──
+function selectFaction(id) {
+  var faction = null;
+  for (var i = 0; i < FACTIONS.length; i++) {
+    if (FACTIONS[i].id === id) { faction = FACTIONS[i]; break; }
+  }
+  if (!faction || !faction.available) return;
+  if (id === p2Selection) return; // can't pick same as P2
+  if (id === p1Selection) return; // already selected
+
+  p1Selection = id;
+  buildGrid();
+  updateVS();
+  updateRosters();
+}
+
+// ── VS Splash ──
+function updateVS() {
+  var splash = document.getElementById('vsSplash');
+  var p1 = getFaction(p1Selection);
+  var p2 = getFaction(p2Selection);
+
+  if (p1 && p2) {
+    document.getElementById('vsP1Emblem').textContent = p1.emblem;
+    document.getElementById('vsP1Name').textContent = p1.name;
+    document.getElementById('vsP2Emblem').textContent = p2.emblem;
+    document.getElementById('vsP2Name').textContent = p2.name;
+    splash.classList.add('active');
+  } else {
+    splash.classList.remove('active');
+  }
+}
+
+function getFaction(id) {
+  for (var i = 0; i < FACTIONS.length; i++) {
+    if (FACTIONS[i].id === id) return FACTIONS[i];
+  }
+  return null;
+}
+
+// ── Rosters ──
+function updateRosters() {
+  var p1 = getFaction(p1Selection);
+  var p2 = getFaction(p2Selection);
+
+  if (p1) {
+    document.getElementById('rosterP1Name').textContent = p1.name;
+    document.getElementById('rosterP1Pts').textContent = p1.pts + '/2000 pts';
+    renderRoster('rosterP1List', p1.roster);
+  }
+  if (p2) {
+    document.getElementById('rosterP2Name').textContent = p2.name;
+    document.getElementById('rosterP2Pts').textContent = p2.pts + '/2000 pts';
+    renderRoster('rosterP2List', p2.roster);
+  }
+}
+
+function renderRoster(elId, roster) {
+  var el = document.getElementById(elId);
+  var html = '';
+  for (var i = 0; i < roster.length; i++) {
+    var u = roster[i];
+    var label = u.qty > 1 ? u.name + ' ×' + u.qty : u.name;
+    var models = u.models * u.qty;
+    html += '<div class="roster-row">'
+      + '<span class="roster-unit-name">' + label + '</span>'
+      + '<span class="roster-unit-qty">' + models + ' model' + (models > 1 ? 's' : '') + '</span>'
+      + '<span class="roster-unit-pts">' + u.pts + 'pts</span>'
+      + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── Ember Particles ──
+function createEmbers() {
+  var container = document.getElementById('embers');
+  var colors = ['#ff8c20', '#ff6a10', '#ffa040', '#00d4ff', '#00b8e0', '#ff4020'];
+  for (var i = 0; i < 24; i++) {
+    var ember = document.createElement('span');
+    ember.className = 'ember';
+    var size = 2 + Math.random() * 4;
+    ember.style.cssText =
+      'left:' + (3 + Math.random() * 94) + '%;'
+      + 'width:' + size + 'px;height:' + size + 'px;'
+      + '--dur:' + (6 + Math.random() * 10) + 's;'
+      + '--delay:' + (Math.random() * 12) + 's;'
+      + '--drift:' + (-30 + Math.random() * 60) + 'px;'
+      + '--peak:' + (0.2 + Math.random() * 0.4) + ';'
+      + '--ember-color:' + colors[Math.floor(Math.random() * colors.length)] + ';';
+    container.appendChild(ember);
+  }
+}
+
+// ── Init ──
+function init() {
+  createEmbers();
+  buildGrid();
+  updateVS();
+  updateRosters();
+}
+
+// Error display
+window.onerror = function(msg, src, line) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#cc2020;color:#fff;padding:8px 16px;font:13px monospace;z-index:9999';
+  d.textContent = 'ERROR: ' + msg + ' (' + src + ':' + line + ')';
+  document.body.appendChild(d);
+};
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
