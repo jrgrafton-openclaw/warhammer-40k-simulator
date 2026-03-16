@@ -1,0 +1,451 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.5a Deployment Phase — "Atmospheric Warzone"
+   Enhanced visual styling: fog, lighting, particles, terrain detail.
+   Standard 2-column layout (roster + battlefield).
+   Staging/DS/Reserves are SVG zones on an extended canvas.
+   All shared styles are in ../../../shared/components/*.css
+══════════════════════════════════════════════════════════════ */
+
+/* ── App layout: standard 2-column (roster | battlefield) ── */
+#app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  height: 100vh;
+}
+#roster { grid-column: 1; }
+#battlefield { grid-column: 2; overflow: hidden; }
+#bf-svg-terrain, #bf-svg { overflow: visible; }
+
+/* ── Off-board SVG zones (staging / deep strike / reserves) ── */
+.offboard-zone {
+  fill: rgba(0,212,255,0.03);
+  stroke: rgba(0,212,255,0.2);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.offboard-zone.ds-zone-bg {
+  fill: rgba(255,170,0,0.03);
+  stroke: rgba(255,170,0,0.2);
+}
+.offboard-zone.reserves-zone-bg {
+  fill: rgba(186,126,255,0.03);
+  stroke: rgba(186,126,255,0.2);
+}
+
+.offboard-zone-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 5px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: rgba(0,212,255,0.12);
+  pointer-events: none;
+}
+.offboard-zone-label.ds-label {
+  fill: rgba(255,170,0,0.12);
+}
+.offboard-zone-label.reserves-label {
+  fill: rgba(186,126,255,0.12);
+}
+
+/* ── Board edge separator ── */
+.board-edge-separator {
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 2;
+  stroke-dasharray: 12 6;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+/* ── Deployment zone SVG styling ── */
+.deploy-zone-bg.imp-zone { fill: rgba(0,80,160,0.08); }
+.deploy-zone-bg.ork-zone { fill: rgba(255,64,32,0.08); }
+.nml-zone-bg { fill: rgba(0,0,0,0.12); }
+
+.deploy-zone-border.imp-border {
+  stroke: rgba(0,212,255,0.2);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.deploy-zone-border.ork-border {
+  stroke: rgba(255,64,32,0.2);
+  stroke-width: 2;
+  stroke-dasharray: 8 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+.deploy-zone-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.deploy-zone-sublabel {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: none;
+}
+.deploy-zone-label.imp-label, .deploy-zone-sublabel.imp-label { fill: rgba(0,212,255,0.1); }
+.deploy-zone-label.ork-label, .deploy-zone-sublabel.ork-label { fill: rgba(255,64,32,0.1); }
+.nml-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: rgba(201,163,82,0.06);
+  pointer-events: none;
+}
+
+/* ── Zone highlight on drag ── */
+.deploy-zone-bg.zone-active.imp-zone { fill: rgba(0,212,255,0.14); transition: fill 0.2s; }
+.deploy-zone-bg.zone-active.ork-zone { fill: rgba(255,64,32,0.14); transition: fill 0.2s; }
+.offboard-zone.zone-active.staging-zone-bg { fill: rgba(0,212,255,0.08); stroke: rgba(0,212,255,0.4); transition: fill 0.2s, stroke 0.2s; }
+.offboard-zone.zone-active.ds-zone-bg { fill: rgba(255,170,0,0.08); stroke: rgba(255,170,0,0.4); transition: fill 0.2s, stroke 0.2s; }
+.offboard-zone.zone-active.reserves-zone-bg { fill: rgba(186,126,255,0.08); stroke: rgba(186,126,255,0.4); transition: fill 0.2s, stroke 0.2s; }
+
+/* ── Deployment complete — hide deployment zone shading + staging only ── */
+/* DS and Reserves zones PERSIST (units enter play later) */
+.deployment-complete .deploy-zone-bg,
+.deployment-complete .deploy-zone-border,
+.deployment-complete .deploy-zone-label,
+.deployment-complete .deploy-zone-sublabel,
+.deployment-complete .nml-label {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.deployment-complete .nml-zone-bg {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+/* Only hide staging zone and board-edge separator, keep DS + Reserves */
+.deployment-complete .staging-zone-bg,
+.deployment-complete .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.deployment-complete .board-edge-separator {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* ── Version badge ── */
+.deploy-badge {
+  position: absolute; top: 32px; right: 12px; z-index: 50;
+  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dis); padding: 3px 8px;
+  border: 1px solid rgba(0,212,255,.06);
+}
+
+/* ── Deploy status label in action bar ── */
+#deploy-status-label {
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--imp, #00d4ff);
+  padding: 0 4px;
+  min-width: 120px;
+  text-align: center;
+  flex: 0;
+}
+#deploy-status-label.ork-turn {
+  color: var(--ork, #ff4020);
+}
+
+/* ── Zone warning banner ── */
+.zone-warning {
+  position: absolute;
+  top: 88px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  background: rgba(204,34,34,0.9);
+  color: #fff;
+  font: 700 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 3px;
+  display: none;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.zone-warning.visible { display: block; }
+
+/* ── Deployment ghost (placement preview) ── */
+.deploy-ghost {
+  pointer-events: none;
+  fill: none;
+  stroke-dasharray: 4 3;
+  opacity: .4;
+}
+
+/* ── Cohesion banner positioning ── */
+#cohesion-banner {
+  top: 88px !important; left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important; max-width: 280px !important;
+  padding: 5px 14px !important; font-size: 11px !important;
+  white-space: nowrap !important;
+}
+
+/* ── Deploy-state pill in roster ── */
+.roster-state-pill.deploy-state {
+  background: rgba(255,170,0,0.12);
+  color: #ffaa00;
+  border-color: rgba(255,170,0,0.25);
+}
+.roster-state-pill.deploy-state.deployed {
+  background: rgba(0,200,80,0.12);
+  color: #00c850;
+  border-color: rgba(0,200,80,0.25);
+}
+.roster-state-pill.deploy-state.in-reserves {
+  background: rgba(186,126,255,0.12);
+  color: #ba7eff;
+  border-color: rgba(186,126,255,0.25);
+}
+
+/* ── Shake on blocked confirm ── */
+@keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
+.shake-error { animation: shake-err 0.4s ease; }
+
+/* ── Camera transition for deployment lock ── */
+.camera-transition #battlefield-inner {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   v0.5a — ATMOSPHERIC WARZONE ENHANCEMENTS
+══════════════════════════════════════════════════════════════ */
+
+/* ── 1. Atmospheric Fog Layer ── */
+#atmosphere-fog {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 85%, rgba(40,60,90,0.18) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 90%, rgba(30,50,80,0.15) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 30% at 50% 95%, rgba(35,55,85,0.20) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 5% 50%, rgba(25,45,75,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 40% 50% at 95% 50%, rgba(25,45,75,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 20% at 50% 100%, rgba(20,35,60,0.22) 0%, transparent 70%),
+    radial-gradient(ellipse 30% 25% at 30% 70%, rgba(40,65,100,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 30% 25% at 70% 30%, rgba(40,65,100,0.06) 0%, transparent 60%);
+  animation: fog-drift 150s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+}
+
+@keyframes fog-drift {
+  0% {
+    background-position:
+      0% 100%, 100% 100%, 50% 100%, 0% 50%, 100% 50%, 50% 100%, 30% 70%, 70% 30%;
+  }
+  50% {
+    background-position:
+      5% 95%, 92% 98%, 55% 98%, 3% 55%, 97% 45%, 48% 100%, 35% 65%, 65% 35%;
+  }
+  100% {
+    background-position:
+      -2% 100%, 105% 95%, 45% 100%, -2% 48%, 102% 52%, 52% 100%, 25% 75%, 75% 25%;
+  }
+}
+
+/* ── 2. Battlefield Vignette ── */
+#battlefield-vignette {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 40%, rgba(0,0,0,0.45) 100%);
+}
+
+/* ── 3. Particle Canvas ── */
+#particle-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 720px; height: 528px;
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0.8;
+}
+
+/* ── 4. Enhanced Unit Glows + Pulse ── */
+@keyframes imp-pulse {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 4px rgba(0,212,255,0.6))
+      drop-shadow(0 0 10px rgba(0,212,255,0.3));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 8px rgba(0,212,255,0.8))
+      drop-shadow(0 0 20px rgba(0,212,255,0.45));
+  }
+}
+
+@keyframes ork-pulse {
+  0%, 100% {
+    filter:
+      drop-shadow(0 0 4px rgba(255,64,32,0.6))
+      drop-shadow(0 0 10px rgba(255,64,32,0.3));
+  }
+  50% {
+    filter:
+      drop-shadow(0 0 8px rgba(255,64,32,0.8))
+      drop-shadow(0 0 20px rgba(255,64,32,0.45));
+  }
+}
+
+/* Imperium model bases */
+g.model-base[data-faction="imp"] circle,
+g.model-base[data-faction="imp"] rect {
+  filter:
+    drop-shadow(0 0 6px rgba(0,212,255,0.5))
+    drop-shadow(0 0 14px rgba(0,212,255,0.25));
+  animation: imp-pulse 3s ease-in-out infinite;
+}
+
+/* Ork model bases */
+g.model-base[data-faction="ork"] circle,
+g.model-base[data-faction="ork"] rect {
+  filter:
+    drop-shadow(0 0 6px rgba(255,64,32,0.5))
+    drop-shadow(0 0 14px rgba(255,64,32,0.25));
+  animation: ork-pulse 2.5s ease-in-out infinite;
+}
+
+/* Fallback: faction class on parent g or based on stroke color */
+#layer-models .model-base circle[stroke="#00d4ff"],
+#layer-models .model-base rect[stroke="#00d4ff"] {
+  filter:
+    drop-shadow(0 0 6px rgba(0,212,255,0.5))
+    drop-shadow(0 0 14px rgba(0,212,255,0.25));
+  animation: imp-pulse 3s ease-in-out infinite;
+}
+
+#layer-models .model-base circle[stroke="#ff4020"],
+#layer-models .model-base rect[stroke="#ff4020"] {
+  filter:
+    drop-shadow(0 0 6px rgba(255,64,32,0.5))
+    drop-shadow(0 0 14px rgba(255,64,32,0.25));
+  animation: ork-pulse 2.5s ease-in-out infinite;
+}
+
+/* ── 5. Terrain Detail Styling ── */
+.terrain-detail .td-window {
+  fill: rgba(0,180,220,0.06);
+  stroke: rgba(0,200,240,0.18);
+  stroke-width: 0.8;
+  filter: drop-shadow(0 0 3px rgba(0,180,220,0.15));
+}
+
+.terrain-detail .td-floor {
+  stroke: rgba(106,114,114,0.25);
+  stroke-width: 0.6;
+  stroke-dasharray: 12 4;
+}
+
+.terrain-detail .td-crack {
+  stroke: rgba(180,140,60,0.2);
+  stroke-width: 0.7;
+  fill: none;
+  filter: drop-shadow(0 0 2px rgba(200,160,60,0.12));
+}
+
+.terrain-detail .td-damaged-wall {
+  fill: none;
+  stroke: rgba(106,114,114,0.2);
+  stroke-width: 1;
+}
+
+/* ── 6. Objective Glow Pulse ── */
+@keyframes obj-glow {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.14; }
+}
+.obj-glow-pulse {
+  animation: obj-glow 4s ease-in-out infinite;
+}
+
+/* ── 7. Deployment Zone Enhancements ── */
+/* Animated dash-offset on zone borders */
+@keyframes zone-border-march {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -24; }
+}
+
+.deploy-zone-border.imp-border {
+  animation: zone-border-march 3s linear infinite;
+}
+.deploy-zone-border.ork-border {
+  animation: zone-border-march 3s linear infinite;
+}
+
+/* Scanning line effect */
+@keyframes scan-sweep {
+  0% { top: 0; opacity: 0; }
+  5% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { top: calc(100% - 2px); opacity: 0; }
+}
+
+.deploy-zone-bg.imp-zone ~ .imp-scan-line,
+.deploy-zone-bg.ork-zone ~ .ork-scan-line {
+  animation: scan-sweep 4s linear infinite;
+}
+
+/* Deployment zone scan lines (created via pseudo-elements on the wrapper) */
+#bf-svg-terrain {
+  position: relative;
+}
+
+/* ── 8. Ground Texture Enhancement ── */
+.ground-noise-layer {
+  pointer-events: none;
+}
+
+/* Make grid look like scarred metal floor plates */
+#battlefield-inner {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 23px,
+      rgba(140,120,70,0.04) 23px,
+      rgba(140,120,70,0.04) 24px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 23px,
+      rgba(140,120,70,0.04) 23px,
+      rgba(140,120,70,0.04) 24px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 95px,
+      rgba(140,120,70,0.08) 95px,
+      rgba(140,120,70,0.08) 97px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 95px,
+      rgba(140,120,70,0.08) 95px,
+      rgba(140,120,70,0.08) 97px
+    );
+}

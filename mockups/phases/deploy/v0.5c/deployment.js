@@ -1,0 +1,675 @@
+/**
+ * deployment.js — v0.4 Deployment state machine with SVG tabletop extension.
+ * Staging/DS/Reserves are SVG zones on an extended canvas (negative x).
+ * Standard 2-column layout, no extra HTML panels.
+ * ES module.
+ */
+
+import { PX_PER_INCH, simState, callbacks, currentUnit, activeRangeTypes } from '../../../shared/state/store.js';
+import { UNITS } from '../../../shared/state/units.js';
+import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
+         checkCohesion, updateRangeCirclesFromUnit, clearRangeCircles,
+         applyTx, getCamera } from '../../../shared/world/svg-renderer.js';
+import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
+
+// ── Constants ────────────────────────────────────────────
+var BOARD_W = 720;
+var BOARD_H = 528;
+var IMP_ZONE      = { xMin: 0,    xMax: 240,  yMin: 0,   yMax: BOARD_H };
+var ORK_ZONE      = { xMin: 480,  xMax: 720,  yMin: 0,   yMax: BOARD_H };
+var NML_ZONE      = { xMin: 240,  xMax: 480,  yMin: 0,   yMax: BOARD_H };
+var STAGING_ZONE  = { xMin: -540, xMax: -290, yMin: 20,  yMax: 508 };
+var DS_ZONE       = { xMin: -270, xMax: -20,  yMin: 20,  yMax: 250 };
+var RESERVES_ZONE = { xMin: -270, xMax: -20,  yMin: 278, yMax: 508 };
+
+// ── Deployment state ─────────────────────────────────────
+var deployState = {
+  activePlayer: 'imp',
+  deployedUnits: new Set(),
+  reserveUnits: new Set(),
+  deepStrikeUnits: new Set(),
+  placingUnit: null,
+  stagingPositions: {},   // unit id → [{x,y}, ...] original staging model positions
+  impTotal: 0,
+  orkTotal: 0,
+  locked: false
+};
+
+// Expose for renderModels to detect off-board units
+window.__deployedUnitIds = deployState.deployedUnits;
+
+// ── Zone helpers ─────────────────────────────────────────
+function getDeployZone(faction) {
+  return faction === 'imp' ? IMP_ZONE : ORK_ZONE;
+}
+
+function isInZone(x, y, r, zone) {
+  return (x - r) >= zone.xMin && (x + r) <= zone.xMax &&
+         (y - r) >= zone.yMin && (y + r) <= zone.yMax;
+}
+
+function isPointInZone(x, y, zone) {
+  return x >= zone.xMin && x <= zone.xMax && y >= zone.yMin && y <= zone.yMax;
+}
+
+function isUnitInZone(unit, zone) {
+  for (var i = 0; i < unit.models.length; i++) {
+    var m = unit.models[i];
+    var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
+    if (!isInZone(m.x, m.y, r, zone)) return false;
+  }
+  return true;
+}
+
+function detectZone(x, y) {
+  if (isPointInZone(x, y, IMP_ZONE)) return 'imp';
+  if (isPointInZone(x, y, ORK_ZONE)) return 'ork';
+  if (isPointInZone(x, y, NML_ZONE)) return 'nml';
+  if (isPointInZone(x, y, STAGING_ZONE)) return 'staging';
+  if (isPointInZone(x, y, DS_ZONE)) return 'ds';
+  if (isPointInZone(x, y, RESERVES_ZONE)) return 'reserves';
+  return 'none';
+}
+
+function getAnchorPos(unit) {
+  var m = unit.models[0];
+  return { x: m.x, y: m.y };
+}
+
+// ── Formation: arrange models in a coherent cluster ──────
+function arrangeModels(unit, cx, cy) {
+  var models = unit.models;
+  var n = models.length;
+  if (n === 1) {
+    models[0].x = cx;
+    models[0].y = cy;
+    return;
+  }
+  var spacing = 17;
+  var cols = Math.ceil(Math.sqrt(n));
+  var rows = Math.ceil(n / cols);
+  var startX = cx - ((cols - 1) * spacing) / 2;
+  var startY = cy - ((rows - 1) * spacing) / 2;
+  for (var i = 0; i < n; i++) {
+    var col = i % cols;
+    var row = Math.floor(i / cols);
+    models[i].x = startX + col * spacing;
+    models[i].y = startY + row * spacing;
+  }
+}
+
+// ── Placement flow ───────────────────────────────────────
+function startPlacement(unitId) {
+  if (deployState.locked) return;
+  var unit = simState.units.find(function(u) { return u.id === unitId; });
+  if (!unit) return;
+
+  // Cancel any current placement
+  if (deployState.placingUnit && deployState.placingUnit !== unitId) {
+    cancelPlacement();
+  }
+
+  deployState.reserveUnits.delete(unitId);
+  deployState.deepStrikeUnits.delete(unitId);
+  deployState.placingUnit = unitId;
+
+  // Store current staging positions so we can return on cancel
+  deployState.stagingPositions[unitId] = unit.models.map(function(m) {
+    return { x: m.x, y: m.y };
+  });
+
+  renderModels();
+  baseSelectUnit(unitId);
+  updateUI();
+
+  // Enable confirm/cancel
+  var btnConfirm = document.getElementById('btn-confirm-unit');
+  var btnCancel = document.getElementById('btn-cancel-unit');
+  if (btnConfirm) {
+    btnConfirm.disabled = false;
+    btnConfirm.textContent = '↩ BACK TO STAGING';
+  }
+  if (btnCancel) btnCancel.disabled = false;
+
+  highlightZones(true);
+}
+
+function confirmPlacement() {
+  var unitId = deployState.placingUnit;
+  if (!unitId) return;
+
+  var unit = simState.units.find(function(u) { return u.id === unitId; });
+  if (!unit) return;
+
+  var anchor = getAnchorPos(unit);
+  var zone = detectZone(anchor.x, anchor.y);
+
+  if (zone === 'imp') {
+    // Validate all models are within imp deployment zone
+    if (!isUnitInZone(unit, IMP_ZONE)) {
+      showZoneWarning();
+      shakeConfirm();
+      return;
+    }
+    // Deploy to board
+    deployState.deployedUnits.add(unitId);
+    unit.deployed = true;
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else if (zone === 'staging') {
+    // Return to staging — restore original staging positions
+    var saved = deployState.stagingPositions[unitId];
+    if (saved) {
+      unit.models.forEach(function(m, i) {
+        if (saved[i]) { m.x = saved[i].x; m.y = saved[i].y; }
+      });
+    }
+    deployState.placingUnit = null;
+    finishPlacement();
+
+  } else if (zone === 'ds') {
+    // Assign to deep strike — leave models wherever the player put them
+    deployState.deepStrikeUnits.add(unitId);
+    deployState.reserveUnits.delete(unitId);
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else if (zone === 'reserves') {
+    // Assign to reserves — leave models wherever the player put them
+    deployState.reserveUnits.add(unitId);
+    deployState.deepStrikeUnits.delete(unitId);
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else {
+    // Invalid zone (NML, ork, or off all zones)
+    showZoneWarning();
+    shakeConfirm();
+  }
+}
+
+function finishPlacement() {
+  var btnConfirm = document.getElementById('btn-confirm-unit');
+  var btnCancel = document.getElementById('btn-cancel-unit');
+  if (btnConfirm) btnConfirm.disabled = true;
+  if (btnCancel) btnCancel.disabled = true;
+  highlightZones(false);
+  renderModels();
+  updateUI();
+}
+
+function cancelPlacement() {
+  var unitId = deployState.placingUnit;
+  if (!unitId) return;
+
+  var unit = simState.units.find(function(u) { return u.id === unitId; });
+  if (!unit) return;
+
+  // Restore original staging positions
+  var saved = deployState.stagingPositions[unitId];
+  if (saved) {
+    unit.models.forEach(function(m, i) {
+      if (saved[i]) { m.x = saved[i].x; m.y = saved[i].y; }
+    });
+  }
+  deployState.placingUnit = null;
+  finishPlacement();
+}
+
+function shakeConfirm() {
+  var btn = document.getElementById('btn-confirm-unit');
+  if (btn) {
+    btn.classList.add('shake-error');
+    setTimeout(function() { btn.classList.remove('shake-error'); }, 400);
+  }
+}
+
+// ── Deployment completion ────────────────────────────────
+function checkDeploymentComplete() {
+  var allImpPlaced = simState.units.every(function(u) {
+    if (u.faction !== 'imp') return true;
+    return deployState.deployedUnits.has(u.id) ||
+      deployState.reserveUnits.has(u.id) ||
+      deployState.deepStrikeUnits.has(u.id);
+  });
+  var btn = document.getElementById('btn-end');
+  if (btn) btn.disabled = !allImpPlaced;
+}
+
+function confirmDeployment() {
+  var btn = document.getElementById('btn-end');
+  if (btn && btn.disabled) return;
+
+  deployState.locked = true;
+
+  btn.textContent = '✓ DEPLOYMENT LOCKED';
+  btn.disabled = true;
+  btn.style.background = 'rgba(0,200,80,0.15)';
+  btn.style.borderColor = 'rgba(0,200,80,0.4)';
+  btn.style.color = '#00c850';
+
+  var sub = document.getElementById('deploy-subtitle');
+  if (sub) sub.textContent = 'Deployment Complete — Ready for Command Phase';
+
+  deployState.placingUnit = null;
+  var btnConfirm = document.getElementById('btn-confirm-unit');
+  var btnCancel = document.getElementById('btn-cancel-unit');
+  if (btnConfirm) btnConfirm.disabled = true;
+  if (btnCancel) btnCancel.disabled = true;
+
+  // Add deployment-complete class to hide zone overlays
+  document.body.classList.add('deployment-complete');
+
+  // Animate camera to center the board (tx=0, ty=0 is the natural center)
+  var inner = document.getElementById('battlefield-inner');
+  if (inner) {
+    inner.style.transition = 'transform 0.6s ease';
+    inner.style.transform = 'translate(0px, 0px) scale(0.5)';
+    setTimeout(function() {
+      inner.style.transition = '';
+    }, 700);
+  }
+}
+
+// ── UI updates ───────────────────────────────────────────
+function updateUI() {
+  updateStatusLabel();
+  updateSubtitle();
+  updateRosterPills();
+  checkDeploymentComplete();
+}
+
+function updateStatusLabel() {
+  var label = document.getElementById('deploy-status-label');
+  if (!label) return;
+  var placed = 0;
+  simState.units.forEach(function(u) {
+    if (u.faction !== 'imp') return;
+    if (deployState.deployedUnits.has(u.id) ||
+        deployState.reserveUnits.has(u.id) ||
+        deployState.deepStrikeUnits.has(u.id)) {
+      placed++;
+    }
+  });
+  label.textContent = 'IMPERIUM DEPLOYING · ' + placed + '/' + deployState.impTotal;
+}
+
+function updateSubtitle() {
+  var sub = document.getElementById('deploy-subtitle');
+  if (!sub) return;
+  var placed = 0;
+  simState.units.forEach(function(u) {
+    if (u.faction !== 'imp') return;
+    if (deployState.deployedUnits.has(u.id) ||
+        deployState.reserveUnits.has(u.id) ||
+        deployState.deepStrikeUnits.has(u.id)) {
+      placed++;
+    }
+  });
+  sub.textContent = 'Imperium Deploying · ' + placed + '/' + deployState.impTotal + ' units';
+}
+
+function updateRosterPills() {
+  document.querySelectorAll('.rail-unit').forEach(function(el) {
+    var uid = el.dataset.unit;
+    var pill = el.querySelector('.roster-state-pill');
+    if (!pill) return;
+
+    if (deployState.deployedUnits.has(uid)) {
+      pill.textContent = '✓ DEPLOYED';
+      pill.className = 'roster-state-pill deploy-state deployed';
+    } else if (deployState.reserveUnits.has(uid)) {
+      pill.textContent = 'RESERVES';
+      pill.className = 'roster-state-pill deploy-state in-reserves';
+    } else if (deployState.deepStrikeUnits.has(uid)) {
+      pill.textContent = 'DEEP STRIKE';
+      pill.className = 'roster-state-pill deploy-state in-reserves';
+    } else {
+      pill.textContent = 'UNDEPLOYED';
+      pill.className = 'roster-state-pill deploy-state';
+    }
+  });
+}
+
+function showZoneWarning() {
+  var warn = document.getElementById('zone-warning');
+  if (!warn) return;
+  warn.classList.add('visible');
+  setTimeout(function() { warn.classList.remove('visible'); }, 1500);
+}
+
+function highlightZones(active) {
+  var impZone = document.querySelector('.deploy-zone-bg.imp-zone');
+  var stagingZone = document.querySelector('.offboard-zone.staging-zone-bg');
+  var dsZone = document.querySelector('.offboard-zone.ds-zone-bg');
+  var reservesZone = document.querySelector('.offboard-zone.reserves-zone-bg');
+
+  if (impZone) impZone.classList.toggle('zone-active', active);
+  if (stagingZone) stagingZone.classList.toggle('zone-active', active);
+  if (dsZone) dsZone.classList.toggle('zone-active', active);
+  if (reservesZone) reservesZone.classList.toggle('zone-active', active);
+}
+
+// ── Drag interceptor — block enemy + non-placing drags ───
+function installDragInterceptor() {
+  var _drag = simState.drag;
+  Object.defineProperty(simState, 'drag', {
+    get: function() { return _drag; },
+    set: function(v) {
+      if (deployState.locked) { return; }
+      if (v) {
+        // Determine the unit being dragged
+        var dragUnit = null;
+        if (v.type === 'unit' && v.unit) dragUnit = v.unit;
+        else if (v.type === 'model' && v.model) {
+          dragUnit = simState.units.find(function(u) {
+            return u.models.some(function(m) { return m.id === v.model.id; });
+          });
+        }
+        else if (v.type === 'rotate' && v.unit) dragUnit = v.unit;
+
+        if (dragUnit) {
+          // Block enemy unit dragging entirely
+          if (dragUnit.faction === 'ork') {
+            baseSelectUnit(dragUnit.id);
+            return;
+          }
+          // Only allow dragging the currently placing unit
+          if (dragUnit.id !== deployState.placingUnit) {
+            if (deployState.deployedUnits.has(dragUnit.id)) {
+              baseSelectUnit(dragUnit.id);
+              return;
+            }
+            // Clicking a staging unit starts placement AND allows immediate drag
+            startPlacement(dragUnit.id);
+            // Fall through to set _drag so the mousedown drag begins immediately
+          }
+        }
+      }
+      _drag = v;
+    },
+    configurable: true, enumerable: true
+  });
+}
+
+// ── Drag enforcement — zone detection + button updates ───
+function installDragEnforcement() {
+  var svg = document.getElementById('bf-svg');
+  if (!svg) return;
+
+  svg.addEventListener('mousemove', function() {
+    if (deployState.locked) return;
+    if (!simState.drag) return;
+
+    var uid = deployState.placingUnit;
+    if (!uid) return;
+
+    var unit = simState.units.find(function(u) { return u.id === uid; });
+    if (!unit) return;
+
+    var anchor = getAnchorPos(unit);
+    var zone = detectZone(anchor.x, anchor.y);
+
+    // Update confirm button text based on zone
+    var btnConfirm = document.getElementById('btn-confirm-unit');
+    if (btnConfirm) {
+      if (zone === 'imp') {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '✓ CONFIRM';
+      } else if (zone === 'staging') {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '↩ BACK TO STAGING';
+      } else if (zone === 'ds') {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '✓ DEEP STRIKE';
+      } else if (zone === 'reserves') {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '✓ RESERVES';
+      } else {
+        // NML, ork, none — invalid
+        btnConfirm.disabled = true;
+        btnConfirm.textContent = '✓ CONFIRM';
+      }
+    }
+
+    // Highlight active zone
+    highlightAllZonesByDetection(zone);
+
+    // Terrain collision (only on-board)
+    if (anchor.x >= 0) {
+      var aabbs = window._terrainAABBs || [];
+      unit.models.forEach(function(m) {
+        if (m.shape === 'rect') return;
+        var resolved = resolveTerrainCollision(m.x, m.y, m.r, aabbs);
+        m.x = resolved.x;
+        m.y = resolved.y;
+      });
+      // Cross-unit collision
+      resolveUnitDragCollisions(unit, simState.units);
+    }
+
+    renderModels();
+  });
+}
+
+function highlightAllZonesByDetection(activeZoneName) {
+  var impZone = document.querySelector('.deploy-zone-bg.imp-zone');
+  var stagingZone = document.querySelector('.offboard-zone.staging-zone-bg');
+  var dsZone = document.querySelector('.offboard-zone.ds-zone-bg');
+  var reservesZone = document.querySelector('.offboard-zone.reserves-zone-bg');
+
+  if (impZone) impZone.classList.toggle('zone-active', activeZoneName === 'imp');
+  if (stagingZone) stagingZone.classList.toggle('zone-active', activeZoneName === 'staging');
+  if (dsZone) dsZone.classList.toggle('zone-active', activeZoneName === 'ds');
+  if (reservesZone) reservesZone.classList.toggle('zone-active', activeZoneName === 'reserves');
+}
+
+// ── Selection override ───────────────────────────────────
+function deploySelectUnit(uid) {
+  if (!uid) {
+    baseSelectUnit(null);
+    return;
+  }
+
+  var unit = simState.units.find(function(u) { return u.id === uid; });
+  if (!unit) return;
+
+  baseSelectUnit(uid);
+
+  var badge = document.getElementById('unit-state-badge');
+  if (badge) {
+    if (deployState.deployedUnits.has(uid)) {
+      badge.textContent = 'DEPLOYED';
+      badge.style.background = 'rgba(0,200,80,0.15)';
+      badge.style.color = '#00c850';
+    } else if (deployState.reserveUnits.has(uid)) {
+      badge.textContent = 'RESERVES';
+      badge.style.background = 'rgba(186,126,255,0.15)';
+      badge.style.color = '#ba7eff';
+    } else if (deployState.deepStrikeUnits.has(uid)) {
+      badge.textContent = 'DEEP STRIKE';
+      badge.style.background = 'rgba(255,170,0,0.15)';
+      badge.style.color = '#ffaa00';
+    } else {
+      badge.textContent = 'UNDEPLOYED';
+      badge.style.background = 'rgba(255,170,0,0.15)';
+      badge.style.color = '#ffaa00';
+    }
+  }
+}
+
+// ── Button wiring ────────────────────────────────────────
+function wireButtons() {
+  // Confirm / Cancel
+  var btnConfirm = document.getElementById('btn-confirm-unit');
+  var btnCancel = document.getElementById('btn-cancel-unit');
+  if (btnConfirm) btnConfirm.addEventListener('click', confirmPlacement);
+  if (btnCancel) btnCancel.addEventListener('click', cancelPlacement);
+
+  // End deployment
+  var btnEnd = document.getElementById('btn-end');
+  if (btnEnd) btnEnd.addEventListener('click', confirmDeployment);
+
+  // Stratagem modal
+  var btnStrat = document.getElementById('btn-strat');
+  var modalBg = document.getElementById('modal-bg');
+  var modalClose = document.getElementById('modal-close');
+  if (btnStrat && modalBg) {
+    btnStrat.addEventListener('click', function() { modalBg.style.display = 'flex'; });
+  }
+  if (modalClose && modalBg) {
+    modalClose.addEventListener('click', function() { modalBg.style.display = 'none'; });
+  }
+  if (modalBg) {
+    modalBg.addEventListener('click', function(e) {
+      if (e.target === modalBg) modalBg.style.display = 'none';
+    });
+  }
+
+  // Roster unit clicks → start placement (Imperium only)
+  document.querySelectorAll('.rail-unit').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var uid = el.dataset.unit;
+      if (!uid) return;
+      var unit = simState.units.find(function(u) { return u.id === uid; });
+      if (!unit) return;
+      if (unit.faction !== 'imp') {
+        deploySelectUnit(uid);
+        return;
+      }
+      if (deployState.locked) {
+        deploySelectUnit(uid);
+        return;
+      }
+      if (deployState.deployedUnits.has(uid)) {
+        deploySelectUnit(uid);
+        return;
+      }
+      deployState.reserveUnits.delete(uid);
+      deployState.deepStrikeUnits.delete(uid);
+      startPlacement(uid);
+    });
+  });
+}
+
+// ── Keyboard shortcuts ───────────────────────────────────
+function wireKeyboard() {
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    var key = e.key.toUpperCase();
+    if (key === 'ENTER' || key === 'C') {
+      if (deployState.placingUnit) confirmPlacement();
+    } else if (key === 'ESCAPE' || key === 'X') {
+      if (deployState.placingUnit) cancelPlacement();
+    }
+  });
+}
+
+// ── Click-on-empty deselect ──────────────────────────────
+function setupClickOutside() {
+  var svg = document.getElementById('bf-svg');
+  if (!svg) return;
+  svg.addEventListener('click', function(e) {
+    if (e.target === svg || e.target.tagName === 'g') {
+      if (!deployState.placingUnit) {
+        deploySelectUnit(null);
+      }
+    }
+  });
+}
+
+// ── Global handlers needed by inline onclick in HTML ─────
+window.toggleFaction = function(header) {
+  var body = header.nextElementSibling;
+  if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+  var chev = header.querySelector('.faction-chevron');
+  if (chev) chev.textContent = body.style.display === 'none' ? '▸' : '▾';
+};
+window.toggleAA = function(header) {
+  var body = header.nextElementSibling;
+  if (body) body.style.display = body.style.display === 'none' ? '' : 'none';
+  var chev = header.querySelector('.aa-chev');
+  if (chev) chev.textContent = body.style.display === 'none' ? '▸' : '▾';
+};
+
+// ── Single-select range toggles ──────────────────────────
+function wireRangeToggleSingleSelect() {
+  var types = ['move', 'advance', 'charge', 'ds'];
+  var buttons = {};
+  types.forEach(function(t) {
+    buttons[t] = document.getElementById('rt-' + t);
+  });
+
+  types.forEach(function(t) {
+    var btn = buttons[t];
+    if (!btn) return;
+
+    // Clone to remove existing listeners from initBattleControls
+    var newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    buttons[t] = newBtn;
+
+    newBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var wasActive = newBtn.classList.contains('active');
+
+      // Deactivate ALL range toggles and hide ALL range circles
+      types.forEach(function(ot) {
+        var ob = buttons[ot];
+        if (ob) ob.classList.remove('active');
+        var circle = document.getElementById('range-' + ot);
+        var label = document.getElementById('range-' + ot + '-label');
+        if (circle) circle.style.display = 'none';
+        if (label) label.style.display = 'none';
+      });
+
+      // If it wasn't active, activate this one
+      if (!wasActive) {
+        newBtn.classList.add('active');
+        activeRangeTypes.clear();
+        activeRangeTypes.add(t);
+        if (currentUnit) updateRangeCirclesFromUnit(currentUnit);
+      } else {
+        activeRangeTypes.clear();
+        clearRangeCircles();
+      }
+    });
+  });
+}
+
+// ── Init ─────────────────────────────────────────────────
+export function initDeployment() {
+  // Count units per faction
+  simState.units.forEach(function(u) {
+    if (u.faction === 'imp') deployState.impTotal++;
+    else if (u.faction === 'ork') deployState.orkTotal++;
+  });
+
+  // Mark Ork units as deployed (they're pre-placed in scene.js)
+  simState.units.forEach(function(u) {
+    if (u.faction === 'ork') {
+      deployState.deployedUnits.add(u.id);
+    }
+  });
+
+  // Register selection override
+  callbacks.selectUnit = deploySelectUnit;
+
+  // Wire up UI
+  wireButtons();
+  wireKeyboard();
+  setupClickOutside();
+  installDragInterceptor();
+  installDragEnforcement();
+
+  // Override range toggles for single-select behavior
+  wireRangeToggleSingleSelect();
+
+  // Initial render
+  renderModels();
+  updateUI();
+}
