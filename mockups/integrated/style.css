@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Integrated Prototype v0.1 — Deploy → Move
+   Integrated Prototype v0.2 — Deploy → Move → Shoot
    Integration-specific styles only.
    Phase-specific styles imported from phase directories.
 ══════════════════════════════════════════════════════════════ */
@@ -51,6 +51,28 @@
 
 /* ── Hide zone warning during move phase ── */
 .phase-move .zone-warning { display: none !important; }
+
+/* ── .phase-shoot: same as .phase-move, keeps deployment zones hidden ── */
+.phase-shoot .staging-zone-bg,
+.phase-shoot .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-shoot .board-edge-separator,
+.phase-shoot .deploy-zone-bg,
+.phase-shoot .deploy-zone-border,
+.phase-shoot .deploy-zone-label,
+.phase-shoot .deploy-zone-sublabel,
+.phase-shoot .nml-zone-bg,
+.phase-shoot .nml-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.phase-shoot .ds-zone-bg,
+.phase-shoot .reserves-zone-bg {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+.phase-shoot .zone-warning { display: none !important; }
+.phase-shoot .move-center-line { opacity: 1; }
 
 /* ── Hide per-unit CONFIRM/CANCEL during deploy (auto-confirm on drop) ── */
 #btn-confirm-unit,

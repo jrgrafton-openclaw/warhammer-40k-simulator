@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — Integrated v0.1 · Deploy → Move</title>
+  <title>WH40K Simulator — Integrated v0.2 · Deploy → Move → Shoot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/tokens/colors.css">
@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="../shared/components/phase-states.css">
   <link rel="stylesheet" href="../phases/deploy/v0.4/style.css">
   <link rel="stylesheet" href="../phases/move/v0.23/style.css">
+  <link rel="stylesheet" href="../phases/shoot/v0.9/style.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -161,14 +162,20 @@
       <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
         <g id="layer-debug-grid"></g>
         <g id="layer-move-ghosts"></g>
+        <g id="layer-target-lines"></g>
         <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
         <g id="layer-models"></g>
         <g id="layer-move-rulers"></g>
         <g id="layer-debug-paths"></g>
       </svg>
+      <div id="fx-layer" aria-hidden="true">
+        <div id="proj-container" class="proj-container"></div>
+        <div id="hit-flash-layer" class="hit-flash-layer"></div>
+      </div>
     </div>
 
+    <div id="weapon-popup" class="overlay-panel hidden"></div>
     <div id="roll-overlay" class="overlay-panel hidden"></div>
 
     <div id="unit-card">
