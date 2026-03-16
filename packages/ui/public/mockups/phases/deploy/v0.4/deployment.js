@@ -421,16 +421,10 @@ function installDragEnforcement() {
     // Highlight active zone
     highlightAllZonesByDetection(zone);
 
-    // Terrain collision (only on-board)
+    // No terrain push-back during deploy — just highlight overlaps (orange glow).
+    // Matches movement phase: user sees the warning and repositions manually.
+    // Cross-unit collision still resolved to prevent stacking.
     if (anchor.x >= 0) {
-      var aabbs = window._terrainAABBs || [];
-      unit.models.forEach(function(m) {
-        if (m.shape === 'rect') return;
-        var resolved = resolveTerrainCollision(m.x, m.y, m.r, aabbs);
-        m.x = resolved.x;
-        m.y = resolved.y;
-      });
-      // Cross-unit collision
       resolveUnitDragCollisions(unit, simState.units);
     }
 
@@ -567,13 +561,8 @@ function _clampToZone(unit, zone) {
   if (dx !== 0 || dy !== 0) {
     unit.models.forEach(function(m) { m.x += dx; m.y += dy; });
   }
-  // Resolve terrain collision after clamping
-  var aabbs = window._terrainAABBs || [];
-  unit.models.forEach(function(m) {
-    if (m.shape === 'rect') return;
-    var resolved = resolveTerrainCollision(m.x, m.y, m.r, aabbs);
-    m.x = resolved.x; m.y = resolved.y;
-  });
+  // No terrain push-back — wall collision shown as orange highlight.
+  // User repositions manually (matches movement phase UX).
   resolveUnitDragCollisions(unit, simState.units);
 }
 
@@ -742,14 +731,33 @@ window.toggleAA = function(header) {
 };
 
 // ── Single-select range toggles ──────────────────────────
+// ── Redraw active range rings at current model positions ─
+// Called from callbacks.afterRender so rings follow units during drag.
+var _DEPLOY_RANGE_COLORS = {
+  move:    { fill: 'rgba(0,212,255,0.06)', stroke: 'rgba(0,212,255,0.3)' },
+  advance: { fill: 'rgba(204,136,0,0.06)', stroke: 'rgba(204,136,0,0.3)' },
+  charge:  { fill: 'rgba(204,100,0,0.06)', stroke: 'rgba(204,100,0,0.3)' },
+  ds:      { fill: 'rgba(186,126,255,0.06)', stroke: 'rgba(186,126,255,0.3)' }
+};
+
+function _redrawActiveRangeRings() {
+  if (!currentUnit || activeRangeTypes.size === 0) return;
+  var u = UNITS[currentUnit]; if (!u) return;
+  var t = null;
+  activeRangeTypes.forEach(function(v) { t = v; }); // get the single active type
+  if (!t) return;
+  var radiusInches;
+  if (t === 'move') radiusInches = u.M;
+  else if (t === 'advance') radiusInches = u.M + 3.5;
+  else if (t === 'charge') radiusInches = u.M + 7;
+  else if (t === 'ds') radiusInches = 9;
+  else return;
+  var color = _DEPLOY_RANGE_COLORS[t];
+  drawPerModelRangeRings(currentUnit, [{ radiusInches: radiusInches, fill: color.fill, stroke: color.stroke }]);
+}
+
 function wireRangeToggleSingleSelect() {
   var types = ['move', 'advance', 'charge', 'ds'];
-  var RANGE_COLORS = {
-    move:    { fill: 'rgba(0,212,255,0.06)', stroke: 'rgba(0,212,255,0.3)' },
-    advance: { fill: 'rgba(204,136,0,0.06)', stroke: 'rgba(204,136,0,0.3)' },
-    charge:  { fill: 'rgba(204,100,0,0.06)', stroke: 'rgba(204,100,0,0.3)' },
-    ds:      { fill: 'rgba(186,126,255,0.06)', stroke: 'rgba(186,126,255,0.3)' }
-  };
   var buttons = {};
   types.forEach(function(t) {
     buttons[t] = document.getElementById('rt-' + t);
@@ -787,8 +795,8 @@ function wireRangeToggleSingleSelect() {
           else if (t === 'ds') radiusInches = 9;
           drawPerModelRangeRings(currentUnit, [{
             radiusInches: radiusInches,
-            fill: RANGE_COLORS[t].fill,
-            stroke: RANGE_COLORS[t].stroke
+            fill: _DEPLOY_RANGE_COLORS[t].fill,
+            stroke: _DEPLOY_RANGE_COLORS[t].stroke
           }]);
         }
       } else {
@@ -853,6 +861,8 @@ export function initDeployment() {
   // After every renderModels(), reapply wall collision highlights (same pattern as movement.js)
   callbacks.afterRender = function() {
     _updateDeployWallCollisions();
+    // Redraw range rings so they follow the unit during drag
+    _redrawActiveRangeRings();
   };
 
   // Wire up UI
