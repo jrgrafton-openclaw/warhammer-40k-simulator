@@ -43,6 +43,9 @@
   <div class="scan-line"></div>
 </div>
 
+<!-- ═══ BATTLEFIELD EDGE FADE ═══ -->
+<div class="bf-edge-fade"></div>
+
 <!-- ═══ HEADER ═══ -->
 <header class="os-header">
   <div class="os-title">Battle Forge</div>
@@ -97,10 +100,36 @@
         </div>
       </div>
       <div class="panel-stats" id="pLeftStats"></div>
+      <div class="panel-change-link" onclick="openBrowser('left')">Change Army &#9662;</div>
     </div>
-    <div class="panel-roster" id="pLeftRoster"></div>
-    <div class="panel-change">
-      <button class="panel-change-btn" onclick="openBrowser('left')">Change Faction</button>
+    <div class="panel-roster" id="pLeftRoster">
+      <div class="roster-scroll">
+        <div class="faction-section">
+          <div class="faction-header">
+            <div class="faction-band imp"></div>
+            <span class="faction-label imp">IMPERIUM</span>
+            <span class="faction-chevron">&#9662;</span>
+          </div>
+          <div class="faction-body">
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Blade Champion</span><span class="rc">1</span><span class="ru-pts">120pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Blade Champion</span><span class="rc">1</span><span class="ru-pts">120pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Allarus Custodians</span><span class="rc">3</span><span class="ru-pts">165pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Allarus Custodians</span><span class="rc">2</span><span class="ru-pts">110pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M8 14 L12 8 L16 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div><span class="rn">Prosecutors</span><span class="rc">5</span><span class="ru-pts">85pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M8 14 L12 8 L16 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div><span class="rn">Prosecutors</span><span class="rc">5</span><span class="ru-pts">85pts</span></div>
+            <div class="rail-unit"><div class="ri pl" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Caladius Grav-tank</span><span class="rc">1</span><span class="ru-pts">215pts</span></div>
+            <div class="rail-unit"><div class="ri pl" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Caladius Grav-tank</span><span class="rc">1</span><span class="ru-pts">215pts</span></div>
+            <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Inquisitor Draxus</span><span class="rc">1</span><span class="ru-pts">95pts</span></div>
+          </div>
+        </div>
+        <div class="aa-section">
+          <div class="aa-header"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev">&#9656;</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -121,10 +150,39 @@
         </div>
       </div>
       <div class="panel-stats" id="pRightStats"></div>
+      <div class="panel-change-link" onclick="openBrowser('right')">Change Army &#9662;</div>
     </div>
-    <div class="panel-roster" id="pRightRoster"></div>
-    <div class="panel-change">
-      <button class="panel-change-btn" onclick="openBrowser('right')">Change Faction</button>
+    <div class="panel-roster" id="pRightRoster">
+      <div class="roster-scroll">
+        <div class="faction-section">
+          <div class="faction-header">
+            <div class="faction-band ork"></div>
+            <span class="faction-label ork">ORKS</span>
+            <span class="faction-chevron">&#9662;</span>
+          </div>
+          <div class="faction-body">
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Warboss</span><span class="rc">1</span><span class="ru-pts">90pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boss Nob</span><span class="rc">1</span><span class="ru-pts">95pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boyz Mob</span><span class="rc">10</span><span class="ru-pts">150pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boyz Mob</span><span class="rc">10</span><span class="ru-pts">150pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Mekboy</span><span class="rc">1</span><span class="ru-pts">75pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Nobz Mob</span><span class="rc">5</span><span class="ru-pts">115pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Nobz Mob</span><span class="rc">5</span><span class="ru-pts">115pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Gretchin</span><span class="rc">10</span><span class="ru-pts">50pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Gretchin</span><span class="rc">10</span><span class="ru-pts">50pts</span></div>
+            <div class="rail-unit"><div class="ri en" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Deff Dread</span><span class="rc">1</span><span class="ru-pts">150pts</span></div>
+            <div class="rail-unit"><div class="ri en" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Battlewagon</span><span class="rc">1</span><span class="ru-pts">185pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Lootas</span><span class="rc">5</span><span class="ru-pts">100pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M8 14 L12 8 L16 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div><span class="rn">Stormboyz</span><span class="rc">5</span><span class="ru-pts">80pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Weirdboy</span><span class="rc">1</span><span class="ru-pts">70pts</span></div>
+            <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Meganobz</span><span class="rc">3</span><span class="ru-pts">200pts</span></div>
+            <div class="rail-unit"><div class="ri en" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Trukk</span><span class="rc">1</span><span class="ru-pts">65pts</span></div>
+          </div>
+        </div>
+        <div class="aa-section">
+          <div class="aa-header"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev">&#9656;</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -447,7 +505,7 @@ mapData.terrain.forEach(function(piece) {
     updateBeginBtn();
   }
 
-  /* ── Render filled faction card (fade it out as panel slides in) ── */
+  /* ── Render filled faction card (stays visible in compact form) ── */
   function renderFactionCard(side) {
     var sel = state[side];
     if (!sel) return;
@@ -473,7 +531,7 @@ mapData.terrain.forEach(function(piece) {
 
     card.onclick = function() { openBrowser(side); };
 
-    // Fade card out as the panel slides in (docking effect)
+    // Compact the card (stays visible as anchor point)
     setTimeout(function() {
       card.classList.add('card-docking');
     }, 50);
@@ -492,22 +550,11 @@ mapData.terrain.forEach(function(piece) {
     document.getElementById(prefix + 'Icon').textContent = f.icon;
     document.getElementById(prefix + 'Faction').textContent = f.name;
     document.getElementById(prefix + 'Army').textContent = a.name;
-    document.getElementById(prefix + 'Stats').textContent =
-      a.pts + '/' + a.maxPts + ' pts \u00B7 ' + a.unitCount + ' units \u00B7 ' + a.modelCount + ' models';
+    document.getElementById(prefix + 'Stats').innerHTML =
+      '<span class="panel-stats-pts">' + a.pts + '/' + a.maxPts + ' pts</span> \u00B7 ' +
+      a.unitCount + ' units \u00B7 ' + a.modelCount + ' models';
 
-    // Fill roster
-    var rosterEl = document.getElementById(prefix + 'Roster');
-    rosterEl.innerHTML = '';
-    a.units.forEach(function(u) {
-      for (var q = 0; q < u.qty; q++) {
-        var row = document.createElement('div');
-        row.className = 'ru';
-        row.innerHTML =
-          '<span class="ru-name">' + u.name + '</span>' +
-          '<span class="ru-meta">' + u.info + ' \u00B7 ' + u.pts + 'pts</span>';
-        rosterEl.appendChild(row);
-      }
-    });
+    // Roster content is static HTML — no dynamic build needed
 
     // Slide panel in
     panel.classList.add('panel-filled');

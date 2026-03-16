@@ -239,11 +239,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 }
 .faction-card:hover .card-filled-change { color: var(--text-sec); }
 
-/* Card fade-out when panel slides in */
+/* Card compact state when panel slides in — stays visible */
 .faction-card.card-docking {
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.4s ease;
+  width: 180px; padding: 10px 12px 8px;
+  transition: all 0.4s ease;
 }
+.faction-card.card-docking .card-filled-icon { font-size: 20px; margin-bottom: 4px; }
+.faction-card.card-docking .card-filled-name { font-size: 12px; }
+.faction-card.card-docking .card-filled-sub { display: none; }
+.faction-card.card-docking .card-filled-pts { font-size: 10px; margin-top: 4px; }
+.faction-card.card-docking .card-filled-change { margin-top: 6px; }
 
 /* VS divider */
 .vs-divider {
@@ -288,13 +293,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 .side-panel-left.panel-filled  { transform: translateX(0); border-top: 2px solid var(--imp); }
 .side-panel-right.panel-filled { transform: translateX(0); border-top: 2px solid var(--ork); }
 
-/* Corner brackets */
+/* Corner brackets — bottom only (top has faction-color border) */
 .panel-bracket {
   position: absolute; width: 14px; height: 14px;
   pointer-events: none; z-index: 2;
 }
-.panel-bracket.tl { top: -1px; left: -1px; border-top: 1.5px solid; border-left: 1.5px solid; }
-.panel-bracket.tr { top: -1px; right: -1px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.panel-bracket.tl, .panel-bracket.tr { display: none; }
 .panel-bracket.bl { bottom: -1px; left: -1px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
 .panel-bracket.br { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
 
@@ -794,6 +798,68 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
   from { opacity: 0; transform: translateX(-50%) translateY(30px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   BATTLEFIELD EDGE FADE
+══════════════════════════════════════════════════════════════ */
+.bf-edge-fade {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(8,12,16,0.95) 0%,
+    rgba(8,12,16,0.4) 12%,
+    transparent 25%,
+    transparent 75%,
+    rgba(8,12,16,0.4) 88%,
+    rgba(8,12,16,0.95) 100%
+  );
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ROSTER COMPONENT (from shared/components/roster.css)
+══════════════════════════════════════════════════════════════ */
+.roster-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.roster-scroll::-webkit-scrollbar { width: 2px; }
+.roster-scroll::-webkit-scrollbar-thumb { background: rgba(0,212,255,.07); }
+.faction-section { border-top: 1px solid var(--border); }
+.faction-header { display: flex; align-items: center; gap: 6px; padding: 7px 10px; cursor: pointer; user-select: none; }
+.faction-header:hover { background: rgba(255,255,255,.03); }
+.faction-band { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+.faction-band.imp { background: var(--imp-dim); }
+.faction-band.ork { background: var(--ork-dim); }
+.faction-label { flex: 1; font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+.faction-label.imp { color: var(--imp); }
+.faction-label.ork { color: var(--ork); }
+.faction-chevron { font-size: 8px; color: var(--text-dis); }
+.faction-body { overflow: hidden; }
+.rail-unit { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-left: 2px solid transparent; border-bottom: 1px solid var(--border); transition: background .12s; }
+.rail-unit:hover { background: rgba(255,255,255,.04); border-left-color: var(--text-dis); }
+.ri { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ri.pl { background: var(--imp-tint); border: 1px solid var(--imp-dim); color: var(--imp); }
+.ri.en { background: var(--ork-tint); border: 1px solid var(--ork-dim); color: var(--ork); }
+.ri svg { width: 12px; height: 12px; }
+.rn { flex: 1; font: 500 13px/1 'Rajdhani', sans-serif; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc { font-size: 10px; font-weight: 600; color: var(--text-dis); flex-shrink: 0; }
+.ru-pts { font: 600 10px/1 'Rajdhani', sans-serif; color: var(--gold); flex-shrink: 0; margin-left: 2px; }
+/* Army abilities */
+.aa-section { border-top: 1px solid var(--border); }
+.aa-header { display: flex; align-items: center; gap: 5px; padding: 5px 10px; cursor: pointer; user-select: none; background: rgba(255,255,255,.02); font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; }
+.aa-chev { font-size: 8px; margin-left: auto; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL HEADER STATS
+══════════════════════════════════════════════════════════════ */
+.panel-stats-pts { color: var(--gold); }
+.panel-change-link {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); cursor: pointer;
+  transition: color 0.2s; margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+.side-panel-left .panel-change-link:hover { color: var(--imp); }
+.side-panel-right .panel-change-link:hover { color: var(--ork); }
 
 
 /* ══════════════════════════════════════════════════════════════
