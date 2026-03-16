@@ -672,15 +672,34 @@ function _addWeaponRangeButtons(uid) {
     rangesEl.appendChild(btn);
   });
 
-  // Enable horizontal scroll via mousewheel (vertical wheel → horizontal scroll)
-  if (!rangesEl._wheelWired) {
-    rangesEl.addEventListener('wheel', function(e) {
-      if (rangesEl.scrollWidth > rangesEl.clientWidth) {
-        e.preventDefault();
-        rangesEl.scrollLeft += e.deltaY || e.deltaX;
+  // Click-and-drag horizontal scrolling (with 4px dead zone for clicks)
+  if (!rangesEl._dragScrollWired) {
+    var _ds = { down: false, dragging: false, startX: 0, scrollStart: 0 };
+    rangesEl.addEventListener('mousedown', function(e) {
+      if (rangesEl.scrollWidth <= rangesEl.clientWidth) return;
+      _ds.down = true;
+      _ds.dragging = false;
+      _ds.startX = e.pageX;
+      _ds.scrollStart = rangesEl.scrollLeft;
+    });
+    window.addEventListener('mousemove', function(e) {
+      if (!_ds.down) return;
+      var dx = e.pageX - _ds.startX;
+      if (!_ds.dragging && Math.abs(dx) > 4) {
+        _ds.dragging = true;
+        rangesEl.style.cursor = 'grabbing';
       }
-    }, { passive: false });
-    rangesEl._wheelWired = true;
+      if (_ds.dragging) {
+        rangesEl.scrollLeft = _ds.scrollStart - dx;
+      }
+    });
+    window.addEventListener('mouseup', function() {
+      _ds.down = false;
+      _ds.dragging = false;
+      rangesEl.style.cursor = rangesEl.scrollWidth > rangesEl.clientWidth ? 'grab' : '';
+    });
+    rangesEl.style.cursor = 'grab';
+    rangesEl._dragScrollWired = true;
   }
 }
 

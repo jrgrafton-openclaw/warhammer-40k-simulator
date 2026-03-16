@@ -81,17 +81,21 @@
   min-width: 72px !important;
 }
 
-/* Weapon range toggle buttons */
+/* Weapon range toggle buttons — neutral by default, colored when active */
 .range-toggle.weapon {
-  background: rgba(255,100,60,0.08);
-  border: 1px solid rgba(255,100,60,0.2);
-  color: rgba(255,160,120,0.8);
+  background: transparent;
+  border: 1px solid var(--text-dis);
+  color: var(--text-muted);
   font-size: 8px;
   min-width: 72px !important;
 }
+.range-toggle.weapon:hover {
+  border-color: var(--text-muted);
+  color: var(--text-sec);
+}
 .range-toggle.weapon.active {
-  background: rgba(255,100,60,0.2);
-  border-color: rgba(255,100,60,0.6);
+  background: rgba(255,100,60,0.15);
+  border-color: rgba(255,100,60,0.5);
   color: #ff8855;
 }
 
