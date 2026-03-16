@@ -222,14 +222,23 @@ function shakeConfirm() {
 
 // ── Deployment completion ────────────────────────────────
 function checkDeploymentComplete() {
-  var allImpPlaced = simState.units.every(function(u) {
-    if (u.faction !== 'imp') return true;
-    return deployState.deployedUnits.has(u.id) ||
-      deployState.reserveUnits.has(u.id) ||
-      deployState.deepStrikeUnits.has(u.id);
+  var placed = 0;
+  var total = 0;
+  simState.units.forEach(function(u) {
+    if (u.faction !== 'imp') return;
+    total++;
+    if (deployState.deployedUnits.has(u.id) ||
+        deployState.reserveUnits.has(u.id) ||
+        deployState.deepStrikeUnits.has(u.id)) {
+      placed++;
+    }
   });
+  var allImpPlaced = placed === total && total > 0;
   var btn = document.getElementById('btn-end');
-  if (btn) btn.disabled = !allImpPlaced;
+  if (btn) {
+    btn.disabled = !allImpPlaced;
+    btn.title = allImpPlaced ? 'Lock deployment and begin game' : 'Deploy all ' + total + ' Imperium units first (' + placed + '/' + total + ' placed)';
+  }
 }
 
 function confirmDeployment() {
@@ -327,9 +336,11 @@ function updateRosterPills() {
   });
 }
 
-function showZoneWarning() {
+function showZoneWarning(msg) {
   var warn = document.getElementById('zone-warning');
   if (!warn) return;
+  if (msg) warn.textContent = msg;
+  else warn.textContent = 'OUTSIDE DEPLOYMENT ZONE';
   warn.classList.add('visible');
   setTimeout(function() { warn.classList.remove('visible'); }, 1500);
 }
@@ -427,6 +438,28 @@ function installDragEnforcement() {
 }
 
 // ── Auto-confirm on mouseup — detect zone + confirm/snap-back ──
+// ── Terrain collision check (matches movement.js logic) ─
+function _modelCollidesTerrainDeploy(model) {
+  var aabbs = window._terrainAABBs || [];
+  for (var i = 0; i < aabbs.length; i++) {
+    var box = aabbs[i];
+    var lx = box.iA * model.x + box.iC * model.y + box.iE;
+    var ly = box.iB * model.x + box.iD * model.y + box.iF;
+    var cpx = Math.max(box.minX, Math.min(box.maxX, lx));
+    var cpy = Math.max(box.minY, Math.min(box.maxY, ly));
+    if (Math.hypot(lx - cpx, ly - cpy) < model.r - 0.001) return true;
+  }
+  return false;
+}
+
+function _unitOverlapsTerrain(unit) {
+  for (var i = 0; i < unit.models.length; i++) {
+    if (unit.models[i].shape === 'rect') continue;
+    if (_modelCollidesTerrainDeploy(unit.models[i])) return true;
+  }
+  return false;
+}
+
 function _deployMouseupHandler() {
   if (deployState.locked) return;
   if (!deployState.placingUnit) return;
@@ -444,8 +477,13 @@ function _deployMouseupHandler() {
   if (zone === 'imp') {
     // Validate all models within imp zone
     if (!isUnitInZone(unit, IMP_ZONE)) {
-      // Models partially outside — snap back
       _snapBack(uid, unit);
+      return;
+    }
+    // Validate no models overlapping terrain
+    if (_unitOverlapsTerrain(unit)) {
+      _snapBack(uid, unit);
+      showZoneWarning('MODELS OVERLAPPING TERRAIN');
       return;
     }
     deployState.deployedUnits.add(uid);
