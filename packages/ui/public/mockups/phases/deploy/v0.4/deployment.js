@@ -199,6 +199,8 @@ function finishPlacement() {
   highlightZones(false);
   renderModels();
   updateUI();
+  // Recheck wall collisions after every placement (orange glow + banner)
+  _updateDeployWallCollisions();
 }
 
 function cancelPlacement() {
@@ -434,32 +436,68 @@ function installDragEnforcement() {
     }
 
     renderModels();
+    // Live wall collision highlights during drag
+    _updateDeployWallCollisions();
   });
 }
 
-// ── Auto-confirm on mouseup — detect zone + confirm/snap-back ──
-// ── Terrain collision check (matches movement.js logic) ─
+// ── Terrain collision — same UX as movement phase ───────
+// Orange glow on overlapping models + orange banner.
+// Matches movement.js: modelCollidesTerrain, applyModelWallHighlights,
+// updateAllWallCollisionWarnings — replicated here to avoid modifying shared/.
 function _modelCollidesTerrainDeploy(model) {
   var aabbs = window._terrainAABBs || [];
+  var r = model.shape === 'rect' ? Math.max(model.w, model.h) / 2 : model.r;
   for (var i = 0; i < aabbs.length; i++) {
     var box = aabbs[i];
     var lx = box.iA * model.x + box.iC * model.y + box.iE;
     var ly = box.iB * model.x + box.iD * model.y + box.iF;
     var cpx = Math.max(box.minX, Math.min(box.maxX, lx));
     var cpy = Math.max(box.minY, Math.min(box.maxY, ly));
-    if (Math.hypot(lx - cpx, ly - cpy) < model.r - 0.001) return true;
+    if (Math.hypot(lx - cpx, ly - cpy) < r - 0.001) return true;
   }
   return false;
 }
 
-function _unitOverlapsTerrain(unit) {
-  for (var i = 0; i < unit.models.length; i++) {
-    if (unit.models[i].shape === 'rect') continue;
-    if (_modelCollidesTerrainDeploy(unit.models[i])) return true;
-  }
-  return false;
+function _applyDeployWallHighlights(unit) {
+  unit.models.forEach(function(m) {
+    if (_modelCollidesTerrainDeploy(m)) {
+      document.querySelectorAll('#layer-models .model-base').forEach(function(g) {
+        var base = g.querySelector('circle, rect');
+        if (!base) return;
+        var bx = parseFloat(base.getAttribute('cx') || base.getAttribute('x'));
+        var by = parseFloat(base.getAttribute('cy') || base.getAttribute('y'));
+        if (base.tagName === 'rect') {
+          bx += parseFloat(base.getAttribute('width')) / 2;
+          by += parseFloat(base.getAttribute('height')) / 2;
+        }
+        if (Math.abs(bx - m.x) < 1 && Math.abs(by - m.y) < 1) {
+          g.classList.add('wall-collision');
+        }
+      });
+    }
+  });
 }
 
+function _updateDeployWallCollisions() {
+  var banner = document.getElementById('wall-collision-banner');
+  document.querySelectorAll('#layer-models .model-base.wall-collision').forEach(function(el) {
+    el.classList.remove('wall-collision');
+  });
+  var anyCollision = false;
+  simState.units.forEach(function(unit) {
+    if (unit.faction !== 'imp') return;
+    if (!deployState.deployedUnits.has(unit.id) && unit.id !== deployState.placingUnit) return;
+    var unitHasCollision = false;
+    unit.models.forEach(function(m) {
+      if (_modelCollidesTerrainDeploy(m)) { unitHasCollision = true; anyCollision = true; }
+    });
+    if (unitHasCollision) _applyDeployWallHighlights(unit);
+  });
+  if (banner) banner.style.display = anyCollision ? 'block' : 'none';
+}
+
+// ── Auto-confirm on mouseup — detect zone + confirm/snap-back ──
 function _deployMouseupHandler() {
   if (deployState.locked) return;
   if (!deployState.placingUnit) return;
@@ -480,17 +518,14 @@ function _deployMouseupHandler() {
       _snapBack(uid, unit);
       return;
     }
-    // Validate no models overlapping terrain
-    if (_unitOverlapsTerrain(unit)) {
-      _snapBack(uid, unit);
-      showZoneWarning('MODELS OVERLAPPING TERRAIN');
-      return;
-    }
+    // Place the unit even if overlapping terrain (user can reposition)
     deployState.deployedUnits.add(uid);
     unit.deployed = true;
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
+    // Show wall collision warnings (orange glow + banner) after render
+    _updateDeployWallCollisions();
 
   } else if (zone === 'ds') {
     deployState.deepStrikeUnits.add(uid);
