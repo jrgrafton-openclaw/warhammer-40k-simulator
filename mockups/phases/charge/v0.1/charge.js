@@ -19,6 +19,7 @@ import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
 import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
 import { center, getModelRadius } from '../../../shared/lib/coord-helpers.js';
 import { drawPerModelRangeRings, clearRangeRings } from '../../../shared/world/range-rings.js';
+import { playDiceRoll } from '../../../shared/audio/sfx.js';
 
 // ── Constants ──────────────────────────────────────────
 const ACTIVE = 'imp';
@@ -198,6 +199,7 @@ function rollChargeDice(targetId) {
     cta.addEventListener('click', () => {
       cta.disabled = true;
       cta.textContent = 'Rolling…';
+      playDiceRoll();
 
       const chips = $$('#roll-overlay .die');
 
