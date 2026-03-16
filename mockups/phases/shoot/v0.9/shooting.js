@@ -7,6 +7,7 @@ import { UNITS, KW_RULES, wgState, initAllTooltips, showTip, hideTip } from '../
 import { selectUnit as baseSelectUnit, renderModels } from '../../../shared/world/svg-renderer.js';
 import { center, projectileAnchor, getModelRadius } from '../../../shared/lib/coord-helpers.js';
 import { drawPerModelRangeRings, clearRangeRings } from '../../../shared/world/range-rings.js';
+import { playDiceRoll, playWeaponFire, playSaveFailed } from '../../../shared/audio/sfx.js';
 
 const ACTIVE = 'imp';
 
@@ -600,8 +601,16 @@ function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, m
     renderDiceStage(title, rolls.length, threshold, auto, message, ctaLabel);
     const cta = overlay.querySelector('.roll-cta');
     const fire = async () => {
+      playDiceRoll();
       if (typeof onTrigger === 'function') await onTrigger();
       revealDice(rolls, threshold, stageKind);
+      // Play save-failed SFX after save dice reveal settles
+      if (stageKind === 'save' && threshold) {
+        const failCount = rolls.filter(r => r < threshold).length;
+        if (failCount > 0) {
+          setTimeout(() => playSaveFailed(failCount), 80 + rolls.length * 40 + 200);
+        }
+      }
       setTimeout(() => {
         if (auto) {
           setTimeout(() => {
@@ -613,7 +622,7 @@ function rollDiceStage(title, rolls, threshold, auto = false, targetId = null, m
         }
       }, 480 + rolls.length * 40);
     };
-    if (auto) { cta.disabled = true; setTimeout(() => { fire(); }, 140); }
+    if (auto) { cta.disabled = true; setTimeout(() => { playDiceRoll(); fire(); }, 140); }
     else cta.addEventListener('click', () => { cta.disabled = true; fire(); }, { once: true });
   });
 }
@@ -735,7 +744,7 @@ async function beginAttack(targetId){
   if (totalAttacks <= 0) return;
 
   const hitRolls = Array.from({length: totalAttacks}, d6);
-  const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds', () => playVolley(attacker, target, losResult));
+  const hit = await rollDiceStage('Hit Roll', hitRolls, thresholds.hit, false, targetId, `BS ${thresholds.hit}+`, 'hit', 'Click to Roll', 'Roll Wounds', () => { playWeaponFire(totalAttacks); return playVolley(attacker, target, losResult); });
   if (!hit.successes) return finishAttack(0, 0);
 
   const woundRolls = Array.from({length: hit.successes}, d6);
