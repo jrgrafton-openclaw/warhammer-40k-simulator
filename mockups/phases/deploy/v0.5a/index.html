@@ -214,7 +214,7 @@
         </defs>
 
         <!-- Ground noise texture overlay -->
-        <rect class="ground-noise-layer" x="0" y="0" width="720" height="528" fill="#080c10" filter="url(#ground-noise)" opacity="1"/>
+        <!-- Ground noise removed - too visible at zoom -->
 
         <!-- Scorch marks on the ground -->
         <g class="scorch-marks" style="pointer-events:none;">
@@ -332,14 +332,14 @@
         <!-- ═══ COLORED LIGHTING LAYER ═══ -->
         <g id="terrain-lighting" style="pointer-events:none;mix-blend-mode:screen;">
           <!-- Ruins glow (cold blue-green) -->
-          <circle cx="216" cy="96"  r="160" fill="url(#glow-ruins)" opacity="0.10"/>
-          <circle cx="336" cy="372" r="170" fill="url(#glow-ruins)" opacity="0.09"/>
-          <circle cx="240" cy="300" r="140" fill="url(#glow-ruins)" opacity="0.08"/>
-          <circle cx="399" cy="234" r="150" fill="url(#glow-ruins)" opacity="0.10"/>
-          <circle cx="648" cy="504" r="160" fill="url(#glow-ruins)" opacity="0.07"/>
-          <circle cx="528" cy="228" r="170" fill="url(#glow-ruins)" opacity="0.09"/>
-          <circle cx="576" cy="300" r="140" fill="url(#glow-ruins)" opacity="0.08"/>
-          <circle cx="399" cy="354" r="150" fill="url(#glow-ruins)" opacity="0.10"/>
+          <circle cx="216" cy="96"  r="160" fill="url(#glow-ruins)" opacity="0.45"/>
+          <circle cx="336" cy="372" r="170" fill="url(#glow-ruins)" opacity="0.40"/>
+          <circle cx="240" cy="300" r="140" fill="url(#glow-ruins)" opacity="0.35"/>
+          <circle cx="399" cy="234" r="150" fill="url(#glow-ruins)" opacity="0.45"/>
+          <circle cx="648" cy="504" r="160" fill="url(#glow-ruins)" opacity="0.30"/>
+          <circle cx="528" cy="228" r="170" fill="url(#glow-ruins)" opacity="0.40"/>
+          <circle cx="576" cy="300" r="140" fill="url(#glow-ruins)" opacity="0.35"/>
+          <circle cx="399" cy="354" r="150" fill="url(#glow-ruins)" opacity="0.45"/>
 
           <!-- Scatter glow (warm amber/orange) -->
           <circle cx="72"  cy="300"  r="120" fill="url(#glow-scatter)" opacity="0.10"/>
@@ -347,16 +347,16 @@
           <circle cx="326" cy="179"  r="100" fill="url(#glow-scatter)" opacity="0.09"/>
           <circle cx="342" cy="283"  r="110" fill="url(#glow-scatter)" opacity="0.08"/>
           <circle cx="696" cy="300"  r="100" fill="url(#glow-scatter)" opacity="0.10"/>
-          <circle cx="408" cy="564"  r="110" fill="url(#glow-scatter)" opacity="0.07"/>
+          <circle cx="408" cy="564"  r="110" fill="url(#glow-scatter)" opacity="0.35"/>
           <circle cx="436" cy="409"  r="100" fill="url(#glow-scatter)" opacity="0.09"/>
           <circle cx="426" cy="317"  r="110" fill="url(#glow-scatter)" opacity="0.08"/>
 
           <!-- Objective glow (white-gold) -->
-          <circle cx="360" cy="72"  r="130" fill="url(#glow-objective)" opacity="0.08" class="obj-glow-pulse"/>
-          <circle cx="120" cy="264" r="130" fill="url(#glow-objective)" opacity="0.08" class="obj-glow-pulse"/>
+          <circle cx="360" cy="72"  r="130" fill="url(#glow-objective)" opacity="0.40" class="obj-glow-pulse"/>
+          <circle cx="120" cy="264" r="130" fill="url(#glow-objective)" opacity="0.40" class="obj-glow-pulse"/>
           <circle cx="360" cy="264" r="140" fill="url(#glow-objective)" opacity="0.10" class="obj-glow-pulse"/>
-          <circle cx="600" cy="264" r="130" fill="url(#glow-objective)" opacity="0.08" class="obj-glow-pulse"/>
-          <circle cx="360" cy="456" r="130" fill="url(#glow-objective)" opacity="0.08" class="obj-glow-pulse"/>
+          <circle cx="600" cy="264" r="130" fill="url(#glow-objective)" opacity="0.40" class="obj-glow-pulse"/>
+          <circle cx="360" cy="456" r="130" fill="url(#glow-objective)" opacity="0.40" class="obj-glow-pulse"/>
         </g>
       </svg>
 
@@ -549,6 +549,30 @@
   }
   tick();
 })();
+
+// v0.5a: Enhance unit glow SVG filters
+window.addEventListener('load', function() {
+  setTimeout(function() {
+    var svg = document.getElementById('bf-svg');
+    if (!svg) return;
+    var filters = {
+      'mf-imp': { color: '#00d4ff', opacity: '0.9', innerBlur: '5', outerBlur: '10' },
+      'mf-ork': { color: '#ff4020', opacity: '0.9', innerBlur: '5', outerBlur: '10' },
+      'mf-sel': { color: '#00d4ff', opacity: '1.0', innerBlur: '6', outerBlur: '14' }
+    };
+    Object.keys(filters).forEach(function(id) {
+      var el = svg.querySelector('#' + id);
+      if (!el) return;
+      var f = filters[id];
+      el.innerHTML =
+        '<feFlood flood-color="' + f.color + '" flood-opacity="' + f.opacity + '" result="col"/>' +
+        '<feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>' +
+        '<feGaussianBlur in="clipped" stdDeviation="' + f.innerBlur + '" result="innerGlow"/>' +
+        '<feGaussianBlur in="clipped" stdDeviation="' + f.outerBlur + '" result="outerGlow"/>' +
+        '<feMerge><feMergeNode in="outerGlow"/><feMergeNode in="innerGlow"/><feMergeNode in="SourceGraphic"/></feMerge>';
+    });
+  }, 300);
+});
 </script>
 </body>
 </html>
