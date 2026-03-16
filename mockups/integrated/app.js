@@ -193,7 +193,12 @@ function transitionToMove() {
     });
   });
 
-  // 11. Init movement phase (installs its own drag interceptor + listeners)
+  // 11. Deselect any unit (last deployed unit stays selected otherwise)
+  baseSelectUnit(null);
+  var unitCard = document.getElementById('unit-card');
+  if (unitCard) unitCard.classList.remove('visible');
+
+  // 12. Init movement phase (installs its own drag interceptor + listeners)
   initMove();
 }
 
