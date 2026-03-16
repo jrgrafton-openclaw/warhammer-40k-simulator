@@ -109,27 +109,26 @@ function startPlacement(unitId) {
     cancelPlacement();
   }
 
+  // Track previous deployment status for snap-back
+  var wasDeployed = deployState.deployedUnits.has(unitId);
+  var wasDS = deployState.deepStrikeUnits.has(unitId);
+  var wasReserves = deployState.reserveUnits.has(unitId);
+
+  deployState.deployedUnits.delete(unitId);
   deployState.reserveUnits.delete(unitId);
   deployState.deepStrikeUnits.delete(unitId);
   deployState.placingUnit = unitId;
 
-  // Store current staging positions so we can return on cancel
+  // Store current positions so we can snap back on invalid drop
   deployState.stagingPositions[unitId] = unit.models.map(function(m) {
     return { x: m.x, y: m.y };
   });
+  // Remember previous zone for snap-back logic
+  deployState._preDragZone = wasDeployed ? 'imp' : wasDS ? 'ds' : wasReserves ? 'reserves' : 'staging';
 
   renderModels();
   baseSelectUnit(unitId);
   updateUI();
-
-  // Enable confirm/cancel
-  var btnConfirm = document.getElementById('btn-confirm-unit');
-  var btnCancel = document.getElementById('btn-cancel-unit');
-  if (btnConfirm) {
-    btnConfirm.disabled = false;
-    btnConfirm.textContent = '↩ BACK TO STAGING';
-  }
-  if (btnCancel) btnCancel.disabled = false;
 
   highlightZones(true);
 }
@@ -209,15 +208,8 @@ function cancelPlacement() {
   var unit = simState.units.find(function(u) { return u.id === unitId; });
   if (!unit) return;
 
-  // Restore original staging positions
-  var saved = deployState.stagingPositions[unitId];
-  if (saved) {
-    unit.models.forEach(function(m, i) {
-      if (saved[i]) { m.x = saved[i].x; m.y = saved[i].y; }
-    });
-  }
-  deployState.placingUnit = null;
-  finishPlacement();
+  // Snap back to pre-drag position and restore previous deployment status
+  _snapBack(unitId, unit);
 }
 
 function shakeConfirm() {
@@ -378,17 +370,17 @@ function installDragInterceptor() {
             baseSelectUnit(dragUnit.id);
             return;
           }
-          // Only allow dragging the currently placing unit
+          // Allow dragging ANY imp unit (staging or already deployed)
           if (dragUnit.id !== deployState.placingUnit) {
-            if (deployState.deployedUnits.has(dragUnit.id)) {
-              baseSelectUnit(dragUnit.id);
-              return;
-            }
-            // Clicking a staging unit starts placement AND allows immediate drag
+            // Start placement for this unit (saves pre-drag positions for snap-back)
             startPlacement(dragUnit.id);
             // Fall through to set _drag so the mousedown drag begins immediately
           }
+          deployState._wasDragging = true;
         }
+      } else {
+        // drag set to null = mouseup / drag end
+        // _wasDragging stays true for the mouseup handler to read
       }
       _drag = v;
     },
@@ -414,28 +406,6 @@ function installDragEnforcement() {
     var anchor = getAnchorPos(unit);
     var zone = detectZone(anchor.x, anchor.y);
 
-    // Update confirm button text based on zone
-    var btnConfirm = document.getElementById('btn-confirm-unit');
-    if (btnConfirm) {
-      if (zone === 'imp') {
-        btnConfirm.disabled = false;
-        btnConfirm.textContent = '✓ CONFIRM';
-      } else if (zone === 'staging') {
-        btnConfirm.disabled = false;
-        btnConfirm.textContent = '↩ BACK TO STAGING';
-      } else if (zone === 'ds') {
-        btnConfirm.disabled = false;
-        btnConfirm.textContent = '✓ DEEP STRIKE';
-      } else if (zone === 'reserves') {
-        btnConfirm.disabled = false;
-        btnConfirm.textContent = '✓ RESERVES';
-      } else {
-        // NML, ork, none — invalid
-        btnConfirm.disabled = true;
-        btnConfirm.textContent = '✓ CONFIRM';
-      }
-    }
-
     // Highlight active zone
     highlightAllZonesByDetection(zone);
 
@@ -454,6 +424,86 @@ function installDragEnforcement() {
 
     renderModels();
   });
+}
+
+// ── Auto-confirm on mouseup — detect zone + confirm/snap-back ──
+function _deployMouseupHandler() {
+  if (deployState.locked) return;
+  if (!deployState.placingUnit) return;
+  // Only auto-confirm if an actual SVG drag occurred (not a roster click)
+  if (!deployState._wasDragging) return;
+  deployState._wasDragging = false;
+
+  var uid = deployState.placingUnit;
+  var unit = simState.units.find(function(u) { return u.id === uid; });
+  if (!unit) return;
+
+  var anchor = getAnchorPos(unit);
+  var zone = detectZone(anchor.x, anchor.y);
+
+  if (zone === 'imp') {
+    // Validate all models within imp zone
+    if (!isUnitInZone(unit, IMP_ZONE)) {
+      // Models partially outside — snap back
+      _snapBack(uid, unit);
+      return;
+    }
+    deployState.deployedUnits.add(uid);
+    unit.deployed = true;
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else if (zone === 'ds') {
+    deployState.deepStrikeUnits.add(uid);
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else if (zone === 'reserves') {
+    deployState.reserveUnits.add(uid);
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else if (zone === 'staging') {
+    // Return to staging
+    unit.deployed = false;
+    deployState.placingUnit = null;
+    finishPlacement();
+    checkDeploymentComplete();
+
+  } else {
+    // Invalid zone (NML, ork, none) — snap back to pre-drag position
+    _snapBack(uid, unit);
+  }
+}
+
+function _snapBack(uid, unit) {
+  var saved = deployState.stagingPositions[uid];
+  if (saved) {
+    unit.models.forEach(function(m, i) {
+      if (saved[i]) { m.x = saved[i].x; m.y = saved[i].y; }
+    });
+  }
+  // Restore previous deployment status
+  var prevZone = deployState._preDragZone || 'staging';
+  if (prevZone === 'imp') {
+    deployState.deployedUnits.add(uid);
+    unit.deployed = true;
+  } else if (prevZone === 'ds') {
+    deployState.deepStrikeUnits.add(uid);
+  } else if (prevZone === 'reserves') {
+    deployState.reserveUnits.add(uid);
+  }
+  deployState.placingUnit = null;
+  showZoneWarning();
+  finishPlacement();
+  checkDeploymentComplete();
+}
+
+function installAutoConfirmOnDrop() {
+  window.addEventListener('mouseup', _deployMouseupHandler);
 }
 
 function highlightAllZonesByDetection(activeZoneName) {
@@ -545,12 +595,7 @@ function wireButtons() {
         deploySelectUnit(uid);
         return;
       }
-      if (deployState.deployedUnits.has(uid)) {
-        deploySelectUnit(uid);
-        return;
-      }
-      deployState.reserveUnits.delete(uid);
-      deployState.deepStrikeUnits.delete(uid);
+      // Allow clicking any imp unit (staging or deployed) to start placement
       startPlacement(uid);
     });
   });
@@ -561,9 +606,7 @@ function wireButtons() {
 function _deployKeyHandler(e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   var key = e.key.toUpperCase();
-  if (key === 'ENTER' || key === 'C') {
-    if (deployState.placingUnit) confirmPlacement();
-  } else if (key === 'ESCAPE' || key === 'X') {
+  if (key === 'ESCAPE' || key === 'X') {
     if (deployState.placingUnit) cancelPlacement();
   }
 }
@@ -659,8 +702,9 @@ export function cleanupDeployment() {
     el.parentNode.replaceChild(clone, el);
   });
 
-  // Remove global deploy listeners (keyboard + click-outside)
+  // Remove global deploy listeners (keyboard + click-outside + mouseup)
   document.removeEventListener('keydown', _deployKeyHandler);
+  window.removeEventListener('mouseup', _deployMouseupHandler);
   var svg = document.getElementById('bf-svg');
   if (svg) svg.removeEventListener('click', _deployClickOutsideHandler);
 
@@ -696,6 +740,9 @@ export function initDeployment() {
   setupClickOutside();
   installDragInterceptor();
   installDragEnforcement();
+
+  // Auto-confirm on mouseup (free drag-and-drop UX)
+  installAutoConfirmOnDrop();
 
   // Override range toggles for single-select behavior
   wireRangeToggleSingleSelect();
