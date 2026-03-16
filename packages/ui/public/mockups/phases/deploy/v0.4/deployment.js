@@ -671,6 +671,17 @@ function _addWeaponRangeButtons(uid) {
     });
     rangesEl.appendChild(btn);
   });
+
+  // Enable horizontal scroll via mousewheel (vertical wheel → horizontal scroll)
+  if (!rangesEl._wheelWired) {
+    rangesEl.addEventListener('wheel', function(e) {
+      if (rangesEl.scrollWidth > rangesEl.clientWidth) {
+        e.preventDefault();
+        rangesEl.scrollLeft += e.deltaY || e.deltaX;
+      }
+    }, { passive: false });
+    rangesEl._wheelWired = true;
+  }
 }
 
 function deploySelectUnit(uid) {
