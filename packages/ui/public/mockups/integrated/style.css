@@ -52,9 +52,14 @@
 /* ── Hide zone warning during move phase ── */
 .phase-move .zone-warning { display: none !important; }
 
-/* ── Hide range circles during deploy (no move/advance/charge circles) ── */
+/* ── Hide ALL range indicators during deploy ── */
+/* HTML range circle divs */
 body:not(.phase-move) .range-circle,
 body:not(.phase-move) .range-label {
+  display: none !important;
+}
+/* SVG per-model range rings */
+body:not(.phase-move) #layer-range-rings {
   display: none !important;
 }
 
@@ -62,6 +67,18 @@ body:not(.phase-move) .range-label {
 #btn-confirm-unit,
 #btn-cancel-unit {
   display: none !important;
+}
+
+/* ── Disable range toggles in unit card during deploy ── */
+body:not(.phase-move) .card-ranges {
+  display: none !important;
+}
+
+/* ── CONFIRM DEPLOYMENT disabled state ── */
+#btn-end:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
 }
 
 /* ── Version badge (overrides both deploy-badge and v23-badge) ── */
