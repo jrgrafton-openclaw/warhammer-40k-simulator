@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge — Orbital Strike — WH40K Simulator</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Shared tokens -->
+  <link rel="stylesheet" href="../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../shared/tokens/typography.css">
+
+  <!-- Page styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ FULL-BLEED HOLOGRAPHIC MAP ═══ -->
+<div class="holo-map">
+  <div class="holo-grid"></div>
+  <div class="holo-scanlines"></div>
+  <div class="holo-vignette"></div>
+  <div class="holo-grain"></div>
+
+  <!-- Deployment zones -->
+  <div class="dz dz-imp">
+    <span class="dz-label">IMPERIUM<br>DEPLOYMENT</span>
+  </div>
+  <div class="dz dz-ork">
+    <span class="dz-label">ORK<br>DEPLOYMENT</span>
+  </div>
+
+  <!-- No Man's Land -->
+  <div class="nml-label">NO MAN'S LAND</div>
+
+  <!-- Objectives -->
+  <span class="obj" style="top:22%; left:50%"></span>
+  <span class="obj" style="top:50%; left:22%"></span>
+  <span class="obj obj-centre" style="top:50%; left:50%"></span>
+  <span class="obj" style="top:50%; left:78%"></span>
+  <span class="obj" style="top:78%; left:50%"></span>
+
+  <!-- Terrain features -->
+  <div class="terrain terrain-ruin" style="top:12%; left:35%; width:11%; height:14%">
+    <span class="terrain-tag">RUIN ALPHA</span>
+  </div>
+  <div class="terrain terrain-ruin" style="top:58%; left:54%; width:13%; height:11%">
+    <span class="terrain-tag">RUIN BETA</span>
+  </div>
+  <div class="terrain terrain-crate" style="top:38%; left:44%; width:9%; height:7%">
+    <span class="terrain-tag">CRATES</span>
+  </div>
+  <div class="terrain terrain-ruin" style="top:28%; left:66%; width:9%; height:13%">
+    <span class="terrain-tag">RUIN GAMMA</span>
+  </div>
+  <div class="terrain terrain-crate" style="top:70%; left:30%; width:7%; height:6%">
+    <span class="terrain-tag">CRATE</span>
+  </div>
+
+  <!-- Compass -->
+  <div class="compass">
+    <span class="compass-n">N</span>
+    <span class="compass-ring"></span>
+  </div>
+
+  <!-- Dimensions -->
+  <div class="map-dims">60&#8243; &times; 44&#8243;</div>
+</div>
+
+<!-- ═══ NAVIGATION CHROME ═══ -->
+<a class="nav-back" href="../start-game/index.html">&larr; Back</a>
+<a class="nav-mockups" href="../index.html#battle-forge">&larr; Mockups</a>
+<div class="version-badge">v0.2a &middot; Orbital Strike</div>
+
+<!-- ═══ TOP CENTER TITLE ═══ -->
+<header class="os-header">
+  <div class="os-title">Battle Forge</div>
+  <div class="os-subtitle">Orbital Command &middot; Strike Force Configuration</div>
+</header>
+
+<!-- ═══ LEFT BANNER — YOUR FORCES ═══ -->
+<div class="army-banner banner-left anim-slide-left">
+  <div class="banner-header imp-header">
+    <div class="banner-corner tl"></div>
+    <div class="banner-corner tr"></div>
+    <span class="banner-icon">&#9876;</span>
+    <div class="banner-faction">Adeptus Custodes</div>
+    <div class="banner-meta">2000 pts &middot; Shield Host</div>
+    <div class="banner-tag imp-tag">YOUR FORCES</div>
+  </div>
+  <div class="roster-scroll">
+    <div class="r-entry"><span class="r-name">Blade Champion</span><span class="r-info">1 model</span><span class="r-pts">120</span></div>
+    <div class="r-entry"><span class="r-name">Blade Champion</span><span class="r-info">1 model</span><span class="r-pts">120</span></div>
+    <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-info">5 models</span><span class="r-pts">190</span></div>
+    <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-info">5 models</span><span class="r-pts">190</span></div>
+    <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-info">5 models</span><span class="r-pts">190</span></div>
+    <div class="r-entry"><span class="r-name">Custodian Guard</span><span class="r-info">5 models</span><span class="r-pts">190</span></div>
+    <div class="r-entry"><span class="r-name">Allarus Custodians</span><span class="r-info">3 models</span><span class="r-pts">165</span></div>
+    <div class="r-entry"><span class="r-name">Allarus Custodians</span><span class="r-info">2 models</span><span class="r-pts">110</span></div>
+    <div class="r-entry"><span class="r-name">Prosecutors</span><span class="r-info">5 models</span><span class="r-pts">85</span></div>
+    <div class="r-entry"><span class="r-name">Prosecutors</span><span class="r-info">5 models</span><span class="r-pts">85</span></div>
+    <div class="r-entry"><span class="r-name">Caladius Grav-tank</span><span class="r-info">1 model</span><span class="r-pts">215</span></div>
+    <div class="r-entry"><span class="r-name">Caladius Grav-tank</span><span class="r-info">1 model</span><span class="r-pts">215</span></div>
+    <div class="r-entry"><span class="r-name">Inquisitor Draxus</span><span class="r-info">1 model</span><span class="r-pts">95</span></div>
+  </div>
+  <div class="banner-footer imp-footer">
+    <span class="footer-label">13 units</span>
+    <span class="footer-pts">1985 / 2000 pts</span>
+  </div>
+</div>
+
+<!-- ═══ RIGHT BANNER — ENEMY FORCES ═══ -->
+<div class="army-banner banner-right anim-slide-right">
+  <div class="banner-header ork-header">
+    <div class="banner-corner tl"></div>
+    <div class="banner-corner tr"></div>
+    <span class="banner-icon">&#9760;</span>
+    <div class="banner-faction">Orks</div>
+    <div class="banner-meta">2000 pts &middot; Waaagh! Tribe</div>
+    <div class="banner-tag ork-tag">ENEMY FORCES</div>
+  </div>
+  <div class="roster-scroll">
+    <div class="r-entry"><span class="r-name">Warboss</span><span class="r-info">1 model</span><span class="r-pts">90</span></div>
+    <div class="r-entry"><span class="r-name">Boss Nob</span><span class="r-info">1 model</span><span class="r-pts">95</span></div>
+    <div class="r-entry"><span class="r-name">Boyz Mob</span><span class="r-info">10 models</span><span class="r-pts">150</span></div>
+    <div class="r-entry"><span class="r-name">Boyz Mob</span><span class="r-info">10 models</span><span class="r-pts">150</span></div>
+    <div class="r-entry"><span class="r-name">Mekboy</span><span class="r-info">1 model</span><span class="r-pts">75</span></div>
+    <div class="r-entry"><span class="r-name">Nobz Mob</span><span class="r-info">5 models</span><span class="r-pts">115</span></div>
+    <div class="r-entry"><span class="r-name">Nobz Mob</span><span class="r-info">5 models</span><span class="r-pts">115</span></div>
+    <div class="r-entry"><span class="r-name">Gretchin</span><span class="r-info">10 models</span><span class="r-pts">50</span></div>
+    <div class="r-entry"><span class="r-name">Gretchin</span><span class="r-info">10 models</span><span class="r-pts">50</span></div>
+    <div class="r-entry"><span class="r-name">Deff Dread</span><span class="r-info">1 model</span><span class="r-pts">150</span></div>
+    <div class="r-entry"><span class="r-name">Battlewagon</span><span class="r-info">1 model</span><span class="r-pts">185</span></div>
+    <div class="r-entry"><span class="r-name">Lootas</span><span class="r-info">5 models</span><span class="r-pts">100</span></div>
+    <div class="r-entry"><span class="r-name">Stormboyz</span><span class="r-info">5 models</span><span class="r-pts">80</span></div>
+    <div class="r-entry"><span class="r-name">Weirdboy</span><span class="r-info">1 model</span><span class="r-pts">70</span></div>
+    <div class="r-entry"><span class="r-name">Meganobz</span><span class="r-info">3 models</span><span class="r-pts">200</span></div>
+    <div class="r-entry"><span class="r-name">Trukk</span><span class="r-info">1 model</span><span class="r-pts">65</span></div>
+  </div>
+  <div class="banner-footer ork-footer">
+    <span class="footer-label">16 units</span>
+    <span class="footer-pts">1960 / 2000 pts</span>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM DOCK ═══ -->
+<div class="bottom-dock anim-rise">
+  <div class="dock-inner">
+
+    <!-- Map selector -->
+    <div class="dock-section dock-maps">
+      <div class="dock-label">Theatre</div>
+      <div class="map-thumbs">
+        <div class="map-thumb selected">
+          <div class="thumb-preview">
+            <div class="thumb-zone thumb-imp"></div>
+            <div class="thumb-zone thumb-ork"></div>
+          </div>
+          <div class="thumb-name">Hammer &amp; Anvil</div>
+        </div>
+        <div class="map-thumb disabled" data-tooltip="Coming in future update">
+          <div class="thumb-preview disabled-preview"></div>
+          <div class="thumb-name">Search &amp; Destroy</div>
+        </div>
+        <div class="map-thumb disabled" data-tooltip="Coming in future update">
+          <div class="thumb-preview disabled-preview"></div>
+          <div class="thumb-name">Sweeping Eng.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dock-divider"></div>
+
+    <!-- Mission -->
+    <div class="dock-section dock-mission">
+      <div class="dock-label">Mission</div>
+      <div class="dock-value">Take and Hold</div>
+    </div>
+
+    <div class="dock-divider"></div>
+
+    <!-- Settings -->
+    <div class="dock-section dock-settings">
+      <div class="setting-chip">
+        <span class="chip-key">Turns</span>
+        <span class="chip-val">5</span>
+      </div>
+      <div class="setting-chip">
+        <span class="chip-key">First</span>
+        <span class="chip-val">Roll-off</span>
+      </div>
+      <div class="setting-chip" data-tooltip="Coming in future update">
+        <span class="chip-key">Size</span>
+        <span class="chip-val disabled-val">Strike Force</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ BEGIN BATTLE ═══ -->
+<a class="begin-btn anim-rise-delay" href="../phases/deploy/v0.4/index.html">
+  <span class="btn-flare"></span>
+  <span class="btn-text">&#9876; Begin Battle</span>
+  <span class="btn-flare"></span>
+</a>
+
+<!-- Tooltip -->
+<div class="os-tooltip" id="tooltip"></div>
+
+<script>
+  // Tooltip system
+  const tooltip = document.getElementById('tooltip');
+  document.querySelectorAll('[data-tooltip]').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      tooltip.textContent = el.dataset.tooltip;
+      tooltip.classList.add('visible');
+    });
+    el.addEventListener('mousemove', e => {
+      tooltip.style.left = e.clientX + 12 + 'px';
+      tooltip.style.top  = e.clientY - 8 + 'px';
+    });
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('visible'));
+  });
+</script>
+
+</body>
+</html>

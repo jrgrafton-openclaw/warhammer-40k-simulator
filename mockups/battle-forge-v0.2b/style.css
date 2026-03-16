@@ -1,0 +1,534 @@
+/* ══════════════════════════════════════════════════════════════
+   STRATEGIUM — Battle Forge v0.2b
+   Split-screen roster builder. Darkest Dungeon / FTL loadout feel.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Layout ──────────────────────────────────────────────── */
+.forge-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Left Panel: Your Forces ─────────────────────────────── */
+.panel-left {
+  width: 70%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #12100c;
+  border-right: 1px solid #2a2218;
+}
+
+.panel-left-header {
+  flex-shrink: 0;
+  padding: 20px 28px 0;
+}
+
+.faction-selector {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.faction-selector select {
+  background: #1a1510;
+  color: #f0e8d8;
+  border: 1px solid #3a3020;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23f0e8d8' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+}
+
+.faction-selector select option:disabled {
+  color: #554a38;
+}
+
+.faction-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #8a7a60;
+}
+
+.summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: #1a1510;
+  border: 1px solid #2a2218;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.summary-bar .pts {
+  font-family: 'Anton', sans-serif;
+  font-size: 22px;
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+
+.summary-bar .sep {
+  width: 1px;
+  height: 18px;
+  background: #3a3020;
+}
+
+.summary-bar .detail {
+  font-size: 14px;
+  font-weight: 600;
+  color: #c0b8a0;
+  letter-spacing: 0.5px;
+}
+
+/* ── Unit Card Scroll ────────────────────────────────────── */
+.roster-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 28px 24px;
+}
+
+.roster-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.roster-scroll::-webkit-scrollbar-track {
+  background: #0e0c08;
+}
+.roster-scroll::-webkit-scrollbar-thumb {
+  background: #3a3020;
+  border-radius: 3px;
+}
+.roster-scroll::-webkit-scrollbar-thumb:hover {
+  background: #4a4030;
+}
+
+/* ── Unit Card ───────────────────────────────────────────── */
+.unit-card {
+  display: flex;
+  align-items: stretch;
+  background: #1a1510;
+  border: 1px solid #2a2218;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: cardSlideIn 0.4s ease-out forwards;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.unit-card:hover {
+  border-color: #4a4030;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+}
+
+@keyframes cardSlideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-accent {
+  width: 4px;
+  flex-shrink: 0;
+}
+
+.card-body {
+  flex: 1;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.card-top-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.unit-name {
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  color: #f0e8d8;
+  letter-spacing: 0.5px;
+  flex: 1;
+}
+
+.role-badge {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #0a0a0a;
+  flex-shrink: 0;
+}
+
+.role-hq     { background: var(--gold); }
+.role-troops { background: var(--imp); }
+.role-elites { background: #8855cc; }
+.role-heavy  { background: #cc8800; }
+.role-fast   { background: #44cc44; }
+.role-transport { background: #6a7a8a; }
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: #a09880;
+  font-weight: 600;
+}
+
+.card-meta .cost {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.card-wargear {
+  font-size: 12px;
+  color: #706858;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* ── Upload Area ─────────────────────────────────────────── */
+.upload-area {
+  margin-top: 12px;
+  padding: 18px;
+  border: 2px dashed #2a2218;
+  border-radius: 8px;
+  text-align: center;
+  color: #4a4030;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.upload-area .coming-soon {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 4px;
+  color: #3a3020;
+}
+
+/* ── Right Panel: Sidebar ────────────────────────────────── */
+.panel-right {
+  width: 30%;
+  height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-section {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-section:last-of-type {
+  border-bottom: none;
+}
+
+.section-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* ── Opponent ────────────────────────────────────────────── */
+.enemy-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ork);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.enemy-icon {
+  font-size: 24px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,64,32,0.1);
+  border-radius: 50%;
+}
+
+.enemy-info .enemy-name {
+  font-family: 'Anton', sans-serif;
+  font-size: 15px;
+  color: var(--ork);
+  letter-spacing: 0.5px;
+}
+
+.enemy-info .enemy-detail {
+  font-size: 11px;
+  color: var(--text-sec);
+  font-weight: 600;
+}
+
+.enemy-roster {
+  max-height: 140px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.enemy-roster::-webkit-scrollbar {
+  width: 4px;
+}
+.enemy-roster::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+.enemy-roster::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.enemy-roster-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--text-sec);
+  border-bottom: 1px solid rgba(26,37,53,0.5);
+}
+
+.enemy-roster-item .er-pts {
+  color: var(--ork-dim);
+  font-weight: 700;
+}
+
+.faction-disabled {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--text-dis);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.faction-disabled .cs-tag {
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  background: rgba(42,58,74,0.3);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+/* ── Battlefield ─────────────────────────────────────────── */
+.map-card {
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.map-card.active {
+  border: 1px solid var(--imp-dim);
+}
+
+.map-card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border: 1px solid var(--border);
+}
+
+.map-thumbnail {
+  width: 100%;
+  height: 72px;
+  background: var(--bg-surface);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-thumbnail canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.map-label {
+  padding: 6px 10px;
+  background: var(--bg-raised);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-sec);
+  letter-spacing: 0.5px;
+}
+
+.map-label .map-dim {
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+/* ── Mission ─────────────────────────────────────────────── */
+.mission-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.mission-icon {
+  font-size: 18px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(201,163,82,0.1);
+  border-radius: 50%;
+}
+
+.mission-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Settings ────────────────────────────────────────────── */
+.settings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setting-key {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.setting-val {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dis);
+}
+
+/* ── BEGIN BATTLE Button ─────────────────────────────────── */
+.btn-begin {
+  flex-shrink: 0;
+  margin: auto 18px 18px;
+  padding: 14px;
+  background: linear-gradient(135deg, #cc8800, #aa6600);
+  border: none;
+  border-radius: 6px;
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #0a0a0a;
+  cursor: pointer;
+  text-align: center;
+  transition: filter 0.2s, transform 0.15s;
+  box-shadow: 0 4px 16px rgba(204,136,0,0.25);
+}
+
+.btn-begin:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(204,136,0,0.35);
+}
+
+.btn-begin:active {
+  transform: translateY(0);
+}
+
+/* ── Nav (top bar) ───────────────────────────────────────── */
+.nav-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: rgba(8,12,16,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+}
+
+.nav-link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sec);
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  transition: color 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+}
+
+.version-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  background: var(--bg-raised);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* ── Responsive guard ────────────────────────────────────── */
+@media (max-width: 900px) {
+  .forge-layout {
+    flex-direction: column;
+  }
+  .panel-left, .panel-right {
+    width: 100%;
+    height: 50vh;
+  }
+}

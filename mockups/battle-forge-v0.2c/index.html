@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.2c — SANCTUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../shared/tokens/typography.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Nav chrome -->
+<a class="nav-back" href="../start-game/index.html">← Back</a>
+<a class="nav-mockups" href="../index.html#battle-forge">← Mockups</a>
+<div class="version-badge">v0.2c · SANCTUM</div>
+
+<!-- Full-viewport background -->
+<div class="sanctum">
+  <div class="grain"></div>
+  <div class="bg-glow" id="bgGlow"></div>
+
+  <!-- CSS ember particles -->
+  <div class="embers" id="embers"></div>
+
+  <!-- Centre panel -->
+  <div class="panel" id="panel">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <!-- Step indicator -->
+    <div class="step-dots" id="stepDots">
+      <div class="step-dot active" data-step="0">1</div>
+      <div class="step-sep"></div>
+      <div class="step-dot" data-step="1">2</div>
+      <div class="step-sep"></div>
+      <div class="step-dot" data-step="2">3</div>
+      <div class="step-sep"></div>
+      <div class="step-dot" data-step="3">4</div>
+    </div>
+
+    <!-- Step container -->
+    <div class="step-container" id="stepContainer">
+
+      <!-- ═══ STEP 1: Choose Your Forces ═══ -->
+      <div class="step active stagger" data-step="0" id="step0">
+        <div class="step-label">Choose Your Forces</div>
+
+        <!-- Faction browser -->
+        <div id="factionDisplay0">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="step-nav">
+          <button class="nav-btn hidden">← Back</button>
+          <button class="nav-btn" onclick="goStep(1)">Next →</button>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2: Choose Your Enemy ═══ -->
+      <div class="step" data-step="1" data-faction="ork" id="step1">
+        <div class="step-label">Choose Your Enemy</div>
+
+        <div id="factionDisplay1">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="step-nav">
+          <button class="nav-btn" onclick="goStep(0)">← Back</button>
+          <button class="nav-btn" onclick="goStep(2)">Next →</button>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 3: Choose Battlefield ═══ -->
+      <div class="step" data-step="2" id="step2">
+        <div class="step-label">Choose Battlefield</div>
+
+        <div class="map-display stagger">
+          <div class="map-title">Hammer &amp; Anvil</div>
+          <div class="map-subtitle">60″ × 44″ · Dawn of War</div>
+
+          <div class="deployment-diagram">
+            <div class="deploy-zone left">Attacker</div>
+            <div class="deploy-zone right">Defender</div>
+            <div class="deploy-nml">No Man's Land</div>
+            <!-- Objectives -->
+            <div class="deploy-obj" style="top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:25%;left:25%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:75%;left:25%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:25%;left:75%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:75%;left:75%;transform:translate(-50%,-50%)"></div>
+          </div>
+
+          <div class="map-details">
+            <span>Hammer &amp; Anvil</span>
+            <span class="map-detail-sep">·</span>
+            <span>60 × 44</span>
+            <span class="map-detail-sep">·</span>
+            <span>Dawn of War</span>
+          </div>
+
+          <div class="map-alts">
+            <div class="map-alt active">Hammer &amp; Anvil</div>
+            <div class="map-alt">Search &amp; Destroy</div>
+            <div class="map-alt">Crucible of Battle</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="mission-select">
+            <div class="mission-label">Mission</div>
+            <div class="mission-name">Take and Hold</div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="nav-btn" onclick="goStep(1)">← Back</button>
+          <button class="nav-btn" onclick="goStep(3)">Next →</button>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 4: Review & Begin ═══ -->
+      <div class="step" data-step="3" id="step3">
+        <div class="step-label">Review &amp; Begin</div>
+
+        <div class="stagger" style="width:100%">
+          <div class="review-split">
+            <div class="review-col">
+              <div class="review-col-title">Your Forces</div>
+              <div class="review-faction">
+                <span class="review-emblem">⚜</span>
+                <span class="review-fname">Adeptus Custodes</span>
+              </div>
+              <div class="review-roster-mini" id="reviewRosterCustodes"></div>
+            </div>
+            <div class="review-col">
+              <div class="review-col-title" style="color:var(--ork-dim)">Enemy Forces</div>
+              <div class="review-faction">
+                <span class="review-emblem">☠</span>
+                <span class="review-fname" style="color:var(--ork)">Orks</span>
+              </div>
+              <div class="review-roster-mini" id="reviewRosterOrks"></div>
+            </div>
+          </div>
+
+          <div class="review-map">
+            <div class="review-map-name">Hammer &amp; Anvil</div>
+            <div class="review-map-info">60 × 44 · Dawn of War · Take and Hold</div>
+          </div>
+
+          <div class="review-settings">
+            <div class="review-setting"><span>Turns:</span> 5</div>
+            <div class="review-setting"><span>First Turn:</span> Roll-off</div>
+            <div class="review-setting"><span>Format:</span> Strike Force</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="text-align:center">
+            <a class="btn-primary btn-begin" href="../phases/deploy/v0.4/index.html">Begin Battle →</a>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="nav-btn" onclick="goStep(2)">← Back</button>
+          <span></span>
+        </div>
+      </div>
+
+    </div><!-- /step-container -->
+  </div><!-- /panel -->
+</div><!-- /sanctum -->
+
+<script>
+// ── Data ──
+const FACTIONS = {
+  custodes: {
+    emblem: '⚜', name: 'Adeptus Custodes', sub: '2000 PTS · SHIELD HOST',
+    accent: 'imp', glow: 'rgba(0, 212, 255, 0.06)',
+    roster: [
+      { name: 'Blade Champion', qty: 2, models: 1, pts: 120 },
+      { name: 'Custodian Guard', qty: 4, models: 5, pts: 190 },
+      { name: 'Allarus Custodians', qty: 1, models: 3, pts: 165 },
+      { name: 'Allarus Custodians', qty: 1, models: 2, pts: 110 },
+      { name: 'Prosecutors', qty: 2, models: 5, pts: 85 },
+      { name: 'Caladius Grav-tank', qty: 2, models: 1, pts: 215 },
+      { name: 'Inquisitor Draxus', qty: 1, models: 1, pts: 95 },
+    ],
+  },
+  space_marines: {
+    emblem: '🦅', name: 'Space Marines', sub: 'COMING SOON',
+    accent: 'imp', glow: 'rgba(0, 212, 255, 0.03)', locked: true,
+    roster: [],
+  },
+};
+
+const ENEMIES = {
+  orks: {
+    emblem: '☠', name: 'Orks', sub: '2000 PTS · WAAAGH! DETACHMENT',
+    accent: 'ork', glow: 'rgba(255, 64, 32, 0.06)',
+    roster: [
+      { name: 'Warboss', qty: 1, models: 1, pts: 90 },
+      { name: 'Boss Nob', qty: 1, models: 1, pts: 95 },
+      { name: 'Boyz Mob', qty: 2, models: 10, pts: 150 },
+      { name: 'Mekboy', qty: 1, models: 1, pts: 75 },
+      { name: 'Nobz Mob', qty: 2, models: 5, pts: 115 },
+      { name: 'Gretchin', qty: 2, models: 10, pts: 50 },
+      { name: 'Deff Dread', qty: 1, models: 1, pts: 150 },
+      { name: 'Battlewagon', qty: 1, models: 1, pts: 185 },
+      { name: 'Lootas', qty: 1, models: 5, pts: 100 },
+      { name: 'Stormboyz', qty: 1, models: 5, pts: 80 },
+      { name: 'Weirdboy', qty: 1, models: 1, pts: 70 },
+      { name: 'Meganobz', qty: 1, models: 3, pts: 200 },
+      { name: 'Trukk', qty: 1, models: 1, pts: 65 },
+    ],
+  },
+  chaos_marines: {
+    emblem: '⛧', name: 'Chaos Marines', sub: 'COMING SOON',
+    accent: 'ork', glow: 'rgba(255, 64, 32, 0.03)', locked: true,
+    roster: [],
+  },
+};
+
+// ── Faction browsing state ──
+const factionKeys = Object.keys(FACTIONS);
+const enemyKeys = Object.keys(ENEMIES);
+let factionIdx = 0;
+let enemyIdx = 0;
+
+// ── Render helpers ──
+function totalPts(roster) {
+  return roster.reduce((s, u) => s + u.pts * u.qty, 0);
+}
+
+function renderRoster(roster, accentVar) {
+  if (!roster.length) return '';
+  let html = '<div class="roster-compact">';
+  for (const u of roster) {
+    const label = u.qty > 1 ? `${u.name} ×${u.qty}` : u.name;
+    html += `<div class="roster-row">
+      <span class="roster-name">${label}</span>
+      <span class="roster-models">${u.models} model${u.models > 1 ? 's' : ''}</span>
+      <span class="roster-pts">${u.pts}pts</span>
+    </div>`;
+  }
+  html += '</div>';
+  html += `<div class="roster-total">
+    <span>Total</span>
+    <span class="roster-total-pts">${totalPts(roster)} pts</span>
+  </div>`;
+  return html;
+}
+
+function renderFaction(faction, containerId, pageDots, dotActiveIdx) {
+  const el = document.getElementById(containerId);
+  const locked = faction.locked;
+  const cls = locked ? 'faction-locked' : '';
+  el.innerHTML = `
+    <div class="${cls}">
+      <div class="faction-emblem">${faction.emblem}</div>
+      <div class="faction-name">${faction.name}</div>
+      <div class="faction-sub">${faction.sub}</div>
+      ${!locked ? renderRoster(faction.roster) : ''}
+    </div>
+    ${locked ? '<div class="coming-soon">Coming Soon</div>' : ''}
+    <div class="faction-browse">
+      <button class="browse-arrow" id="${containerId}Prev">◂</button>
+      <div class="faction-page-dots">
+        ${pageDots.map((_, i) => `<div class="faction-page-dot${i === dotActiveIdx ? ' active' : ''}"></div>`).join('')}
+      </div>
+      <button class="browse-arrow" id="${containerId}Next">▸</button>
+    </div>
+  `;
+}
+
+function renderReviewRoster(roster, elId) {
+  const el = document.getElementById(elId);
+  el.innerHTML = roster.map(u => {
+    const label = u.qty > 1 ? `${u.name} ×${u.qty}` : u.name;
+    return `<div>${label} — ${u.pts}pts</div>`;
+  }).join('');
+}
+
+// ── Step navigation ──
+let currentStep = 0;
+const GLOW_COLORS = [
+  'rgba(0, 212, 255, 0.06)',   // step 1: cyan (Custodes)
+  'rgba(255, 64, 32, 0.06)',   // step 2: red (Orks)
+  'rgba(201, 163, 82, 0.06)',  // step 3: amber (battlefield)
+  'rgba(0, 212, 255, 0.05)',   // step 4: cyan (review)
+];
+
+function goStep(idx) {
+  if (idx < 0 || idx > 3) return;
+  const prev = currentStep;
+  const dir = idx > prev ? 1 : -1;
+
+  // Exit current
+  const curEl = document.getElementById(`step${prev}`);
+  curEl.classList.remove('active');
+  curEl.classList.add(dir > 0 ? 'exit-down' : 'exit-up');
+
+  // Update dots
+  const dots = document.querySelectorAll('.step-dot');
+  const seps = document.querySelectorAll('.step-sep');
+  dots.forEach((d, i) => {
+    d.classList.remove('active', 'completed');
+    if (i < idx) d.classList.add('completed');
+    if (i === idx) d.classList.add('active');
+  });
+  seps.forEach((s, i) => {
+    s.classList.toggle('completed', i < idx);
+  });
+
+  // Update glow
+  document.getElementById('bgGlow').style.background =
+    `radial-gradient(circle, ${GLOW_COLORS[idx]} 0%, transparent 70%)`;
+
+  // Enter new
+  currentStep = idx;
+  setTimeout(() => {
+    curEl.classList.remove('exit-down', 'exit-up');
+    const nextEl = document.getElementById(`step${idx}`);
+    nextEl.classList.add('active');
+
+    // Re-trigger stagger
+    if (nextEl.querySelector('.stagger')) {
+      const stag = nextEl.querySelector('.stagger') || nextEl;
+      stag.classList.remove('stagger');
+      void stag.offsetWidth;
+      stag.classList.add('stagger');
+    }
+
+    // Populate review on step 4
+    if (idx === 3) {
+      const cf = FACTIONS[factionKeys[factionIdx]];
+      const ef = ENEMIES[enemyKeys[enemyIdx]];
+      renderReviewRoster(cf.roster, 'reviewRosterCustodes');
+      renderReviewRoster(ef.roster, 'reviewRosterOrks');
+    }
+  }, 300);
+}
+
+// ── Ember particle generation ──
+function createEmbers() {
+  const container = document.getElementById('embers');
+  const colors = ['#ff8c20', '#ff6a10', '#ffa040', '#00d4ff', '#00b8e0'];
+  for (let i = 0; i < 18; i++) {
+    const ember = document.createElement('span');
+    ember.className = 'ember';
+    const size = 2 + Math.random() * 4;
+    ember.style.cssText = `
+      left: ${5 + Math.random() * 90}%;
+      width: ${size}px; height: ${size}px;
+      --dur: ${6 + Math.random() * 10}s;
+      --delay: ${Math.random() * 12}s;
+      --drift: ${-30 + Math.random() * 60}px;
+      --peak: ${0.3 + Math.random() * 0.5};
+      --ember-color: ${colors[Math.floor(Math.random() * colors.length)]};
+    `;
+    container.appendChild(ember);
+  }
+}
+
+// ── Init ──
+function init() {
+  createEmbers();
+
+  // Animate corner brackets
+  requestAnimationFrame(() => {
+    document.getElementById('panel').classList.add('loaded');
+  });
+
+  // Render initial factions
+  renderFaction(FACTIONS[factionKeys[factionIdx]], 'factionDisplay0', factionKeys, factionIdx);
+  renderFaction(ENEMIES[enemyKeys[enemyIdx]], 'factionDisplay1', enemyKeys, enemyIdx);
+
+  // Step 1 faction browse
+  document.addEventListener('click', (e) => {
+    if (e.target.id === 'factionDisplay0Prev' || e.target.id === 'factionDisplay0Next') {
+      const d = e.target.id.endsWith('Prev') ? -1 : 1;
+      factionIdx = (factionIdx + d + factionKeys.length) % factionKeys.length;
+      renderFaction(FACTIONS[factionKeys[factionIdx]], 'factionDisplay0', factionKeys, factionIdx);
+    }
+    if (e.target.id === 'factionDisplay1Prev' || e.target.id === 'factionDisplay1Next') {
+      const d = e.target.id.endsWith('Prev') ? -1 : 1;
+      enemyIdx = (enemyIdx + d + enemyKeys.length) % enemyKeys.length;
+      renderFaction(ENEMIES[enemyKeys[enemyIdx]], 'factionDisplay1', enemyKeys, enemyIdx);
+    }
+  });
+
+  // Step dot clicks
+  document.querySelectorAll('.step-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      if (dot.classList.contains('completed')) {
+        goStep(parseInt(dot.dataset.step));
+      }
+    });
+  });
+
+  // Keyboard nav
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' && currentStep < 3) goStep(currentStep + 1);
+    if (e.key === 'ArrowLeft' && currentStep > 0) goStep(currentStep - 1);
+  });
+
+  // Set ork faction attribute on step 1 dynamically
+  const step1 = document.getElementById('step1');
+  step1.setAttribute('data-faction', 'ork');
+}
+
+// Error display
+window.onerror = function(msg, src, line) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#cc2020;color:#fff;padding:8px 16px;font:13px monospace;z-index:9999';
+  d.textContent = `ERROR: ${msg} (${src}:${line})`;
+  document.body.appendChild(d);
+};
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

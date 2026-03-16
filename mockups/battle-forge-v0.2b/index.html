@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.2b — STRATEGIUM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../shared/tokens/typography.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────── -->
+<nav class="nav-bar">
+  <a href="../../.." class="nav-link">&larr; Back</a>
+  <span class="version-badge">STRATEGIUM v0.2b</span>
+  <a href="../../.." class="nav-link">Mockups</a>
+</nav>
+
+<div class="forge-layout" style="padding-top:40px;">
+
+  <!-- ════════════════════════════════════════════════════════
+       LEFT PANEL — YOUR FORCES
+  ════════════════════════════════════════════════════════ -->
+  <div class="panel-left">
+    <div class="panel-left-header">
+      <div class="faction-selector">
+        <span class="faction-label">Your Forces</span>
+        <select>
+          <option selected>Adeptus Custodes</option>
+          <option disabled>Space Marines — Coming Soon</option>
+          <option disabled>Astra Militarum — Coming Soon</option>
+          <option disabled>Adepta Sororitas — Coming Soon</option>
+        </select>
+      </div>
+      <div class="summary-bar">
+        <span class="pts">2000 PTS</span>
+        <span class="sep"></span>
+        <span class="detail">Shield Host</span>
+        <span class="sep"></span>
+        <span class="detail">13 Units</span>
+      </div>
+    </div>
+
+    <div class="roster-scroll" id="rosterScroll">
+      <!-- Cards injected by JS -->
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       RIGHT PANEL — SIDEBAR
+  ════════════════════════════════════════════════════════ -->
+  <div class="panel-right">
+
+    <!-- Opponent -->
+    <div class="sidebar-section">
+      <div class="section-label">Opponent</div>
+      <div class="enemy-card">
+        <div class="enemy-icon">&#9760;</div>
+        <div class="enemy-info">
+          <div class="enemy-name">Orks</div>
+          <div class="enemy-detail">2000pts &middot; Waaagh! Tribe</div>
+        </div>
+      </div>
+      <div class="enemy-roster" id="enemyRoster">
+        <!-- Injected by JS -->
+      </div>
+      <div class="faction-disabled">
+        Chaos Marines <span class="cs-tag">Coming Soon</span>
+      </div>
+    </div>
+
+    <!-- Battlefield -->
+    <div class="sidebar-section">
+      <div class="section-label">Battlefield</div>
+      <div class="map-card active">
+        <div class="map-thumbnail"><canvas id="mapCanvas"></canvas></div>
+        <div class="map-label">Hammer &amp; Anvil <span class="map-dim">60&times;44"</span></div>
+      </div>
+      <div class="map-card disabled">
+        <div class="map-thumbnail" style="background:var(--bg-raised);"></div>
+        <div class="map-label" style="color:var(--text-dis);">Search &amp; Destroy <span class="map-dim">60&times;44"</span></div>
+      </div>
+      <div class="map-card disabled">
+        <div class="map-thumbnail" style="background:var(--bg-raised);"></div>
+        <div class="map-label" style="color:var(--text-dis);">Sweeping Engagement <span class="map-dim">60&times;44"</span></div>
+      </div>
+    </div>
+
+    <!-- Mission -->
+    <div class="sidebar-section">
+      <div class="section-label">Mission</div>
+      <div class="mission-card">
+        <div class="mission-icon">&#9878;</div>
+        <div class="mission-name">Take and Hold</div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="sidebar-section">
+      <div class="section-label">Settings</div>
+      <div class="settings-grid">
+        <div class="setting-item">
+          <span class="setting-key">Turn Limit</span>
+          <span class="setting-val">5</span>
+        </div>
+        <div class="setting-item">
+          <span class="setting-key">First Turn</span>
+          <span class="setting-val">Roll-off</span>
+        </div>
+        <div class="setting-item">
+          <span class="setting-key">Battle Size</span>
+          <span class="setting-val">Strike Force</span>
+        </div>
+        <div class="setting-item">
+          <span class="setting-key">Terrain</span>
+          <span class="setting-val">Standard</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BEGIN BATTLE -->
+    <button class="btn-begin">Begin Battle</button>
+  </div>
+</div>
+
+<script>
+// ── Custodes Roster ─────────────────────────────────────────
+const custodes = [
+  { name:'Blade Champion',       role:'hq',     pts:120, models:1, gear:'Guardian Spear, Vaultswords' },
+  { name:'Blade Champion',       role:'hq',     pts:120, models:1, gear:'Guardian Spear, Vaultswords' },
+  { name:'Custodian Guard',      role:'troops', pts:190, models:5, gear:'Guardian Spears, Sentinel Blade + Praesidium Shield' },
+  { name:'Custodian Guard',      role:'troops', pts:190, models:5, gear:'Guardian Spears' },
+  { name:'Custodian Guard',      role:'troops', pts:190, models:5, gear:'Guardian Spears' },
+  { name:'Custodian Guard',      role:'troops', pts:190, models:5, gear:'Guardian Spears, Sentinel Blade + Praesidium Shield' },
+  { name:'Allarus Custodians',   role:'elites', pts:165, models:3, gear:'Guardian Spear, Balistus Grenade Launcher' },
+  { name:'Allarus Custodians',   role:'elites', pts:110, models:2, gear:'Castellan Axe' },
+  { name:'Prosecutors',          role:'troops', pts:85,  models:5, gear:'Boltgun' },
+  { name:'Prosecutors',          role:'troops', pts:85,  models:5, gear:'Boltgun' },
+  { name:'Caladius Grav-tank',   role:'heavy',  pts:215, models:1, gear:'Twin Iliastus Accelerator Cannon, Twin Lastrum Bolt Cannon' },
+  { name:'Caladius Grav-tank',   role:'heavy',  pts:215, models:1, gear:'Twin Iliastus Accelerator Cannon, Twin Lastrum Bolt Cannon' },
+  { name:'Inquisitor Draxus',    role:'hq',     pts:95,  models:1, gear:'Dirgesinger, Power Fist' },
+];
+
+const roleLabels = { hq:'HQ', troops:'Troops', elites:'Elites', heavy:'Heavy', fast:'Fast', transport:'Transport' };
+const accentColors = { hq:'var(--gold)', troops:'var(--imp)', elites:'#8855cc', heavy:'#cc8800', fast:'#44cc44', transport:'#6a7a8a' };
+
+const rosterEl = document.getElementById('rosterScroll');
+
+custodes.forEach((u, i) => {
+  const card = document.createElement('div');
+  card.className = 'unit-card';
+  card.style.animationDelay = `${i * 60}ms`;
+  card.innerHTML = `
+    <div class="card-accent" style="background:${accentColors[u.role]}"></div>
+    <div class="card-body">
+      <div class="card-top-row">
+        <span class="unit-name">${u.name}</span>
+        <span class="role-badge role-${u.role}">${roleLabels[u.role]}</span>
+      </div>
+      <div class="card-meta">
+        <span class="cost">${u.pts}pts</span>
+        <span>${u.models} model${u.models > 1 ? 's' : ''}</span>
+      </div>
+      <div class="card-wargear">${u.gear}</div>
+    </div>`;
+  rosterEl.appendChild(card);
+});
+
+// Upload area
+const uploadDiv = document.createElement('div');
+uploadDiv.className = 'upload-area';
+uploadDiv.innerHTML = 'Upload Army List (.ros)<span class="coming-soon">Coming Soon</span>';
+rosterEl.appendChild(uploadDiv);
+
+// ── Enemy Roster ────────────────────────────────────────────
+const orks = [
+  { name:'Warboss', pts:90 },
+  { name:'Boss Nob', pts:95 },
+  { name:'Boyz Mob', pts:150 },
+  { name:'Boyz Mob', pts:150 },
+  { name:'Mekboy', pts:75 },
+  { name:'Nobz Mob', pts:115 },
+  { name:'Nobz Mob', pts:115 },
+  { name:'Gretchin', pts:50 },
+  { name:'Gretchin', pts:50 },
+  { name:'Deff Dread', pts:150 },
+  { name:'Battlewagon', pts:185 },
+  { name:'Lootas', pts:100 },
+  { name:'Stormboyz', pts:80 },
+  { name:'Weirdboy', pts:70 },
+  { name:'Meganobz', pts:200 },
+  { name:'Trukk', pts:65 },
+];
+
+const enemyEl = document.getElementById('enemyRoster');
+orks.forEach(u => {
+  const row = document.createElement('div');
+  row.className = 'enemy-roster-item';
+  row.innerHTML = `<span>${u.name}</span><span class="er-pts">${u.pts}pts</span>`;
+  enemyEl.appendChild(row);
+});
+
+// ── Map Canvas — Hammer & Anvil deployment diagram ──────────
+const canvas = document.getElementById('mapCanvas');
+if (canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const w = rect.width, h = rect.height;
+
+  // Background
+  ctx.fillStyle = '#0f1520';
+  ctx.fillRect(0, 0, w, h);
+
+  // Grid
+  ctx.strokeStyle = '#1a2535';
+  ctx.lineWidth = 0.5;
+  for (let x = 0; x < w; x += 12) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+  for (let y = 0; y < h; y += 12) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+
+  // Deployment zones
+  const zoneW = w * 0.24;
+
+  // Left zone (Custodes)
+  ctx.fillStyle = 'rgba(0,212,255,0.08)';
+  ctx.fillRect(4, 4, zoneW, h - 8);
+  ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(4, 4, zoneW, h - 8);
+
+  // Right zone (Orks)
+  ctx.fillStyle = 'rgba(255,64,32,0.08)';
+  ctx.fillRect(w - zoneW - 4, 4, zoneW, h - 8);
+  ctx.strokeStyle = 'rgba(255,64,32,0.3)';
+  ctx.strokeRect(w - zoneW - 4, 4, zoneW, h - 8);
+
+  // Center line
+  ctx.strokeStyle = '#2a3a4a';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(w/2, 0);
+  ctx.lineTo(w/2, h);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Objective markers
+  const objs = [
+    [w*0.5, h*0.5],
+    [w*0.25, h*0.3], [w*0.25, h*0.7],
+    [w*0.75, h*0.3], [w*0.75, h*0.7],
+  ];
+  objs.forEach(([ox, oy]) => {
+    ctx.beginPath();
+    ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(201,163,82,0.6)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(201,163,82,0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  // Labels
+  ctx.font = '600 8px Rajdhani, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = 'rgba(0,212,255,0.5)';
+  ctx.fillText('CUSTODES', zoneW / 2 + 4, h - 10);
+  ctx.fillStyle = 'rgba(255,64,32,0.5)';
+  ctx.fillText('ORKS', w - zoneW / 2 - 4, h - 10);
+}
+
+// ── Error overlay ───────────────────────────────────────────
+window.onerror = function(msg, src, line) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;padding:8px 16px;background:#cc2020;color:#fff;font:12px monospace;z-index:9999;';
+  d.textContent = `ERROR: ${msg} (${src}:${line})`;
+  document.body.appendChild(d);
+};
+</script>
+</body>
+</html>
