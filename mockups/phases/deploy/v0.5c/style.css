@@ -197,6 +197,44 @@
   pointer-events: none;
 }
 
+/* ── HTML God Rays (proper blend mode, outside SVG) ── */
+#html-god-rays {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 3;
+  mix-blend-mode: screen;
+  overflow: hidden;
+}
+.html-ray {
+  position: absolute;
+  top: -20%;
+  height: 140%;
+  background: linear-gradient(
+    180deg,
+    rgba(255,220,140,0.12) 0%,
+    rgba(255,200,120,0.06) 30%,
+    rgba(255,200,120,0.02) 60%,
+    transparent 100%
+  );
+  border-radius: 0;
+  animation: html-ray-flicker 8s ease-in-out infinite;
+}
+.html-ray.ray-narrow {
+  background: linear-gradient(
+    180deg,
+    rgba(255,220,140,0.08) 0%,
+    rgba(255,200,120,0.03) 40%,
+    transparent 100%
+  );
+}
+@keyframes html-ray-flicker {
+  0%, 100% { opacity: 0.5; }
+  30% { opacity: 0.8; }
+  60% { opacity: 0.4; }
+  80% { opacity: 0.7; }
+}
+
 /* ── Smoke Canvas ── */
 #smoke-canvas {
   position: absolute;
