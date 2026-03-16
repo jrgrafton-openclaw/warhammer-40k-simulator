@@ -606,9 +606,74 @@ function highlightAllZonesByDetection(activeZoneName) {
 }
 
 // ── Selection override ───────────────────────────────────
+function _parseRange(rng) {
+  if (!rng || rng === '—' || rng === 'Melee') return 0;
+  return parseFloat(rng) || 0;
+}
+
+function _addWeaponRangeButtons(uid) {
+  var u = UNITS[uid]; if (!u) return;
+  var rangesEl = document.getElementById('card-ranges');
+  if (!rangesEl) return;
+
+  // Collect unique ranged weapons with their ranges
+  var weapons = [].concat(u.weapons || []);
+  var seen = {};
+  var rangedWeapons = [];
+  weapons.forEach(function(w) {
+    if (w.type === 'MELEE' || !w.rng || w.rng === '—') return;
+    var rng = _parseRange(w.rng);
+    if (rng <= 0) return;
+    var key = w.name + '|' + rng;
+    if (seen[key]) return;
+    seen[key] = true;
+    rangedWeapons.push({ name: w.name, range: rng, kw: w.kw || [] });
+  });
+  if (rangedWeapons.length === 0) return;
+
+  // Weapon ring color palette (matches shoot v0.9)
+  var WEAPON_COLORS = [
+    { fill: 'rgba(255,100,60,0.06)', stroke: 'rgba(255,100,60,0.35)' },
+    { fill: 'rgba(255,180,40,0.06)', stroke: 'rgba(255,180,40,0.35)' },
+    { fill: 'rgba(120,220,80,0.06)', stroke: 'rgba(120,220,80,0.35)' },
+    { fill: 'rgba(80,180,255,0.06)', stroke: 'rgba(80,180,255,0.35)' }
+  ];
+
+  rangedWeapons.forEach(function(w, i) {
+    var btn = document.createElement('button');
+    btn.className = 'range-toggle weapon';
+    btn.dataset.rangeType = 'weapon-' + i;
+    // Short name: first word or abbreviation
+    var shortName = w.name.length > 14 ? w.name.split(/[\s(]/)[0] : w.name;
+    btn.innerHTML = shortName + '<br>' + w.range + '"';
+    btn.title = w.name + ' — ' + w.range + '" range';
+    var color = WEAPON_COLORS[i % WEAPON_COLORS.length];
+
+    btn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var wasActive = btn.classList.contains('active');
+
+      // Deactivate all range toggles (movement + weapon)
+      rangesEl.querySelectorAll('.range-toggle').forEach(function(b) {
+        b.classList.remove('active');
+      });
+      clearRangeRings();
+      activeRangeTypes.clear();
+
+      if (!wasActive) {
+        btn.classList.add('active');
+        activeRangeTypes.add('weapon-' + i);
+        drawPerModelRangeRings(uid, [{ radiusInches: w.range, fill: color.fill, stroke: color.stroke }]);
+      }
+    });
+    rangesEl.appendChild(btn);
+  });
+}
+
 function deploySelectUnit(uid) {
   if (!uid) {
     baseSelectUnit(null);
+    clearRangeRings();
     return;
   }
 
@@ -616,6 +681,7 @@ function deploySelectUnit(uid) {
   if (!unit) return;
 
   baseSelectUnit(uid);
+  _addWeaponRangeButtons(uid);
 
   var badge = document.getElementById('unit-state-badge');
   if (badge) {
@@ -744,16 +810,41 @@ function _redrawActiveRangeRings() {
   if (!currentUnit || activeRangeTypes.size === 0) return;
   var u = UNITS[currentUnit]; if (!u) return;
   var t = null;
-  activeRangeTypes.forEach(function(v) { t = v; }); // get the single active type
+  activeRangeTypes.forEach(function(v) { t = v; });
   if (!t) return;
-  var radiusInches;
-  if (t === 'move') radiusInches = u.M;
-  else if (t === 'advance') radiusInches = u.M + 3.5;
-  else if (t === 'charge') radiusInches = u.M + 7;
-  else if (t === 'ds') radiusInches = 9;
-  else return;
-  var color = _DEPLOY_RANGE_COLORS[t];
-  drawPerModelRangeRings(currentUnit, [{ radiusInches: radiusInches, fill: color.fill, stroke: color.stroke }]);
+
+  // Movement range types
+  if (t === 'move' || t === 'advance' || t === 'charge' || t === 'ds') {
+    var radiusInches;
+    if (t === 'move') radiusInches = u.M;
+    else if (t === 'advance') radiusInches = u.M + 3.5;
+    else if (t === 'charge') radiusInches = u.M + 7;
+    else if (t === 'ds') radiusInches = 9;
+    drawPerModelRangeRings(currentUnit, [{ radiusInches: radiusInches, fill: _DEPLOY_RANGE_COLORS[t].fill, stroke: _DEPLOY_RANGE_COLORS[t].stroke }]);
+    return;
+  }
+
+  // Weapon range types (weapon-0, weapon-1, etc.)
+  if (t.indexOf('weapon-') === 0) {
+    var idx = parseInt(t.split('-')[1], 10);
+    var weapons = (u.weapons || []).filter(function(w) { return w.type !== 'MELEE' && w.rng && w.rng !== '—'; });
+    // Deduplicate by name+range
+    var seen = {}; var unique = [];
+    weapons.forEach(function(w) {
+      var key = w.name + '|' + _parseRange(w.rng);
+      if (!seen[key]) { seen[key] = true; unique.push(w); }
+    });
+    if (idx < unique.length) {
+      var WEAPON_COLORS = [
+        { fill: 'rgba(255,100,60,0.06)', stroke: 'rgba(255,100,60,0.35)' },
+        { fill: 'rgba(255,180,40,0.06)', stroke: 'rgba(255,180,40,0.35)' },
+        { fill: 'rgba(120,220,80,0.06)', stroke: 'rgba(120,220,80,0.35)' },
+        { fill: 'rgba(80,180,255,0.06)', stroke: 'rgba(80,180,255,0.35)' }
+      ];
+      var color = WEAPON_COLORS[idx % WEAPON_COLORS.length];
+      drawPerModelRangeRings(currentUnit, [{ radiusInches: _parseRange(unique[idx].rng), fill: color.fill, stroke: color.stroke }]);
+    }
+  }
 }
 
 function wireRangeToggleSingleSelect() {
@@ -775,10 +866,10 @@ function wireRangeToggleSingleSelect() {
       e.stopPropagation();
       var wasActive = newBtn.classList.contains('active');
 
-      // Deactivate ALL range toggles + clear SVG per-model rings
-      types.forEach(function(ot) {
-        var ob = buttons[ot];
-        if (ob) ob.classList.remove('active');
+      // Deactivate ALL range toggles (movement + weapon) + clear SVG rings
+      var rangesEl = document.getElementById('card-ranges');
+      if (rangesEl) rangesEl.querySelectorAll('.range-toggle').forEach(function(b) {
+        b.classList.remove('active');
       });
       clearRangeRings();
 

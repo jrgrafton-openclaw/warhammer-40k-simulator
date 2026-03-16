@@ -58,6 +58,34 @@
   display: none !important;
 }
 
+/* ── Card range toggles: horizontal scroll carousel ── */
+.card-ranges {
+  display: flex !important;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,212,255,0.2) transparent;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+.card-ranges::-webkit-scrollbar { height: 3px; }
+.card-ranges::-webkit-scrollbar-track { background: transparent; }
+.card-ranges::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 2px; }
+.card-ranges .range-toggle { flex-shrink: 0; }
+
+/* Weapon range toggle buttons */
+.range-toggle.weapon {
+  background: rgba(255,100,60,0.08);
+  border: 1px solid rgba(255,100,60,0.2);
+  color: rgba(255,160,120,0.8);
+  font-size: 8px;
+  min-width: 52px;
+}
+.range-toggle.weapon.active {
+  background: rgba(255,100,60,0.2);
+  border-color: rgba(255,100,60,0.6);
+  color: #ff8855;
+}
+
 /* ── CONFIRM DEPLOYMENT disabled state ── */
 #btn-end:disabled {
   opacity: 0.35;
