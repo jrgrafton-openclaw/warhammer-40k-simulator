@@ -9,7 +9,7 @@ import { PX_PER_INCH, simState, callbacks, currentUnit, activeRangeTypes } from 
 import { UNITS } from '../../../shared/state/units.js';
 import { selectUnit as baseSelectUnit, renderModels, resolveOverlaps,
          checkCohesion, updateRangeCirclesFromUnit, clearRangeCircles,
-         applyTx, getCamera } from '../../../shared/world/svg-renderer.js';
+         applyTx, getCamera, setCamera } from '../../../shared/world/svg-renderer.js';
 import { resolveTerrainCollision, resolveUnitDragCollisions } from '../../../shared/world/collision.js';
 import { drawPerModelRangeRings, clearRangeRings } from '../../../shared/world/range-rings.js';
 
@@ -270,7 +270,7 @@ function confirmDeployment() {
   var inner = document.getElementById('battlefield-inner');
   if (inner) {
     inner.style.transition = 'transform 0.6s ease';
-    inner.style.transform = 'translate(0px, 0px) scale(0.5)';
+    setCamera(0, 0, 0.5);
     setTimeout(function() {
       inner.style.transition = '';
     }, 700);

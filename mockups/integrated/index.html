@@ -121,7 +121,29 @@
       </div>
       <div id="wall-collision-banner" style="display:none;margin:4px 6px 0;text-align:center;padding:6px 12px;font:700 10px/1 'Rajdhani',sans-serif;letter-spacing:1.5px;white-space:nowrap;pointer-events:none;box-shadow:0 0 12px rgba(0,0,0,.4);background:rgba(255,160,0,.94);color:#fff;border:2px solid #ffaa40;border-radius:4px;">⚠ MODELS OVERLAPPING TERRAIN — MOVE TO CLEAR</div>
     </div>
-    <div class="deploy-badge">v0.1 · INTEGRATED</div>
+    <div class="deploy-badge">v0.2 · INTEGRATED</div>
+
+    <!-- Debug Panel -->
+    <div id="debug-menu">
+      <button id="debug-toggle">⚙ Debug</button>
+      <div id="debug-panel" style="display:none;">
+        <div class="debug-section">
+          <span class="debug-section-label">QUICK ACTIONS</span>
+          <button class="debug-btn" id="dbg-auto-deploy">⚡ Auto Deploy All</button>
+        </div>
+        <div class="debug-section">
+          <span class="debug-section-label">SKIP TO PHASE</span>
+          <div class="debug-phase-btns">
+            <button class="debug-btn phase-skip" id="dbg-skip-move" data-phase="move">→ Move</button>
+            <button class="debug-btn phase-skip" id="dbg-skip-shoot" data-phase="shoot">→ Shoot</button>
+          </div>
+        </div>
+        <div class="debug-section">
+          <span class="debug-section-label">CURRENT STATE</span>
+          <div class="debug-state" id="dbg-state-display">Phase: deploy</div>
+        </div>
+      </div>
+    </div>
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
 
     <div id="battlefield-inner">

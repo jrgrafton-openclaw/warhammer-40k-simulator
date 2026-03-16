@@ -80,6 +80,13 @@ export function applyTx() {
 // ── Camera access ──────────────────────────────────────
 export function getCamera() { return { scale: scale, tx: tx, ty: ty }; }
 
+export function setCamera(newTx, newTy, newScale) {
+  if (newTx !== undefined) tx = newTx;
+  if (newTy !== undefined) ty = newTy;
+  if (newScale !== undefined) scale = newScale;
+  applyTx();
+}
+
 export function resetCamera(initialScale) {
   scale = initialScale !== undefined ? initialScale : 0.5;
   tx = 0; ty = 0;

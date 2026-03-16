@@ -9,13 +9,14 @@ import { mapData } from '../shared/state/terrain-data.js';
 import { renderTerrain } from '../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../shared/world/collision.js';
 import { selectUnit as baseSelectUnit, initBoard, initBattleControls,
-         initModelInteraction, getRangeInches, renderModels } from '../shared/world/svg-renderer.js';
+         initModelInteraction, getRangeInches, renderModels, setCamera } from '../shared/world/svg-renderer.js';
 import '../shared/world/world-api.js';
 
 import { setTransitionCallback, nextPhase } from './phase-machine.js';
 import { initDeploy, cleanupDeploy } from './scenes/scene-deploy.js';
 import { initMove, cleanupMove } from './scenes/scene-move.js';
 import { initShoot } from './scenes/scene-shoot.js';
+import { initDebug } from './debug.js';
 
 // ── Wire getRangeInches into the card builder ────────────
 setGetRangeInches(getRangeInches);
@@ -77,9 +78,7 @@ initModelInteraction();
 
 // ── Set initial camera pan (show staging + deployment zone) ──
 var inner = document.getElementById('battlefield-inner');
-if (inner) {
-  inner.style.transform = 'translate(350px, 0px) scale(0.5)';
-}
+setCamera(350, 0, 0.5);
 
 // ── Build terrain collision AABBs ────────────────────────
 var svgEl = document.getElementById('bf-svg');
@@ -175,7 +174,7 @@ function transitionToMove() {
   // 8. Animate camera to center the board
   if (inner) {
     inner.style.transition = 'transform 0.6s ease';
-    inner.style.transform = 'translate(0px, 0px) scale(0.5)';
+    setCamera(0, 0, 0.5);
     setTimeout(function() { inner.style.transition = ''; }, 700);
   }
 
@@ -343,6 +342,7 @@ function wireEndDeployment() {
 // ── Start: Deploy phase ──────────────────────────────────
 initDeploy();
 wireEndDeployment();
+initDebug();
 
 // ── Visible error handler ────────────────────────────────
 window.onerror = function(msg, src, line) {
