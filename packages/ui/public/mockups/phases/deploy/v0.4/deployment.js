@@ -641,6 +641,28 @@ function wireRangeToggleSingleSelect() {
   });
 }
 
+// ── Cleanup (for integrated phase transition) ────────────
+export function cleanupDeployment() {
+  // Remove button event listeners by cloning nodes
+  ['btn-confirm-unit', 'btn-cancel-unit', 'btn-end'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) { var clone = el.cloneNode(true); el.parentNode.replaceChild(clone, el); }
+  });
+
+  // Remove roster click listeners by cloning
+  document.querySelectorAll('.rail-unit').forEach(function(el) {
+    var clone = el.cloneNode(true);
+    el.parentNode.replaceChild(clone, el);
+  });
+
+  // Reset deploy state
+  deployState.locked = false;
+  deployState.placingUnit = null;
+
+  // Remove deployment-complete class
+  document.body.classList.remove('deployment-complete');
+}
+
 // ── Init ─────────────────────────────────────────────────
 export function initDeployment() {
   // Count units per faction
