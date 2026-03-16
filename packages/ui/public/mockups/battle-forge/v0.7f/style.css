@@ -131,13 +131,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 ══════════════════════════════════════════════════════════════ */
 .faction-cards {
   position: fixed; z-index: 20;
-  top: 56px; left: 50%;
+  top: 80px; left: 50%;
   transform: translateX(-50%);
   display: flex; align-items: center; justify-content: center;
   gap: 24px;
-  padding: 14px 40px;
-  background: linear-gradient(180deg, rgba(8,12,16,0.88) 0%, rgba(8,12,16,0.6) 70%, transparent 100%);
-  border-radius: 0 0 12px 12px;
   animation: cards-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s both;
 }
 
@@ -256,16 +253,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-primary); colo
 /* VS divider */
 .vs-divider {
   display: flex; align-items: center; justify-content: center;
-  width: 48px; height: 48px; flex-shrink: 0;
+  width: 40px; height: 40px; flex-shrink: 0;
 }
-.vs-text {
-  font: 700 22px/1 'Anton', sans-serif;
-  color: var(--text-muted); letter-spacing: 2px;
+.vs-text { display: none; }
+.vs-divider::before {
+  content: '⚔';
+  font-size: 22px;
+  opacity: 0.35;
+  filter: grayscale(1);
   transition: all 0.6s ease;
 }
-.vs-divider.vs-active .vs-text {
-  color: var(--text-primary);
-  text-shadow: 0 0 16px rgba(0,212,255,0.25);
+.vs-divider.vs-active::before {
+  opacity: 0.7;
+  filter: grayscale(0) drop-shadow(0 0 8px rgba(0,212,255,0.3));
 }
 
 
