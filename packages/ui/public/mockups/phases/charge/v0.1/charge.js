@@ -851,7 +851,15 @@ export function initCharge() {
   // Button wiring
   $('#btn-confirm-charge')?.addEventListener('click', confirmCharge);
   $('#btn-end-charge')?.addEventListener('click', () => {
-    setModeLabel('END CHARGE PHASE — MOCKUP ONLY');
+    // Show completion state (actual transition wired by scene-registry in integrated mode)
+    var btn = $('#btn-end-charge');
+    if (btn) {
+      btn.textContent = '✓ CHARGE COMPLETE';
+      btn.disabled = true;
+      btn.style.background = 'var(--success-dim, rgba(0,200,80,0.15))';
+      btn.style.borderColor = 'var(--success, rgba(0,200,80,0.4))';
+      btn.style.color = 'var(--success, #00c850)';
+    }
   });
 
   // Stratagem modal
