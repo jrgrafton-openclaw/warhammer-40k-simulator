@@ -1,15 +1,24 @@
-/* svg-renderer.js — Board controls, range UI, selection, and model interaction.
- * Main entry point that re-exports camera.js and model-renderer.js.
+/* svg-renderer.js — Facade: re-exports camera + model-renderer, owns interaction & range logic.
+ *
+ * All existing imports from './svg-renderer.js' continue to work unchanged.
  */
 
-import { simState, activeRangeTypes, currentUnit, setCurrentUnit, callbacks } from '../state/store.js';
-import { UNITS, buildCard, showTip, hideTip } from '../state/units.js';
-import { TERRAIN_RULES } from '../state/terrain-data.js';
-import { ensureSVGDefs, renderModels as renderModelsCore,
+// ── Re-exports from sub-modules ────────────────────────
+export { applyTx, getCamera, setCamera, resetCamera, initBoard } from './camera.js';
+export { ICON_TYPES, getIconType, ensureSVGDefs, renderModels,
          getCurvedHullPath, checkCohesion, resolveOverlaps } from './model-renderer.js';
 
-export { applyTx, getCamera, setCamera, resetCamera, initBoard } from './camera.js';
-export { getCurvedHullPath, checkCohesion, resolveOverlaps } from './model-renderer.js';
+// ── Own imports ────────────────────────────────────────
+import { renderModels } from './model-renderer.js';
+import { PX_PER_INCH, simState, activeRangeTypes,
+         currentUnit, setCurrentUnit, callbacks } from '../state/store.js';
+import { UNITS, buildCard, initAllTooltips, showTip, hideTip } from '../state/units.js';
+import { TERRAIN_RULES } from '../state/terrain-data.js';
+import { resolveOverlaps } from './model-renderer.js';
+import { ensureSVGDefs } from './model-renderer.js';
+
+// Register updateRangeCircles callback so camera.js + model-renderer.js can use it
+callbacks.updateRangeCircles = updateRangeCirclesFromUnit;
 
 // ── Range helpers ──────────────────────────────────────
 export function getRangeInches(unit) {
@@ -69,18 +78,6 @@ export function updateRangeCirclesFromUnit(uid) {
     if (label) { label.style.display = isActive ? 'block' : 'none'; label.style.opacity = isActive ? '1' : '0'; }
   });
 }
-callbacks.updateRangeCircles = updateRangeCirclesFromUnit;
-
-// ── renderModels wrapper ───────────────────────────────
-export function renderModels() {
-  renderModelsCore();
-  if (currentUnit && activeRangeTypes.size > 0) {
-    updateRangeCirclesFromUnit(currentUnit);
-  }
-  if (typeof callbacks.afterRender === 'function') {
-    callbacks.afterRender();
-  }
-}
 
 // ── selectUnit ─────────────────────────────────────────
 export function selectUnit(uid) {
@@ -95,6 +92,7 @@ export function selectUnit(uid) {
       setTimeout(function(){ updateRangeCirclesFromUnit(uid); }, 0);
     }
   } else {
+    // Hide unit card when deselecting
     var card = document.getElementById('unit-card');
     if (card) card.classList.remove('visible');
     clearRangeCircles();
@@ -102,17 +100,32 @@ export function selectUnit(uid) {
   }
 }
 
+// Dispatches to the potentially-wrapped selectUnit (shooting.js may wrap it)
 function dispatchSelectUnit(uid) {
   var fn = callbacks.selectUnit || selectUnit;
   fn(uid);
 }
 
+// ── Mouse position (SVG coords) ───────────────────────
+export function getMousePos(evt) {
+  var svg = document.getElementById('bf-svg');
+  var CTM = svg.getScreenCTM();
+  if (!CTM || !CTM.a) {
+    var pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
+    var loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    return {x: loc.x, y: loc.y};
+  }
+  return { x: (evt.clientX - CTM.e) / CTM.a, y: (evt.clientY - CTM.f) / CTM.d };
+}
+
 // ── initBattleControls ─────────────────────────────────
 export function initBattleControls() {
+  // Rail unit clicks
   document.querySelectorAll('.rail-unit').forEach(function(r) {
     r.addEventListener('click', function() { dispatchSelectUnit(r.dataset.unit); });
   });
 
+  // Card close
   var cardClose = document.getElementById('card-close');
   if (cardClose) {
     cardClose.addEventListener('click', function() {
@@ -130,6 +143,7 @@ export function initBattleControls() {
     });
   }
 
+  // Range toggles
   ['move','advance','charge','ds'].forEach(function(type) {
     var btn = document.getElementById('rt-' + type);
     if (!btn) return;
@@ -145,6 +159,7 @@ export function initBattleControls() {
     });
   });
 
+  // Roster collapse
   var rosterBtn = document.getElementById('roster-btn');
   if (rosterBtn) {
     rosterBtn.addEventListener('click', function() {
@@ -153,7 +168,8 @@ export function initBattleControls() {
     });
   }
 
-  var btnMove = document.getElementById('btn-move');
+  // Action buttons
+  var btnMove    = document.getElementById('btn-move');
   var btnAdvance = document.getElementById('btn-advance');
   if (btnMove) {
     btnMove.addEventListener('click', function() {
@@ -168,13 +184,15 @@ export function initBattleControls() {
     });
   }
 
-  var modalBg = document.getElementById('modal-bg');
-  var btnStrat = document.getElementById('btn-strat');
+  // Stratagem modal
+  var modalBg   = document.getElementById('modal-bg');
+  var btnStrat  = document.getElementById('btn-strat');
   var modalClose = document.getElementById('modal-close');
-  if (btnStrat && modalBg) btnStrat.addEventListener('click', function(){ modalBg.classList.add('open'); });
+  if (btnStrat && modalBg)   btnStrat.addEventListener('click', function(){ modalBg.classList.add('open'); });
   if (modalClose && modalBg) modalClose.addEventListener('click', function(){ modalBg.classList.remove('open'); });
   if (modalBg) modalBg.addEventListener('click', function(e){ if(e.target===modalBg) modalBg.classList.remove('open'); });
 
+  // Keyboard shortcuts
   document.addEventListener('keydown', function(e) {
     if (e.target.tagName==='INPUT' || e.target.tagName==='TEXTAREA') return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -198,8 +216,10 @@ export function initBattleControls() {
     }
   });
 
+  // Expose selectUnit globally (for inline onclick handlers in HTML)
   window.selectUnit = function(uid) { dispatchSelectUnit(uid); };
 
+  // Terrain tip helper
   function buildTerrainTip(key) {
     var t = TERRAIN_RULES[key];
     if (!t) return '';
@@ -211,6 +231,7 @@ export function initBattleControls() {
     el.addEventListener('mouseleave', function(){ hideTip(); });
   });
 
+  // Faction toggles (global helpers referenced by inline HTML)
   window.toggleFaction = function(hdr) {
     var body = hdr.nextElementSibling;
     var chev = hdr.querySelector('.faction-chevron');
@@ -226,18 +247,6 @@ export function initBattleControls() {
   };
 }
 
-// ── Mouse position (SVG coords) ───────────────────────
-export function getMousePos(evt) {
-  var svg = document.getElementById('bf-svg');
-  var CTM = svg.getScreenCTM();
-  if (!CTM || !CTM.a) {
-    var pt = svg.createSVGPoint(); pt.x = evt.clientX; pt.y = evt.clientY;
-    var loc = pt.matrixTransform(svg.getScreenCTM().inverse());
-    return {x: loc.x, y: loc.y};
-  }
-  return { x: (evt.clientX - CTM.e) / CTM.a, y: (evt.clientY - CTM.f) / CTM.d };
-}
-
 // ── initModelInteraction ──────────────────────────────
 export function initModelInteraction() {
   ensureSVGDefs();
@@ -247,6 +256,7 @@ export function initModelInteraction() {
     bdiv.id = 'cohesion-banner';
     bdiv.innerHTML = '⚠ UNIT COHESION BROKEN';
     bdiv.style.display = 'none';
+    // Appended to #battlefield initially; fight.js moves it into #phase-header
     var bf = document.getElementById('battlefield');
     if (bf) bf.appendChild(bdiv);
   }
@@ -261,8 +271,8 @@ export function initModelInteraction() {
     var pt = getMousePos(e);
 
     if (baseEl && baseEl.classList.contains('model-base')) {
-      var uId = baseEl.dataset.unitId;
-      var mId = baseEl.dataset.modelId;
+      var uId  = baseEl.dataset.unitId;
+      var mId  = baseEl.dataset.modelId;
       var unit = simState.units.find(function(u){ return u.id===uId; });
       if (!unit) return;
       var model = unit.models.find(function(m){ return m.id===mId; });
@@ -289,7 +299,7 @@ export function initModelInteraction() {
       renderModels();
     }
     else if (trg.classList && trg.classList.contains('unit-hull')) {
-      var uId2 = trg.dataset.unitId;
+      var uId2  = trg.dataset.unitId;
       var unit2 = simState.units.find(function(u){ return u.id===uId2; });
       if (!unit2) return;
       if (currentUnit !== uId2) dispatchSelectUnit(uId2);
@@ -321,21 +331,21 @@ export function initModelInteraction() {
       simState.drag.offsets.forEach(function(o) { o.m.x = pt.x + o.dx; o.m.y = pt.y + o.dy; });
     }
     else if (simState.drag.type === 'model') {
-      var rawX = pt.x + simState.drag.offsetX;
-      var rawY = pt.y + simState.drag.offsetY;
+      var rawX    = pt.x + simState.drag.offsetX;
+      var rawY    = pt.y + simState.drag.offsetY;
       var resolved = resolveOverlaps(simState.drag.model, rawX, rawY);
       simState.drag.model.x = resolved.x;
       simState.drag.model.y = resolved.y;
     }
     else if (simState.drag.type === 'rotate') {
-      var pivot = simState.drag.pivot;
+      var pivot    = simState.drag.pivot;
       var currAngle = Math.atan2(pt.y - pivot.y, pt.x - pivot.x);
       if (simState.drag.startAngle === undefined) {
-        simState.drag.startAngle = currAngle;
+        simState.drag.startAngle   = currAngle;
         simState.drag.origRotations = simState.drag.unit.models.map(function(m){ return m.rotation || 0; });
       }
       var angleDiff = currAngle - simState.drag.startAngle;
-      var angleDeg = angleDiff * 180 / Math.PI;
+      var angleDeg  = angleDiff * 180 / Math.PI;
       simState.drag.unit.models.forEach(function(m, i) {
         var orig = simState.drag.origins[i];
         var dx = orig.x - pivot.x; var dy = orig.y - pivot.y;

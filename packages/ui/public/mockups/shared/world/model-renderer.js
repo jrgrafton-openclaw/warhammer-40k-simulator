@@ -4,7 +4,7 @@
  * Split from svg-renderer.js for maintainability.
  */
 
-import { COHESION_RANGE, simState, currentUnit } from '../state/store.js';
+import { COHESION_RANGE, simState, currentUnit, activeRangeTypes, callbacks } from '../state/store.js';
 
 // ── Unit icon type → SVG path data (v23 tokens) ───────
 export var ICON_TYPES = {
@@ -280,4 +280,13 @@ export function renderModels() {
 
   var banner = document.getElementById('cohesion-banner');
   if (banner) banner.style.display = anyBroken ? 'block' : 'none';
+
+  if (currentUnit && activeRangeTypes.size > 0) {
+    if (typeof callbacks.updateRangeCircles === 'function') callbacks.updateRangeCircles(currentUnit);
+  }
+
+  // Post-render callback for phase-specific overlays (e.g. fight highlights)
+  if (typeof callbacks.afterRender === 'function') {
+    callbacks.afterRender();
+  }
 }
