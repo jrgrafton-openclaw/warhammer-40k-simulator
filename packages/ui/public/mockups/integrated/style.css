@@ -190,6 +190,22 @@
   stroke-dasharray: 4 3;
   pointer-events: none;
 }
+/* ── Debug: enhanced LoS lines ── */
+body.debug-los-enhanced #layer-target-lines {
+  z-index: 900;
+}
+body.debug-los-enhanced .target-line-clear {
+  stroke-width: 2 !important;
+  stroke-opacity: 0.9 !important;
+  stroke: #00d4ff !important;
+}
+body.debug-los-enhanced .target-line-blocked {
+  stroke-width: 2.5 !important;
+  stroke-opacity: 0.95 !important;
+  stroke: #ff3020 !important;
+  stroke-dasharray: 6 4 !important;
+}
+
 /* ── Debug: model-in-ruin highlight ── */
 .model-base.debug-in-ruin circle,
 .model-base.debug-in-ruin rect {

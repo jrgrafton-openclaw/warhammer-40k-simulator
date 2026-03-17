@@ -382,6 +382,12 @@ export function initDebug() {
   if (dbgModelsInRuins) {
     dbgModelsInRuins.addEventListener('change', function() { toggleModelsInRuins(); });
   }
+  var dbgLos = document.getElementById('dbg-los-lines');
+  if (dbgLos) {
+    dbgLos.addEventListener('change', function() {
+      document.body.classList.toggle('debug-los-enhanced', dbgLos.checked);
+    });
+  }
 
   // Hook into afterRender to maintain debug overlays after model re-renders
   var _origAfterRender = callbacks.afterRender;
