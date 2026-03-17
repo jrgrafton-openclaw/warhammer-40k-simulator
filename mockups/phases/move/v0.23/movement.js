@@ -252,6 +252,74 @@ function isCurrentMoveLegal(uid) {
   return !unit.broken;
 }
 
+// ── Debug: per-model move validation breakdown ──────
+export function debugMoveValidation(uid) {
+  if (!uid || !moveState.mode) return { legal: false, reason: 'No unit or mode', models: [] };
+  var unit = simState.units.find(function(u) { return u.id === uid; });
+  if (!unit) return { legal: false, reason: 'Unit not found', models: [] };
+
+  var rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+  var rangeIn = rangePx / PX_PER_INCH;
+  var usePathCost = !canBreachTerrain(unit);
+  var results = [];
+
+  unit.models.forEach(function(m) {
+    var ts = phaseTurnStarts[m.id];
+    var result = { id: m.id, x: m.x, y: m.y, issues: [] };
+    if (!ts) { result.issues.push('NO_TURNSTART'); results.push(result); return; }
+
+    var straightDist = Math.hypot(m.x - ts.x, m.y - ts.y);
+    result.straightDistPx = straightDist;
+    result.straightDistIn = (straightDist / PX_PER_INCH).toFixed(1);
+    result.rangePx = rangePx;
+    result.rangeIn = rangeIn.toFixed(1);
+
+    if (usePathCost) {
+      var pathEntry = _modelPathCache[m.id];
+      result.pathEntry = pathEntry === null ? 'NULL' : pathEntry ? pathEntry.cost.toFixed(1) : '0';
+      if (pathEntry === null) {
+        result.issues.push('PATH_NULL');
+        if (modelCollidesTerrain(m)) result.issues.push('TERRAIN_COLLISION');
+        else if (straightDist > rangePx + 0.5) result.issues.push('STRAIGHT_OVER_RANGE');
+      } else if (pathEntry && pathEntry.cost > rangePx + 0.5) {
+        result.issues.push('PATH_OVER_RANGE(' + (pathEntry.cost / PX_PER_INCH).toFixed(1) + '">' + rangeIn.toFixed(1) + '")');
+      }
+    } else {
+      if (straightDist > rangePx + 0.5) result.issues.push('OVER_RANGE');
+    }
+
+    if (modelCollidesTerrain(m)) result.issues.push('TERRAIN_HIT');
+
+    // Check overlaps with own unit
+    unit.models.forEach(function(other) {
+      if (other === m) return;
+      if (modelsOverlap(m, other)) result.issues.push('OVERLAP_SELF(' + other.id + ')');
+    });
+
+    // Check overlaps with other units
+    simState.units.forEach(function(otherUnit) {
+      if (otherUnit.id === uid) return;
+      otherUnit.models.forEach(function(other) {
+        if (modelsOverlap(m, other)) result.issues.push('OVERLAP_OTHER(' + other.id + ')');
+      });
+    });
+
+    results.push(result);
+  });
+
+  checkCohesion(unit);
+  var legal = results.every(function(r) { return r.issues.length === 0; }) && !unit.broken;
+
+  return {
+    legal: legal,
+    broken: unit.broken,
+    usePathCost: usePathCost,
+    rangeIn: rangeIn.toFixed(1),
+    mode: moveState.mode,
+    models: results
+  };
+}
+
 function ensureRosterStatePills() {
   document.querySelectorAll('.rail-unit').forEach(function(row) {
     if (row.querySelector('.roster-state-pill')) return;

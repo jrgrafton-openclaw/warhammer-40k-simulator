@@ -67,7 +67,7 @@ function autoDeploy() {
   var startX = 80;   // well inside the zone
   var startY = 40;
   var yStep = 75;     // vertical spacing between units
-  var xSpacing = 18;  // model spacing within a unit
+  var xSpacing = 22;  // model spacing within a unit (must exceed 2*R40+1 = 19px)
 
   impUnits.forEach(function(unit, unitIdx) {
     var cx = startX + (unitIdx % 2) * 80;  // alternate columns
@@ -381,6 +381,19 @@ export function initDebug() {
   if (dbgModelsInRuins) {
     dbgModelsInRuins.addEventListener('change', function() { toggleModelsInRuins(); });
   }
+  // Move validation debug
+  var dbgMoveVal = document.getElementById('dbg-move-validation');
+  if (dbgMoveVal) {
+    dbgMoveVal.addEventListener('change', function() {
+      window.__debugMoveValidation = dbgMoveVal.checked;
+      if (dbgMoveVal.checked) {
+        _startMoveValidationLoop();
+      } else {
+        _stopMoveValidationLoop();
+      }
+    });
+  }
+
   var dbgLos = document.getElementById('dbg-los-lines');
   if (dbgLos) {
     dbgLos.addEventListener('change', function() {
@@ -410,4 +423,122 @@ export function initDebug() {
 
   // Update state display on phase transitions
   _updateStateDisplay();
+}
+
+// ── Move Validation Debug Overlay ────────────────────────
+var _moveValTimer = null;
+
+function _startMoveValidationLoop() {
+  if (_moveValTimer) return;
+  _moveValTimer = setInterval(_renderMoveValidation, 200);
+}
+
+function _stopMoveValidationLoop() {
+  if (_moveValTimer) { clearInterval(_moveValTimer); _moveValTimer = null; }
+  // Clear overlay
+  var layer = document.getElementById('layer-debug-grid');
+  if (layer) layer.querySelectorAll('.dbg-move-label').forEach(function(el) { el.remove(); });
+  var panel = document.getElementById('dbg-move-info');
+  if (panel) panel.remove();
+}
+
+function _renderMoveValidation() {
+  if (!window.__debugMoveValidation) return;
+
+  // Dynamically import to avoid circular dependency
+  import('../phases/move/v0.23/movement.js').then(function(mod) {
+    if (!mod.debugMoveValidation) return;
+    var store = mod;
+    // Get current unit from the store
+    import('../shared/state/store.js').then(function(storeModule) {
+      var uid = storeModule.currentUnit;
+      if (!uid) { _clearMoveOverlayLabels(); return; }
+
+      var result = mod.debugMoveValidation(uid);
+      if (!result || !result.models) { _clearMoveOverlayLabels(); return; }
+
+      // Render per-model labels on the SVG
+      var NS = 'http://www.w3.org/2000/svg';
+      var svg = document.getElementById('bf-svg');
+      if (!svg) return;
+
+      // Clear old labels
+      svg.querySelectorAll('.dbg-move-label').forEach(function(el) { el.remove(); });
+
+      result.models.forEach(function(m) {
+        var g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'dbg-move-label');
+
+        var hasIssues = m.issues.length > 0;
+        var text = hasIssues ? m.issues.join('\n') : '✓';
+        var color = hasIssues ? '#ff4020' : '#00ff88';
+
+        // Background rect
+        var bg = document.createElementNS(NS, 'rect');
+        bg.setAttribute('x', m.x - 30); bg.setAttribute('y', m.y + 14);
+        bg.setAttribute('width', '60'); bg.setAttribute('height', hasIssues ? String(12 + m.issues.length * 10) : '14');
+        bg.setAttribute('rx', '3');
+        bg.setAttribute('fill', 'rgba(0,0,0,0.85)');
+        bg.setAttribute('stroke', color);
+        bg.setAttribute('stroke-width', '0.5');
+        g.appendChild(bg);
+
+        // Text labels
+        if (hasIssues) {
+          m.issues.forEach(function(issue, idx) {
+            var t = document.createElementNS(NS, 'text');
+            t.setAttribute('x', m.x); t.setAttribute('y', m.y + 24 + idx * 10);
+            t.setAttribute('text-anchor', 'middle');
+            t.setAttribute('fill', color);
+            t.setAttribute('font-size', '7');
+            t.setAttribute('font-family', 'monospace');
+            t.setAttribute('pointer-events', 'none');
+            t.textContent = issue;
+            g.appendChild(t);
+          });
+        } else {
+          var t = document.createElementNS(NS, 'text');
+          t.setAttribute('x', m.x); t.setAttribute('y', m.y + 24);
+          t.setAttribute('text-anchor', 'middle');
+          t.setAttribute('fill', color);
+          t.setAttribute('font-size', '8');
+          t.setAttribute('font-family', 'monospace');
+          t.setAttribute('pointer-events', 'none');
+          t.textContent = '✓ OK';
+          g.appendChild(t);
+        }
+
+        svg.appendChild(g);
+      });
+
+      // Update info panel
+      _updateMoveInfoPanel(result);
+    });
+  });
+}
+
+function _clearMoveOverlayLabels() {
+  var svg = document.getElementById('bf-svg');
+  if (svg) svg.querySelectorAll('.dbg-move-label').forEach(function(el) { el.remove(); });
+  var panel = document.getElementById('dbg-move-info');
+  if (panel) panel.remove();
+}
+
+function _updateMoveInfoPanel(result) {
+  var existing = document.getElementById('dbg-move-info');
+  if (!existing) {
+    existing = document.createElement('div');
+    existing.id = 'dbg-move-info';
+    existing.style.cssText = 'position:fixed;bottom:52px;left:228px;z-index:900;background:rgba(16,20,26,0.95);border:1px solid rgba(138,170,255,0.3);border-radius:6px;padding:6px 10px;font:10px/1.4 monospace;color:#aac;max-width:350px;pointer-events:none;';
+    document.body.appendChild(existing);
+  }
+  var lines = [
+    'Mode: ' + (result.mode || 'none') + ' | Range: ' + result.rangeIn + '" | PathCost: ' + (result.usePathCost ? 'YES' : 'no'),
+    'Legal: ' + (result.legal ? '✓' : '✗') + (result.broken ? ' | COHESION BROKEN' : '')
+  ];
+  result.models.forEach(function(m) {
+    var status = m.issues.length ? '✗ ' + m.issues.join(', ') : '✓ OK';
+    lines.push(m.id + ': ' + m.straightDistIn + '" ' + status);
+  });
+  existing.innerHTML = lines.join('<br>');
 }
