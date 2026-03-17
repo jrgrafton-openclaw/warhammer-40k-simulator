@@ -50,6 +50,7 @@ export const UNITS = {
     wargear:[{id:'sgt-plasma',label:"Sergeant's bolt pistol → plasma pistol",
       adds:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],
     weapons:[
+      {type:'MELEE',name:'Close Combat Weapon',rng:'—',a:3,s:4,ap:0,d:1,kw:[]},
       {type:'RANGED',name:'Bolt Rifle',rng:'30"',a:2,s:4,ap:-1,d:1,kw:['RAPID FIRE 1']},
       {type:'RANGED',name:'Bolt Pistol',rng:'12"',a:1,s:4,ap:0,d:1,kw:['PISTOL']}
     ],
@@ -63,6 +64,7 @@ export const UNITS = {
     wargear:[{id:'sgt-plasma',label:"Sergeant's bolt pistol → plasma pistol",
       adds:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],
     weapons:[
+      {type:'MELEE',name:'Close Combat Weapon',rng:'—',a:3,s:4,ap:0,d:1,kw:[]},
       {type:'RANGED',name:'Plasma Incinerator (std)',rng:'30"',a:2,s:7,ap:-3,d:2,kw:['RAPID FIRE 1']},
       {type:'RANGED',name:'Plasma Incinerator (sup)',rng:'30"',a:2,s:8,ap:-3,d:3,kw:['RAPID FIRE 1','HAZARDOUS']}
     ],
