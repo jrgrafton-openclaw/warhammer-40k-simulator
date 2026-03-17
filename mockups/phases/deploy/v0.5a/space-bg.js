@@ -2,6 +2,7 @@
  * space-bg.js — Animated deep space background with rotating stars + nebula.
  * Inspired by GROK-style starfield: polar coordinates, slow cinematic rotation,
  * natural flicker/glow, rare shooting stars.
+ * Parallax: reads board pan (tx/ty) and offsets layers at different rates.
  * 
  * Canvas fills #battlefield behind everything else.
  */
@@ -15,6 +16,15 @@
   var shootingStars = [];
   var nebulae = [];
   var centerX, centerY, maxRadius;
+
+  function getBoardPan() {
+    var inner = document.getElementById('battlefield-inner');
+    if (!inner) return { tx: 0, ty: 0 };
+    var style = inner.style.transform || '';
+    var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
+    if (match) return { tx: parseFloat(match[1]), ty: parseFloat(match[2]) };
+    return { tx: 0, ty: 0 };
+  }
 
   function resize() {
     canvas.width = canvas.parentElement.clientWidth;
@@ -88,6 +98,8 @@
   function draw(now) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    var pan = getBoardPan();
+
     // Deep space gradient base
     var bg = ctx.createRadialGradient(centerX, centerY * 0.7, 0, centerX, centerY, maxRadius);
     bg.addColorStop(0, '#0c1420');
@@ -96,7 +108,7 @@
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Nebulae
+    // Nebulae (parallax 0.05 — slowest layer, furthest away)
     for (var n = 0; n < nebulae.length; n++) {
       var neb = nebulae[n];
       neb.x += neb.driftX;
@@ -107,20 +119,22 @@
       if (neb.y < -neb.radius) neb.y = canvas.height + neb.radius;
       if (neb.y > canvas.height + neb.radius) neb.y = -neb.radius;
 
-      var grad = ctx.createRadialGradient(neb.x, neb.y, 0, neb.x, neb.y, neb.radius);
+      var nebDrawX = neb.x + pan.tx * 0.05;
+      var nebDrawY = neb.y + pan.ty * 0.05;
+      var grad = ctx.createRadialGradient(nebDrawX, nebDrawY, 0, nebDrawX, nebDrawY, neb.radius);
       grad.addColorStop(0, 'rgba(' + neb.color.r + ',' + neb.color.g + ',' + neb.color.b + ',' + neb.alpha + ')');
       grad.addColorStop(1, 'rgba(' + neb.color.r + ',' + neb.color.g + ',' + neb.color.b + ',0)');
       ctx.fillStyle = grad;
-      ctx.fillRect(neb.x - neb.radius, neb.y - neb.radius, neb.radius * 2, neb.radius * 2);
+      ctx.fillRect(nebDrawX - neb.radius, nebDrawY - neb.radius, neb.radius * 2, neb.radius * 2);
     }
 
-    // Stars — polar coordinate rotation with flicker
+    // Stars — polar coordinate rotation with flicker (parallax 0.12)
     for (var i = 0; i < stars.length; i++) {
       var s = stars[i];
       s.angle += s.speed;
 
-      var x = centerX + s.radius * Math.cos(s.angle);
-      var y = centerY + s.radius * Math.sin(s.angle);
+      var x = centerX + s.radius * Math.cos(s.angle) + pan.tx * 0.12;
+      var y = centerY + s.radius * Math.sin(s.angle) + pan.ty * 0.12;
 
       // Skip if off-screen
       if (x < -2 || x > canvas.width + 2 || y < -2 || y > canvas.height + 2) continue;
@@ -143,7 +157,7 @@
       }
     }
 
-    // Shooting stars
+    // Shooting stars (parallax 0.12)
     spawnShootingStar();
     for (var j = shootingStars.length - 1; j >= 0; j--) {
       var ss = shootingStars[j];
@@ -157,23 +171,25 @@
       }
 
       // Trail gradient
-      var tailX = ss.x - ss.vx * ss.length * 0.5;
-      var tailY = ss.y - ss.vy * ss.length * 0.5;
-      var grad = ctx.createLinearGradient(ss.x, ss.y, tailX, tailY);
+      var ssx = ss.x + pan.tx * 0.12;
+      var ssy = ss.y + pan.ty * 0.12;
+      var tailX = ssx - ss.vx * ss.length * 0.5;
+      var tailY = ssy - ss.vy * ss.length * 0.5;
+      var grad = ctx.createLinearGradient(ssx, ssy, tailX, tailY);
       grad.addColorStop(0, 'rgba(200,220,255,' + (ss.life * 0.7) + ')');
       grad.addColorStop(1, 'rgba(200,220,255,0)');
 
       ctx.strokeStyle = grad;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(ss.x, ss.y);
+      ctx.moveTo(ssx, ssy);
       ctx.lineTo(tailX, tailY);
       ctx.stroke();
 
       // Bright head
       ctx.fillStyle = 'rgba(255,255,255,' + (ss.life * 0.8) + ')';
       ctx.beginPath();
-      ctx.arc(ss.x, ss.y, 1, 0, Math.PI * 2);
+      ctx.arc(ssx, ssy, 1, 0, Math.PI * 2);
       ctx.fill();
     }
 
