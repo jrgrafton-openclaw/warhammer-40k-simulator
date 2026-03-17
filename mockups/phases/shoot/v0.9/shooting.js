@@ -422,6 +422,14 @@ function closestTargetEdgePoint(attackerModel, targetUnit){
   return best || center(targetUnit);
 }
 
+// Compute the nearest base-edge point on a model toward a target point
+function modelEdgePointToward(model, tx, ty) {
+  const r = getModelRadius(model);
+  const dx = tx - model.x, dy = ty - model.y;
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: model.x + (dx / len) * r, y: model.y + (dy / len) * r };
+}
+
 function ensureOverlayPinLoop(){
   if (state.overlayRaf) return;
   const tick = () => {
@@ -450,42 +458,45 @@ function drawHoverLines(targetId){
     if (!modelLos || !modelLos.bestTarget) return;
 
     if (modelLos.canSee && modelLos.bestRay) {
-      // Edge-to-edge clear ray
+      // Edge-to-edge clear ray (from LoS calculation)
       const line = document.createElementNS(NS, 'line');
       line.setAttribute('x1', modelLos.bestRay.from.x); line.setAttribute('y1', modelLos.bestRay.from.y);
       line.setAttribute('x2', modelLos.bestRay.to.x); line.setAttribute('y2', modelLos.bestRay.to.y);
       line.setAttribute('class', 'target-line-clear');
       g.appendChild(line);
     } else if (modelLos.canSee) {
-      // Clear but no bestRay (no blockers case) — center to edge
+      // Clear but no bestRay (no blockers case) — edge to edge
       const tm = modelLos.bestTarget.model;
-      const edge = closestTargetEdgePoint(m, { models: [tm] });
+      const tEdge = closestTargetEdgePoint(m, { models: [tm] });
+      const aEdge = modelEdgePointToward(m, tEdge.x, tEdge.y);
       const line = document.createElementNS(NS, 'line');
-      line.setAttribute('x1', m.x); line.setAttribute('y1', m.y);
-      line.setAttribute('x2', edge.x); line.setAttribute('y2', edge.y);
+      line.setAttribute('x1', aEdge.x); line.setAttribute('y1', aEdge.y);
+      line.setAttribute('x2', tEdge.x); line.setAttribute('y2', tEdge.y);
       line.setAttribute('class', 'target-line-clear');
       g.appendChild(line);
     } else {
       // Blocked: blue to hit point, then red/dashed to target
       const tm = modelLos.bestTarget.model;
-      const edge = closestTargetEdgePoint(m, { models: [tm] });
+      const tEdge = closestTargetEdgePoint(m, { models: [tm] });
       const hp = modelLos.bestTarget.hitPoint;
       if (hp) {
+        const aEdge = modelEdgePointToward(m, hp.x, hp.y);
         const blueLine = document.createElementNS(NS, 'line');
-        blueLine.setAttribute('x1', m.x); blueLine.setAttribute('y1', m.y);
+        blueLine.setAttribute('x1', aEdge.x); blueLine.setAttribute('y1', aEdge.y);
         blueLine.setAttribute('x2', hp.x); blueLine.setAttribute('y2', hp.y);
         blueLine.setAttribute('class', 'target-line-clear');
         g.appendChild(blueLine);
 
         const redLine = document.createElementNS(NS, 'line');
         redLine.setAttribute('x1', hp.x); redLine.setAttribute('y1', hp.y);
-        redLine.setAttribute('x2', edge.x); redLine.setAttribute('y2', edge.y);
+        redLine.setAttribute('x2', tEdge.x); redLine.setAttribute('y2', tEdge.y);
         redLine.setAttribute('class', 'target-line-blocked');
         g.appendChild(redLine);
       } else {
+        const aEdge = modelEdgePointToward(m, tEdge.x, tEdge.y);
         const line = document.createElementNS(NS, 'line');
-        line.setAttribute('x1', m.x); line.setAttribute('y1', m.y);
-        line.setAttribute('x2', edge.x); line.setAttribute('y2', edge.y);
+        line.setAttribute('x1', aEdge.x); line.setAttribute('y1', aEdge.y);
+        line.setAttribute('x2', tEdge.x); line.setAttribute('y2', tEdge.y);
         line.setAttribute('class', 'target-line-blocked');
         g.appendChild(line);
       }
