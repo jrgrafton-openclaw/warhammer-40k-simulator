@@ -1,0 +1,473 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1a Options Menu — Compact Side Panel
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY options-menu-specific styles.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Gear button ── */
+.options-gear-btn {
+  position: absolute;
+  top: 36px;
+  right: 56px;
+  z-index: 50;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(15, 21, 32, 0.7);
+  color: var(--text-sec);
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  line-height: 1;
+}
+
+.options-gear-btn:hover {
+  color: var(--imp);
+  border-color: var(--imp);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.2), inset 0 0 8px rgba(0, 212, 255, 0.05);
+  transform: rotate(30deg);
+}
+
+.options-gear-btn:active {
+  transform: rotate(30deg) scale(0.95);
+}
+
+/* ── Backdrop ── */
+.options-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: auto;
+}
+
+.options-backdrop.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.options-backdrop.visible {
+  opacity: 1;
+}
+
+/* ── Panel ── */
+.options-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 380px;
+  background: rgba(15, 21, 32, 0.96);
+  border-left: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  z-index: 101;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.options-panel.open {
+  transform: translateX(0);
+}
+
+/* Thin dark scrollbar */
+.options-panel::-webkit-scrollbar {
+  width: 4px;
+}
+.options-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+.options-panel::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+.options-panel::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── Panel header ── */
+.options-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.options-title {
+  font: 400 28px/1 'Anton', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--imp);
+}
+
+.options-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-sec);
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+
+.options-close-btn:hover {
+  border-color: var(--ork);
+  color: var(--ork);
+  background: rgba(255, 64, 32, 0.08);
+}
+
+/* ── Panel body (scrollable content) ── */
+.options-body {
+  padding: 8px 28px 32px;
+  flex: 1;
+}
+
+/* ── Section ── */
+.opt-section {
+  margin-top: 24px;
+}
+
+.opt-section:first-child {
+  margin-top: 16px;
+}
+
+.opt-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.opt-section-title {
+  font: 400 14px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.opt-section-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── Slider control ── */
+.opt-slider-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.opt-slider-label {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  flex-shrink: 0;
+  min-width: 110px;
+}
+
+.opt-slider-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+}
+
+.opt-slider-value {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--imp);
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Range slider styling */
+input[type="range"].opt-range {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+}
+
+input[type="range"].opt-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--imp);
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+input[type="range"].opt-range::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+  transform: scale(1.15);
+}
+
+input[type="range"].opt-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--imp);
+  border: 2px solid var(--bg-primary);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+  cursor: pointer;
+}
+
+input[type="range"].opt-range::-moz-range-track {
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  border: none;
+}
+
+/* ── Toggle switch ── */
+.opt-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.opt-toggle-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.opt-toggle-label {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+}
+
+.opt-toggle-desc {
+  font: 400 10px/1.4 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  margin-top: 3px;
+  letter-spacing: 0.3px;
+}
+
+.opt-toggle {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  flex-shrink: 0;
+  margin-left: 12px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.opt-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.opt-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 11px;
+  background: var(--border);
+  transition: background 0.25s ease;
+}
+
+.opt-toggle input:checked + .opt-toggle-track {
+  background: var(--imp);
+}
+
+.opt-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-primary);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.opt-toggle input:checked ~ .opt-toggle-thumb {
+  transform: translateX(16px);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+}
+
+/* ── 3-button toggle group ── */
+.opt-btn-group {
+  display: flex;
+  gap: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.opt-btn-group-item {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-right: 1px solid var(--border);
+  pointer-events: auto;
+}
+
+.opt-btn-group-item:last-child {
+  border-right: none;
+}
+
+.opt-btn-group-item:hover {
+  color: var(--text-sec);
+  background: rgba(0, 212, 255, 0.04);
+}
+
+.opt-btn-group-item.active {
+  background: rgba(0, 212, 255, 0.12);
+  color: var(--imp);
+  box-shadow: inset 0 -2px 0 var(--imp);
+}
+
+/* ── Action buttons ── */
+.opt-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.opt-action-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 14px 20px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: auto;
+  position: relative;
+}
+
+.opt-action-btn.secondary {
+  border-color: var(--text-muted);
+  color: var(--text-sec);
+}
+
+.opt-action-btn.secondary:hover {
+  border-color: var(--imp);
+  color: var(--text-primary);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.opt-action-btn.danger {
+  border-color: rgba(255, 64, 32, 0.4);
+  color: var(--ork);
+}
+
+.opt-action-btn.danger:hover {
+  border-color: var(--ork);
+  background: rgba(255, 64, 32, 0.08);
+  box-shadow: 0 0 12px rgba(255, 64, 32, 0.15);
+}
+
+.opt-action-btn .btn-icon {
+  font-size: 14px;
+}
+
+/* Confirm tooltip */
+.opt-action-btn .confirm-tooltip {
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%) scale(0.9);
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: var(--bg-raised);
+  border: 1px solid var(--gold);
+  padding: 5px 12px;
+  border-radius: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.opt-action-btn .confirm-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 5px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  background: var(--gold);
+}
+
+.opt-action-btn:hover .confirm-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+
+/* ── Backlink ── */
+.options-backlink {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 102;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.options-backlink:hover {
+  color: var(--imp);
+}
