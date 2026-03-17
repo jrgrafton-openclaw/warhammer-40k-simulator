@@ -214,10 +214,12 @@ export function transitionTo(toPhase, opts) {
   if (toScene.init) toScene.init();
 
   // ── 7. Wire CTA to next phase ──
-  var btnEnd = document.getElementById('btn-end');
-  if (btnEnd && config.nextPhase) {
-    btnEnd.addEventListener('click', function onEndPhase() {
-      btnEnd.removeEventListener('click', onEndPhase);
+  // Re-find the CTA button by its (possibly renamed) ID
+  var ctaId = (config.cta && config.cta.id) || 'btn-end';
+  var btnEndWire = document.getElementById(ctaId);
+  if (btnEndWire && config.nextPhase) {
+    btnEndWire.addEventListener('click', function onEndPhase() {
+      btnEndWire.removeEventListener('click', onEndPhase);
       transitionTo(config.nextPhase);
     }, { once: true });
   }

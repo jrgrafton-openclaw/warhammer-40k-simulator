@@ -218,9 +218,17 @@ function isCurrentMoveLegal(uid) {
     if (!ts) return false;
     if (usePathCost) {
       // Non-breachable: use pathfinding cost (distance around walls)
-      var pathCost = getModelPathCost(m.id);
-      if (pathCost > rangePx + 0.5) return false;
-      if (_modelPathCache[m.id] === null) return false; // no valid path (inside obstacle)
+      var pathEntry = _modelPathCache[m.id];
+      if (pathEntry === null) {
+        // Pathfinding returned null (grid cell blocked). If model isn't actually
+        // on terrain (grid resolution false positive), fall back to straight-line.
+        if (modelCollidesTerrain(m)) return false;
+        // Model is clear of terrain — use straight-line distance as fallback
+        if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
+      } else {
+        var pathCost = pathEntry ? pathEntry.cost : 0;
+        if (pathCost > rangePx + 0.5) return false;
+      }
     } else {
       // Breachable (Infantry): straight-line distance
       if (Math.hypot(m.x - ts.x, m.y - ts.y) > rangePx + 0.5) return false;
