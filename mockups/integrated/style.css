@@ -51,169 +51,66 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BATTLE FORGE SCREEN (integrated simplified version)
+   BATTLE FORGE SCREEN — overrides for screen-router context
+   Base v0.7a styles imported from ../battle-forge/v0.7a/style.css
 ══════════════════════════════════════════════════════════════ */
-.forge-container {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  gap: 24px;
-}
 
-.forge-header {
-  text-align: center;
+/* The v0.7a .battlefield uses position:fixed which works inside the
+   screen-router since #screen-forge itself is position:fixed.
+   Use a scoped class to avoid conflicting with the game battlefield. */
+#screen-forge .forge-battlefield {
+  position: absolute; inset: 0; z-index: 0;
+  transition: filter 1.5s ease;
+  filter: brightness(0.5);
+  opacity: 0; animation: fade-in 0.5s ease-out 0s both;
 }
-.forge-title {
-  font: 700 32px/1 'Anton', sans-serif;
-  color: var(--text-primary);
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  text-shadow: 0 0 20px rgba(0,212,255,0.25);
-}
-.forge-subtitle {
-  font: 500 10px/1 'Rajdhani', sans-serif;
-  color: var(--text-muted);
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  margin-top: 6px;
-}
+#screen-forge .forge-battlefield.bf-active { filter: brightness(0.75); }
+#screen-forge .forge-battlefield.bf-full   { filter: brightness(1); }
 
-.forge-cards {
-  display: flex;
-  align-items: center;
-  gap: 24px;
+#screen-forge .forge-bf-inner {
+  position: absolute; inset: 0;
 }
-
-.forge-card {
-  width: 240px;
-  padding: 24px 20px 18px;
-  background: rgba(10,16,22,0.88);
-  border: 1px solid var(--border);
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.25s;
-}
-.forge-card:hover {
-  border-color: var(--text-muted);
-  transform: translateY(-2px);
-}
-.forge-card-selected {
-  border-color: rgba(0,212,255,0.3);
-  background: rgba(0,212,255,0.04);
-}
-.forge-card-tag {
-  font: 600 9px/1 'Rajdhani', sans-serif;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.forge-card-tag.imp { color: var(--imp-dim); }
-.forge-card-tag.ork { color: var(--ork-dim); }
-.forge-card-icon {
-  font-size: 36px;
-  line-height: 1;
-  margin-bottom: 8px;
-}
-.forge-card-name {
-  font: 700 16px/1.2 'Rajdhani', sans-serif;
-  color: var(--text-primary);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.forge-card-sub {
-  font: 500 11px/1 'Rajdhani', sans-serif;
-  color: var(--text-sec);
-  margin-top: 3px;
-}
-.forge-card-pts {
-  font: 600 12px/1 'Rajdhani', sans-serif;
-  color: var(--gold);
-  margin-top: 8px;
-  letter-spacing: 1px;
-}
-
-.forge-vs {
-  font: 700 14px/1 'Anton', sans-serif;
-  color: var(--imp);
-  letter-spacing: 3px;
-  text-shadow: 0 0 12px rgba(0,212,255,0.3);
-}
-
-.forge-settings {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 20px;
-  background: rgba(10,16,22,0.88);
-  border: 1px solid var(--border);
-}
-.forge-setting {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.forge-setting-label {
-  font: 600 11px/1 'Rajdhani', sans-serif;
-  color: var(--text-sec);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
-.forge-setting-value {
-  font: 600 13px/1 'Rajdhani', sans-serif;
-  color: var(--text-primary);
-}
-.forge-setting-divider {
-  width: 1px;
-  height: 28px;
-  background: var(--border);
-}
-
-.forge-begin-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 528px;
-  max-width: 90vw;
-  height: 48px;
-  font: 600 13px/1 'Rajdhani', sans-serif;
-  letter-spacing: 4px;
-  text-transform: uppercase;
-  border: 1px solid var(--imp);
-  color: var(--bg-primary);
-  background: var(--imp);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.forge-begin-btn:hover:not(.disabled) {
-  background: #18eaff;
-  box-shadow: 0 0 30px rgba(0,212,255,0.4);
-}
-.forge-begin-btn.disabled {
-  opacity: 0.3;
+#screen-forge .forge-bf-inner::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0px, transparent 11px, rgba(201,163,82,.025) 11px, rgba(201,163,82,.025) 12px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 11px, rgba(201,163,82,.025) 11px, rgba(201,163,82,.025) 12px),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 59px, rgba(201,163,82,.055) 59px, rgba(201,163,82,.055) 60px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 59px, rgba(201,163,82,.055) 59px, rgba(201,163,82,.055) 60px);
   pointer-events: none;
-  cursor: not-allowed;
 }
-@keyframes power-surge {
-  0% { box-shadow: 0 0 0 rgba(0,212,255,0); }
-  50% { box-shadow: 0 0 60px rgba(0,212,255,0.6), inset 0 0 20px rgba(255,255,255,0.2); }
-  100% { box-shadow: 0 0 0 rgba(0,212,255,0); }
+#screen-forge .forge-bf-svg {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;
 }
-.forge-begin-btn.btn-surge { animation: power-surge 0.5s ease-out; }
 
-.forge-back {
-  font: 500 11px/1 'Rajdhani', sans-serif;
-  color: var(--text-sec);
-  letter-spacing: 1px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  transition: color 0.2s;
+/* Forge battlefield ambient glow */
+#screen-forge .forge-battlefield::after {
+  content: ''; position: absolute; inset: 0; z-index: 6;
+  background: radial-gradient(circle at 50% 45%, rgba(0,212,255,0.03) 0%, transparent 60%);
+  animation: glow-pulse 6s ease-in-out infinite alternate;
+  pointer-events: none;
 }
-.forge-back:hover { color: var(--imp); }
+
+/* Navigation chrome */
+#screen-forge .forge-nav-back,
+#screen-forge .forge-nav-mockups {
+  position: fixed; z-index: 50;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); text-decoration: none;
+  letter-spacing: 1px; transition: color 0.2s;
+  opacity: 0; animation: fade-in 0.4s ease-out 0.8s both;
+  background: none; border: none; cursor: pointer;
+}
+#screen-forge .forge-nav-back:hover,
+#screen-forge .forge-nav-mockups:hover { color: var(--imp); }
+#screen-forge .forge-nav-back    { top: 14px; left: 16px; }
+#screen-forge .forge-nav-mockups { top: 14px; right: 16px; }
+#screen-forge .forge-version-badge {
+  position: fixed; bottom: 12px; left: 16px; z-index: 50;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 1px;
+  opacity: 0; animation: fade-in 0.4s ease-out 0.8s both;
+}
 
 /* ── App layout: standard 2-column (roster | battlefield) ── */
 #app {
