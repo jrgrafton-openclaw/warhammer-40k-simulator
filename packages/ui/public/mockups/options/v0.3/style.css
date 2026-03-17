@@ -4,30 +4,29 @@
    OPTIONS sub-item opens settings.
 ══════════════════════════════════════════════════════════════ */
 
-/* ── Menu button — standalone, top-right of battlefield ── */
-.menu-btn {
+/* ── Menu button — inside VP bar, far right ── */
+.vp-menu-btn {
   position: absolute;
-  top: 40px; /* below VP bar (32px + 8px gap) */
-  right: 10px;
-  z-index: 50;
-  width: 38px;
-  height: 38px;
-  border: 1px solid var(--border);
-  background: rgba(8, 12, 16, 0.85);
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 24px;
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  background: rgba(8, 12, 16, 0.6);
   color: var(--text-sec);
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s;
-  backdrop-filter: blur(6px);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
   padding: 0;
 }
-.menu-btn:hover {
+.vp-menu-btn:hover {
   color: var(--imp);
   border-color: var(--imp);
-  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+  background: rgba(0, 212, 255, 0.06);
 }
 
 
