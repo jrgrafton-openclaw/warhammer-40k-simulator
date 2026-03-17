@@ -883,6 +883,11 @@ export function cleanupMovement() {
   clearRangeRings();
   activeRangeTypes.clear();
 
+  // Clear moved-unit tracking so Shoot phase doesn't show grey units
+  moveState.unitsMoved.clear();
+  moveState.unitsAdvanced = {};
+  if (window.__movedUnitIds) window.__movedUnitIds.clear();
+
   // Clear debug grid/paths
   var debugGrid = document.getElementById('layer-debug-grid');
   if (debugGrid) debugGrid.innerHTML = '';

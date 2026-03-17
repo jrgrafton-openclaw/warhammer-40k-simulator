@@ -102,9 +102,10 @@ function pointInPolygon(px, py, poly) {
 
 // ── Ray-polygon intersection for tall ruin LoS blocking ──
 // Tests a line segment (in SVG space) against all tall ruin footprint blockers.
-// Per 40K rules: a ruin does NOT block LoS if the attacker or target is inside it.
+// Per 40K rules: a ruin does NOT block LoS if the attacker or target MODEL is inside it.
+// aCx/aCy/tCx/tCy = model centers (for inside-ruin exemption check).
 // Returns { blocked: bool, hitPoint: {x,y}|null, t: number (0-1, parametric along ray) }
-function rayIntersectsTallRuins(x1, y1, x2, y2, blockers) {
+function rayIntersectsTallRuins(x1, y1, x2, y2, blockers, aCx, aCy, tCx, tCy) {
   let bestT = Infinity;
   let bestHitLocal = null;
   let bestBlocker = null;
@@ -117,8 +118,20 @@ function rayIntersectsTallRuins(x1, y1, x2, y2, blockers) {
     const lx2 = b.iA * x2 + b.iC * y2 + b.iE;
     const ly2 = b.iB * x2 + b.iD * y2 + b.iF;
 
-    // Skip this ruin if attacker or target is INSIDE its footprint
-    if (pointInPolygon(lx1, ly1, b.polygon) || pointInPolygon(lx2, ly2, b.polygon)) continue;
+    // Skip this ruin if either MODEL CENTER is inside its footprint
+    // (40K rule: ruin doesn't block LoS for units inside it)
+    // Use model centers, NOT ray edge points — an edge point can land inside
+    // a nearby ruin even when the model isn't actually in it.
+    if (aCx !== undefined && aCy !== undefined && tCx !== undefined && tCy !== undefined) {
+      const acLocal_x = b.iA * aCx + b.iC * aCy + b.iE;
+      const acLocal_y = b.iB * aCx + b.iD * aCy + b.iF;
+      const tcLocal_x = b.iA * tCx + b.iC * tCy + b.iE;
+      const tcLocal_y = b.iB * tCx + b.iD * tCy + b.iF;
+      if (pointInPolygon(acLocal_x, acLocal_y, b.polygon) || pointInPolygon(tcLocal_x, tcLocal_y, b.polygon)) continue;
+    } else {
+      // Fallback: use ray endpoints (legacy behavior for any callers without centers)
+      if (pointInPolygon(lx1, ly1, b.polygon) || pointInPolygon(lx2, ly2, b.polygon)) continue;
+    }
 
     const poly = b.polygon;
     const n = poly.length;
@@ -174,11 +187,15 @@ function canModelSeeModel(attackerModel, targetModel, blockers) {
   const tPts = modelEdgePoints(targetModel);
   let bestClearRay = null;
 
+  // Pass model centers for the inside-ruin exemption check
+  const aCx = attackerModel.x, aCy = attackerModel.y;
+  const tCx = targetModel.x, tCy = targetModel.y;
+
   for (let ai = 0; ai < aPts.length; ai++) {
     const ap = aPts[ai];
     for (let ti = 0; ti < tPts.length; ti++) {
       const tp = tPts[ti];
-      const result = rayIntersectsTallRuins(ap.x, ap.y, tp.x, tp.y, blockers);
+      const result = rayIntersectsTallRuins(ap.x, ap.y, tp.x, tp.y, blockers, aCx, aCy, tCx, tCy);
       if (!result.blocked) {
         const dist = Math.hypot(ap.x - tp.x, ap.y - tp.y);
         if (!bestClearRay || dist < bestClearRay.dist) {
@@ -233,7 +250,7 @@ function losState(attackerId, targetId) {
           bestVisibleRay = edgeResult.bestRay;
         }
       } else {
-        const ccResult = rayIntersectsTallRuins(am.x, am.y, tm.x, tm.y, blockers);
+        const ccResult = rayIntersectsTallRuins(am.x, am.y, tm.x, tm.y, blockers, am.x, am.y, tm.x, tm.y);
         const dist = Math.hypot(am.x - tm.x, am.y - tm.y);
         if (!bestBlockedTarget || dist < bestBlockedTarget.dist) {
           bestBlockedTarget = { model: tm, dist, hitPoint: ccResult.hitPoint };
