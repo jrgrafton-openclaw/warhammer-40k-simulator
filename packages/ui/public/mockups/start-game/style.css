@@ -442,7 +442,15 @@
 .btn-icon {
   font-size: 14px;
   line-height: 1;
+  display: flex;
+  align-items: center;
 }
+.btn-icon svg { color: var(--text-muted); transition: color 0.2s; }
+.btn-icon .icon-fill { fill: none; transition: fill 0.15s, opacity 0.15s; }
+.menu-btn:hover .btn-icon svg { color: var(--text-primary); }
+.menu-btn:hover .btn-icon .icon-fill { fill: currentColor; opacity: 0.25; }
+.menu-btn.primary .btn-icon svg { color: var(--bg-primary); }
+.menu-btn.primary:hover .btn-icon .icon-fill { fill: currentColor; opacity: 0.3; }
 
 /* ═══════════════════════════════════════════════════════════
    UI CHROME — version, backlink, mute

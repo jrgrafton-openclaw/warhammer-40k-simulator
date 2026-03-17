@@ -1265,7 +1265,17 @@ window.selectUnit = wrappedSelectUnit;
 
 // ── Init ───────────────────────────────────────────────
 export function initFight() {
-  $('#btn-end-fight')?.addEventListener('click', () => setStatus('END FIGHT NOT WIRED IN MOCKUP'));
+  // END FIGHT button: show completion state (actual transition wired by scene-registry in integrated mode)
+  $('#btn-end-fight')?.addEventListener('click', function() {
+    var btn = $('#btn-end-fight');
+    if (btn) {
+      btn.textContent = '✓ FIGHT COMPLETE';
+      btn.disabled = true;
+      btn.style.background = 'var(--success-dim, rgba(0,200,80,0.15))';
+      btn.style.borderColor = 'var(--success, rgba(0,200,80,0.4))';
+      btn.style.color = 'var(--success, #00c850)';
+    }
+  });
   $('#card-close')?.addEventListener('click', () => wrappedSelectUnit(null));
   $('#btn-confirm-fight')?.addEventListener('click', confirmDrag);
   $('#btn-cancel-fight')?.addEventListener('click', cancelDrag);
