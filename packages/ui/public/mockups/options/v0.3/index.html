@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.3 · Pause Menu + Options</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../shared/tokens/typography.css">
+  <link rel="stylesheet" href="../../shared/components/roster.css">
+  <link rel="stylesheet" href="../../shared/components/unit-card.css">
+  <link rel="stylesheet" href="../../shared/components/action-bar.css">
+  <link rel="stylesheet" href="../../shared/components/vp-bar.css">
+  <link rel="stylesheet" href="../../shared/components/overlays.css">
+  <link rel="stylesheet" href="../../shared/components/stratagem-modal.css">
+  <link rel="stylesheet" href="../../shared/components/fx.css">
+  <link rel="stylesheet" href="../../shared/components/battlefield.css">
+  <link rel="stylesheet" href="../../shared/components/phase-states.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <aside id="roster">
+    <div class="roster-header">
+      <span class="roster-title">ARMY ROSTER</span>
+      <button class="roster-collapse-btn" id="roster-btn">◄</button>
+    </div>
+    <div class="roster-scroll">
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band imp"></div><span class="faction-label imp">IMPERIUM</span><span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit" data-unit="assault-intercessors"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Assault Intercessors</span><span class="rc">5</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="primaris-lieutenant"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Primaris Lieutenant</span><span class="rc">1</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="intercessor-squad-a"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Intercessor Squad A</span><span class="rc">5</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="hellblasters"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Hellblasters</span><span class="rc">5</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="redemptor-dreadnought"><div class="ri pl" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Redemptor Dreadnought</span><span class="rc">1</span><span class="roster-state-pill">FOUGHT</span></div>
+        </div>
+      </div>
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band ork"></div><span class="faction-label ork">ORKS</span><span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit" data-unit="boss-nob"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boss Nob</span><span class="rc">1</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="nobz-mob"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Nobz Mob</span><span class="rc">3</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="mekboy"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Mekboy</span><span class="rc">1</span><span class="roster-state-pill">FOUGHT</span></div>
+          <div class="rail-unit" data-unit="gretchin"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Gretchin</span><span class="rc">3</span><span class="roster-state-pill">FOUGHT</span></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main id="battlefield">
+    <div id="vp-bar">
+      <div class="vp-cp">CP <span id="cp-val">0</span></div>
+      <div class="vp-faction"><span class="vp-name-imp">IMPERIUM</span><span class="vp-score imp">45</span></div>
+      <span class="vp-vs">VS</span>
+      <div class="vp-faction"><span class="vp-score ork">32</span><span class="vp-name-ork">ORKS</span></div>
+    </div>
+
+    <!-- ═══ Menu button — standalone, top-right ═══ -->
+    <button id="menu-btn" class="menu-btn" title="Menu [ESC]">
+      <svg viewBox="0 0 20 20" fill="none" width="20" height="20">
+        <line x1="3" y1="5" x2="17" y2="5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <line x1="3" y1="15" x2="17" y2="15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div id="phase-header">
+      <div class="phase-pill">
+        <div class="phase-title">GAME OVER</div>
+        <div class="phase-subtitle">Final Results · Victory Points · v0.3</div>
+      </div>
+    </div>
+
+    <div class="vshoot-badge">v0.3 · PAUSE MENU</div>
+
+    <div id="battlefield-inner">
+      <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+        <line x1="360" y1="0" x2="360" y2="528" stroke="rgba(201,163,82,.05)" stroke-width="1" stroke-dasharray="8,8" pointer-events="none"/>
+        <line x1="0" y1="264" x2="720" y2="264" stroke="rgba(201,163,82,.03)" stroke-width="1" stroke-dasharray="4,12" pointer-events="none"/>
+        <g id="terrain-layer"></g>
+      </svg>
+
+      <div class="obj-area-ring" style="left:50%;top:13.64%;"></div>
+      <div class="obj-area-ring" style="left:16.67%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:83.33%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:86.36%;"></div>
+      <div class="obj-hex-wrap neutral" style="left:50%;top:13.64%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">01</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" style="left:16.67%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">02</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap controlled" style="left:50%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">03</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" style="left:83.33%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">04</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" style="left:50%;top:86.36%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">05</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+
+      <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+        <g id="layer-move-zones"></g>
+        <g id="layer-move-ghosts"></g>
+        <g id="layer-target-lines"></g>
+        <g id="layer-range-rings"></g>
+        <g id="layer-hulls"></g>
+        <g id="layer-models"></g>
+        <g id="layer-move-rulers"></g>
+      </svg>
+      <div id="fx-layer" aria-hidden="true">
+        <div id="proj-container" class="proj-container"></div>
+        <div id="hit-flash-layer" class="hit-flash-layer"></div>
+      </div>
+    </div>
+
+    <div id="weapon-popup" class="overlay-panel hidden"></div>
+    <div id="roll-overlay" class="overlay-panel hidden"></div>
+
+    <div id="range-move" class="range-circle rc-move" style="display:none"></div>
+    <div id="range-advance" class="range-circle rc-advance" style="display:none"></div>
+    <div id="range-charge" class="range-circle rc-charge" style="display:none"></div>
+    <div id="range-move-label" class="range-label rl-move" style="display:none">MOVE</div>
+    <div id="range-advance-label" class="range-label rl-advance" style="display:none">ADV</div>
+    <div id="range-charge-label" class="range-label rl-charge" style="display:none">CHARGE</div>
+
+    <div id="unit-card" class="visible">
+      <div class="card-hdr">
+        <div style="min-width:0;flex:1;">
+          <div class="card-title-row">
+            <div class="card-name" id="card-name">ASSAULT INTERCESSORS</div>
+            <div class="unit-state-badge" id="unit-state-badge">FOUGHT</div>
+          </div>
+          <div class="card-faction" id="card-faction">✠ SPACE MARINES · ADEPTUS ASTARTES</div>
+        </div>
+        <button class="card-close" id="card-close">×</button>
+      </div>
+      <div class="card-stats" id="card-stats"></div>
+      <div class="card-ranges" id="card-ranges"></div>
+      <div id="card-wargear"></div>
+      <div class="card-weapons" id="card-weapons"></div>
+      <div class="card-abilities" id="card-abilities"></div>
+    </div>
+
+    <div id="action-bar">
+      <div class="phase-row">
+        <div class="ph-item done"><span class="ph-dot"></span>CMD</div>
+        <span class="ph-sep">·</span>
+        <div class="ph-item done"><span class="ph-dot"></span>MOVE</div>
+        <span class="ph-sep">·</span>
+        <div class="ph-item done"><span class="ph-dot"></span>SHOOT</div>
+        <span class="ph-sep">·</span>
+        <div class="ph-item done"><span class="ph-dot"></span>CHARGE</div>
+        <span class="ph-sep">·</span>
+        <div class="ph-item done"><span class="ph-dot"></span>FIGHT</div>
+      </div>
+
+      <div class="ab-sep"></div>
+      <span id="move-mode-label"></span>
+      <div class="ab-sep"></div>
+
+      <button class="action-btn confirm-move" id="btn-confirm-fight" disabled>✓ CONFIRM</button>
+      <button class="action-btn cancel-move"  id="btn-cancel-fight"  disabled>✕ CANCEL</button>
+
+      <div class="ab-sep"></div>
+
+      <div class="phase-end-cluster">
+        <button class="btn-strat" id="btn-strat" data-shortcut="S" disabled>USE STRATAGEM</button>
+        <div class="phase-end-divider" aria-hidden="true"></div>
+        <button class="btn-cta" id="btn-end-fight">END GAME</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LAYER 1: PAUSE MENU — Civ/XCOM-style vertical action list
+═══════════════════════════════════════════════════════════ -->
+<div class="pause-backdrop" id="pause-backdrop"></div>
+
+<div class="pause-menu" id="pause-menu">
+  <div class="pause-title">GAME PAUSED</div>
+  <div class="pause-divider"></div>
+
+  <nav class="pause-actions">
+    <button class="pause-item" id="pm-resume">
+      <svg class="pause-icon" viewBox="0 0 24 24" fill="none">
+        <polygon points="6,4 20,12 6,20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="currentColor" opacity="0.15"/>
+      </svg>
+      <span class="pause-label">RESUME GAME</span>
+    </button>
+
+    <button class="pause-item" id="pm-save">
+      <svg class="pause-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M5 3h11l4 4v12a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z" stroke="currentColor" stroke-width="1.6"/>
+        <rect x="7" y="3" width="8" height="7" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+        <rect x="13" y="4.5" width="1.5" height="4" rx="0.5" fill="currentColor" opacity="0.5"/>
+        <rect x="7" y="14" width="10" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      <span class="pause-label">SAVE GAME</span>
+    </button>
+
+    <button class="pause-item" id="pm-load">
+      <svg class="pause-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M3 7v12a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-3H5a2 2 0 00-2 2z" stroke="currentColor" stroke-width="1.6"/>
+        <line x1="12" y1="11" x2="12" y2="18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <polyline points="9,14 12,11 15,14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="pause-label">LOAD GAME</span>
+    </button>
+
+    <div class="pause-sep"></div>
+
+    <button class="pause-item" id="pm-options">
+      <svg class="pause-icon" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <span class="pause-label">OPTIONS</span>
+    </button>
+
+    <div class="pause-sep"></div>
+
+    <button class="pause-item" id="pm-restart">
+      <svg class="pause-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M4 12a8 8 0 0114.5-4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 12a8 8 0 01-14.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <polyline points="14,3 19,7.5 14,7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <polyline points="10,21 5,16.5 10,16.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="pause-label">RESTART GAME</span>
+    </button>
+
+    <button class="pause-item pause-item--danger" id="pm-quit">
+      <svg class="pause-icon" viewBox="0 0 24 24" fill="none">
+        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <polyline points="16,17 21,12 16,7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="pause-label">QUIT GAME</span>
+    </button>
+  </nav>
+
+  <div class="pause-hint">ESC TO RESUME</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     LAYER 2: OPTIONS MODAL — Audio + Controls only
+═══════════════════════════════════════════════════════════ -->
+<div class="options-modal" id="options-modal">
+
+  <div class="options-header">
+    <button class="options-back" id="options-back">
+      <svg viewBox="0 0 16 16" fill="none" width="12" height="12">
+        <polyline points="10,2 4,8 10,14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      BACK
+    </button>
+    <div class="options-title">OPTIONS</div>
+    <div class="options-subtitle">SETTINGS &amp; PREFERENCES</div>
+  </div>
+
+  <div class="options-body">
+    <div class="options-columns">
+
+      <!-- ═══ LEFT — Audio ═══ -->
+      <div class="options-col">
+        <div class="opt-section">
+          <div class="opt-section-header">AUDIO</div>
+
+          <div class="opt-row">
+            <span class="opt-label">Master Volume</span>
+            <div class="opt-slider-wrap">
+              <input type="range" class="opt-slider" min="0" max="100" value="80" data-display="master-vol">
+              <span class="opt-slider-val" id="master-vol">80%</span>
+            </div>
+          </div>
+
+          <div class="opt-row">
+            <span class="opt-label">Music Volume</span>
+            <div class="opt-slider-wrap">
+              <input type="range" class="opt-slider" min="0" max="100" value="60" data-display="music-vol">
+              <span class="opt-slider-val" id="music-vol">60%</span>
+            </div>
+          </div>
+
+          <div class="opt-row">
+            <span class="opt-label">SFX Volume</span>
+            <div class="opt-slider-wrap">
+              <input type="range" class="opt-slider" min="0" max="100" value="75" data-display="sfx-vol">
+              <span class="opt-slider-val" id="sfx-vol">75%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="options-divider"></div>
+
+      <!-- ═══ RIGHT — Controls ═══ -->
+      <div class="options-col">
+        <div class="opt-section">
+          <div class="opt-section-header">CONTROLS</div>
+
+          <div class="opt-row">
+            <span class="opt-label">Camera Pan Speed</span>
+            <div class="opt-slider-wrap">
+              <input type="range" class="opt-slider" min="1" max="10" value="5" data-display="cam-pan">
+              <span class="opt-slider-val" id="cam-pan">5</span>
+            </div>
+          </div>
+
+          <div class="opt-row">
+            <span class="opt-label">Zoom Sensitivity</span>
+            <div class="opt-slider-wrap">
+              <input type="range" class="opt-slider" min="1" max="10" value="5" data-display="zoom-sens">
+              <span class="opt-slider-val" id="zoom-sens">5</span>
+            </div>
+          </div>
+
+          <div class="opt-row">
+            <span class="opt-label">Edge Scroll</span>
+            <label class="opt-toggle">
+              <input type="checkbox">
+              <span class="opt-toggle-track"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="options-actions">
+    <button class="opt-btn opt-btn--primary" id="btn-options-close">DONE</button>
+  </div>
+</div>
+
+<div id="global-tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script type="module" src="scene.js"></script>
+
+<script>
+(function() {
+  // ── Elements ──
+  var pauseBackdrop = document.getElementById('pause-backdrop');
+  var pauseMenu     = document.getElementById('pause-menu');
+  var optionsModal  = document.getElementById('options-modal');
+  var menuBtn       = document.getElementById('menu-btn');
+
+  var pmResume  = document.getElementById('pm-resume');
+  var pmSave    = document.getElementById('pm-save');
+  var pmLoad    = document.getElementById('pm-load');
+  var pmOptions = document.getElementById('pm-options');
+  var pmRestart = document.getElementById('pm-restart');
+  var pmQuit    = document.getElementById('pm-quit');
+
+  var optBack   = document.getElementById('options-back');
+  var optClose  = document.getElementById('btn-options-close');
+
+  // ── State ──
+  var layer = 'none'; // 'none' | 'pause' | 'options'
+
+  function showPause() {
+    layer = 'pause';
+    pauseBackdrop.classList.add('visible');
+    pauseMenu.classList.add('visible');
+    optionsModal.classList.remove('visible');
+  }
+
+  function showOptions() {
+    layer = 'options';
+    pauseMenu.classList.remove('visible');
+    optionsModal.classList.add('visible');
+    // backdrop stays visible
+  }
+
+  function hideAll() {
+    layer = 'none';
+    pauseBackdrop.classList.remove('visible');
+    pauseMenu.classList.remove('visible');
+    optionsModal.classList.remove('visible');
+  }
+
+  function backToPause() {
+    layer = 'pause';
+    optionsModal.classList.remove('visible');
+    pauseMenu.classList.add('visible');
+  }
+
+  // ── Menu button ──
+  menuBtn.addEventListener('click', function() {
+    if (layer === 'none') showPause();
+    else hideAll();
+  });
+
+  // ── ESC ──
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      e.stopImmediatePropagation();
+      if (layer === 'options') backToPause();
+      else if (layer === 'pause') hideAll();
+      else showPause();
+    }
+  });
+
+  // ── Backdrop click ──
+  pauseBackdrop.addEventListener('click', function() {
+    if (layer === 'options') backToPause();
+    else hideAll();
+  });
+
+  // ── Pause menu items ──
+  pmResume.addEventListener('click', hideAll);
+  pmOptions.addEventListener('click', showOptions);
+  pmRestart.addEventListener('click', function() { hideAll(); /* stub */ });
+  pmQuit.addEventListener('click', function() { hideAll(); /* stub */ });
+  pmSave.addEventListener('click', function() { /* stub — flash feedback */ });
+  pmLoad.addEventListener('click', function() { /* stub */ });
+
+  // ── Options back/close ──
+  optBack.addEventListener('click', backToPause);
+  optClose.addEventListener('click', backToPause);
+
+  // ── Wire up sliders (live-apply) ──
+  document.querySelectorAll('.opt-slider').forEach(function(slider) {
+    var displayId = slider.getAttribute('data-display');
+    var display   = document.getElementById(displayId);
+    if (!display) return;
+
+    slider.addEventListener('input', function() {
+      if (slider.max === '10') {
+        display.textContent = slider.value;
+      } else {
+        display.textContent = slider.value + '%';
+      }
+    });
+  });
+
+  // Auto-open pause menu for mockup preview
+  setTimeout(showPause, 400);
+})();
+</script>
+</body>
+</html>
