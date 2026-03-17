@@ -1309,3 +1309,59 @@ export function initFight() {
   setStatus('— SELECT UNIT —');
   paint();
 }
+
+// ── Cleanup (for integrated phase transition) ─────────
+export function cleanupFight() {
+  // Remove SVG event listeners by cloning
+  const svg = $('#bf-svg');
+  if (svg) {
+    const svgClone = svg.cloneNode(false);
+    while (svg.firstChild) svgClone.appendChild(svg.firstChild);
+    svg.parentNode.replaceChild(svgClone, svg);
+    svgClone.id = 'bf-svg';
+  }
+
+  // Remove drag interceptor
+  delete simState.drag;
+  simState.drag = null;
+
+  // Clear fight overlays and effects
+  clearFightOverlays();
+  clearFightRangeRings();
+  clearEffects();
+  clearModelHighlights();
+
+  // Clear hull classes
+  $$('#layer-hulls .unit-hull').forEach(h => {
+    h.classList.remove('shoot-valid', 'shoot-invalid', 'shoot-target', 'shoot-attacker', 'fight-engaged', 'fight-eligible');
+  });
+
+  // Clear roll overlay
+  const overlay = $('#roll-overlay');
+  if (overlay) { overlay.classList.add('hidden'); overlay.innerHTML = ''; }
+
+  // Remove fight-specific banners
+  const fightBanner = document.getElementById('fight-invalid-banner');
+  if (fightBanner) fightBanner.remove();
+
+  // Clear wound overlays
+  $$('.wound-ring-layer').forEach(el => el.remove());
+
+  // Reset state
+  state.attackerId = null;
+  state.targetId = null;
+  state.hoveredTargetId = null;
+  state.selectedProfileIx = 0;
+  state.foughtUnits.clear();
+  state.dragMode = null;
+  state.dragStarts = {};
+  state.phase = null;
+  state.killsThisAttack = 0;
+  if (state.overlayRaf) { cancelAnimationFrame(state.overlayRaf); state.overlayRaf = null; }
+
+  // Clear callbacks
+  callbacks.selectUnit = null;
+  callbacks.afterRender = null;
+  delete window.selectUnit;
+  delete window.__spentUnitIds;
+}

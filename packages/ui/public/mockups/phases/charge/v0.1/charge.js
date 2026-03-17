@@ -922,3 +922,52 @@ export function initCharge() {
   // Debug
   window.__chargeDebug = { state, getValidTargets, checkEngagementReached, isEligibleCharger };
 }
+
+// ── Cleanup (for integrated phase transition) ─────────
+export function cleanupCharge() {
+  // Remove SVG event listeners
+  const svg = $('#bf-svg');
+  if (svg) {
+    // Clone SVG to remove all anonymous listeners (charge adds several)
+    // This is safe because initModelInteraction re-binds its listeners
+    const svgListeners = svg.cloneNode(false);
+    while (svg.firstChild) svgListeners.appendChild(svg.firstChild);
+    svg.parentNode.replaceChild(svgListeners, svg);
+    svgListeners.id = 'bf-svg';
+  }
+
+  // Remove drag interceptor
+  delete simState.drag;
+  simState.drag = null;
+
+  // Clear charge overlays
+  clearChargeOverlays();
+  clearRangeRings();
+
+  // Clear hull classes
+  $$('#layer-hulls .unit-hull').forEach(h => {
+    h.classList.remove('shoot-valid', 'shoot-invalid', 'shoot-target', 'shoot-attacker', 'shoot-partial', 'charge-target');
+  });
+
+  // Clear roll overlay
+  const overlay = $('#roll-overlay');
+  if (overlay) { overlay.classList.add('hidden'); overlay.innerHTML = ''; }
+
+  // Reset state
+  state.phase = 'IDLE';
+  state.chargerId = null;
+  state.chargeTargetId = null;
+  state.hoveredTargetId = null;
+  state.chargeRoll = 0;
+  state.chargedUnits.clear();
+  state.failedUnits.clear();
+  state.turnStarts = {};
+  state.isDragging = false;
+  if (state.overlayRaf) { cancelAnimationFrame(state.overlayRaf); state.overlayRaf = null; }
+
+  // Clear callbacks
+  callbacks.selectUnit = null;
+  callbacks.afterRender = null;
+  delete window.selectUnit;
+  delete window.__chargeDebug;
+}

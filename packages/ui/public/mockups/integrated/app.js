@@ -1,6 +1,9 @@
 /**
- * app.js — Integrated prototype entry point (v0.2: Deploy → Move → Shoot).
- * Defines army, inits shared modules, handles phase transitions.
+ * app.js — Integrated prototype entry point (v0.3: Deploy → Move → Shoot → Charge → Fight).
+ *
+ * Architecture: Scene Registry + EventTarget bus.
+ * Each phase registers itself with a declarative config.
+ * transitionTo() handles ALL DOM updates — no per-phase functions here.
  */
 
 import { R32, R40, simState, callbacks } from '../shared/state/store.js';
@@ -12,10 +15,15 @@ import { selectUnit as baseSelectUnit, initBoard, initBattleControls,
          initModelInteraction, getRangeInches, renderModels, setCamera } from '../shared/world/svg-renderer.js';
 import '../shared/world/world-api.js';
 
-import { setTransitionCallback, nextPhase } from './phase-machine.js';
-import { initDeploy, cleanupDeploy } from './scenes/scene-deploy.js';
-import { initMove, cleanupMove } from './scenes/scene-move.js';
-import { initShoot } from './scenes/scene-shoot.js';
+// ── Import scene registrations (each file calls registerScene on import) ──
+import './scenes/scene-deploy.js';
+import './scenes/scene-move.js';
+import './scenes/scene-shoot.js';
+import './scenes/scene-charge.js';
+import './scenes/scene-fight.js';
+
+import { transitionTo } from './scene-registry.js';
+import { bus } from './game-bus.js';
 import { initDebug } from './debug.js';
 
 // ── Wire getRangeInches into the card builder ────────────
@@ -77,7 +85,6 @@ initBattleControls();
 initModelInteraction();
 
 // ── Set initial camera pan (show staging + deployment zone) ──
-var inner = document.getElementById('battlefield-inner');
 setCamera(350, 0, 0.5);
 
 // ── Build terrain collision AABBs ────────────────────────
@@ -98,250 +105,10 @@ window.toggleAA = function(header) {
   if (chev) chev.textContent = body.style.display === 'none' ? '▸' : '▾';
 };
 
-// ── Phase transition: Deploy → Move ──────────────────────
-function transitionToMove() {
-  // 1. Cleanup deploy phase
-  cleanupDeploy();
+// ── Start: Deploy phase (via registry) ───────────────────
+transitionTo('deploy', { skipCamera: true });
 
-  // 2. Update phase header
-  var title = document.querySelector('.phase-title');
-  var subtitle = document.querySelector('.phase-subtitle');
-  if (title) title.textContent = 'MOVEMENT PHASE';
-  if (subtitle) { subtitle.id = ''; subtitle.textContent = 'Imperium Active · Round 1'; }
-
-  // 3. Swap action bar inner content
-  var actionBar = document.getElementById('action-bar');
-  if (actionBar) {
-    // Find and remove deploy-status-label
-    var deployLabel = document.getElementById('deploy-status-label');
-    if (deployLabel) deployLabel.remove();
-
-    // Replace confirm/cancel with move-specific IDs
-    var oldConfirm = document.getElementById('btn-confirm-unit');
-    var oldCancel = document.getElementById('btn-cancel-unit');
-
-    // Insert mode group where deploy-status-label was (between seps[0] and seps[1])
-    var seps = actionBar.querySelectorAll('.ab-sep');
-    if (seps[0]) {
-      var modeGroup = document.createElement('div');
-      modeGroup.className = 'mode-group';
-      modeGroup.innerHTML =
-        '<button class="mode-btn" id="btn-move" data-shortcut="M">NORMAL MOVE</button>' +
-        '<button class="mode-btn" id="btn-advance" data-shortcut="A">ADVANCE</button>';
-      seps[0].after(modeGroup);
-
-      var modeLabel = document.createElement('span');
-      modeLabel.id = 'move-mode-label';
-      modeLabel.textContent = '— NO UNIT —';
-      modeGroup.after(modeLabel);
-    }
-
-    // Swap confirm/cancel button IDs
-    if (oldConfirm) { oldConfirm.id = 'btn-confirm-move'; oldConfirm.disabled = true; oldConfirm.textContent = '✓ CONFIRM'; }
-    if (oldCancel) { oldCancel.id = 'btn-cancel-move'; oldCancel.disabled = true; }
-
-    // Update CTA button
-    var btnEnd = document.getElementById('btn-end');
-    if (btnEnd) {
-      btnEnd.textContent = 'END MOVEMENT →';
-      btnEnd.disabled = false;
-      btnEnd.style.background = '';
-      btnEnd.style.borderColor = '';
-      btnEnd.style.color = '';
-    }
-  }
-
-  // 4. Update phase dots (MOVE gets .active)
-  var phItems = document.querySelectorAll('.ph-item');
-  phItems.forEach(function(item) {
-    item.classList.remove('active', 'done');
-    if (item.textContent.trim().includes('MOVE')) item.classList.add('active');
-  });
-
-  // 5. Add .phase-move class to body → hides deployment zone SVGs via CSS
-  document.body.classList.add('phase-move');
-
-  // 6. Clear roster deploy-state pills
-  document.querySelectorAll('.roster-state-pill.deploy-state').forEach(function(pill) {
-    pill.classList.remove('deploy-state', 'deployed', 'in-reserves');
-    pill.textContent = '';
-  });
-
-  // 7. Hide deploy badge, show wall-collision banner container
-  var deployBadge = document.querySelector('.deploy-badge');
-  if (deployBadge) deployBadge.style.display = 'none';
-
-  // 8. Animate camera to center the board
-  if (inner) {
-    inner.style.transition = 'transform 0.6s ease';
-    setCamera(0, 0, 0.5);
-    setTimeout(function() { inner.style.transition = ''; }, 700);
-  }
-
-  // 9. Animate phase header
-  var pill = document.querySelector('.phase-pill');
-  if (pill) {
-    pill.classList.add('phase-transition');
-    setTimeout(function() { pill.classList.remove('phase-transition'); }, 600);
-  }
-
-  // 10. Re-wire roster clicks (cleanupDeployment clones .rail-unit, removing shared handlers)
-  document.querySelectorAll('.rail-unit').forEach(function(r) {
-    r.addEventListener('click', function() {
-      var fn = callbacks.selectUnit || baseSelectUnit;
-      fn(r.dataset.unit);
-    });
-  });
-
-  // 11. Deselect any unit (last deployed unit stays selected otherwise)
-  baseSelectUnit(null);
-  var unitCard = document.getElementById('unit-card');
-  if (unitCard) unitCard.classList.remove('visible');
-
-  // 12. Init movement phase (installs its own drag interceptor + listeners)
-  initMove();
-
-  // 13. Wire END MOVEMENT to trigger Shoot phase
-  var btnEnd = document.getElementById('btn-end');
-  if (btnEnd) {
-    btnEnd.addEventListener('click', function onEndMove() {
-      btnEnd.removeEventListener('click', onEndMove);
-      nextPhase();
-    }, { once: true });
-  }
-}
-
-// ── Phase transition: Move → Shoot ──────────────────────
-function transitionToShoot() {
-  // 1. Cleanup move phase
-  cleanupMove();
-
-  // 2. Update phase header
-  var title = document.querySelector('.phase-title');
-  var subtitle = document.querySelector('.phase-subtitle');
-  if (title) title.textContent = 'SHOOTING PHASE';
-  if (subtitle) subtitle.textContent = 'Imperium Active · Round 1';
-
-  // 3. Swap action bar content for shooting
-  var actionBar = document.getElementById('action-bar');
-  if (actionBar) {
-    // Remove mode-group (NORMAL MOVE / ADVANCE buttons)
-    var modeGroup = actionBar.querySelector('.mode-group');
-    if (modeGroup) modeGroup.remove();
-
-    // Clear move-mode-label text (keep the element — shooting.js uses it for status)
-    var modeLabel = document.getElementById('move-mode-label');
-    if (modeLabel) modeLabel.textContent = '';
-
-    // Hide confirm/cancel buttons
-    var btnConfirm = document.getElementById('btn-confirm-move');
-    var btnCancel = document.getElementById('btn-cancel-move');
-    if (btnConfirm) btnConfirm.style.display = 'none';
-    if (btnCancel) btnCancel.style.display = 'none';
-
-    // Update CTA button
-    var btnEnd = document.getElementById('btn-end');
-    if (btnEnd) {
-      btnEnd.textContent = 'END SHOOTING →';
-      btnEnd.disabled = false;
-      btnEnd.style.background = '';
-      btnEnd.style.borderColor = '';
-      btnEnd.style.color = '';
-    }
-  }
-
-  // 4. Update phase dots (MOVE → done, SHOOT → active)
-  var phItems = document.querySelectorAll('.ph-item');
-  phItems.forEach(function(item) {
-    item.classList.remove('active', 'done');
-    if (item.textContent.trim().includes('MOVE')) item.classList.add('done');
-    if (item.textContent.trim().includes('SHOOT')) item.classList.add('active');
-  });
-
-  // 5. Swap body phase class
-  document.body.classList.remove('phase-move');
-  document.body.classList.add('phase-shoot');
-
-  // 6. Clear roster movement state pills
-  document.querySelectorAll('.roster-state-pill').forEach(function(pill) {
-    pill.classList.remove('move-state', 'moved', 'advanced');
-    pill.textContent = '';
-  });
-
-  // 7. Hide wall-collision banner if visible
-  var banner = document.getElementById('wall-collision-banner');
-  if (banner) banner.style.display = 'none';
-
-  // 8. Animate phase header pill
-  var pill = document.querySelector('.phase-pill');
-  if (pill) {
-    pill.classList.add('phase-transition');
-    setTimeout(function() { pill.classList.remove('phase-transition'); }, 600);
-  }
-
-  // 9. Re-wire roster clicks
-  document.querySelectorAll('.rail-unit').forEach(function(r) {
-    r.addEventListener('click', function() {
-      var fn = callbacks.selectUnit || baseSelectUnit;
-      fn(r.dataset.unit);
-    });
-  });
-
-  // 10. Deselect any unit
-  baseSelectUnit(null);
-  var unitCard = document.getElementById('unit-card');
-  if (unitCard) unitCard.classList.remove('visible');
-
-  // 11. Init shooting phase
-  initShoot();
-
-  // 12. Wire END SHOOTING button
-  var btnEnd = document.getElementById('btn-end');
-  if (btnEnd) {
-    btnEnd.addEventListener('click', function onEndShoot() {
-      btnEnd.removeEventListener('click', onEndShoot);
-      // For now, just show a status since Charge phase isn't implemented yet
-      btnEnd.textContent = '✓ SHOOTING COMPLETE';
-      btnEnd.disabled = true;
-      btnEnd.style.background = 'var(--success-dim)';
-      btnEnd.style.borderColor = 'var(--success)';
-      btnEnd.style.color = 'var(--success)';
-    }, { once: true });
-  }
-}
-
-// ── Wire phase transition ────────────────────────────────
-setTransitionCallback(function(info) {
-  if (info.from === 'deploy' && info.to === 'move') {
-    transitionToMove();
-  }
-  if (info.from === 'move' && info.to === 'shoot') {
-    transitionToShoot();
-  }
-});
-
-// ── Wire CONFIRM DEPLOYMENT button to trigger transition ──
-function wireEndDeployment() {
-  var btnEnd = document.getElementById('btn-end');
-  if (!btnEnd) return;
-
-  // We need to intercept AFTER deployment.js's confirmDeployment runs
-  // Watch for the locked state and then trigger phase transition
-  var observer = new MutationObserver(function() {
-    if (btnEnd.textContent.includes('LOCKED')) {
-      observer.disconnect();
-      // Short delay to let the camera animation start, then transition
-      setTimeout(function() {
-        nextPhase();
-      }, 800);
-    }
-  });
-  observer.observe(btnEnd, { childList: true, characterData: true, subtree: true });
-}
-
-// ── Start: Deploy phase ──────────────────────────────────
-initDeploy();
-wireEndDeployment();
+// ── Init debug panel ─────────────────────────────────────
 initDebug();
 
 // ── Visible error handler ────────────────────────────────
