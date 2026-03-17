@@ -10,13 +10,51 @@ import { currentPhase, nextPhase, setTransitionCallback } from './phase-machine.
 // ── Constants (must match deployment.js) ─────────────────
 var IMP_ZONE = { xMin: 0, xMax: 240, yMin: 0, yMax: 528 };
 
+// ── Terrain collision check ──────────────────────────────
+function modelCollidesTerrainAt(x, y, r) {
+  var aabbs = window._terrainAABBs || [];
+  for (var i = 0; i < aabbs.length; i++) {
+    var box = aabbs[i];
+    var lx = box.iA * x + box.iC * y + box.iE;
+    var ly = box.iB * x + box.iD * y + box.iF;
+    var cpx = Math.max(box.minX, Math.min(box.maxX, lx));
+    var cpy = Math.max(box.minY, Math.min(box.maxY, ly));
+    if (Math.hypot(lx - cpx, ly - cpy) < r - 0.001) return true;
+  }
+  return false;
+}
+
+function unitCollidesToerrain(unit) {
+  for (var i = 0; i < unit.models.length; i++) {
+    var m = unit.models[i];
+    var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
+    if (modelCollidesTerrainAt(m.x, m.y, r)) return true;
+  }
+  return false;
+}
+
+function _placeUnitAt(unit, cx, cy, spacing) {
+  var models = unit.models;
+  var n = models.length;
+  var cols = Math.ceil(Math.sqrt(n));
+  var rows = Math.ceil(n / cols);
+  var ox = cx - ((cols - 1) * spacing) / 2;
+  var oy = cy - ((rows - 1) * spacing) / 2;
+  for (var i = 0; i < n; i++) {
+    var col = i % cols;
+    var row = Math.floor(i / cols);
+    models[i].x = ox + col * spacing;
+    models[i].y = oy + row * spacing;
+  }
+}
+
 // ── State ────────────────────────────────────────────────
 var _panelVisible = false;
 var _onPhaseTransition = null;  // original callback we chain into
 
 // ── Auto Deploy ──────────────────────────────────────────
 // Places all undeployed Imperium units in valid positions within
-// the deployment zone, arranged to avoid overlap.
+// the deployment zone, arranged to avoid overlap and terrain.
 function autoDeploy() {
   var impUnits = simState.units.filter(function(u) {
     return u.faction === 'imp' && !u.deployed;
@@ -34,18 +72,38 @@ function autoDeploy() {
     var cx = startX + (unitIdx % 2) * 80;  // alternate columns
     var cy = startY + Math.floor(unitIdx / 2) * yStep;
 
-    var models = unit.models;
-    var n = models.length;
-    var cols = Math.ceil(Math.sqrt(n));
-    var rows = Math.ceil(n / cols);
-    var ox = cx - ((cols - 1) * xSpacing) / 2;
-    var oy = cy - ((rows - 1) * xSpacing) / 2;
+    _placeUnitAt(unit, cx, cy, xSpacing);
 
-    for (var i = 0; i < n; i++) {
-      var col = i % cols;
-      var row = Math.floor(i / cols);
-      models[i].x = ox + col * xSpacing;
-      models[i].y = oy + row * xSpacing;
+    // If any model collides with terrain, try shifting positions
+    if (unitCollidesToerrain(unit)) {
+      var shifted = false;
+      // Try different positions within the deployment zone
+      var offsets = [
+        { dx: -40, dy: 0 }, { dx: 40, dy: 0 },
+        { dx: 0, dy: -40 }, { dx: 0, dy: 40 },
+        { dx: -40, dy: -40 }, { dx: 40, dy: -40 },
+        { dx: -40, dy: 40 }, { dx: 40, dy: 40 },
+        { dx: -60, dy: 0 }, { dx: 60, dy: 0 },
+        { dx: 0, dy: -60 }, { dx: 0, dy: 60 },
+      ];
+      for (var i = 0; i < offsets.length; i++) {
+        var newCx = cx + offsets[i].dx;
+        var newCy = cy + offsets[i].dy;
+        // Stay within zone bounds (with margin for model radius)
+        if (newCx < 20 || newCx > 220 || newCy < 20 || newCy > 508) continue;
+        _placeUnitAt(unit, newCx, newCy, xSpacing);
+        if (!unitCollidesToerrain(unit)) { shifted = true; break; }
+      }
+      // If still colliding, scan the zone more thoroughly
+      if (!shifted) {
+        for (var sx = 30; sx <= 210; sx += 30) {
+          for (var sy = 30; sy <= 500; sy += 30) {
+            _placeUnitAt(unit, sx, sy, xSpacing);
+            if (!unitCollidesToerrain(unit)) { shifted = true; break; }
+          }
+          if (shifted) break;
+        }
+      }
     }
 
     unit.deployed = true;
