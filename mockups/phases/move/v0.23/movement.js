@@ -850,3 +850,54 @@ export function initMovement() {
     });
   }
 }
+
+// ── Cleanup (for integrated phase transition) ─────────
+// Auto-commits any in-progress move, then clears all move-phase state.
+export function cleanupMovement() {
+  // Auto-commit any unit currently in move mode
+  if (moveState.mode !== null && currentUnit) {
+    var uid = currentUnit;
+    var unit = simState.units.find(function(u) { return u.id === uid; });
+    if (unit) {
+      // Check legality: if move is legal + cohesion OK, commit it
+      if (isCurrentMoveLegal(uid)) {
+        checkCohesion(unit);
+        if (!unit.broken) {
+          moveState.unitsMoved.add(uid);
+        }
+      }
+      // If illegal or broken, snap back to turn start
+      if (!moveState.unitsMoved.has(uid)) {
+        unit.models.forEach(function(m) {
+          var ts = phaseTurnStarts[m.id];
+          if (ts) { m.x = ts.x; m.y = ts.y; }
+        });
+      }
+    }
+    moveState.mode = null;
+    moveState.advanceDie = null;
+  }
+
+  // Clear all visual overlays
+  clearMoveOverlays();
+  clearRangeRings();
+  activeRangeTypes.clear();
+
+  // Clear debug grid/paths
+  var debugGrid = document.getElementById('layer-debug-grid');
+  if (debugGrid) debugGrid.innerHTML = '';
+  var debugPaths = document.getElementById('layer-debug-paths');
+  if (debugPaths) debugPaths.innerHTML = '';
+
+  // Hide wall collision banner
+  var banner = document.getElementById('wall-collision-banner');
+  if (banner) banner.style.display = 'none';
+
+  // Remove wall collision highlights
+  document.querySelectorAll('#layer-models .model-base.wall-collision').forEach(function(el) {
+    el.classList.remove('wall-collision');
+  });
+
+  // Deselect
+  baseSelectUnit(null);
+}

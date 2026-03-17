@@ -182,6 +182,9 @@ export function selectUnit(uid) {
       setTimeout(function(){ updateRangeCirclesFromUnit(uid); }, 0);
     }
   } else {
+    // Hide unit card when deselecting
+    var card = document.getElementById('unit-card');
+    if (card) card.classList.remove('visible');
     clearRangeCircles();
     renderModels();
   }
