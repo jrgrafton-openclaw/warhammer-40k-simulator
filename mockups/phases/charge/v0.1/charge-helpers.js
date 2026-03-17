@@ -191,7 +191,7 @@ export function updateButtons() {
 }
 
 // ── Unit card — AVG CHRG toggle ───────────────────────
-export function updateCardRanges(uid) {
+export function updateCardRanges(uid, actualRoll, failed) {
   const cardRanges = $('#card-ranges');
   if (!cardRanges) return;
   const unit = getUnit(uid);
@@ -199,17 +199,27 @@ export function updateCardRanges(uid) {
   const unitData = UNITS[uid];
   const mStat = unitData?.M || 6;
   const avgCharge = 7;
-  cardRanges.innerHTML = `<button class="range-toggle charge active" id="rt-charge" data-range-type="charge">AVG CHRG ${avgCharge}"</button>`;
+
+  const hasActual = actualRoll != null;
+  const rangeInches = hasActual ? actualRoll : avgCharge;
+  const label = hasActual
+    ? (failed ? `CHRG ${actualRoll}" ✕` : `CHRG ${actualRoll}"`)
+    : `AVG CHRG ${avgCharge}"`;
+  const extraClass = failed ? ' failed' : '';
+
+  cardRanges.innerHTML = `<button class="range-toggle charge active${extraClass}" id="rt-charge" data-range-type="charge"${failed ? ' disabled' : ''}>${label}</button>`;
   const btn = $('#rt-charge');
   if (btn) {
-    btn.addEventListener('click', () => {
-      btn.classList.toggle('active');
-      if (btn.classList.contains('active')) {
-        drawPerModelRangeRings(uid, [{ radiusInches: avgCharge, fill: 'rgba(255,140,0,0.04)', stroke: 'rgba(255,140,0,0.25)' }]);
-      } else {
-        clearRangeRings();
-      }
-    });
-    drawPerModelRangeRings(uid, [{ radiusInches: avgCharge, fill: 'rgba(255,140,0,0.04)', stroke: 'rgba(255,140,0,0.25)' }]);
+    if (!failed) {
+      btn.addEventListener('click', () => {
+        btn.classList.toggle('active');
+        if (btn.classList.contains('active')) {
+          drawPerModelRangeRings(uid, [{ radiusInches: rangeInches, fill: 'rgba(255,140,0,0.04)', stroke: 'rgba(255,140,0,0.25)' }]);
+        } else {
+          clearRangeRings();
+        }
+      });
+    }
+    drawPerModelRangeRings(uid, [{ radiusInches: rangeInches, fill: 'rgba(255,140,0,0.04)', stroke: 'rgba(255,140,0,0.25)' }]);
   }
 }

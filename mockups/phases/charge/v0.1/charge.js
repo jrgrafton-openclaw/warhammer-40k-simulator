@@ -68,6 +68,7 @@ async function clickTarget(uid) {
   if (result.success) {
     state.phase = 'CHARGE_MOVE';
     setModeLabel(`⚡ CHARGE ${result.total}" — place models`);
+    updateCardRanges(state.chargerId, result.total);
     clearRangeRings();
     drawChargeZones();
     drawEngagementRings();
@@ -76,6 +77,7 @@ async function clickTarget(uid) {
   } else {
     state.failedUnits.add(state.chargerId);
     setModeLabel(`✕ CHARGE FAILED (${result.total})`);
+    updateCardRanges(state.chargerId, result.total, true);
     state.phase = 'RESOLVED';
     clearChargeOverlays();
     clearRangeRings();
