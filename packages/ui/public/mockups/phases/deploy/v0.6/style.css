@@ -1,34 +1,48 @@
 /* ══════════════════════════════════════════════════════════════
-   v0.5a Deployment Phase — Drop Shadows + Space Background
-   Based on v0.4. Adds: animated space bg, terrain drop shadows.
+   v0.6 Deployment Phase — Space Parallax
+   Based on v0.5a. Adds: nebula bg image, wall-only shadows,
+   pan limits, sun glow, parallax.
    All shared styles are in ../../../shared/components/*.css
 ══════════════════════════════════════════════════════════════ */
 
-/* ── App layout: standard 2-column (roster | battlefield) ── */
+/* ── App layout ── */
 #app {
   display: grid;
   grid-template-columns: 220px 1fr;
   height: 100vh;
 }
 #roster { grid-column: 1; }
-#battlefield { grid-column: 2; overflow: hidden; position: relative; }
+#battlefield {
+  grid-column: 2;
+  overflow: hidden;
+  position: relative;
+  /* Nebula background image — darkened via overlay */
+  background: #040810 url('space-nebula.jpg') center/cover no-repeat;
+}
 #bf-svg-terrain, #bf-svg { overflow: visible; }
 
-/* ── Animated space background canvas ── */
-#space-bg {
+/* Dark overlay to dim the nebula image to ~30% visibility */
+#battlefield::after {
+  content: '';
   position: absolute;
   inset: 0;
+  background: rgba(4,8,16,0.7);
   z-index: 0;
   pointer-events: none;
 }
-/* Make board surface semi-transparent so space stars peek through */
+
+/* Space canvas sits above the darkened nebula, below the board */
+#space-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Board surface — semi-transparent so nebula peeks through */
 #battlefield-inner {
   background: rgba(8,14,22,0.75) !important;
-}
-/* Extend grid to cover full battlefield area (no gaps at edges) */
-#battlefield-inner::before {
-  inset: -500px !important;
-  opacity: 0.7;
+  z-index: 2;
 }
 
 /* ── Off-board SVG zones (staging / deep strike / reserves) ── */
@@ -132,8 +146,7 @@
 .offboard-zone.zone-active.ds-zone-bg { fill: rgba(255,170,0,0.08); stroke: rgba(255,170,0,0.4); transition: fill 0.2s, stroke 0.2s; }
 .offboard-zone.zone-active.reserves-zone-bg { fill: rgba(186,126,255,0.08); stroke: rgba(186,126,255,0.4); transition: fill 0.2s, stroke 0.2s; }
 
-/* ── Deployment complete — hide deployment zone shading + staging only ── */
-/* DS and Reserves zones PERSIST (units enter play later) */
+/* ── Deployment complete ── */
 .deployment-complete .deploy-zone-bg,
 .deployment-complete .deploy-zone-border,
 .deployment-complete .deploy-zone-label,
@@ -146,7 +159,6 @@
   opacity: 0;
   transition: opacity 0.5s ease;
 }
-/* Only hide staging zone and board-edge separator, keep DS + Reserves */
 .deployment-complete .staging-zone-bg,
 .deployment-complete .offboard-zone-label:not(.ds-label):not(.reserves-label),
 .deployment-complete .board-edge-separator {
@@ -162,7 +174,7 @@
   border: 1px solid rgba(0,212,255,.06);
 }
 
-/* ── Deploy status label in action bar ── */
+/* ── Deploy status label ── */
 #deploy-status-label {
   font: 700 9px/1 'Rajdhani', sans-serif;
   letter-spacing: 2px;
@@ -197,7 +209,7 @@
 }
 .zone-warning.visible { display: block; }
 
-/* ── Deployment ghost (placement preview) ── */
+/* ── Deployment ghost ── */
 .deploy-ghost {
   pointer-events: none;
   fill: none;
@@ -205,7 +217,7 @@
   opacity: .4;
 }
 
-/* ── Cohesion banner positioning ── */
+/* ── Cohesion banner ── */
 #cohesion-banner {
   top: 88px !important; left: 50% !important;
   transform: translateX(-50%) !important;
@@ -214,7 +226,7 @@
   white-space: nowrap !important;
 }
 
-/* ── Deploy-state pill in roster ── */
+/* ── Deploy-state pill ── */
 .roster-state-pill.deploy-state {
   background: rgba(255,170,0,0.12);
   color: #ffaa00;
@@ -231,11 +243,10 @@
   border-color: rgba(186,126,255,0.25);
 }
 
-/* ── Shake on blocked confirm ── */
+/* ── Shake / camera ── */
 @keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 .shake-error { animation: shake-err 0.4s ease; }
 
-/* ── Camera transition for deployment lock ── */
 .camera-transition #battlefield-inner {
   transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }

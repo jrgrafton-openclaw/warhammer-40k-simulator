@@ -180,19 +180,13 @@ initModelInteraction();
   }
 })();
 
-// ── Pan limits — prevent board from being panned completely off-screen ──
-// Monkey-patch applyTx to clamp tx/ty so ≥40% of the board stays visible.
+// ── Pan limits — centered, even on all sides ──
+// Board center should be the center of the scrollable range.
 (function addPanLimits() {
-  var origApplyTx = applyTx;
   var bf = document.getElementById('battlefield');
-  if (!bf) return;
-
-  // Override the exported applyTx — since it's called internally,
-  // we hook into the mousemove handler via MutationObserver on transform.
   var inner = document.getElementById('battlefield-inner');
-  if (!inner) return;
+  if (!bf || !inner) return;
 
-  // Create an observer that clamps after each transform change
   var observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(m) {
       if (m.attributeName !== 'style') return;
@@ -204,27 +198,32 @@ initModelInteraction();
       var curTy = parseFloat(match[2]);
       var curScale = parseFloat(match[3]);
 
-      var bfRect = bf.getBoundingClientRect();
-      var bfW = bfRect.width;
-      var bfH = bfRect.height;
+      var bfW = bf.clientWidth;
+      var bfH = bf.clientHeight;
 
-      // Board is 720x528 SVG units; with staging zones it extends to ~-540..720 in x
-      // At current scale, the rendered board width = 1260 * curScale (full extent)
-      var boardRenderedW = 1260 * curScale;
-      var boardRenderedH = 528 * curScale;
+      // Board play area is 720x528 SVG units.
+      // Center of board = (360, 264) in SVG coords.
+      // At scale, center of board in screen px = 360*scale + tx, 264*scale + ty
+      // We want center of board to stay within the viewport +/- some margin.
+      // "Centered pan": the board center can move ±panRange from viewport center.
+      var boardCenterScreenX = 360 * curScale + curTx;
+      var boardCenterScreenY = 264 * curScale + curTy;
+      var viewCenterX = bfW / 2;
+      var viewCenterY = bfH / 2;
 
-      // Allow panning until only 30% of board is still visible
-      var margin = 0.3;
-      var minTx = -(boardRenderedW * (1 - margin));
-      var maxTx = bfW - boardRenderedW * margin;
-      var minTy = -(boardRenderedH * (1 - margin));
-      var maxTy = bfH - boardRenderedH * margin;
+      // Allow board center to be within ±60% of viewport size from viewport center
+      var panRangeX = bfW * 0.6;
+      var panRangeY = bfH * 0.6;
 
-      var clampedTx = Math.max(minTx, Math.min(maxTx, curTx));
-      var clampedTy = Math.max(minTy, Math.min(maxTy, curTy));
+      var targetCenterX = Math.max(viewCenterX - panRangeX, Math.min(viewCenterX + panRangeX, boardCenterScreenX));
+      var targetCenterY = Math.max(viewCenterY - panRangeY, Math.min(viewCenterY + panRangeY, boardCenterScreenY));
 
-      if (clampedTx !== curTx || clampedTy !== curTy) {
-        observer.disconnect(); // prevent recursive trigger
+      // Convert back to tx/ty
+      var clampedTx = targetCenterX - 360 * curScale;
+      var clampedTy = targetCenterY - 264 * curScale;
+
+      if (Math.abs(clampedTx - curTx) > 0.5 || Math.abs(clampedTy - curTy) > 0.5) {
+        observer.disconnect();
         inner.style.transform = 'translate(' + clampedTx + 'px,' + clampedTy + 'px) scale(' + curScale + ')';
         observer.observe(inner, { attributes: true, attributeFilter: ['style'] });
       }
