@@ -7,9 +7,22 @@ import { simState, callbacks } from '../../shared/state/store.js';
 import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js';
 import { initGameEnd, cleanupGameEnd } from '../../phases/game-end/v0.2/game-end.js';
 import { registerScene } from '../scene-registry.js';
+import { showScreen } from '../screen-router.js';
 
 function initGameEndScene() {
   initGameEnd();
+
+  // Override "PLAY AGAIN" to return to start screen instead of reloading
+  var btn = document.getElementById('btn-play-again');
+  if (btn) {
+    // Remove old listeners by cloning
+    var clone = btn.cloneNode(true);
+    btn.parentNode.replaceChild(clone, btn);
+    clone.addEventListener('click', function() {
+      // Return to start screen — full page reload for clean state
+      window.location.reload();
+    });
+  }
 }
 
 function cleanupGameEndScene() {

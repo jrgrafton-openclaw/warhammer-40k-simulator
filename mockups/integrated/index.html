@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — Integrated v0.3 · Deploy → Move → Shoot → Charge → Fight</title>
+  <title>WH40K Simulator — Integrated v0.4 · Start → Forge → Deploy → Move → Shoot → Charge → Fight</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/tokens/colors.css">
@@ -23,9 +23,118 @@
   <link rel="stylesheet" href="../phases/charge/v0.1/style.css">
   <link rel="stylesheet" href="../phases/fight/v0.1/style.css">
   <link rel="stylesheet" href="../phases/game-end/v0.2/style.css">
+  <link rel="stylesheet" href="../start-game/style.css">
+  <link rel="stylesheet" href="../options/v0.2/style.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<!-- ══════════════════════════════════════════════════════════
+     AUDIO — root level for cross-screen continuity
+══════════════════════════════════════════════════════════ -->
+<audio id="ambient-audio" loop preload="auto">
+  <source src="assets/ambient-loop.mp3" type="audio/mpeg">
+</audio>
+<button class="mute-toggle" id="mute-toggle" title="Toggle audio">🔊</button>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: START — Cinematic title screen
+══════════════════════════════════════════════════════════ -->
+<div id="screen-start" class="screen screen-active">
+  <!-- Enter gate -->
+  <div class="enter-gate" id="enter-gate">
+    <div class="gate-aquila">⚜</div>
+    <div class="gate-text">Click to Enter</div>
+  </div>
+
+  <div class="splash-root" id="splash-root">
+    <div class="bg-image" id="bg-image"></div>
+    <div class="bg-dim"></div>
+    <div class="lightning-layer" id="start-lightning"></div>
+    <div class="bottom-fade"></div>
+    <canvas id="ember-canvas"></canvas>
+    <div class="vignette"></div>
+    <div class="grain"></div>
+    <div class="scanlines"></div>
+
+    <div class="splash-panel" id="panel">
+      <div class="splash-corners" style="position:absolute;inset:0;pointer-events:none;"></div>
+      <div class="splash-glow"></div>
+      <div class="splash-aquila">⚜</div>
+      <div class="splash-header">
+        <div class="splash-label" id="label">10th Edition</div>
+        <div class="splash-title" id="start-title">Warhammer 40,000</div>
+        <div class="splash-subtitle" id="subtitle">Battle Simulator</div>
+      </div>
+      <div class="splash-divider" id="divider">
+        <div class="splash-divider-line"></div>
+        <span class="splash-divider-ornament">✦</span>
+        <div class="splash-divider-line"></div>
+      </div>
+      <div class="splash-menu">
+        <button class="menu-btn primary" id="btn-new-game">
+          <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><line x1="6" y1="4" x2="6" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polygon points="11,4 22,12 11,20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span> New Game
+        </button>
+        <button class="menu-btn disabled" id="btn-load">
+          <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M3 7v12a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-3H5a2 2 0 00-2 2z" stroke="currentColor" stroke-width="1.8"/><line x1="12" y1="11" x2="12" y2="18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><polyline points="9,14 12,11 15,14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span> Load Game
+          <span class="tooltip">Coming Soon</span>
+        </button>
+        <button class="menu-btn" id="btn-settings">
+          <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09a1.65 1.65 0 00-1.08-1.51 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09a1.65 1.65 0 001.51-1.08 1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" stroke-width="1.8"/></svg></span> Settings
+        </button>
+      </div>
+    </div>
+
+    <div class="version-badge" id="version">v0.4 · Integrated</div>
+    <a class="splash-backlink" id="backlink" href="../index.html#integrated">← Mockups</a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: BATTLE FORGE — Army selection
+══════════════════════════════════════════════════════════ -->
+<div id="screen-forge" class="screen">
+  <div class="forge-container">
+    <header class="forge-header">
+      <div class="forge-title">Battle Forge</div>
+      <div class="forge-subtitle">Prepare for War</div>
+    </header>
+
+    <div class="forge-cards">
+      <div class="forge-card forge-card-selected" id="forge-card-imp">
+        <div class="forge-card-tag imp">YOUR FORCES</div>
+        <div class="forge-card-icon">⚜</div>
+        <div class="forge-card-name">Imperium</div>
+        <div class="forge-card-sub">Space Marines · Strike Force</div>
+        <div class="forge-card-pts">6 units · 22 models</div>
+      </div>
+      <div class="forge-vs">VS</div>
+      <div class="forge-card forge-card-selected" id="forge-card-ork">
+        <div class="forge-card-tag ork">ENEMY FORCES</div>
+        <div class="forge-card-icon">☠</div>
+        <div class="forge-card-name">Orks</div>
+        <div class="forge-card-sub">Waaagh! Tribe</div>
+        <div class="forge-card-pts">3 units · 12 models</div>
+      </div>
+    </div>
+
+    <div class="forge-settings">
+      <div class="forge-setting"><span class="forge-setting-label">Mission</span><span class="forge-setting-value">Take and Hold</span></div>
+      <div class="forge-setting-divider"></div>
+      <div class="forge-setting"><span class="forge-setting-label">Deployment</span><span class="forge-setting-value">Hammer & Anvil</span></div>
+      <div class="forge-setting-divider"></div>
+      <div class="forge-setting"><span class="forge-setting-label">Mode</span><span class="forge-setting-value">Single Player</span></div>
+    </div>
+
+    <button class="forge-begin-btn" id="forge-begin-btn">BEGIN BATTLE</button>
+    <button class="forge-back" id="forge-back-btn">← Back</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: GAME — Existing battlefield + roster
+══════════════════════════════════════════════════════════ -->
+<div id="screen-game" class="screen">
 <div id="app">
   <aside id="roster">
     <div class="roster-header">
@@ -296,6 +405,51 @@
   </div>
 </div>
 <div id="global-tooltip"></div>
+</div><!-- /screen-game -->
+
+<!-- ══════════════════════════════════════════════════════════
+     OPTIONS MODAL — overlay on any screen
+══════════════════════════════════════════════════════════ -->
+<div class="options-backdrop" id="options-backdrop"></div>
+<div class="options-modal" id="options-modal">
+  <div class="options-header">
+    <div class="options-title">OPTIONS</div>
+    <div class="options-subtitle">SETTINGS &amp; PREFERENCES</div>
+    <button class="options-close" id="options-close">×</button>
+  </div>
+  <div class="options-body">
+    <div class="options-columns">
+      <div class="options-col">
+        <div class="opt-section">
+          <div class="opt-section-header">AUDIO</div>
+          <div class="opt-row"><span class="opt-label">Master Volume</span><div class="opt-slider-wrap"><input type="range" class="opt-slider" min="0" max="100" value="80" data-display="master-vol"><span class="opt-slider-val" id="master-vol">80%</span></div></div>
+          <div class="opt-row"><span class="opt-label">Music Volume</span><div class="opt-slider-wrap"><input type="range" class="opt-slider" min="0" max="100" value="60" data-display="music-vol"><span class="opt-slider-val" id="music-vol">60%</span></div></div>
+          <div class="opt-row"><span class="opt-label">SFX Volume</span><div class="opt-slider-wrap"><input type="range" class="opt-slider" min="0" max="100" value="75" data-display="sfx-vol"><span class="opt-slider-val" id="sfx-vol">75%</span></div></div>
+        </div>
+      </div>
+      <div class="options-divider"></div>
+      <div class="options-col">
+        <div class="opt-section">
+          <div class="opt-section-header">CONTROLS</div>
+          <div class="opt-row"><span class="opt-label">Camera Pan Speed</span><div class="opt-slider-wrap"><input type="range" class="opt-slider" min="1" max="10" value="5" data-display="cam-pan"><span class="opt-slider-val" id="cam-pan">5</span></div></div>
+          <div class="opt-row"><span class="opt-label">Zoom Sensitivity</span><div class="opt-slider-wrap"><input type="range" class="opt-slider" min="1" max="10" value="5" data-display="zoom-sens"><span class="opt-slider-val" id="zoom-sens">5</span></div></div>
+          <div class="opt-row"><span class="opt-label">Edge Scroll</span><label class="opt-toggle"><input type="checkbox"><span class="opt-toggle-track"></span></label></div>
+        </div>
+        <div class="opt-section">
+          <div class="opt-section-header">GAME</div>
+          <button class="opt-game-btn" id="btn-save-game"><span class="opt-game-btn-icon">💾</span><div class="opt-game-btn-text"><span class="opt-game-btn-title">SAVE GAME</span><span class="opt-game-btn-desc">Save your current battle progress</span></div></button>
+          <button class="opt-game-btn" id="btn-load-game"><span class="opt-game-btn-icon">📂</span><div class="opt-game-btn-text"><span class="opt-game-btn-title">LOAD GAME</span><span class="opt-game-btn-desc">Resume a previously saved battle</span></div></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="options-actions">
+    <button class="opt-btn opt-btn--primary" id="btn-close-options">CLOSE</button>
+    <button class="opt-btn opt-btn--secondary" id="btn-restart">⟳ RESTART GAME</button>
+    <button class="opt-btn opt-btn--danger" id="btn-quit">✕ QUIT TO MENU</button>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script type="module" src="app.js"></script>
 </body>
