@@ -6,7 +6,7 @@
 import { simState, callbacks } from '../shared/state/store.js';
 import { selectUnit as baseSelectUnit, renderModels, setCamera } from '../shared/world/svg-renderer.js';
 import { mapData } from '../shared/state/terrain-data.js';
-import { getCurrentPhase, transitionTo } from './scene-registry.js';
+import { currentPhase, nextPhase, setTransitionCallback } from './phase-machine.js';
 
 // ── Constants (must match deployment.js) ─────────────────
 var IMP_ZONE = { xMin: 0, xMax: 240, yMin: 0, yMax: 528 };
@@ -156,18 +156,13 @@ function _updateDeployUI(deployedCount) {
 }
 
 // ── Phase Skip ───────────────────────────────────────────
-// Auto-deploys if needed, then jumps directly to the target phase.
+// Auto-deploys if needed, then advances through phases to the target.
 function skipToPhase(targetPhase) {
-  var current = getCurrentPhase();
+  var current = currentPhase();
   if (current === targetPhase) return;
 
-  var phases = ['deploy', 'move', 'shoot', 'charge', 'fight', 'game-end'];
-  var currentIdx = phases.indexOf(current);
-  var targetIdx = phases.indexOf(targetPhase);
-  if (targetIdx <= currentIdx) return;
-
   // If we're in deploy and units aren't deployed, auto-deploy first
-  if (current === 'deploy' || currentIdx < 1) {
+  if (current === 'deploy') {
     var undeployed = simState.units.filter(function(u) {
       return u.faction === 'imp' && !u.deployed;
     });
@@ -176,9 +171,15 @@ function skipToPhase(targetPhase) {
     }
   }
 
-  // Transition through each phase in sequence (each cleanup/init runs)
-  for (var i = currentIdx + 1; i <= targetIdx; i++) {
-    transitionTo(phases[i]);
+  // Advance phases until we reach the target
+  var phases = ['deploy', 'move', 'shoot', 'charge', 'fight', 'game-end'];
+  var currentIdx = phases.indexOf(current);
+  var targetIdx = phases.indexOf(targetPhase);
+
+  if (targetIdx <= currentIdx) return;
+
+  for (var i = currentIdx; i < targetIdx; i++) {
+    nextPhase();
   }
 
   _updateStateDisplay();
@@ -189,7 +190,7 @@ function _updateStateDisplay() {
   var display = document.getElementById('dbg-state-display');
   if (!display) return;
 
-  var phase = getCurrentPhase();
+  var phase = currentPhase();
   var deployed = simState.units.filter(function(u) { return u.deployed; }).length;
   var total = simState.units.length;
 

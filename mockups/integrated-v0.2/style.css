@@ -74,40 +74,6 @@
 .phase-shoot .zone-warning { display: none !important; }
 .phase-shoot .move-center-line { opacity: 1; }
 
-/* ── .phase-charge: same as .phase-shoot ── */
-.phase-charge .staging-zone-bg,
-.phase-charge .offboard-zone-label:not(.ds-label):not(.reserves-label),
-.phase-charge .board-edge-separator,
-.phase-charge .deploy-zone-bg,
-.phase-charge .deploy-zone-border,
-.phase-charge .deploy-zone-label,
-.phase-charge .deploy-zone-sublabel,
-.phase-charge .nml-zone-bg,
-.phase-charge .nml-label {
-  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
-}
-.phase-charge .ds-zone-bg,
-.phase-charge .reserves-zone-bg { opacity: 0.3; transition: opacity 0.5s ease; }
-.phase-charge .zone-warning { display: none !important; }
-.phase-charge .move-center-line { opacity: 1; }
-
-/* ── .phase-fight: same as .phase-charge ── */
-.phase-fight .staging-zone-bg,
-.phase-fight .offboard-zone-label:not(.ds-label):not(.reserves-label),
-.phase-fight .board-edge-separator,
-.phase-fight .deploy-zone-bg,
-.phase-fight .deploy-zone-border,
-.phase-fight .deploy-zone-label,
-.phase-fight .deploy-zone-sublabel,
-.phase-fight .nml-zone-bg,
-.phase-fight .nml-label {
-  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
-}
-.phase-fight .ds-zone-bg,
-.phase-fight .reserves-zone-bg { opacity: 0.3; transition: opacity 0.5s ease; }
-.phase-fight .zone-warning { display: none !important; }
-.phase-fight .move-center-line { opacity: 1; }
-
 /* ── Hide per-unit CONFIRM/CANCEL during deploy (auto-confirm on drop) ── */
 #btn-confirm-unit,
 #btn-cancel-unit {

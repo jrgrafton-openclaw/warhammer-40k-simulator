@@ -43,17 +43,6 @@ vi.mock('../../shared/world/svg-renderer.js', () => ({
   setCamera: vi.fn(),
 }));
 
-vi.mock('../../shared/state/terrain-data.js', () => ({
-  mapData: { terrain: [] },
-}));
-
-var mockCurrentPhase = 'deploy';
-vi.mock('../scene-registry.js', () => ({
-  getCurrentPhase: () => mockCurrentPhase,
-  transitionTo: vi.fn((phase) => { mockCurrentPhase = phase; }),
-  registerScene: vi.fn(),
-}));
-
 function buildDebugDOM() {
   document.body.innerHTML = `
     <div id="debug-menu">
@@ -92,7 +81,6 @@ describe('Debug Panel', () => {
   beforeEach(async () => {
     vi.resetModules();
     resetMockUnits();
-    mockCurrentPhase = 'deploy';
     buildDebugDOM();
   });
 

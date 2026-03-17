@@ -1,6 +1,6 @@
 /**
- * scene-shoot.js — Shooting phase for the integrated prototype.
- * Registers with scene-registry for declarative transitions.
+ * scene-shoot.js — Thin wrapper around phases/shoot/v0.9/shooting.js.
+ * Exports initShoot() and cleanupShoot() for the integrated app.
  */
 
 import { simState, callbacks } from '../../shared/state/store.js';
@@ -8,8 +8,6 @@ import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js
 import { clearRangeRings } from '../../shared/world/range-rings.js';
 import { initShooting, cleanupShooting } from '../../phases/shoot/v0.9/shooting.js';
 import { mapData } from '../../shared/state/terrain-data.js';
-import { registerScene } from '../scene-registry.js';
-import * as phaseState from '../phase-state.js';
 
 // ── Build LoS blockers from terrain ruin footprints ──────
 function buildLosBlockers() {
@@ -27,12 +25,18 @@ function buildLosBlockers() {
 
   mapData.terrain.forEach(function(piece) {
     if (piece.type !== 'ruins' || !piece.paths || !piece.paths[0]) return;
+
     var floorPath = piece.paths[0];
     var pts = parsePathPoints(floorPath.d);
     if (pts.length < 3) return;
-    var last = pts[pts.length - 1];
-    if (Math.abs(pts[0].x - last.x) < 0.1 && Math.abs(pts[0].y - last.y) < 0.1) pts.pop();
 
+    // Remove closing duplicate point if present
+    var last = pts[pts.length - 1];
+    if (Math.abs(pts[0].x - last.x) < 0.1 && Math.abs(pts[0].y - last.y) < 0.1) {
+      pts.pop();
+    }
+
+    // Compute transform matrix using SVG element
     var ox = piece.origin[0], oy = piece.origin[1];
     var tfStr = 'translate(' + ox + ',' + oy + ') ' + piece.transform + ' translate(' + (-ox) + ',' + (-oy) + ')';
     var g = document.createElementNS(NS, 'g');
@@ -46,6 +50,7 @@ function buildLosBlockers() {
     var det = mat.a * mat.d - mat.b * mat.c;
     if (Math.abs(det) < 0.001) return;
 
+    // Inverse matrix (SVG → local)
     var inv = {
       a:  mat.d / det, b: -mat.b / det,
       c: -mat.c / det, d:  mat.a / det,
@@ -65,12 +70,12 @@ function buildLosBlockers() {
   return blockers;
 }
 
-function initShoot() {
-  // Build LoS blockers
+// ── Init ─────────────────────────────────────────────────
+export function initShoot() {
+  // 1. Build LoS blockers from terrain data
   window._losBlockers = buildLosBlockers();
-  phaseState.set('terrain.losBlockers', window._losBlockers);
 
-  // Block all unit dragging — shooting phase is position-locked
+  // 2. Block all unit dragging — shooting phase is position-locked
   var _drag = null;
   Object.defineProperty(simState, 'drag', {
     configurable: true,
@@ -81,34 +86,26 @@ function initShoot() {
     }
   });
 
+  // 3. Init shooting interaction
   initShooting();
 }
 
-function cleanupShoot() {
+// ── Cleanup ──────────────────────────────────────────────
+export function cleanupShoot() {
+  // 1. Run shooting.js's own cleanup
   cleanupShooting();
+
+  // 2. Remove the drag interceptor
   delete simState.drag;
   simState.drag = null;
+
+  // 3. Clear shoot-specific callback overrides
   callbacks.selectUnit = null;
   callbacks.afterRender = null;
+
+  // 4. Clear LoS blockers
   window._losBlockers = [];
-  phaseState.clear('shoot.');
+
+  // 5. Deselect any unit
   baseSelectUnit(null);
 }
-
-registerScene('shoot', {
-  init: initShoot,
-  cleanup: cleanupShoot,
-  config: {
-    title: 'SHOOTING PHASE',
-    subtitle: 'Imperium Active · Round 1',
-    bodyClass: 'phase-shoot',
-    cta: { text: 'END SHOOTING →', disabled: false },
-    modeButtons: [],
-    confirmCancel: false,
-    dotActive: 'SHOOT',
-    dotsDone: ['MOVE'],
-    nextPhase: 'charge'
-  }
-});
-
-export { initShoot, cleanupShoot };

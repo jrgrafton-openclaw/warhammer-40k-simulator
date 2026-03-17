@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — Integrated v0.3 · Deploy → Move → Shoot → Charge → Fight</title>
+  <title>WH40K Simulator — Integrated v0.2 · Deploy → Move → Shoot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../shared/tokens/colors.css">
@@ -20,8 +20,6 @@
   <link rel="stylesheet" href="../phases/deploy/v0.4/style.css">
   <link rel="stylesheet" href="../phases/move/v0.23/style.css">
   <link rel="stylesheet" href="../phases/shoot/v0.9/style.css">
-  <link rel="stylesheet" href="../phases/charge/v0.1/style.css">
-  <link rel="stylesheet" href="../phases/fight/v0.1/style.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -138,10 +136,6 @@
           <div class="debug-phase-btns">
             <button class="debug-btn phase-skip" id="dbg-skip-move" data-phase="move">→ Move</button>
             <button class="debug-btn phase-skip" id="dbg-skip-shoot" data-phase="shoot">→ Shoot</button>
-          </div>
-          <div class="debug-phase-btns" style="margin-top:3px;">
-            <button class="debug-btn phase-skip" id="dbg-skip-charge" data-phase="charge">→ Charge</button>
-            <button class="debug-btn phase-skip" id="dbg-skip-fight" data-phase="fight">→ Fight</button>
           </div>
         </div>
         <div class="debug-section">
