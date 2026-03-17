@@ -209,7 +209,7 @@ export function initBattleForge() {
 
 /* ── Terrain loading ── */
 function loadTerrain() {
-  import('../shared/state/terrain-data.js').then(function(mod) {
+  import('../../shared/state/terrain-data.js').then(function(mod) {
     var mapData = mod.mapData;
     var NS = 'http://www.w3.org/2000/svg';
     var layer = document.getElementById('forge-terrain-layer');
