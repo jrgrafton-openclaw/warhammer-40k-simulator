@@ -377,10 +377,10 @@
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="phases/deploy/v0.6/index.html">
+        <a class="card latest" href="phases/deploy/v0.7/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.6</div>
-          <div class="card-codename">SPACE PARALLAX</div>
+          <div class="card-version">v0.7</div>
+          <div class="card-codename">AI NEBULA</div>
           <div class="card-title">Sun + planets · Parallax space bg · Wall-only shadows · Pan limits · Full grid</div>
           <ul class="card-features">
             <li>Sun with animated glow pulse + 3 planets (one ringed)</li>
@@ -810,17 +810,31 @@
       <div class="card-grid featured">
         <a class="card latest" href="integrated/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.1</div>
-          <div class="card-codename">DEPLOY → MOVE</div>
-          <div class="card-title">First two phases in continuous flow</div>
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DEPLOY → MOVE → SHOOT</div>
+          <div class="card-title">Three phases with debug panel</div>
           <ul class="card-features">
-            <li>Deploy 6 Imperium units → transition → Move phase</li>
-            <li>Phase machine with animated header transition</li>
-            <li>Drag interceptor handoff between phases</li>
-            <li>Outriders for wall-collision edge case</li>
-            <li>All shared CSS/JS modules reused (zero duplication)</li>
+            <li>Deploy → Move → Shoot in continuous flow</li>
+            <li>Debug panel: auto-deploy, skip-to-phase, collision/ruin/LoS overlays</li>
+            <li>Edge-to-edge LoS with model-center ruin exemption</li>
+            <li>Auto-commit uncommitted moves on phase end</li>
+            <li>Terrain-aware auto-deploy (avoids walls)</li>
           </ul>
           <span class="card-link">OPEN →</span>
+        </a>
+      </div>
+
+      <div class="section-subtitle">Previous Versions</div>
+      <div class="card-grid">
+        <a class="card" href="integrated-v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DEPLOY → MOVE → SHOOT</div>
+          <div class="card-title">Archived snapshot (pre-v0.3 refactor)</div>
+          <ul class="card-features">
+            <li>Direct DOM transitions, callbacks pattern</li>
+            <li>Debug panel with LoS overlays</li>
+          </ul>
+          <span class="card-link">Open →</span>
         </a>
       </div>
     </div>
