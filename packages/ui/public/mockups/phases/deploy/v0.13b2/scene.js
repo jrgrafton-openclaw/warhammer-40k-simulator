@@ -117,34 +117,28 @@ simState.units = [
 
   defs.appendChild(gridPat);
 
-  // ── Ground texture pattern (tileable) ──
-  var groundPat = document.createElementNS(NS, 'pattern');
-  groundPat.setAttribute('id', 'ground-texture');
-  groundPat.setAttribute('patternUnits', 'userSpaceOnUse');
-  groundPat.setAttribute('width', '180');
-  groundPat.setAttribute('height', '180');
-  var groundImg = document.createElementNS(NS, 'image');
-  groundImg.setAttribute('href', 'ground-tile.jpg');
-  groundImg.setAttribute('width', '180');
-  groundImg.setAttribute('height', '180');
-  groundImg.setAttribute('opacity', '0.4');
-  groundPat.appendChild(groundImg);
-  // Dark overlay to keep it subdued
-  var groundOverlay = document.createElementNS(NS, 'rect');
-  groundOverlay.setAttribute('width', '180');
-  groundOverlay.setAttribute('height', '180');
-  groundOverlay.setAttribute('fill', 'rgba(8,14,22,0.55)');
-  groundPat.appendChild(groundOverlay);
-  defs.appendChild(groundPat);
+  // ── One-shot large ground texture (not tiled) ──
+  // Single image covers the entire 720x528 board, clipped at boundaries.
+  // Dark base behind the image
+  var boardBase = document.createElementNS(NS, 'rect');
+  boardBase.setAttribute('x', '0');
+  boardBase.setAttribute('y', '0');
+  boardBase.setAttribute('width', '720');
+  boardBase.setAttribute('height', '528');
+  boardBase.setAttribute('fill', 'rgba(8,14,22,0.95)');
+  terrainSvg.insertBefore(boardBase, terrainSvg.firstChild);
 
-  // Dark board surface with ground texture
-  var boardBg = document.createElementNS(NS, 'rect');
-  boardBg.setAttribute('x', '0');
-  boardBg.setAttribute('y', '0');
-  boardBg.setAttribute('width', '720');
-  boardBg.setAttribute('height', '528');
-  boardBg.setAttribute('fill', 'url(#ground-texture)');
-  terrainSvg.insertBefore(boardBg, terrainSvg.firstChild);
+  // Ground image overlay
+  var groundImg = document.createElementNS(NS, 'image');
+  groundImg.setAttribute('href', 'ground-large.jpg');
+  groundImg.setAttribute('x', '0');
+  groundImg.setAttribute('y', '0');
+  groundImg.setAttribute('width', '720');
+  groundImg.setAttribute('height', '528');
+  groundImg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  groundImg.setAttribute('opacity', '0.35');
+  boardBase.after(groundImg);
+  var boardBg = groundImg; // for grid placement after
 
   // Grid overlay rect — same area, uses the grid pattern
   var gridRect = document.createElementNS(NS, 'rect');
