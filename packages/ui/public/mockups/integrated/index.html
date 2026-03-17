@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="../phases/fight/v0.1/style.css">
   <link rel="stylesheet" href="../phases/game-end/v0.2/style.css">
   <link rel="stylesheet" href="../start-game/style.css">
+  <link rel="stylesheet" href="../battle-forge/v0.7a/style.css">
   <link rel="stylesheet" href="../options/v0.2/style.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -63,7 +64,7 @@
       <div class="splash-aquila">⚜</div>
       <div class="splash-header">
         <div class="splash-label" id="label">10th Edition</div>
-        <div class="splash-title" id="start-title">Warhammer 40,000</div>
+        <div class="splash-title" id="title">Warhammer 40,000</div>
         <div class="splash-subtitle" id="subtitle">Battle Simulator</div>
       </div>
       <div class="splash-divider" id="divider">
@@ -72,7 +73,7 @@
         <div class="splash-divider-line"></div>
       </div>
       <div class="splash-menu">
-        <button class="menu-btn primary" id="btn-new-game">
+        <button class="menu-btn primary" id="btn-new">
           <span class="btn-icon"><svg viewBox="0 0 24 24" fill="none" width="18" height="18"><line x1="6" y1="4" x2="6" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polygon points="11,4 22,12 11,20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></span> New Game
         </button>
         <button class="menu-btn disabled" id="btn-load">
@@ -94,40 +95,280 @@
      SCREEN: BATTLE FORGE — Army selection
 ══════════════════════════════════════════════════════════ -->
 <div id="screen-forge" class="screen">
-  <div class="forge-container">
-    <header class="forge-header">
-      <div class="forge-title">Battle Forge</div>
-      <div class="forge-subtitle">Prepare for War</div>
-    </header>
+  <!-- ═══ BATTLEFIELD — full viewport background ═══ -->
+  <div class="forge-battlefield" id="forge-battlefield">
+    <div class="forge-bf-inner">
+      <svg class="forge-bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid meet">
+        <rect class="deploy-zone-bg imp-zone" x="0" y="0" width="240" height="528"/>
+        <line class="deploy-zone-border imp-border" x1="240" y1="0" x2="240" y2="528"/>
+        <text class="deploy-zone-label imp-label" x="120" y="264">IMPERIUM</text>
+        <text class="deploy-zone-sublabel imp-label" x="120" y="284">DEPLOYMENT ZONE</text>
+        <rect class="nml-zone-bg" x="240" y="0" width="240" height="528"/>
+        <text class="nml-label" x="360" y="264">NO MAN'S LAND</text>
+        <rect class="deploy-zone-bg ork-zone" x="480" y="0" width="240" height="528"/>
+        <line class="deploy-zone-border ork-border" x1="480" y1="0" x2="480" y2="528"/>
+        <text class="deploy-zone-label ork-label" x="600" y="264">ORKS</text>
+        <text class="deploy-zone-sublabel ork-label" x="600" y="284">DEPLOYMENT ZONE</text>
+        <g id="forge-terrain-layer"></g>
+      </svg>
+      <div class="obj-hex-wrap neutral" id="forge-obj01" style="left:50%;top:13.64%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">01</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" id="forge-obj02" style="left:16.67%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">02</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" id="forge-obj03" style="left:50%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">03</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" id="forge-obj04" style="left:83.33%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">04</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+      <div class="obj-hex-wrap neutral" id="forge-obj05" style="left:50%;top:86.36%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">05</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
+    </div>
+    <!-- Atmospheric overlays -->
+    <div class="bf-vignette"></div>
+    <div class="bf-scanlines"></div>
+    <div class="bf-grain"></div>
+    <div class="scan-line"></div>
+  </div>
 
-    <div class="forge-cards">
-      <div class="forge-card forge-card-selected" id="forge-card-imp">
-        <div class="forge-card-tag imp">YOUR FORCES</div>
-        <div class="forge-card-icon">⚜</div>
-        <div class="forge-card-name">Imperium</div>
-        <div class="forge-card-sub">Space Marines · Strike Force</div>
-        <div class="forge-card-pts">6 units · 22 models</div>
-      </div>
-      <div class="forge-vs">VS</div>
-      <div class="forge-card forge-card-selected" id="forge-card-ork">
-        <div class="forge-card-tag ork">ENEMY FORCES</div>
-        <div class="forge-card-icon">☠</div>
-        <div class="forge-card-name">Orks</div>
-        <div class="forge-card-sub">Waaagh! Tribe</div>
-        <div class="forge-card-pts">3 units · 12 models</div>
-      </div>
+  <!-- ═══ BATTLEFIELD EDGE FADE ═══ -->
+  <div class="bf-edge-fade"></div>
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="os-header">
+    <div class="os-title">Battle Forge</div>
+    <div class="os-subtitle">Prepare for War</div>
+  </header>
+
+  <!-- ═══ FACTION CARDS — centred floating over battlefield ═══ -->
+  <div class="faction-cards" id="factionCards">
+    <div class="faction-card card-empty card-imp" id="cardLeft">
+      <div class="card-corner tl"></div>
+      <div class="card-corner tr"></div>
+      <div class="card-corner bl"></div>
+      <div class="card-corner br"></div>
+      <div class="card-tag card-tag-imp">YOUR FORCES</div>
+      <div class="card-empty-plus">+</div>
+      <div class="card-empty-label">Select Faction</div>
+      <div class="card-empty-sub">Choose from available factions</div>
     </div>
 
-    <div class="forge-settings">
-      <div class="forge-setting"><span class="forge-setting-label">Mission</span><span class="forge-setting-value">Take and Hold</span></div>
-      <div class="forge-setting-divider"></div>
-      <div class="forge-setting"><span class="forge-setting-label">Deployment</span><span class="forge-setting-value">Hammer & Anvil</span></div>
-      <div class="forge-setting-divider"></div>
-      <div class="forge-setting"><span class="forge-setting-label">Mode</span><span class="forge-setting-value">Single Player</span></div>
+    <div class="vs-divider" id="vsDivider">
+      <span class="vs-text">--</span>
     </div>
 
-    <button class="forge-begin-btn" id="forge-begin-btn">BEGIN BATTLE</button>
-    <button class="forge-back" id="forge-back-btn">← Back</button>
+    <div class="faction-card card-empty card-ork" id="cardRight">
+      <div class="card-corner tl"></div>
+      <div class="card-corner tr"></div>
+      <div class="card-corner bl"></div>
+      <div class="card-corner br"></div>
+      <div class="card-tag card-tag-ork">ENEMY FORCES</div>
+      <div class="card-empty-plus">+</div>
+      <div class="card-empty-label">Select Faction</div>
+      <div class="card-empty-sub">Choose from available factions</div>
+    </div>
+  </div>
+
+  <!-- ═══ LEFT PANEL — YOUR FORCES (hidden until selected) ═══ -->
+  <div class="side-panel side-panel-left" id="panelLeft">
+    <div class="panel-bracket tl"></div>
+    <div class="panel-bracket tr"></div>
+    <div class="panel-bracket bl"></div>
+    <div class="panel-bracket br"></div>
+    <div class="panel-filled-content">
+      <div class="panel-header">
+        <div class="panel-header-top">
+          <div class="panel-faction-icon" id="pLeftIcon"></div>
+          <div class="panel-header-text">
+            <div class="panel-faction-name" id="pLeftFaction"></div>
+            <div class="panel-army-name" id="pLeftArmy"></div>
+          </div>
+        </div>
+        <div class="panel-stats" id="pLeftStats"></div>
+        <div class="panel-change-link" id="pLeftChange">Change Army &#9662;</div>
+      </div>
+      <div class="panel-roster" id="pLeftRoster">
+        <div class="roster-scroll">
+          <div class="faction-section">
+            <div class="faction-header" id="pLeftFactionHdr">
+              <div class="faction-band imp"></div>
+              <span class="faction-label imp">IMPERIUM</span>
+              <span class="faction-chevron">&#9662;</span>
+            </div>
+            <div class="faction-body">
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Blade Champion</span><span class="rc">1</span><span class="ru-pts">120pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Blade Champion</span><span class="rc">1</span><span class="ru-pts">120pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Custodian Guard</span><span class="rc">5</span><span class="ru-pts">190pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Allarus Custodians</span><span class="rc">3</span><span class="ru-pts">165pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Allarus Custodians</span><span class="rc">2</span><span class="ru-pts">110pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M8 14 L12 8 L16 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div><span class="rn">Prosecutors</span><span class="rc">5</span><span class="ru-pts">85pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M8 14 L12 8 L16 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div><span class="rn">Prosecutors</span><span class="rc">5</span><span class="ru-pts">85pts</span></div>
+              <div class="rail-unit"><div class="ri pl" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Caladius Grav-tank</span><span class="rc">1</span><span class="ru-pts">215pts</span></div>
+              <div class="rail-unit"><div class="ri pl" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Caladius Grav-tank</span><span class="rc">1</span><span class="ru-pts">215pts</span></div>
+              <div class="rail-unit"><div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Inquisitor Draxus</span><span class="rc">1</span><span class="ru-pts">95pts</span></div>
+            </div>
+          </div>
+          <div class="aa-section">
+            <div class="aa-header" id="pLeftAAHdr"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev" style="transform:rotate(90deg)">&#9656;</span></div>
+            <div class="aa-body open">
+              <div class="aa-row" data-tip="Each time a model in this unit takes a wound, roll D6. On 6, that wound is ignored."><span class="aa-name">AND THEY SHALL KNOW NO FEAR</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row" data-tip="At the start of the battle round, select one Martial Ka'tah stance: melee crits on 5+ or improve melee AP by 1."><span class="aa-name">MARTIAL KA'TAH</span><span class="aa-timing">COMMAND</span></div>
+              <div class="aa-row" data-tip="Once per battle, in your Command phase. Until end of turn, Custodes units get +1 Attack and can re-roll charge rolls."><span class="aa-name">MARTIAL MASTERY</span><span class="aa-timing">COMMAND</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ RIGHT PANEL — ENEMY FORCES (hidden until selected) ═══ -->
+  <div class="side-panel side-panel-right" id="panelRight">
+    <div class="panel-bracket tl"></div>
+    <div class="panel-bracket tr"></div>
+    <div class="panel-bracket bl"></div>
+    <div class="panel-bracket br"></div>
+    <div class="panel-filled-content">
+      <div class="panel-header">
+        <div class="panel-header-top">
+          <div class="panel-faction-icon" id="pRightIcon"></div>
+          <div class="panel-header-text">
+            <div class="panel-faction-name" id="pRightFaction"></div>
+            <div class="panel-army-name" id="pRightArmy"></div>
+          </div>
+        </div>
+        <div class="panel-stats" id="pRightStats"></div>
+        <div class="panel-change-link" id="pRightChange">Change Army &#9662;</div>
+      </div>
+      <div class="panel-roster" id="pRightRoster">
+        <div class="roster-scroll">
+          <div class="faction-section">
+            <div class="faction-header" id="pRightFactionHdr">
+              <div class="faction-band ork"></div>
+              <span class="faction-label ork">ORKS</span>
+              <span class="faction-chevron">&#9662;</span>
+            </div>
+            <div class="faction-body">
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Warboss</span><span class="rc">1</span><span class="ru-pts">90pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boss Nob</span><span class="rc">1</span><span class="ru-pts">95pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boyz Mob</span><span class="rc">10</span><span class="ru-pts">150pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Boyz Mob</span><span class="rc">10</span><span class="ru-pts">150pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Mekboy</span><span class="rc">1</span><span class="ru-pts">75pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Nobz Mob</span><span class="rc">5</span><span class="ru-pts">115pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Nobz Mob</span><span class="rc">5</span><span class="ru-pts">115pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Gretchin</span><span class="rc">10</span><span class="ru-pts">50pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Gretchin</span><span class="rc">10</span><span class="ru-pts">50pts</span></div>
+              <div class="rail-unit"><div class="ri en" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Deff Dread</span><span class="rc">1</span><span class="ru-pts">150pts</span></div>
+              <div class="rail-unit"><div class="ri en" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="1"/></svg></div><span class="rn">Battlewagon</span><span class="rc">1</span><span class="ru-pts">185pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div><span class="rn">Lootas</span><span class="rc">5</span><span class="ru-pts">100pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2"/><path d="M8 14 L12 8 L16 14" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></div><span class="rn">Stormboyz</span><span class="rc">5</span><span class="ru-pts">80pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div><span class="rn">Weirdboy</span><span class="rc">1</span><span class="ru-pts">70pts</span></div>
+              <div class="rail-unit"><div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Meganobz</span><span class="rc">3</span><span class="ru-pts">200pts</span></div>
+              <div class="rail-unit"><div class="ri en" style="border-radius:4px"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" rx="1" stroke="currentColor" stroke-width="2"/></svg></div><span class="rn">Trukk</span><span class="rc">1</span><span class="ru-pts">65pts</span></div>
+            </div>
+          </div>
+          <div class="aa-section">
+            <div class="aa-header" id="pRightAAHdr" style="color:var(--ork);"><span class="aa-label">ARMY ABILITIES</span><span class="aa-chev" style="transform:rotate(90deg)">&#9656;</span></div>
+            <div class="aa-body open">
+              <div class="aa-row" data-tip="Ork units can make a charge move after Advancing. Add 1 to charge rolls."><span class="aa-name" style="color:var(--ork);">'ERE WE GO</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row" data-tip="Once per game, any phase. Until end of turn: Ork units get +1 Attack and +1 to charge rolls."><span class="aa-name" style="color:var(--ork);">WAAAGH!</span><span class="aa-timing">ANY PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ NAVIGATION CHROME ═══ -->
+  <button class="forge-nav-back" id="forge-back-btn">&#8592; Back</button>
+  <a class="forge-nav-mockups" href="../index.html#battle-forge">&#8592; Mockups</a>
+  <div class="forge-version-badge">v0.7a &middot; Forge</div>
+
+  <!-- ═══ BOTTOM DOCK ═══ -->
+  <div class="bottom-dock" id="bottomDock">
+    <div class="dock-row1">
+      <div class="dock-panel">
+        <div class="dock-label">Deployment Type</div>
+        <div class="deploy-thumbs">
+          <div class="deploy-card deploy-active" data-deploy="hammer">
+            <div class="deploy-thumb"><div class="dt-zone dt-imp"></div><div class="dt-zone dt-ork"></div></div>
+            <div class="deploy-name">Hammer &amp; Anvil</div>
+          </div>
+          <div class="deploy-card deploy-locked">
+            <div class="deploy-thumb deploy-thumb-locked"></div>
+            <div class="deploy-name">Dawn of War</div>
+            <div class="deploy-soon">Soon</div>
+          </div>
+          <div class="deploy-card deploy-locked">
+            <div class="deploy-thumb deploy-thumb-locked"></div>
+            <div class="deploy-name">Search &amp; Destroy</div>
+            <div class="deploy-soon">Soon</div>
+          </div>
+          <div class="deploy-card deploy-locked">
+            <div class="deploy-thumb deploy-thumb-locked"></div>
+            <div class="deploy-name">Sweeping Eng.</div>
+            <div class="deploy-soon">Soon</div>
+          </div>
+          <div class="deploy-card deploy-locked">
+            <div class="deploy-thumb deploy-thumb-locked"></div>
+            <div class="deploy-name">Crucible</div>
+            <div class="deploy-soon">Soon</div>
+          </div>
+        </div>
+      </div>
+      <div class="dock-panel">
+        <div class="dock-label">Layout</div>
+        <div class="layout-grid">
+          <div class="layout-cell layout-active">1</div>
+          <div class="layout-cell">2</div>
+          <div class="layout-cell">3</div>
+          <div class="layout-cell">4</div>
+          <div class="layout-cell">5</div>
+          <div class="layout-cell">6</div>
+          <div class="layout-cell">7</div>
+          <div class="layout-cell">8</div>
+        </div>
+      </div>
+    </div>
+    <div class="dock-row2">
+      <div class="setting-group">
+        <div class="setting-label">Mission</div>
+        <div class="setting-value">Take and Hold</div>
+      </div>
+      <div class="setting-divider"></div>
+      <div class="setting-group">
+        <div class="setting-label">Mode</div>
+        <div class="mode-toggle">
+          <button class="mode-btn mode-active">Single Player</button>
+          <button class="mode-btn mode-disabled" disabled>Multiplayer <span class="soon-tag">Soon</span></button>
+        </div>
+      </div>
+      <div class="setting-divider"></div>
+      <div class="setting-chips">
+        <span class="chip chip-dis">Turn 5</span>
+        <span class="chip chip-dis">Roll-off</span>
+        <span class="chip chip-dis">Strike Force</span>
+      </div>
+    </div>
+    <button class="begin-btn disabled" id="beginBtn">BEGIN BATTLE</button>
+  </div>
+
+  <!-- ═══ FACTION BROWSER OVERLAY ═══ -->
+  <div class="faction-overlay" id="factionOverlay">
+    <div class="overlay-backdrop" id="overlayBackdrop"></div>
+    <div class="overlay-content">
+      <div class="overlay-header">
+        <div class="overlay-title" id="overlayTitle">SELECT FACTION</div>
+        <button class="overlay-close" id="overlayClose">&times;</button>
+      </div>
+      <div class="overlay-phase phase-active" id="forge-phase1">
+        <div class="faction-grid" id="factionGrid"></div>
+      </div>
+      <div class="overlay-phase" id="forge-phase2">
+        <button class="phase2-back" id="phase2Back">&larr; Back to Factions</button>
+        <div class="phase2-header">
+          <div class="phase2-icon" id="p2Icon"></div>
+          <div class="phase2-faction-name" id="p2Name"></div>
+          <div class="phase2-faction-sub" id="p2Sub"></div>
+        </div>
+        <div class="army-list" id="armyList"></div>
+      </div>
+    </div>
   </div>
 </div>
 

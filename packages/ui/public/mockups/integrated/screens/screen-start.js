@@ -218,7 +218,7 @@ export function initStartScreen() {
       triggerLightning();
       setTimeout(triggerLightning, 500);
       setTimeout(function() {
-        var t = document.getElementById('start-title');
+        var t = document.getElementById('title');
         if (t) { t.classList.remove('stamp'); t.classList.add('idle'); }
       }, 3000);
       setTimeout(function() { if (gate.parentNode) gate.remove(); }, 1000);
@@ -239,7 +239,7 @@ export function initStartScreen() {
   window.addEventListener('resize', resize);
 
   // Wire menu buttons
-  var btnNew = document.getElementById('btn-new-game');
+  var btnNew = document.getElementById('btn-new');
   if (btnNew) {
     btnNew.onclick = function() { showScreen('forge'); };
   }
