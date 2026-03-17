@@ -810,15 +810,15 @@
       <div class="card-grid featured">
         <a class="card latest" href="integrated/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.3</div>
-          <div class="card-codename">DEPLOY → MOVE → SHOOT → CHARGE → FIGHT</div>
-          <div class="card-title">Five phases · Scene Registry architecture</div>
+          <div class="card-version">v0.4</div>
+          <div class="card-codename">FULL GAME FLOW</div>
+          <div class="card-title">Start Screen → Battle Forge → 6 Phases → Game End</div>
           <ul class="card-features">
-            <li>Full 5-phase flow: Deploy → Move → Shoot → Charge → Fight</li>
-            <li>Scene Registry: declarative phase configs, one generic transitionTo()</li>
-            <li>GameBus (EventTarget): replaces single-slot callbacks</li>
-            <li>Cleanup validation: catches stale DOM on phase transitions</li>
-            <li>Debug panel: skip-to any phase, collision/ruin/LoS overlays</li>
+            <li>Complete game loop: Start → Army Select → Deploy → Move → Shoot → Charge → Fight → Game End</li>
+            <li>Cinematic start screen with particles, lightning, ambient audio</li>
+            <li>Battle Forge army selection screen</li>
+            <li>Options modal (audio, display, game speed)</li>
+            <li>Animated screen transitions with audio continuity</li>
           </ul>
           <span class="card-link">OPEN →</span>
         </a>
@@ -826,10 +826,21 @@
 
       <div class="section-subtitle">Previous Versions</div>
       <div class="card-grid">
+        <a class="card" href="integrated-v0.3/index.html">
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">DEPLOY → MOVE → SHOOT → CHARGE → FIGHT</div>
+          <div class="card-title">5 phases + Scene Registry + file splitting</div>
+          <ul class="card-features">
+            <li>Full combat flow with Game End</li>
+            <li>Scene Registry architecture, GameBus</li>
+            <li>All files split under 400 lines</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
         <a class="card" href="integrated-v0.2/index.html">
           <div class="card-version">v0.2</div>
           <div class="card-codename">DEPLOY → MOVE → SHOOT</div>
-          <div class="card-title">Archived snapshot (pre-v0.3 refactor)</div>
+          <div class="card-title">Three phases with debug panel</div>
           <ul class="card-features">
             <li>Direct DOM transitions, callbacks pattern</li>
             <li>Debug panel with LoS overlays</li>
