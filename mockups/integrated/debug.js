@@ -156,7 +156,7 @@ function _updateDeployUI(deployedCount) {
 }
 
 // ── Phase Skip ───────────────────────────────────────────
-// Auto-deploys if needed, then jumps directly to the target phase.
+// Auto-deploys if needed, positions units for combat, then jumps to target phase.
 function skipToPhase(targetPhase) {
   var current = getCurrentPhase();
   if (current === targetPhase) return;
@@ -176,12 +176,85 @@ function skipToPhase(targetPhase) {
     }
   }
 
+  // Position units for combat phases
+  if (targetPhase === 'shoot' || targetPhase === 'charge' || targetPhase === 'fight') {
+    _positionUnitsForPhase(targetPhase);
+  }
+
   // Transition through each phase in sequence (each cleanup/init runs)
   for (var i = currentIdx + 1; i <= targetIdx; i++) {
     transitionTo(phases[i]);
   }
 
   _updateStateDisplay();
+}
+
+// Position imp units near ork units for combat testing
+function _positionUnitsForPhase(targetPhase) {
+  // Find ork centroid
+  var orks = simState.units.filter(function(u) { return u.faction === 'ork'; });
+  var orkCx = 0, orkCy = 0, orkCount = 0;
+  orks.forEach(function(u) {
+    u.models.forEach(function(m) { orkCx += m.x; orkCy += m.y; orkCount++; });
+  });
+  if (orkCount === 0) return;
+  orkCx /= orkCount;
+  orkCy /= orkCount;
+
+  var impUnits = simState.units.filter(function(u) { return u.faction === 'imp'; });
+  var spacing = 22;
+
+  if (targetPhase === 'shoot') {
+    // Position ~20" away (within 30" plasma range but far enough to test LoS)
+    _moveUnitsNear(impUnits, orkCx - 240, orkCy, spacing);
+  } else if (targetPhase === 'charge') {
+    // Position ~8" away (within 12" charge declaration range)
+    _moveUnitsNear(impUnits, orkCx - 100, orkCy, spacing);
+  } else if (targetPhase === 'fight') {
+    // Position within 1" engagement range (PX_PER_INCH = 12px, need edge-to-edge ≤12px)
+    // With R32=8px models, center-to-center needs to be ≤ 8+8+12 = 28px
+    // Position units interleaved with ork positions for direct engagement
+    var impIdx = 0;
+    impUnits.forEach(function(unit) {
+      // Pick a nearby ork to engage with
+      var ork = orks[impIdx % orks.length];
+      var orkCenter = { x: 0, y: 0 };
+      ork.models.forEach(function(m) { orkCenter.x += m.x; orkCenter.y += m.y; });
+      orkCenter.x /= ork.models.length;
+      orkCenter.y /= ork.models.length;
+
+      // Place unit 20px left of the ork (within engagement)
+      var targetCx = orkCenter.x - 20;
+      var targetCy = orkCenter.y;
+      _placeUnitAt(unit, targetCx, targetCy, spacing);
+      impIdx++;
+    });
+    return; // skip generic positioning
+  }
+}
+
+function _moveUnitsNear(units, cx, cy, spacing) {
+  var yStep = 55;
+  units.forEach(function(unit, unitIdx) {
+    var targetCx = cx + (unitIdx % 2) * 50;
+    var targetCy = cy - 100 + Math.floor(unitIdx / 2) * yStep;
+    // Clamp to board
+    targetCx = Math.max(20, Math.min(700, targetCx));
+    targetCy = Math.max(20, Math.min(508, targetCy));
+
+    var models = unit.models;
+    var n = models.length;
+    var cols = Math.ceil(Math.sqrt(n));
+    var rows = Math.ceil(n / cols);
+    var ox = targetCx - ((cols - 1) * spacing) / 2;
+    var oy = targetCy - ((rows - 1) * spacing) / 2;
+    for (var i = 0; i < n; i++) {
+      var col = i % cols;
+      var row = Math.floor(i / cols);
+      models[i].x = ox + col * spacing;
+      models[i].y = oy + row * spacing;
+    }
+  });
 }
 
 // ── State Display ────────────────────────────────────────

@@ -1158,10 +1158,16 @@ async function beginFight(targetId) {
 }
 
 // ── Fight overrides (enemy hover/click during target-select) ──
+// Stored handler refs for cleanup
+let _fightMousemove = null;
+let _fightMouseleave = null;
+let _fightIntercept = null;
+let _fightKeydown = null;
+
 function bindFightOverrides() {
   const svg = $('#bf-svg'); if (!svg) return;
 
-  svg.addEventListener('mousemove', (e) => {
+  _fightMousemove = (e) => {
     if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
     if (state.dragMode) return;
     if (state.phase !== 'target-select') return;
@@ -1173,15 +1179,17 @@ function bindFightOverrides() {
     if (!isEngagedWith(state.attackerId, uid)) return;
     state.hoveredTargetId = uid;
     paint();
-  }, true);
+  };
+  svg.addEventListener('mousemove', _fightMousemove, true);
 
-  svg.addEventListener('mouseleave', () => {
+  _fightMouseleave = () => {
     if (state.targetId) return;
     state.hoveredTargetId = null;
     paint();
-  }, true);
+  };
+  svg.addEventListener('mouseleave', _fightMouseleave, true);
 
-  const intercept = (e) => {
+  _fightIntercept = (e) => {
     if (!state.attackerId || state.foughtUnits.has(state.attackerId)) return;
     if (state.dragMode) return;
     if (state.phase !== 'target-select') return;
@@ -1194,9 +1202,8 @@ function bindFightOverrides() {
     e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
     if (e.type === 'click') onEnemyInteract(uid);
   };
-
-  svg.addEventListener('mousedown', intercept, true);
-  svg.addEventListener('click', intercept, true);
+  svg.addEventListener('mousedown', _fightIntercept, true);
+  svg.addEventListener('click', _fightIntercept, true);
 }
 
 // ── Selection override ──────────────────────────────────
@@ -1280,12 +1287,13 @@ export function initFight() {
   $('#btn-confirm-fight')?.addEventListener('click', confirmDrag);
   $('#btn-cancel-fight')?.addEventListener('click', cancelDrag);
 
-  document.addEventListener('keydown', (e) => {
+  _fightKeydown = (e) => {
     if (e.key === 'Escape') {
       if (state.dragMode) cancelDrag();
       else wrappedSelectUnit(null);
     }
-  });
+  };
+  document.addEventListener('keydown', _fightKeydown);
 
   // Move cohesion banner + create fight banner inside #phase-header (flex column)
   const phaseHeader = document.getElementById('phase-header');
@@ -1322,14 +1330,23 @@ export function initFight() {
 
 // ── Cleanup (for integrated phase transition) ─────────
 export function cleanupFight() {
-  // Remove SVG event listeners by cloning
+  // Remove SVG event listeners (explicit removal, preserves initModelInteraction handlers)
   const svg = $('#bf-svg');
   if (svg) {
-    const svgClone = svg.cloneNode(false);
-    while (svg.firstChild) svgClone.appendChild(svg.firstChild);
-    svg.parentNode.replaceChild(svgClone, svg);
-    svgClone.id = 'bf-svg';
+    if (_fightMousemove) svg.removeEventListener('mousemove', _fightMousemove, true);
+    if (_fightMouseleave) svg.removeEventListener('mouseleave', _fightMouseleave, true);
+    if (_fightIntercept) {
+      svg.removeEventListener('mousedown', _fightIntercept, true);
+      svg.removeEventListener('click', _fightIntercept, true);
+    }
   }
+  _fightMousemove = null;
+  _fightMouseleave = null;
+  _fightIntercept = null;
+
+  // Remove keyboard handler
+  if (_fightKeydown) document.removeEventListener('keydown', _fightKeydown);
+  _fightKeydown = null;
 
   // Remove drag interceptor
   delete simState.drag;
