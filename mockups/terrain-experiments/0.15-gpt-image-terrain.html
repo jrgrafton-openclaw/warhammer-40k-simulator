@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>0.15 — GPT-Image-1 Terrain Pipeline</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; color: #c0c8d0; font-family: 'Segoe UI', sans-serif; padding: 24px; }
+  h1 { font-size: 20px; color: #00d4ff; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #607080; margin-bottom: 24px; }
+  .section-label { font-size: 16px; color: #00d4ff; margin: 32px 0 12px; border-bottom: 1px solid #1e2d44; padding-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .section-label .badge { font-size: 10px; background: rgba(0,212,255,0.15); color: #00d4ff; padding: 2px 8px; border-radius: 2px; border: 1px solid rgba(0,212,255,0.3); }
+  .section-desc { font-size: 12px; color: #607080; margin-bottom: 16px; max-width: 800px; line-height: 1.6; }
+
+  .checker-bg {
+    background-image: linear-gradient(45deg, #252535 25%, transparent 25%), linear-gradient(-45deg, #252535 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #252535 75%), linear-gradient(-45deg, transparent 75%, #252535 75%);
+    background-size: 16px 16px; background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #1a1a28; display: inline-block; border-radius: 4px;
+  }
+  .dark-bg { background: #080c10; display: inline-block; border-radius: 4px; }
+
+  /* Overlay comparison cards */
+  .overlay-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; margin-bottom: 32px; }
+  .overlay-card { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 16px; }
+  .overlay-card h3 { font-size: 13px; color: #8090a0; margin-bottom: 4px; }
+  .overlay-card .tag { font-size: 10px; color: #4a6080; margin-bottom: 12px; }
+  .overlay-card .preview { position: relative; display: inline-block; border-radius: 4px; overflow: hidden; }
+  .overlay-card .preview .svg-layer { position: relative; z-index: 1; }
+  .overlay-card .preview .ai-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; object-fit: contain; }
+  .overlay-card .toggle-row { display: flex; gap: 8px; margin-top: 8px; }
+  .overlay-card .toggle-row button { padding: 4px 12px; font-size: 10px; border: 1px solid #2a3a4a; border-radius: 3px; background: #162030; color: #8090a0; cursor: pointer; }
+  .overlay-card .toggle-row button.active { border-color: #00d4ff; color: #00d4ff; background: rgba(0,212,255,0.08); }
+
+  /* Two-layer demo */
+  .layer-demo { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 20px; margin-bottom: 32px; }
+  .layer-demo h3 { font-size: 14px; color: #00d4ff; margin-bottom: 8px; }
+  .layer-demo .desc { font-size: 11px; color: #607080; margin-bottom: 16px; }
+  .layer-stack { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .layer-individual { text-align: center; }
+  .layer-individual img { max-width: 250px; border-radius: 4px; border: 1px solid #2a3a4a; }
+  .layer-individual .label { font-size: 10px; color: #4a6080; margin-top: 4px; }
+  .layer-composite { position: relative; display: inline-block; }
+  .layer-composite .bottom { position: relative; z-index: 1; }
+  .layer-composite .model-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+  .layer-composite .top { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 3; pointer-events: none; }
+
+  /* Legacy section */
+  .legacy { background: #0a0e14; border: 1px solid #162030; border-radius: 6px; padding: 16px; margin-top: 32px; }
+  .legacy h3 { font-size: 12px; color: #4a6080; margin-bottom: 8px; }
+  .legacy .mini-grid { display: flex; gap: 12px; flex-wrap: wrap; }
+  .legacy .mini-card { background: #0f1520; border: 1px solid #1e2d44; border-radius: 4px; padding: 8px; max-width: 200px; }
+  .legacy .mini-card img { max-width: 180px; border-radius: 3px; }
+  .legacy .mini-card .label { font-size: 9px; color: #4a6080; margin-top: 4px; }
+
+  .controls { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 16px; margin-top: 24px; }
+  .controls h3 { font-size: 14px; color: #00d4ff; margin-bottom: 12px; }
+  .controls label { font-size: 12px; color: #8090a0; display: block; margin-bottom: 4px; }
+  .controls textarea { width: 100%; height: 80px; background: #162030; border: 1px solid #2a3a4a; color: #c0c8d0; font-size: 11px; font-family: monospace; padding: 8px; border-radius: 4px; resize: vertical; margin-bottom: 12px; }
+  .controls input[type="password"] { width: 100%; background: #162030; border: 1px solid #2a3a4a; color: #c0c8d0; font-size: 12px; padding: 6px 8px; border-radius: 4px; margin-bottom: 8px; }
+  .btn-gen { padding: 8px 20px; background: #10a37f; color: #fff; border: 1px solid #10a37f; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-gen:hover { opacity: 0.85; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #2a3a4a; border-top-color: #00d4ff; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .gen-output { margin-top: 12px; }
+  .gen-output img { max-width: 400px; border-radius: 4px; border: 1px solid #2a3a4a; }
+  .gen-output .error { color: #cc4444; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<h1>0.15 — GPT-Image-1 Terrain Pipeline</h1>
+<p class="subtitle">OpenAI gpt-image-1 is the winner. Here's what it looks like overlaid on our actual terrain, plus a two-layer occlusion experiment.</p>
+
+<!-- ═══ SECTION 1: OVERLAY COMPARISONS ═══ -->
+<div class="section-label">Terrain Replacement Preview <span class="badge">OVERLAY</span></div>
+<div class="section-desc">Each card shows the current in-game SVG with the AI-generated replacement layered on top. Toggle to compare. Images are scaled to match the in-game terrain area proportions.</div>
+
+<div class="overlay-grid">
+
+  <!-- L-Shaped Ruin (t1) -->
+  <div class="overlay-card">
+    <h3>L-Shaped Ruin (t1)</h3>
+    <div class="tag">terrain-data.js t1 · 144×72px in-game</div>
+    <div class="dark-bg" style="padding: 4px;">
+      <div class="preview" id="preview-t1" style="width:300px; height:200px;">
+        <svg class="svg-layer" width="300" height="200" viewBox="100 20 200 140">
+          <path d="M 144 60 L 288 60 L 288 132 L 144 132 L 144 60" fill="rgba(58,64,64,0.75)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+          <path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 L 145.2 61.2" fill="rgba(106,114,114,0.85)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+        </svg>
+        <img class="ai-layer" id="ai-t1" src="openai-ruin-1.png" style="opacity:1;">
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button onclick="toggleAI('t1', 0)" id="btn-t1-svg">SVG Only</button>
+      <button onclick="toggleAI('t1', 0.5)">50% Blend</button>
+      <button onclick="toggleAI('t1', 1)" class="active" id="btn-t1-ai">AI Replacement</button>
+    </div>
+  </div>
+
+  <!-- U-Shaped Ruin (t10) -->
+  <div class="overlay-card">
+    <h3>U-Shaped Ruin (t10)</h3>
+    <div class="tag">terrain-data.js t10 · 144×72px in-game</div>
+    <div class="dark-bg" style="padding: 4px;">
+      <div class="preview" id="preview-t10" style="width:300px; height:200px;">
+        <svg class="svg-layer" width="300" height="200" viewBox="410 155 200 140">
+          <path d="M 456 192 L 600 192 L 600 264 L 456 264 L 456 192" fill="rgba(58,64,64,0.75)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+          <path d="M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 L 480 193.2" fill="rgba(106,114,114,0.85)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+        </svg>
+        <img class="ai-layer" id="ai-t10" src="openai-ruin-ushape.png" style="opacity:1;">
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button onclick="toggleAI('t10', 0)">SVG Only</button>
+      <button onclick="toggleAI('t10', 0.5)">50% Blend</button>
+      <button onclick="toggleAI('t10', 1)" class="active">AI Replacement</button>
+    </div>
+  </div>
+
+  <!-- Rectangular Ruin (t2) -->
+  <div class="overlay-card">
+    <h3>Rectangular Ruin (t2)</h3>
+    <div class="tag">terrain-data.js t2 · 144×72px in-game</div>
+    <div class="dark-bg" style="padding: 4px;">
+      <div class="preview" id="preview-t2" style="width:300px; height:200px;">
+        <svg class="svg-layer" width="300" height="200" viewBox="220 300 200 140">
+          <path d="M 264 336 L 408 336 L 408 408 L 264 408 L 264 336" fill="rgba(58,64,64,0.75)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+          <path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 L 288 337.2" fill="rgba(106,114,114,0.85)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+        </svg>
+        <img class="ai-layer" id="ai-t2" src="openai-ruin-2.png" style="opacity:1;">
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button onclick="toggleAI('t2', 0)">SVG Only</button>
+      <button onclick="toggleAI('t2', 0.5)">50% Blend</button>
+      <button onclick="toggleAI('t2', 1)" class="active">AI Replacement</button>
+    </div>
+  </div>
+
+  <!-- Scatter Terrain (t4) -->
+  <div class="overlay-card">
+    <h3>Scatter Terrain (t4)</h3>
+    <div class="tag">terrain-data.js t4 · 48×72px in-game</div>
+    <div class="dark-bg" style="padding: 4px;">
+      <div class="preview" id="preview-t4" style="width:200px; height:200px;">
+        <svg class="svg-layer" width="200" height="200" viewBox="20 240 100 120">
+          <path d="M 48 264 L 96 264 L 96 336 L 48 336 L 48 264" fill="rgba(58,48,24,0.7)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
+        </svg>
+        <img class="ai-layer" id="ai-t4" src="openai-scatter.png" style="opacity:1;">
+      </div>
+    </div>
+    <div class="toggle-row">
+      <button onclick="toggleAI('t4', 0)">SVG Only</button>
+      <button onclick="toggleAI('t4', 0.5)">50% Blend</button>
+      <button onclick="toggleAI('t4', 1)" class="active">AI Replacement</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ SECTION 2: TWO-LAYER OCCLUSION DEMO ═══ -->
+<div class="section-label">Two-Layer Occlusion <span class="badge">EXPERIMENT</span></div>
+<div class="section-desc">
+  Terrain split into two layers: <strong>bottom</strong> (floor tiles, ground debris) and <strong>top</strong> (wall caps, overhanging beams, roof fragments).
+  A unit model is sandwiched between them, so walls partially occlude the model — creating depth without 3D.
+</div>
+
+<div class="layer-demo">
+  <h3>Layer Breakdown</h3>
+  <div class="desc">Each layer generated separately via gpt-image-1 with targeted prompts</div>
+  <div class="layer-stack">
+    <div class="layer-individual">
+      <div class="checker-bg"><img src="openai-layer-bottom.png"></div>
+      <div class="label">① BOTTOM LAYER<br>Floor tiles, ground debris, blood</div>
+    </div>
+    <div class="layer-individual">
+      <div style="background: #080c10; padding: 8px; border-radius: 4px; display: inline-block;">
+        <!-- Unit model SVG -->
+        <svg width="250" height="250" viewBox="0 0 250 250">
+          <defs>
+            <radialGradient id="unit-glow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.3"/>
+              <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- Base glow -->
+          <circle cx="125" cy="135" r="30" fill="url(#unit-glow)"/>
+          <!-- Model base -->
+          <ellipse cx="125" cy="135" rx="18" ry="18" fill="#0a2030" stroke="#00d4ff" stroke-width="1.5" opacity="0.8"/>
+          <!-- Intercessor icon -->
+          <g transform="translate(125,135)">
+            <line x1="-8" y1="-10" x2="8" y2="-10" stroke="#00d4ff" stroke-width="2"/>
+            <line x1="0" y1="-14" x2="0" y2="-6" stroke="#00d4ff" stroke-width="2"/>
+            <circle cx="0" cy="0" r="4" fill="#00d4ff" opacity="0.6"/>
+            <line x1="0" y1="4" x2="0" y2="12" stroke="#00d4ff" stroke-width="1.5"/>
+            <line x1="-6" y1="7" x2="6" y2="7" stroke="#00d4ff" stroke-width="1.5"/>
+          </g>
+          <text x="125" y="165" text-anchor="middle" font-size="9" fill="#00d4ff" font-family="sans-serif">INTERCESSOR</text>
+        </svg>
+      </div>
+      <div class="label">② UNIT MODEL<br>Rendered between layers</div>
+    </div>
+    <div class="layer-individual">
+      <div class="checker-bg"><img src="openai-layer-top.png"></div>
+      <div class="label">③ TOP LAYER<br>Wall tops, beams, overhangs</div>
+    </div>
+  </div>
+</div>
+
+<div class="layer-demo">
+  <h3>Composited Result</h3>
+  <div class="desc">Bottom → Model → Top. The wall and beams partially occlude the unit, creating the illusion of depth. Toggle layers to see the effect.</div>
+
+  <div style="display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap;">
+    <div>
+      <div class="dark-bg" style="padding: 4px;">
+        <div class="layer-composite" id="composite" style="width:400px; height:400px; position: relative;">
+          <!-- Bottom layer -->
+          <img class="bottom" id="comp-bottom" src="openai-layer-bottom.png" style="width:400px; height:400px; display: block;">
+          <!-- Model layer (SVG) -->
+          <svg class="model-layer" id="comp-model" viewBox="0 0 400 400" style="width:400px; height:400px;">
+            <defs>
+              <radialGradient id="mg1" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="mg2" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#00d4ff" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#00d4ff" stop-opacity="0"/>
+              </radialGradient>
+            </defs>
+            <!-- Model 1: partially under overhang -->
+            <circle cx="160" cy="120" r="24" fill="url(#mg1)"/>
+            <circle cx="160" cy="120" r="14" fill="#0a2030" stroke="#00d4ff" stroke-width="1.5"/>
+            <g transform="translate(160,120)">
+              <line x1="-6" y1="-8" x2="6" y2="-8" stroke="#00d4ff" stroke-width="1.5"/>
+              <line x1="0" y1="-11" x2="0" y2="-5" stroke="#00d4ff" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="3" fill="#00d4ff" opacity="0.7"/>
+              <line x1="0" y1="3" x2="0" y2="9" stroke="#00d4ff" stroke-width="1.2"/>
+              <line x1="-4" y1="6" x2="4" y2="6" stroke="#00d4ff" stroke-width="1.2"/>
+            </g>
+            <!-- Model 2: more exposed -->
+            <circle cx="250" cy="280" r="24" fill="url(#mg2)"/>
+            <circle cx="250" cy="280" r="14" fill="#0a2030" stroke="#00d4ff" stroke-width="1.5"/>
+            <g transform="translate(250,280)">
+              <line x1="-6" y1="-8" x2="6" y2="-8" stroke="#00d4ff" stroke-width="1.5"/>
+              <line x1="0" y1="-11" x2="0" y2="-5" stroke="#00d4ff" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="3" fill="#00d4ff" opacity="0.7"/>
+              <line x1="0" y1="3" x2="0" y2="9" stroke="#00d4ff" stroke-width="1.2"/>
+              <line x1="-4" y1="6" x2="4" y2="6" stroke="#00d4ff" stroke-width="1.2"/>
+            </g>
+            <!-- Model 3: near wall edge -->
+            <circle cx="100" cy="320" r="24" fill="url(#mg1)"/>
+            <circle cx="100" cy="320" r="14" fill="#0a2030" stroke="#00d4ff" stroke-width="1.5"/>
+            <g transform="translate(100,320)">
+              <line x1="-6" y1="-8" x2="6" y2="-8" stroke="#00d4ff" stroke-width="1.5"/>
+              <line x1="0" y1="-11" x2="0" y2="-5" stroke="#00d4ff" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="3" fill="#00d4ff" opacity="0.7"/>
+            </g>
+          </svg>
+          <!-- Top layer -->
+          <img class="top" id="comp-top" src="openai-layer-top.png" style="width:400px; height:400px;">
+        </div>
+      </div>
+    </div>
+
+    <div style="flex: 0 0 200px;">
+      <div style="font-size: 12px; color: #8090a0; margin-bottom: 12px;">Toggle Layers:</div>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8090a0; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" checked onchange="document.getElementById('comp-bottom').style.display = this.checked ? 'block' : 'none'"> ① Bottom (floor)
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #00d4ff; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" checked onchange="document.getElementById('comp-model').style.display = this.checked ? 'block' : 'none'"> ② Unit models
+      </label>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8090a0; margin-bottom: 8px; cursor: pointer;">
+        <input type="checkbox" checked onchange="document.getElementById('comp-top').style.display = this.checked ? 'block' : 'none'"> ③ Top (walls)
+      </label>
+
+      <div style="margin-top: 16px; padding: 8px; background: #162030; border-radius: 4px; font-size: 10px; color: #607080; line-height: 1.6;">
+        <strong style="color: #00d4ff;">How it works:</strong><br>
+        The top-left model is partially hidden by the wall overhang — simulating depth. Toggle the top layer off to see the model fully revealed underneath.
+      </div>
+
+      <div style="margin-top: 12px; padding: 8px; background: #1a1410; border: 1px solid #4a3420; border-radius: 4px; font-size: 10px; color: #cc8844; line-height: 1.6;">
+        <strong>⚠ Note:</strong> The two layers don't perfectly align yet — they were generated independently. For production, we'd need consistent geometry between layers (same prompt seed or manual masking).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SECTION 3: INTERACTIVE GENERATION ═══ -->
+<div class="section-label">Interactive Generation <span class="badge">TRY IT</span></div>
+
+<div class="controls">
+  <h3>Generate New Terrain</h3>
+  <label>Prompt</label>
+  <textarea id="prompt">Generate me a top down ruin for warhammer 40k tabletop 2d HTML game I'm building. Make it suitable to be used with vector draw icon unit models. Imagine looking at a ruined building from top down. Should be grim dark 40k art style but compatible with vector draw icon units. Use the attached image as reference. Ensure that areas that are not part of the building are transparent. Ensure that there's no shadows.</textarea>
+  <label>OpenAI API Key</label>
+  <input type="password" id="openai-key" placeholder="sk-proj-...">
+  <button class="btn-gen" onclick="generateNew()">🎨 Generate with gpt-image-1</button>
+  <div id="gen-status" style="font-size: 11px; color: #4a6080; margin-top: 8px;"></div>
+  <div class="gen-output" id="gen-output"></div>
+</div>
+
+<!-- ═══ SECTION 4: LEGACY (other models) ═══ -->
+<div class="legacy">
+  <h3>Legacy: Other Models Tested</h3>
+  <div style="font-size: 11px; color: #4a6080; margin-bottom: 8px;">These models were evaluated but don't produce usable results — kept for reference only.</div>
+  <div class="mini-grid">
+    <div class="mini-card">
+      <img src="gemini-ruin-1.png">
+      <div class="label">Gemini 2.5 Flash — ❌ Copied reference, baked checkerboard as RGB</div>
+    </div>
+    <div class="mini-card">
+      <img src="gemini-ruin-2.jpg">
+      <div class="label">Gemini 3 Pro — ⚠️ Novel layout but JPEG, no alpha</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleAI(id, opacity) {
+  const el = document.getElementById('ai-' + id);
+  if (el) el.style.opacity = opacity;
+  // Update button states
+  const card = el.closest('.overlay-card');
+  card.querySelectorAll('.toggle-row button').forEach((btn, i) => {
+    btn.classList.toggle('active', [0, 0.5, 1][i] === opacity);
+  });
+}
+
+async function generateNew() {
+  const key = document.getElementById('openai-key').value.trim();
+  if (!key) { document.getElementById('gen-status').innerHTML = '<span style="color:#cc4444">No API key</span>'; return; }
+
+  document.getElementById('gen-status').innerHTML = '<span class="spinner"></span> Generating...';
+  const start = Date.now();
+
+  try {
+    const prompt = document.getElementById('prompt').value;
+
+    // Load reference as blob
+    const resp1 = await fetch('reference-ruin.png');
+    const blob = await resp1.blob();
+
+    const formData = new FormData();
+    formData.append('model', 'gpt-image-1');
+    formData.append('prompt', prompt);
+    formData.append('image[]', blob, 'reference.png');
+    formData.append('size', '1024x1024');
+    formData.append('quality', 'high');
+
+    const resp = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}` },
+      body: formData
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(`${resp.status}: ${err.error?.message || resp.statusText}`);
+    }
+
+    const data = await resp.json();
+    const elapsed = ((Date.now() - start) / 1000).toFixed(1);
+
+    if (data.data?.[0]?.b64_json) {
+      document.getElementById('gen-output').innerHTML = `<div class="checker-bg"><img src="data:image/png;base64,${data.data[0].b64_json}"></div><div style="font-size:10px;color:#4a6080;margin-top:4px;">${elapsed}s</div>`;
+    } else if (data.data?.[0]?.url) {
+      document.getElementById('gen-output').innerHTML = `<div class="checker-bg"><img src="${data.data[0].url}"></div><div style="font-size:10px;color:#4a6080;margin-top:4px;">${elapsed}s</div>`;
+    }
+    document.getElementById('gen-status').innerHTML = '✅ Done';
+  } catch (e) {
+    document.getElementById('gen-status').innerHTML = `<span style="color:#cc4444">❌ ${e.message}</span>`;
+  }
+}
+
+document.getElementById('openai-key').value = localStorage.getItem('wh40k-openai-key') || '';
+document.getElementById('openai-key').addEventListener('change', (e) => localStorage.setItem('wh40k-openai-key', e.target.value));
+</script>
+
+</body>
+</html>
