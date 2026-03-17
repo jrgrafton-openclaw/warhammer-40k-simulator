@@ -21,13 +21,14 @@
   z-index: 0;
   pointer-events: none;
 }
-/* Make board surface semi-transparent so space stars peek through */
+/* Board surface and grid are now SVG rects inside #bf-svg-terrain
+   (in SVG coordinate space — matches deployment zones exactly).
+   Remove the CSS background and grid pseudo-element. */
 #battlefield-inner {
-  background: rgba(8,14,22,0.75) !important;
+  background: transparent !important;
 }
-/* Slightly more visible grid on semi-transparent surface */
 #battlefield-inner::before {
-  opacity: 0.7;
+  display: none !important;
 }
 
 /* ── Off-board SVG zones (staging / deep strike / reserves) ── */

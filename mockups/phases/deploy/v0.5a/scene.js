@@ -2,7 +2,7 @@
  * scene.js — Army data + initialisation wiring for deployment v0.5a.
  * ES module entry point. Imperium units start in the SVG Staging zone.
  * Ork units are pre-deployed on the board.
- * v0.5a adds: terrain drop shadows, space background.
+ * v0.5a adds: space background, SVG grid overlay fix.
  */
 
 import { R32, R40, simState } from '../../../shared/state/store.js';
@@ -62,116 +62,89 @@ simState.units = [
     models:[{id:'mb1',x:560,y:350,r:R32}], broken:false, deployed:true }
 ];
 
-// ── Initialise shared modules ────────────────────────────
-renderTerrain();
-initAllTooltips();
-initBoard({ initialScale: 0.5 });
-initBattleControls();
-initModelInteraction();
-
-// ── Add drop shadows to terrain ──────────────────────────
-// Creates an SVG filter for consistent terrain drop shadows.
-// Uses a composite approach: dark offset shadow + subtle light edge.
-(function addTerrainShadows() {
+// ── Add board surface + grid in SVG coordinate space ─────
+// This ensures the dark board surface and grid lines match the SVG viewBox
+// exactly, regardless of viewport aspect ratio or preserveAspectRatio mode.
+(function addSvgBoardSurface() {
   var terrainSvg = document.getElementById('bf-svg-terrain');
   if (!terrainSvg) return;
-
   var NS = 'http://www.w3.org/2000/svg';
 
-  // Create or get defs
+  // Get or create defs
   var defs = terrainSvg.querySelector('defs');
   if (!defs) {
     defs = document.createElementNS(NS, 'defs');
     terrainSvg.insertBefore(defs, terrainSvg.firstChild);
   }
 
-  // Shadow filter: offset dark shadow for depth
-  var filter = document.createElementNS(NS, 'filter');
-  filter.setAttribute('id', 'terrain-shadow');
-  filter.setAttribute('x', '-30%');
-  filter.setAttribute('y', '-30%');
-  filter.setAttribute('width', '180%');
-  filter.setAttribute('height', '180%');
+  // Create grid pattern (matches shared/components/battlefield.css grid)
+  var gridPat = document.createElementNS(NS, 'pattern');
+  gridPat.setAttribute('id', 'board-grid');
+  gridPat.setAttribute('patternUnits', 'userSpaceOnUse');
+  gridPat.setAttribute('width', '60');
+  gridPat.setAttribute('height', '60');
 
-  // Step 1: source graphic
-  // Dark shadow offset (bottom-right)
-  var feFlood = document.createElementNS(NS, 'feFlood');
-  feFlood.setAttribute('flood-color', '#000000');
-  feFlood.setAttribute('flood-opacity', '0.8');
-  feFlood.setAttribute('result', 'shadowColor');
+  // Minor grid lines (12px spacing)
+  for (var i = 12; i < 60; i += 12) {
+    var lineH = document.createElementNS(NS, 'line');
+    lineH.setAttribute('x1', '0'); lineH.setAttribute('y1', String(i));
+    lineH.setAttribute('x2', '60'); lineH.setAttribute('y2', String(i));
+    lineH.setAttribute('stroke', 'rgba(201,163,82,0.025)');
+    lineH.setAttribute('stroke-width', '0.5');
+    gridPat.appendChild(lineH);
 
-  var feComp = document.createElementNS(NS, 'feComposite');
-  feComp.setAttribute('in', 'shadowColor');
-  feComp.setAttribute('in2', 'SourceAlpha');
-  feComp.setAttribute('operator', 'in');
-  feComp.setAttribute('result', 'shadow');
-
-  var feOffset = document.createElementNS(NS, 'feOffset');
-  feOffset.setAttribute('in', 'shadow');
-  feOffset.setAttribute('dx', '6');
-  feOffset.setAttribute('dy', '6');
-  feOffset.setAttribute('result', 'offsetShadow');
-
-  var feBlur = document.createElementNS(NS, 'feGaussianBlur');
-  feBlur.setAttribute('in', 'offsetShadow');
-  feBlur.setAttribute('stdDeviation', '4');
-  feBlur.setAttribute('result', 'blurredShadow');
-
-  // Light edge highlight (top-left) — gives 3D raised effect
-  var feFlood2 = document.createElementNS(NS, 'feFlood');
-  feFlood2.setAttribute('flood-color', '#405870');
-  feFlood2.setAttribute('flood-opacity', '0.35');
-  feFlood2.setAttribute('result', 'lightColor');
-
-  var feComp2 = document.createElementNS(NS, 'feComposite');
-  feComp2.setAttribute('in', 'lightColor');
-  feComp2.setAttribute('in2', 'SourceAlpha');
-  feComp2.setAttribute('operator', 'in');
-  feComp2.setAttribute('result', 'lightShape');
-
-  var feOffset2 = document.createElementNS(NS, 'feOffset');
-  feOffset2.setAttribute('in', 'lightShape');
-  feOffset2.setAttribute('dx', '-2');
-  feOffset2.setAttribute('dy', '-2');
-  feOffset2.setAttribute('result', 'lightEdge');
-
-  var feBlur2 = document.createElementNS(NS, 'feGaussianBlur');
-  feBlur2.setAttribute('in', 'lightEdge');
-  feBlur2.setAttribute('stdDeviation', '1.5');
-  feBlur2.setAttribute('result', 'blurredLight');
-
-  // Merge: shadow behind, light edge, source on top
-  var feMerge = document.createElementNS(NS, 'feMerge');
-  var mergeNode1 = document.createElementNS(NS, 'feMergeNode');
-  mergeNode1.setAttribute('in', 'blurredShadow');
-  var mergeNode2 = document.createElementNS(NS, 'feMergeNode');
-  mergeNode2.setAttribute('in', 'blurredLight');
-  var mergeNode3 = document.createElementNS(NS, 'feMergeNode');
-  mergeNode3.setAttribute('in', 'SourceGraphic');
-  feMerge.appendChild(mergeNode1);
-  feMerge.appendChild(mergeNode2);
-  feMerge.appendChild(mergeNode3);
-
-  filter.appendChild(feFlood);
-  filter.appendChild(feComp);
-  filter.appendChild(feOffset);
-  filter.appendChild(feBlur);
-  filter.appendChild(feFlood2);
-  filter.appendChild(feComp2);
-  filter.appendChild(feOffset2);
-  filter.appendChild(feBlur2);
-  filter.appendChild(feMerge);
-  defs.appendChild(filter);
-
-  // Apply to all terrain groups
-  var terrainLayer = document.getElementById('terrain-layer');
-  if (terrainLayer) {
-    var groups = terrainLayer.querySelectorAll(':scope > g');
-    groups.forEach(function(g) {
-      g.setAttribute('filter', 'url(#terrain-shadow)');
-    });
+    var lineV = document.createElementNS(NS, 'line');
+    lineV.setAttribute('x1', String(i)); lineV.setAttribute('y1', '0');
+    lineV.setAttribute('x2', String(i)); lineV.setAttribute('y2', '60');
+    lineV.setAttribute('stroke', 'rgba(201,163,82,0.025)');
+    lineV.setAttribute('stroke-width', '0.5');
+    gridPat.appendChild(lineV);
   }
+
+  // Major grid lines (60px spacing = pattern boundary)
+  var majorH = document.createElementNS(NS, 'line');
+  majorH.setAttribute('x1', '0'); majorH.setAttribute('y1', '0');
+  majorH.setAttribute('x2', '60'); majorH.setAttribute('y2', '0');
+  majorH.setAttribute('stroke', 'rgba(201,163,82,0.055)');
+  majorH.setAttribute('stroke-width', '0.5');
+  gridPat.appendChild(majorH);
+
+  var majorV = document.createElementNS(NS, 'line');
+  majorV.setAttribute('x1', '0'); majorV.setAttribute('y1', '0');
+  majorV.setAttribute('x2', '0'); majorV.setAttribute('y2', '60');
+  majorV.setAttribute('stroke', 'rgba(201,163,82,0.055)');
+  majorV.setAttribute('stroke-width', '0.5');
+  gridPat.appendChild(majorV);
+
+  defs.appendChild(gridPat);
+
+  // Dark board surface rect — covers the full viewBox area
+  var boardBg = document.createElementNS(NS, 'rect');
+  boardBg.setAttribute('x', '0');
+  boardBg.setAttribute('y', '0');
+  boardBg.setAttribute('width', '720');
+  boardBg.setAttribute('height', '528');
+  boardBg.setAttribute('fill', 'rgba(8,14,22,0.88)');
+  terrainSvg.insertBefore(boardBg, terrainSvg.firstChild);
+
+  // Grid overlay rect — same area, uses the grid pattern
+  var gridRect = document.createElementNS(NS, 'rect');
+  gridRect.setAttribute('x', '0');
+  gridRect.setAttribute('y', '0');
+  gridRect.setAttribute('width', '720');
+  gridRect.setAttribute('height', '528');
+  gridRect.setAttribute('fill', 'url(#board-grid)');
+  gridRect.setAttribute('pointer-events', 'none');
+  // Insert after background but before deployment zones and terrain
+  boardBg.after(gridRect);
 })();
+
+// ── Initialise shared modules ────────────────────────────
+renderTerrain();
+initAllTooltips();
+initBoard({ initialScale: 0.5 });
+initBattleControls();
+initModelInteraction();
 
 // ── Set initial camera pan to show staging + deployment zone ──
 // With standard viewBox (0 0 720 528) and scale 0.5, the board renders normally.
