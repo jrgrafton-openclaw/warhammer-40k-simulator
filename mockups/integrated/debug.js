@@ -5,6 +5,7 @@
 
 import { simState, callbacks } from '../shared/state/store.js';
 import { selectUnit as baseSelectUnit, renderModels, setCamera } from '../shared/world/svg-renderer.js';
+import { mapData } from '../shared/state/terrain-data.js';
 import { currentPhase, nextPhase, setTransitionCallback } from './phase-machine.js';
 
 // ── Constants (must match deployment.js) ─────────────────
@@ -216,6 +217,128 @@ function _updateStateDisplay() {
   }
 }
 
+// ── Debug Overlays ───────────────────────────────────────
+var _collisionGridVisible = false;
+var _ruinFootprintsVisible = false;
+var _modelsInRuinsVisible = false;
+
+function toggleCollisionGrid() {
+  _collisionGridVisible = !_collisionGridVisible;
+  var layer = document.getElementById('layer-debug-grid');
+  if (!layer) return;
+  if (!_collisionGridVisible) { layer.innerHTML = ''; return; }
+
+  // Build grid showing terrain AABB outlines
+  var aabbs = window._terrainAABBs || [];
+  var NS = 'http://www.w3.org/2000/svg';
+  layer.innerHTML = '';
+
+  aabbs.forEach(function(box) {
+    var corners = [
+      { x: box.minX, y: box.minY },
+      { x: box.maxX, y: box.minY },
+      { x: box.maxX, y: box.maxY },
+      { x: box.minX, y: box.maxY }
+    ];
+    // Inverse of the inverse = forward. Compute from iA-iF.
+    var det = box.iA * box.iD - box.iB * box.iC;
+    if (Math.abs(det) < 0.001) return;
+    var fA =  box.iD / det, fB = -box.iB / det;
+    var fC = -box.iC / det, fD =  box.iA / det;
+    var fE = (box.iC * box.iF - box.iD * box.iE) / det;
+    var fF = (box.iB * box.iE - box.iA * box.iF) / det;
+
+    var svgCorners = corners.map(function(c) {
+      return { x: fA * c.x + fC * c.y + fE, y: fB * c.x + fD * c.y + fF };
+    });
+    var pts = svgCorners.map(function(c) { return c.x + ',' + c.y; }).join(' ');
+    var poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('fill', 'rgba(255,200,60,0.08)');
+    poly.setAttribute('stroke', 'rgba(255,200,60,0.35)');
+    poly.setAttribute('stroke-width', '1');
+    poly.setAttribute('pointer-events', 'none');
+    layer.appendChild(poly);
+  });
+}
+
+function toggleRuinFootprints() {
+  _ruinFootprintsVisible = !_ruinFootprintsVisible;
+  var layer = document.getElementById('layer-debug-grid');
+  if (!layer) return;
+
+  // Remove existing footprint elements
+  layer.querySelectorAll('.debug-ruin-footprint').forEach(function(el) { el.remove(); });
+  if (!_ruinFootprintsVisible) return;
+
+  var NS = 'http://www.w3.org/2000/svg';
+  var blockers = window._losBlockers || [];
+
+  blockers.forEach(function(b) {
+    if (b.kind !== 'tall-ruin') return;
+    var svgPts = b.polygon.map(function(p) {
+      return {
+        x: b.fA * p.x + b.fC * p.y + b.fE,
+        y: b.fB * p.x + b.fD * p.y + b.fF
+      };
+    });
+    var pts = svgPts.map(function(c) { return c.x + ',' + c.y; }).join(' ');
+    var poly = document.createElementNS(NS, 'polygon');
+    poly.setAttribute('points', pts);
+    poly.setAttribute('class', 'debug-ruin-footprint');
+    layer.appendChild(poly);
+  });
+}
+
+function toggleModelsInRuins() {
+  _modelsInRuinsVisible = !_modelsInRuinsVisible;
+  document.querySelectorAll('#layer-models .model-base.debug-in-ruin').forEach(function(el) {
+    el.classList.remove('debug-in-ruin');
+  });
+  if (!_modelsInRuinsVisible) return;
+  _applyModelsInRuinsHighlight();
+}
+
+function _pointInPoly(px, py, poly) {
+  var inside = false;
+  for (var j = 0, k = poly.length - 1; j < poly.length; k = j++) {
+    var xi = poly[j].x, yi = poly[j].y;
+    var xk = poly[k].x, yk = poly[k].y;
+    if (((yi > py) !== (yk > py)) && (px < (xk - xi) * (py - yi) / (yk - yi) + xi)) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function _applyModelsInRuinsHighlight() {
+  if (!_modelsInRuinsVisible) return;
+  var blockers = window._losBlockers || [];
+  if (!blockers.length) return;
+
+  document.querySelectorAll('#layer-models .model-base').forEach(function(g) {
+    var mx = 0, my = 0;
+    var circle = g.querySelector('circle');
+    var rect = g.querySelector('rect');
+    if (circle) {
+      mx = parseFloat(circle.getAttribute('cx'));
+      my = parseFloat(circle.getAttribute('cy'));
+    } else if (rect) {
+      mx = parseFloat(rect.getAttribute('x')) + parseFloat(rect.getAttribute('width')) / 2;
+      my = parseFloat(rect.getAttribute('y')) + parseFloat(rect.getAttribute('height')) / 2;
+    }
+
+    var inside = false;
+    for (var i = 0; i < blockers.length; i++) {
+      var b = blockers[i];
+      var lx = b.iA * mx + b.iC * my + b.iE;
+      var ly = b.iB * mx + b.iD * my + b.iF;
+      if (_pointInPoly(lx, ly, b.polygon)) { inside = true; break; }
+    }
+    g.classList.toggle('debug-in-ruin', inside);
+  });
+}
+
 // ── Init ─────────────────────────────────────────────────
 export function initDebug() {
   var toggle = document.getElementById('debug-toggle');
@@ -245,6 +368,27 @@ export function initDebug() {
       skipToPhase(btn.dataset.phase);
     });
   });
+
+  // Debug overlay checkboxes
+  var dbgGrid = document.getElementById('dbg-collision-grid');
+  if (dbgGrid) {
+    dbgGrid.addEventListener('change', function() { toggleCollisionGrid(); });
+  }
+  var dbgRuins = document.getElementById('dbg-ruin-footprints');
+  if (dbgRuins) {
+    dbgRuins.addEventListener('change', function() { toggleRuinFootprints(); });
+  }
+  var dbgModelsInRuins = document.getElementById('dbg-models-in-ruins');
+  if (dbgModelsInRuins) {
+    dbgModelsInRuins.addEventListener('change', function() { toggleModelsInRuins(); });
+  }
+
+  // Hook into afterRender to maintain debug overlays after model re-renders
+  var _origAfterRender = callbacks.afterRender;
+  callbacks.afterRender = function() {
+    if (_origAfterRender) _origAfterRender();
+    if (_modelsInRuinsVisible) _applyModelsInRuinsHighlight();
+  };
 
   // Update state display on phase transitions
   _updateStateDisplay();
