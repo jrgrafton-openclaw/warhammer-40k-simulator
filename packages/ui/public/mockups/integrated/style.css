@@ -191,9 +191,6 @@
   pointer-events: none;
 }
 /* ── Debug: enhanced LoS lines ── */
-body.debug-los-enhanced #layer-target-lines {
-  z-index: 900;
-}
 body.debug-los-enhanced .target-line-clear {
   stroke-width: 2 !important;
   stroke-opacity: 0.9 !important;
@@ -204,6 +201,18 @@ body.debug-los-enhanced .target-line-blocked {
   stroke-opacity: 0.95 !important;
   stroke: #ff3020 !important;
   stroke-dasharray: 6 4 !important;
+}
+body.debug-los-enhanced .los-origin-dot {
+  fill: #00ff88;
+  stroke: #fff;
+  stroke-width: 1;
+  opacity: 0.95;
+}
+body.debug-los-enhanced .los-origin-dot-blocked {
+  fill: #ff4020;
+  stroke: #fff;
+  stroke-width: 1;
+  opacity: 0.95;
 }
 
 /* ── Debug: model-in-ruin highlight ── */

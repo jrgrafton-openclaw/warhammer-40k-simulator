@@ -386,6 +386,19 @@ export function initDebug() {
   if (dbgLos) {
     dbgLos.addEventListener('change', function() {
       document.body.classList.toggle('debug-los-enhanced', dbgLos.checked);
+      // Move target-lines layer on top of models when enhanced
+      var svg = document.getElementById('bf-svg');
+      var targetLines = document.getElementById('layer-target-lines');
+      if (svg && targetLines) {
+        if (dbgLos.checked) {
+          // Move to end of SVG (renders on top of everything)
+          svg.appendChild(targetLines);
+        } else {
+          // Restore original position (before layer-range-rings)
+          var rangeRings = document.getElementById('layer-range-rings');
+          if (rangeRings) svg.insertBefore(targetLines, rangeRings);
+        }
+      }
     });
   }
 

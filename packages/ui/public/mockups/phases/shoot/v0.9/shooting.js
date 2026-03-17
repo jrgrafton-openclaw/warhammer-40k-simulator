@@ -446,6 +446,16 @@ function ensureOverlayPinLoop(){
   state.overlayRaf = requestAnimationFrame(tick);
 }
 
+function _addOriginDot(g, x, y, blocked) {
+  if (!document.body.classList.contains('debug-los-enhanced')) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const dot = document.createElementNS(NS, 'circle');
+  dot.setAttribute('cx', x); dot.setAttribute('cy', y);
+  dot.setAttribute('r', '3');
+  dot.setAttribute('class', blocked ? 'los-origin-dot-blocked' : 'los-origin-dot');
+  g.appendChild(dot);
+}
+
 function drawHoverLines(targetId){
   const g = $('#layer-target-lines'); if (!g) return; g.innerHTML='';
   if (!state.attackerId || !targetId) return;
@@ -464,6 +474,7 @@ function drawHoverLines(targetId){
       line.setAttribute('x2', modelLos.bestRay.to.x); line.setAttribute('y2', modelLos.bestRay.to.y);
       line.setAttribute('class', 'target-line-clear');
       g.appendChild(line);
+      _addOriginDot(g, modelLos.bestRay.from.x, modelLos.bestRay.from.y, false);
     } else if (modelLos.canSee) {
       // Clear but no bestRay (no blockers case) — edge to edge
       const tm = modelLos.bestTarget.model;
@@ -474,6 +485,7 @@ function drawHoverLines(targetId){
       line.setAttribute('x2', tEdge.x); line.setAttribute('y2', tEdge.y);
       line.setAttribute('class', 'target-line-clear');
       g.appendChild(line);
+      _addOriginDot(g, aEdge.x, aEdge.y, false);
     } else {
       // Blocked: blue to hit point, then red/dashed to target
       const tm = modelLos.bestTarget.model;
@@ -492,6 +504,7 @@ function drawHoverLines(targetId){
         redLine.setAttribute('x2', tEdge.x); redLine.setAttribute('y2', tEdge.y);
         redLine.setAttribute('class', 'target-line-blocked');
         g.appendChild(redLine);
+        _addOriginDot(g, aEdge.x, aEdge.y, true);
       } else {
         const aEdge = modelEdgePointToward(m, tEdge.x, tEdge.y);
         const line = document.createElementNS(NS, 'line');
@@ -499,6 +512,7 @@ function drawHoverLines(targetId){
         line.setAttribute('x2', tEdge.x); line.setAttribute('y2', tEdge.y);
         line.setAttribute('class', 'target-line-blocked');
         g.appendChild(line);
+        _addOriginDot(g, aEdge.x, aEdge.y, true);
       }
     }
   });
