@@ -112,6 +112,7 @@
       <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
       <button class="tab-btn" data-tab="game-end" onclick="switchTab('game-end')">GAME END</button>
       <button class="tab-btn" data-tab="options" onclick="switchTab('options')">OPTIONS</button>
+      <button class="tab-btn" data-tab="terrain" onclick="switchTab('terrain')">TERRAIN</button>
     </div>
 
     <!-- START GAME -->
@@ -843,6 +844,47 @@
             <li>All settings in scrollable single column</li>
             <li>Minimal footprint — battlefield stays visible</li>
             <li>Gear button trigger with smooth slide animation</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- TERRAIN EXPERIMENTS -->
+    <div id="tab-terrain" class="tab-pane hidden">
+      <div class="section-title">Terrain Experiments</div>
+      <div class="section-desc">
+        Exploring different approaches to terrain rendering: hand-drawn SVG, AI image generation (OpenAI, Gemini),
+        and hybrid techniques. Goal: find the best method for producing grimdark top-down terrain pieces with transparency.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="terrain-experiments/0.14a-svg-ruins.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.14a</div>
+          <div class="card-codename">SVG HAND-DRAWN</div>
+          <div class="card-title">Pure SVG ruins with stone patterns · Broken edges · Rubble · Bullet holes</div>
+          <ul class="card-features">
+            <li>4 terrain pieces: L-ruin, rect ruin, rocky outcrop, wall+arch</li>
+            <li>SVG pattern fills for stone blocks and floor tiles</li>
+            <li>Manually defined jagged break paths with rubble polygons</li>
+            <li>Bullet holes, imperial eagles, structural beams</li>
+            <li>Clean geometry — no noise/random textures</li>
+          </ul>
+          <span class="card-link">Open →</span>
+        </a>
+
+        <a class="card latest" href="terrain-experiments/0.14b-ai-terrain-gen.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.14b</div>
+          <div class="card-codename">AI IMAGE GEN</div>
+          <div class="card-title">Side-by-side AI model comparison · OpenAI vs Gemini · Interactive</div>
+          <ul class="card-features">
+            <li>Interactive test page — paste API keys, generate on demand</li>
+            <li>OpenAI gpt-image-1: real RGBA transparency ✅</li>
+            <li>Gemini 2.5 Flash Image: copies reference, baked checkerboard ❌</li>
+            <li>Gemini 3 Pro Image: novel layouts but JPG output, no alpha ❌</li>
+            <li>Configurable prompt, SVG reference input fed to models</li>
           </ul>
           <span class="card-link">Open →</span>
         </a>
