@@ -1,8 +1,8 @@
 /**
- * app.js — Integrated prototype entry point (v0.3: Deploy → Move → Shoot → Charge → Fight).
+ * app.js — Integrated prototype entry point (v0.4: Start → Forge → Game).
  *
- * Architecture: Scene Registry + EventTarget bus.
- * Each phase registers itself with a declarative config.
+ * Architecture: Screen Router (start/forge/game) + Scene Registry + EventTarget bus.
+ * Each game phase registers itself with a declarative config.
  * transitionTo() handles ALL DOM updates — no per-phase functions here.
  */
 
@@ -14,6 +14,12 @@ import { buildTerrainAABBs } from '../shared/world/collision.js';
 import { selectUnit as baseSelectUnit, initBoard, initBattleControls,
          initModelInteraction, getRangeInches, renderModels, setCamera } from '../shared/world/svg-renderer.js';
 import '../shared/world/world-api.js';
+
+// ── Screen Router ──
+import { registerScreen, showScreen, onScreenShow, onScreenHide } from './screen-router.js';
+import { initStartScreen, cleanupStartScreen } from './screens/screen-start.js';
+import { initBattleForge } from './screens/screen-forge.js';
+import { initOptions } from './screens/screen-options.js';
 
 // ── Import scene registrations (each file calls registerScene on import) ──
 import './scenes/scene-deploy.js';
@@ -78,20 +84,6 @@ simState.units = [
     models:[{id:'mb1',x:560,y:350,r:R32}], broken:false, deployed:true }
 ];
 
-// ── Initialise shared modules (once) ─────────────────────
-renderTerrain();
-initAllTooltips();
-initBoard({ initialScale: 0.5 });
-initBattleControls();
-initModelInteraction();
-
-// ── Set initial camera pan (show staging + deployment zone) ──
-setCamera(350, 0, 0.5);
-
-// ── Build terrain collision AABBs ────────────────────────
-var svgEl = document.getElementById('bf-svg');
-window._terrainAABBs = buildTerrainAABBs(mapData, svgEl);
-
 // ── Global handlers for inline onclick in HTML ───────────
 window.toggleFaction = function(header) {
   var body = header.nextElementSibling;
@@ -106,11 +98,62 @@ window.toggleAA = function(header) {
   if (chev) chev.textContent = body.style.display === 'none' ? '▸' : '▾';
 };
 
-// ── Start: Deploy phase (via registry) ───────────────────
-transitionTo('deploy', { skipCamera: true });
+// ── Save initial unit positions for game restart ─────────
+var _initialUnits = JSON.parse(JSON.stringify(simState.units));
 
-// ── Init debug panel ─────────────────────────────────────
-initDebug();
+// ── Register screens ─────────────────────────────────────
+registerScreen('start', document.getElementById('screen-start'));
+registerScreen('forge', document.getElementById('screen-forge'));
+registerScreen('game', document.getElementById('screen-game'));
+
+// ── Game initialisation flag (lazy-init on first game screen show) ──
+var _gameInitialized = false;
+
+function initGameModules() {
+  if (_gameInitialized) return;
+  _gameInitialized = true;
+
+  // Restore initial unit positions (in case of replay)
+  simState.units = JSON.parse(JSON.stringify(_initialUnits));
+
+  renderTerrain();
+  initAllTooltips();
+  initBoard({ initialScale: 0.5 });
+  initBattleControls();
+  initModelInteraction();
+  setCamera(350, 0, 0.5);
+
+  var svgEl = document.getElementById('bf-svg');
+  window._terrainAABBs = buildTerrainAABBs(mapData, svgEl);
+
+  transitionTo('deploy', { skipCamera: true });
+  initDebug();
+}
+
+// ── Screen lifecycle callbacks ───────────────────────────
+onScreenShow('start', function() {
+  initStartScreen();
+});
+
+onScreenHide('start', function() {
+  cleanupStartScreen();
+});
+
+onScreenShow('game', function() {
+  if (!_gameInitialized) {
+    initGameModules();
+  }
+});
+
+// ── Initialize options modal ─────────────────────────────
+initOptions();
+
+// ── Initialize screen modules ────────────────────────────
+initStartScreen();
+initBattleForge();
+
+// ── Start at the Start Screen ────────────────────────────
+showScreen('start');
 
 // ── Visible error handler ────────────────────────────────
 window.onerror = function(msg, src, line) {

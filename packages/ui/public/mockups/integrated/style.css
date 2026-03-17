@@ -1,8 +1,219 @@
 /* ══════════════════════════════════════════════════════════════
-   Integrated Prototype v0.2 — Deploy → Move → Shoot
+   Integrated Prototype v0.4 — Start → Forge → Deploy → Move → Shoot
    Integration-specific styles only.
    Phase-specific styles imported from phase directories.
 ══════════════════════════════════════════════════════════════ */
+
+/* ── Screen Router: full-viewport screens with fade transitions ── */
+.screen {
+  position: fixed;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+  z-index: 1;
+}
+.screen.screen-active {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 10;
+}
+
+/* Start screen needs higher z-index for its overlays */
+#screen-start { z-index: 1; }
+#screen-start.screen-active { z-index: 10; }
+#screen-forge { z-index: 1; }
+#screen-forge.screen-active { z-index: 15; }
+#screen-game { z-index: 1; }
+#screen-game.screen-active { z-index: 10; }
+
+/* Mute toggle — persists across all screens */
+.mute-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(10, 16, 22, 0.8);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 200;
+}
+.mute-toggle:hover {
+  border-color: var(--imp-dim);
+  color: var(--text-sec);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BATTLE FORGE SCREEN (integrated simplified version)
+══════════════════════════════════════════════════════════════ */
+.forge-container {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  gap: 24px;
+}
+
+.forge-header {
+  text-align: center;
+}
+.forge-title {
+  font: 700 32px/1 'Anton', sans-serif;
+  color: var(--text-primary);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0,212,255,0.25);
+}
+.forge-subtitle {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-top: 6px;
+}
+
+.forge-cards {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.forge-card {
+  width: 240px;
+  padding: 24px 20px 18px;
+  background: rgba(10,16,22,0.88);
+  border: 1px solid var(--border);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.forge-card:hover {
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
+}
+.forge-card-selected {
+  border-color: rgba(0,212,255,0.3);
+  background: rgba(0,212,255,0.04);
+}
+.forge-card-tag {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.forge-card-tag.imp { color: var(--imp-dim); }
+.forge-card-tag.ork { color: var(--ork-dim); }
+.forge-card-icon {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.forge-card-name {
+  font: 700 16px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.forge-card-sub {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  margin-top: 3px;
+}
+.forge-card-pts {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--gold);
+  margin-top: 8px;
+  letter-spacing: 1px;
+}
+
+.forge-vs {
+  font: 700 14px/1 'Anton', sans-serif;
+  color: var(--imp);
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px rgba(0,212,255,0.3);
+}
+
+.forge-settings {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: rgba(10,16,22,0.88);
+  border: 1px solid var(--border);
+}
+.forge-setting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.forge-setting-label {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.forge-setting-value {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+}
+.forge-setting-divider {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+}
+
+.forge-begin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 528px;
+  max-width: 90vw;
+  height: 48px;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.forge-begin-btn:hover:not(.disabled) {
+  background: #18eaff;
+  box-shadow: 0 0 30px rgba(0,212,255,0.4);
+}
+.forge-begin-btn.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+@keyframes power-surge {
+  0% { box-shadow: 0 0 0 rgba(0,212,255,0); }
+  50% { box-shadow: 0 0 60px rgba(0,212,255,0.6), inset 0 0 20px rgba(255,255,255,0.2); }
+  100% { box-shadow: 0 0 0 rgba(0,212,255,0); }
+}
+.forge-begin-btn.btn-surge { animation: power-surge 0.5s ease-out; }
+
+.forge-back {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.forge-back:hover { color: var(--imp); }
 
 /* ── App layout: standard 2-column (roster | battlefield) ── */
 #app {
