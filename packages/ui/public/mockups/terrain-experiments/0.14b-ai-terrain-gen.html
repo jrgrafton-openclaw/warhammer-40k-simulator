@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>0.14b — AI Terrain Generation Comparison</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #1a1a2e; color: #c0c8d0; font-family: 'Segoe UI', sans-serif; padding: 24px; }
+  h1 { font-size: 18px; color: #00d4ff; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #607080; margin-bottom: 24px; }
+
+  .controls { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 16px; margin-bottom: 24px; }
+  .controls h2 { font-size: 14px; color: #00d4ff; margin-bottom: 12px; }
+  .controls label { font-size: 12px; color: #8090a0; display: block; margin-bottom: 4px; }
+  .controls textarea { width: 100%; height: 100px; background: #162030; border: 1px solid #2a3a4a; color: #c0c8d0; font-size: 12px; font-family: monospace; padding: 8px; border-radius: 4px; resize: vertical; margin-bottom: 12px; }
+  .controls input[type="text"], .controls input[type="password"] { width: 100%; background: #162030; border: 1px solid #2a3a4a; color: #c0c8d0; font-size: 12px; padding: 6px 8px; border-radius: 4px; margin-bottom: 8px; }
+
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  button { padding: 8px 16px; border: 1px solid #2a3a4a; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  button:hover { opacity: 0.85; }
+  .btn-openai { background: #10a37f; color: #fff; border-color: #10a37f; }
+  .btn-gemini { background: #4285f4; color: #fff; border-color: #4285f4; }
+  .btn-imagen { background: #ea4335; color: #fff; border-color: #ea4335; }
+  .btn-all { background: #00d4ff; color: #080c10; border-color: #00d4ff; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .reference-section { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 24px; }
+  .reference-section .ref-img { max-height: 200px; border: 1px solid #2a3a4a; border-radius: 4px; }
+  .reference-section .svg-ref { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 12px; }
+  .reference-section .svg-ref h3 { font-size: 12px; color: #8090a0; margin-bottom: 8px; }
+
+  .results { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; }
+  .result-card { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 16px; min-height: 200px; }
+  .result-card h3 { font-size: 13px; margin-bottom: 4px; }
+  .result-card .model-tag { font-size: 11px; color: #607080; margin-bottom: 8px; }
+  .result-card .status { font-size: 11px; color: #4a6080; padding: 8px; }
+  .result-card img { max-width: 100%; border-radius: 4px; border: 1px solid #2a3a4a; }
+  .result-card .error { color: #cc4444; font-size: 11px; }
+  .result-card .timing { font-size: 10px; color: #4a6080; margin-top: 4px; }
+
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #2a3a4a; border-top-color: #00d4ff; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .checker-bg {
+    background-image:
+      linear-gradient(45deg, #252535 25%, transparent 25%),
+      linear-gradient(-45deg, #252535 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #252535 75%),
+      linear-gradient(-45deg, transparent 75%, #252535 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    background-color: #1a1a28;
+    padding: 8px;
+    border-radius: 4px;
+    display: inline-block;
+  }
+</style>
+</head>
+<body>
+
+<h1>0.14b — AI Terrain Generation Comparison</h1>
+<p class="subtitle">Feed the same vector art reference + prompt to different AI image models. Compare output quality for top-down 40K ruins.</p>
+
+<div class="reference-section">
+  <div>
+    <img src="reference-ruin.png" alt="Reference ruin" class="ref-img">
+    <div style="font-size: 10px; color: #4a6080; margin-top: 4px;">Target reference (AI-generated)</div>
+  </div>
+  <div class="svg-ref">
+    <h3>SVG Input (fed to models)</h3>
+    <div class="checker-bg">
+      <!-- Simple L-shaped building vector — the "input" we send to the model -->
+      <svg id="svg-input" width="256" height="320" viewBox="0 0 256 320" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="si-stone" x="0" y="0" width="32" height="20" patternUnits="userSpaceOnUse">
+            <rect width="32" height="20" fill="#5a6468"/>
+            <rect x="0" y="0" width="15" height="9" fill="#626c72"/>
+            <rect x="17" y="0" width="15" height="9" fill="#5e686e"/>
+            <rect x="8" y="11" width="15" height="9" fill="#606a70"/>
+            <line x1="0" y1="10" x2="32" y2="10" stroke="#4a5458" stroke-width="0.8"/>
+            <line x1="16" y1="0" x2="16" y2="10" stroke="#4a5458" stroke-width="0.8"/>
+            <line x1="8" y1="10" x2="8" y2="20" stroke="#4a5458" stroke-width="0.8"/>
+            <line x1="24" y1="10" x2="24" y2="20" stroke="#4a5458" stroke-width="0.8"/>
+          </pattern>
+          <pattern id="si-floor" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+            <rect width="24" height="24" fill="#687078"/>
+            <rect x="1" y="1" width="10" height="10" fill="#727c84"/>
+            <rect x="13" y="1" width="10" height="10" fill="#6e7880"/>
+            <rect x="1" y="13" width="10" height="10" fill="#707a82"/>
+            <rect x="13" y="13" width="10" height="10" fill="#747e86"/>
+            <line x1="0" y1="12" x2="24" y2="12" stroke="#5a6468" stroke-width="0.8"/>
+            <line x1="12" y1="0" x2="12" y2="24" stroke="#5a6468" stroke-width="0.8"/>
+          </pattern>
+        </defs>
+
+        <!-- L-shape floor -->
+        <clipPath id="si-lclip">
+          <rect x="80" y="10" width="166" height="80"/>
+          <rect x="166" y="10" width="80" height="300"/>
+        </clipPath>
+        <g clip-path="url(#si-lclip)">
+          <rect x="80" y="10" width="166" height="300" fill="url(#si-floor)"/>
+        </g>
+
+        <!-- Walls -->
+        <rect x="76" y="6" width="174" height="8" fill="url(#si-stone)" stroke="#2e3438" stroke-width="1"/>
+        <rect x="242" y="6" width="8" height="308" fill="url(#si-stone)" stroke="#2e3438" stroke-width="1"/>
+        <rect x="162" y="86" width="8" height="228" fill="url(#si-stone)" stroke="#2e3438" stroke-width="1"/>
+        <rect x="162" y="306" width="88" height="8" fill="url(#si-stone)" stroke="#2e3438" stroke-width="1"/>
+
+        <!-- Broken left wall -->
+        <rect x="76" y="14" width="8" height="30" fill="url(#si-stone)" stroke="#2e3438" stroke-width="1"/>
+        <path d="M 84,44 L 88,52 L 82,60 L 90,70 L 85,78 L 92,86 L 84,90 L 162,90 L 162,86 L 84,86 L 84,44"
+              fill="url(#si-stone)" stroke="none"/>
+        <path d="M 84,44 L 88,52 L 82,60 L 90,70 L 85,78 L 92,86"
+              fill="none" stroke="#1e2226" stroke-width="2"/>
+
+        <!-- Rubble -->
+        <g fill="#5a6468" stroke="#2e3438" stroke-width="0.7">
+          <polygon points="78,55 84,52 87,58 80,62"/>
+          <polygon points="82,72 88,68 92,74 84,78"/>
+          <circle cx="74" cy="48" r="2.5"/>
+          <circle cx="76" cy="66" r="2"/>
+          <circle cx="80" cy="82" r="3"/>
+        </g>
+
+        <!-- Bullet holes -->
+        <circle cx="180" cy="30" r="5" fill="#3e4448" stroke="#2e3438"/>
+        <circle cx="180" cy="30" r="3" fill="#343838"/>
+        <circle cx="220" cy="200" r="4" fill="#3e4448" stroke="#2e3438"/>
+        <circle cx="220" cy="200" r="2.5" fill="#343838"/>
+
+        <!-- Cracks -->
+        <path d="M 130,8 L 134,16 L 130,20" fill="none" stroke="#2e3438" opacity="0.5"/>
+        <path d="M 244,120 L 248,128 L 244,135" fill="none" stroke="#2e3438" opacity="0.5"/>
+      </svg>
+    </div>
+    <div style="font-size: 10px; color: #4a6080; margin-top: 4px;">256×320 — this vector gets sent as reference</div>
+  </div>
+</div>
+
+<div class="controls">
+  <h2>Configuration</h2>
+
+  <label>Prompt</label>
+  <textarea id="prompt">Generate me a top down ruin for warhammer 40k tabletop 2d HTML game I'm building
+Make it suitable to be used with vector draw icon unit models
+
+Imagine looking at a ruined building from top down
+Should be grim dark 40k art style but compatible with vector draw icon units
+
+Use the attached image as reference
+
+Ensure that areas that are not part of the building are transparent (i.e. I can overlay this onto a battlefield)
+Ensure that there's no shadows</textarea>
+
+  <label>OpenAI API Key</label>
+  <input type="password" id="openai-key" placeholder="sk-proj-..." />
+
+  <label>Google AI (Gemini) API Key</label>
+  <input type="password" id="gemini-key" placeholder="AIza..." />
+
+  <div class="btn-row">
+    <button class="btn-openai" onclick="generateOpenAI()">🎨 OpenAI (gpt-image-1)</button>
+    <button class="btn-gemini" onclick="generateGemini()">🔷 Gemini (imagen-3)</button>
+    <button class="btn-all" onclick="generateAll()">⚡ Generate All</button>
+  </div>
+</div>
+
+<div class="results" id="results">
+  <div class="result-card" id="card-openai">
+    <h3 style="color: #10a37f;">OpenAI — gpt-image-1</h3>
+    <div class="model-tag">POST /v1/images/generations (with image input)</div>
+    <div class="status" id="status-openai">Click generate to start</div>
+    <div id="output-openai"></div>
+  </div>
+
+  <div class="result-card" id="card-gemini">
+    <h3 style="color: #4285f4;">Google — Imagen 3</h3>
+    <div class="model-tag">Gemini API imagen-3.0-generate-002</div>
+    <div class="status" id="status-gemini">Click generate to start</div>
+    <div id="output-gemini"></div>
+  </div>
+</div>
+
+<script>
+// Convert SVG element to base64 PNG via canvas
+async function svgToBase64PNG() {
+  const svg = document.getElementById('svg-input');
+  const svgData = new XMLSerializer().serializeToString(svg);
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 640;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, 512, 640);
+      URL.revokeObjectURL(url);
+      // Return base64 without data URI prefix
+      resolve(canvas.toDataURL('image/png').split(',')[1]);
+    };
+    img.src = url;
+  });
+}
+
+// Also get the reference ruin as base64
+async function referenceToBase64() {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png').split(',')[1]);
+    };
+    img.onerror = () => resolve(null);
+    img.src = 'reference-ruin.png';
+  });
+}
+
+function setStatus(id, html) {
+  document.getElementById('status-' + id).innerHTML = html;
+}
+
+function showResult(id, imgSrc, elapsed) {
+  const el = document.getElementById('output-' + id);
+  el.innerHTML = `<div class="checker-bg"><img src="${imgSrc}" style="max-width:400px;"></div>
+    <div class="timing">Generated in ${(elapsed / 1000).toFixed(1)}s</div>`;
+}
+
+function showError(id, msg) {
+  document.getElementById('output-' + id).innerHTML = `<div class="error">${msg}</div>`;
+}
+
+// === OpenAI gpt-image-1 ===
+async function generateOpenAI() {
+  const key = document.getElementById('openai-key').value.trim();
+  if (!key) { showError('openai', 'No API key provided'); return; }
+
+  setStatus('openai', '<span class="spinner"></span> Generating with gpt-image-1...');
+  const start = Date.now();
+
+  try {
+    const svgBase64 = await svgToBase64PNG();
+    const prompt = document.getElementById('prompt').value;
+
+    const resp = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-image-1',
+        prompt: prompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'high',
+        background: 'transparent',
+        output_format: 'png'
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(`${resp.status}: ${err.error?.message || resp.statusText}`);
+    }
+
+    const data = await resp.json();
+    const elapsed = Date.now() - start;
+
+    if (data.data?.[0]?.b64_json) {
+      showResult('openai', 'data:image/png;base64,' + data.data[0].b64_json, elapsed);
+    } else if (data.data?.[0]?.url) {
+      showResult('openai', data.data[0].url, elapsed);
+    } else {
+      throw new Error('No image in response');
+    }
+    setStatus('openai', '✅ Done');
+  } catch (e) {
+    setStatus('openai', '❌ Failed');
+    showError('openai', e.message);
+  }
+}
+
+// === OpenAI with image input (edit-style) ===
+async function generateOpenAIWithRef() {
+  const key = document.getElementById('openai-key').value.trim();
+  if (!key) { showError('openai', 'No API key provided'); return; }
+
+  setStatus('openai', '<span class="spinner"></span> Generating with gpt-image-1 (with reference image)...');
+  const start = Date.now();
+
+  try {
+    const svgBase64 = await svgToBase64PNG();
+    const prompt = document.getElementById('prompt').value;
+
+    // Use the images/edits endpoint to pass the SVG as reference
+    const formData = new FormData();
+    // Convert base64 to blob
+    const byteChars = atob(svgBase64);
+    const byteNums = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+    const byteArray = new Uint8Array(byteNums);
+    const blob = new Blob([byteArray], { type: 'image/png' });
+
+    formData.append('model', 'gpt-image-1');
+    formData.append('prompt', prompt + '\n\nThe attached image is the vector art reference showing the L-shaped building layout. Generate a detailed grimdark version of this same shape.');
+    formData.append('image[]', blob, 'reference.png');
+    formData.append('size', '1024x1024');
+    formData.append('quality', 'high');
+
+    const resp = await fetch('https://api.openai.com/v1/images/edits', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${key}` },
+      body: formData
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(`${resp.status}: ${err.error?.message || resp.statusText}`);
+    }
+
+    const data = await resp.json();
+    const elapsed = Date.now() - start;
+
+    if (data.data?.[0]?.b64_json) {
+      showResult('openai', 'data:image/png;base64,' + data.data[0].b64_json, elapsed);
+    } else if (data.data?.[0]?.url) {
+      showResult('openai', data.data[0].url, elapsed);
+    } else {
+      throw new Error('No image in response');
+    }
+    setStatus('openai', '✅ Done');
+  } catch (e) {
+    setStatus('openai', '❌ Failed');
+    showError('openai', e.message);
+  }
+}
+
+// === Gemini Imagen 3 ===
+async function generateGemini() {
+  const key = document.getElementById('gemini-key').value.trim();
+  if (!key) { showError('gemini', 'No API key provided'); return; }
+
+  setStatus('gemini', '<span class="spinner"></span> Generating with Imagen 3...');
+  const start = Date.now();
+
+  try {
+    const prompt = document.getElementById('prompt').value;
+
+    // Imagen 3 via Gemini API
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        instances: [{ prompt: prompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio: '1:1',
+          outputOptions: { mimeType: 'image/png' }
+        }
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+
+      // Fallback: try gemini-2.0-flash with image generation
+      setStatus('gemini', '<span class="spinner"></span> Imagen endpoint failed, trying Gemini 2.0 Flash image gen...');
+
+      const svgBase64 = await svgToBase64PNG();
+      const resp2 = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              {
+                inlineData: {
+                  mimeType: 'image/png',
+                  data: svgBase64
+                }
+              },
+              { text: prompt }
+            ]
+          }],
+          generationConfig: {
+            responseModalities: ['IMAGE', 'TEXT'],
+            responseMimeType: 'image/png'
+          }
+        })
+      });
+
+      if (!resp2.ok) {
+        const err2 = await resp2.json().catch(() => ({}));
+        throw new Error(`Imagen: ${err.error?.message || 'failed'}. Gemini Flash: ${err2.error?.message || resp2.statusText}`);
+      }
+
+      const data2 = await resp2.json();
+      const elapsed = Date.now() - start;
+
+      // Find image part in response
+      const parts = data2.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+      if (imgPart) {
+        showResult('gemini', `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`, elapsed);
+        setStatus('gemini', '✅ Done (via Gemini Flash)');
+      } else {
+        throw new Error('No image in Gemini response. Text: ' + (parts.find(p => p.text)?.text || 'none').slice(0, 200));
+      }
+      return;
+    }
+
+    const data = await resp.json();
+    const elapsed = Date.now() - start;
+
+    if (data.predictions?.[0]?.bytesBase64Encoded) {
+      showResult('gemini', 'data:image/png;base64,' + data.predictions[0].bytesBase64Encoded, elapsed);
+      setStatus('gemini', '✅ Done');
+    } else {
+      throw new Error('No image in Imagen response');
+    }
+  } catch (e) {
+    setStatus('gemini', '❌ Failed');
+    showError('gemini', e.message);
+  }
+}
+
+// === Generate all ===
+async function generateAll() {
+  generateOpenAI();
+  generateGemini();
+}
+
+// Load saved keys from localStorage
+document.getElementById('openai-key').value = localStorage.getItem('wh40k-openai-key') || '';
+document.getElementById('gemini-key').value = localStorage.getItem('wh40k-gemini-key') || '';
+
+// Save keys on change
+document.getElementById('openai-key').addEventListener('change', (e) => localStorage.setItem('wh40k-openai-key', e.target.value));
+document.getElementById('gemini-key').addEventListener('change', (e) => localStorage.setItem('wh40k-gemini-key', e.target.value));
+</script>
+
+</body>
+</html>
