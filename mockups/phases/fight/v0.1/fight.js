@@ -1267,11 +1267,11 @@ function wrappedSelectUnit(uid) {
   }
 }
 
-callbacks.selectUnit = wrappedSelectUnit;
-window.selectUnit = wrappedSelectUnit;
-
 // ── Init ───────────────────────────────────────────────
 export function initFight() {
+  // Register fight's selectUnit callback (must be inside initFight, not module scope)
+  callbacks.selectUnit = wrappedSelectUnit;
+  window.selectUnit = wrappedSelectUnit;
   // END FIGHT button: show completion state (actual transition wired by scene-registry in integrated mode)
   $('#btn-end-fight')?.addEventListener('click', function() {
     var btn = $('#btn-end-fight');
