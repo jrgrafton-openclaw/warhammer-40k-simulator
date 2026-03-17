@@ -1,0 +1,482 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.3 Options — Two-layer: Pause Menu → Options Modal
+   Civ/XCOM pattern: ESC → pause menu with game actions,
+   OPTIONS sub-item opens settings.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Menu button — standalone, top-right of battlefield ── */
+.menu-btn {
+  position: absolute;
+  top: 40px; /* below VP bar (32px + 8px gap) */
+  right: 10px;
+  z-index: 50;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--border);
+  background: rgba(8, 12, 16, 0.85);
+  color: var(--text-sec);
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  backdrop-filter: blur(6px);
+  padding: 0;
+}
+.menu-btn:hover {
+  color: var(--imp);
+  border-color: var(--imp);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.15);
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   LAYER 1 — PAUSE MENU
+═══════════════════════════════════════════════════════════ */
+
+/* ── Backdrop (shared between pause + options) ── */
+.pause-backdrop {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(5, 6, 8, 0.92) 0%, rgba(2, 3, 4, 0.96) 100%);
+  opacity: 0;
+  z-index: 100;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.pause-backdrop.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Pause menu card ── */
+.pause-menu {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 101;
+  width: 340px;
+  background: rgba(12, 16, 24, 0.97);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 36px 0 24px;
+
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.94);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.pause-menu.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+/* Top accent */
+.pause-menu::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--imp) 50%, transparent 100%);
+  opacity: 0.5;
+}
+
+.pause-title {
+  font: 400 28px/1 'Anton', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.35);
+  margin-bottom: 8px;
+}
+
+.pause-divider {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin-bottom: 28px;
+}
+
+/* ── Action list ── */
+.pause-actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0 24px;
+  gap: 2px;
+}
+
+.pause-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 13px 18px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+.pause-item:hover {
+  background: rgba(0, 212, 255, 0.04);
+  border-color: rgba(0, 212, 255, 0.12);
+}
+
+.pause-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+.pause-item:hover .pause-icon {
+  color: var(--imp);
+}
+
+.pause-label {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  transition: color 0.15s;
+}
+.pause-item:hover .pause-label {
+  color: var(--text-primary);
+}
+
+/* Danger variant (Quit) */
+.pause-item--danger .pause-icon {
+  color: var(--ork);
+  opacity: 0.6;
+}
+.pause-item--danger .pause-label {
+  color: var(--ork);
+  opacity: 0.7;
+}
+.pause-item--danger:hover {
+  background: rgba(255, 64, 32, 0.06);
+  border-color: rgba(255, 64, 32, 0.15);
+}
+.pause-item--danger:hover .pause-icon {
+  color: var(--ork);
+  opacity: 1;
+}
+.pause-item--danger:hover .pause-label {
+  color: var(--ork);
+  opacity: 1;
+}
+
+/* Separator between groups */
+.pause-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 18px;
+}
+
+/* Bottom hint */
+.pause-hint {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  margin-top: 24px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   LAYER 2 — OPTIONS MODAL (sub-screen of pause menu)
+═══════════════════════════════════════════════════════════ */
+
+.options-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 102;
+  width: 680px;
+  max-width: 95vw;
+  max-height: 80vh;
+  background: rgba(12, 16, 24, 0.97);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.94);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.options-modal.visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  pointer-events: auto;
+}
+
+.options-modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--imp) 50%, transparent 100%);
+  opacity: 0.5;
+}
+
+/* ── Options header ── */
+.options-header {
+  text-align: center;
+  padding: 24px 48px 18px;
+  position: relative;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.options-back {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 2px;
+  transition: all 0.15s;
+}
+.options-back:hover {
+  color: var(--imp);
+  border-color: rgba(0, 212, 255, 0.15);
+}
+
+.options-title {
+  font: 400 28px/1 'Anton', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.35);
+}
+
+.options-subtitle {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  margin-top: 6px;
+}
+
+/* ── Scrollable body ── */
+.options-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.options-body::-webkit-scrollbar { width: 4px; }
+.options-body::-webkit-scrollbar-track { background: transparent; }
+.options-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Two-column layout ── */
+.options-columns {
+  display: grid;
+  grid-template-columns: 1fr 1px 1fr;
+  min-height: 0;
+  padding: 24px 0;
+}
+
+.options-col {
+  padding: 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.options-divider {
+  background: var(--border);
+  align-self: stretch;
+}
+
+/* ── Section headers ── */
+.opt-section-header {
+  font: 400 14px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(201, 163, 82, 0.2);
+}
+
+/* ── Row ── */
+.opt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.opt-label {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+/* ── Slider ── */
+.opt-slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.opt-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bg-raised);
+  outline: none;
+  cursor: pointer;
+  flex: 1;
+}
+
+.opt-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--imp);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  border: 2px solid rgba(0, 212, 255, 0.6);
+  transition: box-shadow 0.2s;
+}
+.opt-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 0 14px rgba(0, 212, 255, 0.6);
+}
+
+.opt-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--imp);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+  border: 2px solid rgba(0, 212, 255, 0.6);
+}
+
+.opt-slider-val {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--imp);
+  min-width: 36px;
+  text-align: right;
+  letter-spacing: 0.5px;
+}
+
+/* ── Toggle switch ── */
+.opt-toggle {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.opt-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.opt-toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.opt-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.25s ease;
+}
+
+.opt-toggle input:checked + .opt-toggle-track {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: var(--imp);
+}
+
+.opt-toggle input:checked + .opt-toggle-track::after {
+  transform: translateX(18px);
+  background: var(--imp);
+  box-shadow: 0 0 6px rgba(0, 212, 255, 0.4);
+}
+
+/* ── Bottom action bar ── */
+.options-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 28px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: rgba(8, 12, 16, 0.5);
+}
+
+.opt-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 11px 28px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: transparent;
+  border-radius: 1px;
+  white-space: nowrap;
+}
+
+.opt-btn--primary {
+  border-color: var(--imp);
+  color: #080c10;
+  background: var(--imp);
+  font-weight: 700;
+}
+.opt-btn--primary:hover {
+  background: #18eaff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.35);
+}
