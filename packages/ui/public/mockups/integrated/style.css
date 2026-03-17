@@ -108,6 +108,23 @@
 .phase-fight .zone-warning { display: none !important; }
 .phase-fight .move-center-line { opacity: 1; }
 
+/* ── .phase-game-end: same as .phase-fight ── */
+.phase-game-end .staging-zone-bg,
+.phase-game-end .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-game-end .board-edge-separator,
+.phase-game-end .deploy-zone-bg,
+.phase-game-end .deploy-zone-border,
+.phase-game-end .deploy-zone-label,
+.phase-game-end .deploy-zone-sublabel,
+.phase-game-end .nml-zone-bg,
+.phase-game-end .nml-label {
+  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+}
+.phase-game-end .ds-zone-bg,
+.phase-game-end .reserves-zone-bg { opacity: 0.3; transition: opacity 0.5s ease; }
+.phase-game-end .zone-warning { display: none !important; }
+.phase-game-end .move-center-line { opacity: 1; }
+
 /* ── Hide per-unit CONFIRM/CANCEL during deploy (auto-confirm on drop) ── */
 #btn-confirm-unit,
 #btn-cancel-unit {

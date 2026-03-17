@@ -28,7 +28,7 @@ registerScene('fight', {
     confirmCancel: true,
     dotActive: 'FIGHT',
     dotsDone: ['MOVE', 'SHOOT', 'CHARGE'],
-    nextPhase: null // game-end not implemented yet
+    nextPhase: 'game-end'
   }
 });
 

@@ -21,6 +21,7 @@ import './scenes/scene-move.js';
 import './scenes/scene-shoot.js';
 import './scenes/scene-charge.js';
 import './scenes/scene-fight.js';
+import './scenes/scene-game-end.js';
 
 import { transitionTo } from './scene-registry.js';
 import { bus } from './game-bus.js';
