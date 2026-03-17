@@ -11,7 +11,7 @@ import { mapData } from '../../../shared/state/terrain-data.js';
 import { renderTerrain } from '../../../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../../../shared/world/collision.js';
 import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
-         renderModels, applyTx } from '../../../shared/world/svg-renderer.js';
+         renderModels, applyTx, setCamera } from '../../../shared/world/svg-renderer.js';
 import { initDeployment } from './deployment.js?v=20260314-deploy5';
 import '../../../shared/world/world-api.js';
 
@@ -422,17 +422,8 @@ initModelInteraction();
 })();
 
 // ── Set initial camera pan to show staging + deployment zone ──
-// With standard viewBox (0 0 720 528) and scale 0.5, the board renders normally.
-// Staging zones are at negative x coords (overflow:visible makes them render).
-// We need to pan RIGHT (positive tx) to reveal the staging area to the left of x=0.
-// At scale 0.5, each SVG unit ≈ 0.7 display px. Staging center is at x≈-415.
-// tx=350 shifts the canvas right enough to show staging + deployment zone together.
-// With transform-origin: center, translate(0,0) centers the board.
-// Offset right to show staging zone during deployment.
-var inner = document.getElementById('battlefield-inner');
-if (inner) {
-  inner.style.transform = 'translate(200px, 0px) scale(0.5)';
-}
+// Use setCamera() so camera.js internal state (tx/ty/scale) stays in sync.
+setCamera(200, 0, 0.5);
 
 // ── Build terrain collision AABBs ────────────────────────
 var svgEl = document.getElementById('bf-svg');
