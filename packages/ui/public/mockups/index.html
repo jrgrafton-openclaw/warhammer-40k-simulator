@@ -810,15 +810,15 @@
       <div class="card-grid featured">
         <a class="card latest" href="integrated/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.2</div>
-          <div class="card-codename">DEPLOY → MOVE → SHOOT</div>
-          <div class="card-title">Three phases with debug panel</div>
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">DEPLOY → MOVE → SHOOT → CHARGE → FIGHT</div>
+          <div class="card-title">Five phases · Scene Registry architecture</div>
           <ul class="card-features">
-            <li>Deploy → Move → Shoot in continuous flow</li>
-            <li>Debug panel: auto-deploy, skip-to-phase, collision/ruin/LoS overlays</li>
-            <li>Edge-to-edge LoS with model-center ruin exemption</li>
-            <li>Auto-commit uncommitted moves on phase end</li>
-            <li>Terrain-aware auto-deploy (avoids walls)</li>
+            <li>Full 5-phase flow: Deploy → Move → Shoot → Charge → Fight</li>
+            <li>Scene Registry: declarative phase configs, one generic transitionTo()</li>
+            <li>GameBus (EventTarget): replaces single-slot callbacks</li>
+            <li>Cleanup validation: catches stale DOM on phase transitions</li>
+            <li>Debug panel: skip-to any phase, collision/ruin/LoS overlays</li>
           </ul>
           <span class="card-link">OPEN →</span>
         </a>
