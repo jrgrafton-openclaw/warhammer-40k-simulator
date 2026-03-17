@@ -865,14 +865,13 @@ export function initCharge() {
   // Stratagem modal
   wireStratModal();
 
-  // SVG click/mousedown interception
+  // SVG click/mousedown interception (store refs for cleanup)
   const svg = $('#bf-svg');
   if (svg) {
     svg.addEventListener('click', handleSvgClick, true);
     svg.addEventListener('mousedown', handleSvgMousedown, true);
 
-    // Hover: green → red on enemy hulls (matches shoot v0.9)
-    svg.addEventListener('mouseover', (e) => {
+    _chargeMouseover = (e) => {
       if (state.phase !== 'SELECT_TARGET') return;
       let node = e.target;
       while (node && !node.classList?.contains('unit-hull') && !node.classList?.contains('model-base')) node = node.parentElement;
@@ -882,8 +881,10 @@ export function initCharge() {
         state.hoveredTargetId = uid;
         paintHulls();
       }
-    });
-    svg.addEventListener('mouseout', (e) => {
+    };
+    svg.addEventListener('mouseover', _chargeMouseover);
+
+    _chargeMouseout = (e) => {
       if (!state.hoveredTargetId) return;
       let related = e.relatedTarget;
       while (related && !related.classList?.contains('unit-hull') && !related.classList?.contains('model-base')) related = related.parentElement;
@@ -892,11 +893,12 @@ export function initCharge() {
         state.hoveredTargetId = null;
         paintHulls();
       }
-    });
+    };
+    svg.addEventListener('mouseout', _chargeMouseout);
   }
 
-  // Keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
+  // Keyboard shortcuts (store ref for cleanup)
+  _chargeKeydown = (e) => {
     if (e.key === 'Escape') {
       if (state.phase === 'CHARGE_MOVE') {
         cancelChargeMove();
@@ -909,19 +911,18 @@ export function initCharge() {
         baseSelectUnit(null);
       }
     }
-    // S = stratagem shortcut
     if (e.key === 's' || e.key === 'S') {
       if (!e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement?.tagName !== 'INPUT') {
         $('#btn-strat')?.click();
       }
     }
-    // E = end phase shortcut
     if (e.key === 'e' || e.key === 'E') {
       if (!e.ctrlKey && !e.metaKey && !e.altKey && document.activeElement?.tagName !== 'INPUT') {
         $('#btn-end-charge')?.click();
       }
     }
-  });
+  };
+  document.addEventListener('keydown', _chargeKeydown);
 
   // Start
   enterSelectCharger();
@@ -931,18 +932,27 @@ export function initCharge() {
   window.__chargeDebug = { state, getValidTargets, checkEngagementReached, isEligibleCharger };
 }
 
+// ── Stored handler refs (for cleanup) ───────────────────
+let _chargeMouseover = null;
+let _chargeMouseout = null;
+let _chargeKeydown = null;
+
 // ── Cleanup (for integrated phase transition) ─────────
 export function cleanupCharge() {
-  // Remove SVG event listeners
+  // Remove SVG event listeners (explicit removal, don't clone SVG)
   const svg = $('#bf-svg');
   if (svg) {
-    // Clone SVG to remove all anonymous listeners (charge adds several)
-    // This is safe because initModelInteraction re-binds its listeners
-    const svgListeners = svg.cloneNode(false);
-    while (svg.firstChild) svgListeners.appendChild(svg.firstChild);
-    svg.parentNode.replaceChild(svgListeners, svg);
-    svgListeners.id = 'bf-svg';
+    svg.removeEventListener('click', handleSvgClick, true);
+    svg.removeEventListener('mousedown', handleSvgMousedown, true);
+    if (_chargeMouseover) svg.removeEventListener('mouseover', _chargeMouseover);
+    if (_chargeMouseout) svg.removeEventListener('mouseout', _chargeMouseout);
   }
+  _chargeMouseover = null;
+  _chargeMouseout = null;
+
+  // Remove keyboard handler
+  if (_chargeKeydown) document.removeEventListener('keydown', _chargeKeydown);
+  _chargeKeydown = null;
 
   // Remove drag interceptor
   delete simState.drag;
