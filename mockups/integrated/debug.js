@@ -191,70 +191,103 @@ function skipToPhase(targetPhase) {
 
 // Position imp units near ork units for combat testing
 function _positionUnitsForPhase(targetPhase) {
-  // Find ork centroid
   var orks = simState.units.filter(function(u) { return u.faction === 'ork'; });
-  var orkCx = 0, orkCy = 0, orkCount = 0;
-  orks.forEach(function(u) {
-    u.models.forEach(function(m) { orkCx += m.x; orkCy += m.y; orkCount++; });
-  });
-  if (orkCount === 0) return;
-  orkCx /= orkCount;
-  orkCy /= orkCount;
+  if (orks.length === 0) return;
 
   var impUnits = simState.units.filter(function(u) { return u.faction === 'imp'; });
   var spacing = 22;
 
-  if (targetPhase === 'shoot') {
-    // Position ~20" away (within 30" plasma range but far enough to test LoS)
-    _moveUnitsNear(impUnits, orkCx - 240, orkCy, spacing);
-  } else if (targetPhase === 'charge') {
-    // Position ~8" away (within 12" charge declaration range)
-    _moveUnitsNear(impUnits, orkCx - 100, orkCy, spacing);
-  } else if (targetPhase === 'fight') {
-    // Position within 1" engagement range (PX_PER_INCH = 12px, need edge-to-edge ≤12px)
-    // With R32=8px models, center-to-center needs to be ≤ 8+8+12 = 28px
-    // Position units interleaved with ork positions for direct engagement
-    var impIdx = 0;
-    impUnits.forEach(function(unit) {
-      // Pick a nearby ork to engage with
-      var ork = orks[impIdx % orks.length];
-      var orkCenter = { x: 0, y: 0 };
-      ork.models.forEach(function(m) { orkCenter.x += m.x; orkCenter.y += m.y; });
-      orkCenter.x /= ork.models.length;
-      orkCenter.y /= ork.models.length;
+  // Assign each imp unit to an ork target (round-robin)
+  impUnits.forEach(function(unit, idx) {
+    var ork = orks[idx % orks.length];
+    var orkCenter = _unitCenter(ork);
+    var offsetPx;
 
-      // Place unit 20px left of the ork (within engagement)
-      var targetCx = orkCenter.x - 20;
-      var targetCy = orkCenter.y;
-      _placeUnitAt(unit, targetCx, targetCy, spacing);
-      impIdx++;
-    });
-    return; // skip generic positioning
-  }
+    if (targetPhase === 'shoot') {
+      offsetPx = 240; // ~20" away (within 30" plasma range)
+    } else if (targetPhase === 'charge') {
+      offsetPx = 90;  // ~7.5" away (within 12" charge range)
+    } else if (targetPhase === 'fight') {
+      offsetPx = 24;  // ~2" away edge-to-edge ≈ within engagement after pile-in
+    } else {
+      return;
+    }
+
+    // Spread units vertically per ork to avoid stacking
+    var unitsPerOrk = Math.ceil(impUnits.length / orks.length);
+    var subIdx = Math.floor(idx / orks.length);
+    var yOff = (subIdx - (unitsPerOrk - 1) / 2) * 60;
+
+    var targetCx = orkCenter.x - offsetPx;
+    var targetCy = orkCenter.y + yOff;
+
+    // Clamp to board
+    targetCx = Math.max(30, Math.min(690, targetCx));
+    targetCy = Math.max(30, Math.min(498, targetCy));
+
+    // Place unit at target position
+    _placeUnitAt(unit, targetCx, targetCy, spacing);
+
+    // Nudge to avoid terrain collisions
+    if (unitCollidesToerrain(unit)) {
+      var found = false;
+      // Try grid of nearby positions
+      for (var dx = -40; dx <= 40 && !found; dx += 20) {
+        for (var dy = -40; dy <= 40 && !found; dy += 20) {
+          if (dx === 0 && dy === 0) continue;
+          var nx = targetCx + dx, ny = targetCy + dy;
+          if (nx < 20 || nx > 700 || ny < 20 || ny > 508) continue;
+          _placeUnitAt(unit, nx, ny, spacing);
+          if (!unitCollidesToerrain(unit)) found = true;
+        }
+      }
+      // Wider scan if still colliding
+      if (!found) {
+        for (var sx = 30; sx <= 690 && !found; sx += 40) {
+          for (var sy = 30; sy <= 500 && !found; sy += 40) {
+            _placeUnitAt(unit, sx, sy, spacing);
+            if (!unitCollidesToerrain(unit)) {
+              // Check still reasonably close to the ork
+              if (Math.hypot(sx - orkCenter.x, sy - orkCenter.y) < offsetPx + 60) found = true;
+            }
+          }
+        }
+      }
+    }
+
+    // Resolve cross-unit model overlaps
+    _resolveAllModelOverlaps(unit);
+  });
 }
 
-function _moveUnitsNear(units, cx, cy, spacing) {
-  var yStep = 55;
-  units.forEach(function(unit, unitIdx) {
-    var targetCx = cx + (unitIdx % 2) * 50;
-    var targetCy = cy - 100 + Math.floor(unitIdx / 2) * yStep;
-    // Clamp to board
-    targetCx = Math.max(20, Math.min(700, targetCx));
-    targetCy = Math.max(20, Math.min(508, targetCy));
+function _unitCenter(unit) {
+  var cx = 0, cy = 0;
+  unit.models.forEach(function(m) { cx += m.x; cy += m.y; });
+  return { x: cx / unit.models.length, y: cy / unit.models.length };
+}
 
-    var models = unit.models;
-    var n = models.length;
-    var cols = Math.ceil(Math.sqrt(n));
-    var rows = Math.ceil(n / cols);
-    var ox = targetCx - ((cols - 1) * spacing) / 2;
-    var oy = targetCy - ((rows - 1) * spacing) / 2;
-    for (var i = 0; i < n; i++) {
-      var col = i % cols;
-      var row = Math.floor(i / cols);
-      models[i].x = ox + col * spacing;
-      models[i].y = oy + row * spacing;
-    }
-  });
+function _resolveAllModelOverlaps(unit) {
+  // Push models away from any overlapping models (own or other units)
+  for (var iter = 0; iter < 8; iter++) {
+    var moved = false;
+    unit.models.forEach(function(m) {
+      simState.units.forEach(function(other) {
+        other.models.forEach(function(om) {
+          if (om === m) return;
+          var minDist = (m.r || 8) + (om.r || 8) + 2;
+          var dx = m.x - om.x, dy = m.y - om.y;
+          var dist = Math.hypot(dx, dy);
+          if (dist < minDist && dist > 0.01) {
+            var push = (minDist - dist) / 2;
+            m.x += (dx / dist) * push;
+            m.y += (dy / dist) * push;
+            moved = true;
+          }
+        });
+      });
+    });
+    if (!moved) break;
+  }
 }
 
 // ── State Display ────────────────────────────────────────
