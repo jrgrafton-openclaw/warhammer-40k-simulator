@@ -138,8 +138,16 @@
   color: var(--text-muted);
   transition: color 0.15s;
 }
+.pause-icon .icon-fill {
+  fill: none;
+  transition: fill 0.15s, opacity 0.15s;
+}
 .pause-item:hover .pause-icon {
   color: var(--imp);
+}
+.pause-item:hover .pause-icon .icon-fill {
+  fill: currentColor;
+  opacity: 0.25;
 }
 
 .pause-label {
