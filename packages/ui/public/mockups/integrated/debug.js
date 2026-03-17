@@ -208,7 +208,7 @@ function _positionUnitsForPhase(targetPhase) {
     } else if (targetPhase === 'charge') {
       offsetPx = 90;  // ~7.5" away (within 12" charge range)
     } else if (targetPhase === 'fight') {
-      offsetPx = 24;  // ~2" away edge-to-edge ≈ within engagement after pile-in
+      offsetPx = 18;  // Close enough for engagement (edge-to-edge ≤ 12px = 1")
     } else {
       return;
     }
