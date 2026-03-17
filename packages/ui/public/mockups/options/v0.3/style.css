@@ -136,18 +136,11 @@
   height: 22px;
   flex-shrink: 0;
   color: var(--text-muted);
-  transition: color 0.15s;
-}
-.pause-icon .icon-fill {
-  fill: none;
-  transition: fill 0.15s, opacity 0.15s;
+  transition: color 0.15s, filter 0.15s;
 }
 .pause-item:hover .pause-icon {
   color: var(--imp);
-}
-.pause-item:hover .pause-icon .icon-fill {
-  fill: currentColor;
-  opacity: 0.25;
+  filter: drop-shadow(0 0 4px rgba(0, 212, 255, 0.3));
 }
 
 .pause-label {
