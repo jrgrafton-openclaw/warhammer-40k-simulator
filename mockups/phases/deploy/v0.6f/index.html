@@ -139,14 +139,7 @@
     <!-- Warm grey base — no black gaps -->
     <div class="fog-base"></div>
 
-    <!-- Z1: Dense fog base — thick, slow, fills in all gaps -->
-    <div class="fogwrapper-dense" id="fogwrapper-dense">
-      <div id="foglayer_dense_01"><div class="image01"></div><div class="image02"></div></div>
-      <div id="foglayer_dense_02"><div class="image01"></div><div class="image02"></div></div>
-      <div id="foglayer_dense_03"><div class="image01"></div><div class="image02"></div></div>
-    </div>
-
-    <!-- Z5: Surface fog — wispy warzone smoke detail -->
+    <!-- Surface fog — wispy warzone smoke (ABOVE board) -->
     <div class="fogwrapper" id="fogwrapper-surface">
       <div id="foglayer_01"><div class="image01"></div><div class="image02"></div></div>
       <div id="foglayer_02"><div class="image01"></div><div class="image02"></div></div>
@@ -185,6 +178,13 @@
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
 
     <div id="battlefield-inner">
+      <!-- Dense fog INSIDE battlefield-inner — board SVG covers it naturally -->
+      <div class="fogwrapper-dense" id="fogwrapper-dense">
+        <div id="foglayer_dense_01"><div class="image01"></div><div class="image02"></div></div>
+        <div id="foglayer_dense_02"><div class="image01"></div><div class="image02"></div></div>
+        <div id="foglayer_dense_03"><div class="image01"></div><div class="image02"></div></div>
+      </div>
+
       <!-- SVG 1: terrain + deployment zones (standard viewBox, staging at negative x renders via overflow:visible) -->
       <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
 
@@ -371,10 +371,9 @@
     if (match) {
       var btx = parseFloat(match[1]);
       var bty = parseFloat(match[2]);
-      // Dense base: slower parallax (further away)
-      if (dense) dense.style.transform = 'translate(' + (btx * 0.15) + 'px,' + (bty * 0.15) + 'px)';
-      // Surface: stronger parallax (closer to board)
-      if (surface) surface.style.transform = 'translate(' + (btx * 0.35) + 'px,' + (bty * 0.35) + 'px)';
+      // Dense fog moves with board (inside battlefield-inner) — no separate parallax needed
+      // Surface wisps: moderate parallax
+      if (surface) surface.style.transform = 'translate(' + (btx * 0.25) + 'px,' + (bty * 0.25) + 'px)';
     }
     requestAnimationFrame(updateParallax);
   }

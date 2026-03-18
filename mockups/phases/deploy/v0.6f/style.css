@@ -15,12 +15,6 @@
 #bf-svg-terrain, #bf-svg { overflow: visible; }
 
 /* Fog layers + effects are in fog-layers.css */
-
-/* Board BETWEEN dense fog (z1) and surface wisps (z5) */
-#battlefield-inner {
-  position: relative;
-  z-index: 2;
-}
 /* Board surface and grid are now SVG rects inside #bf-svg-terrain
    (in SVG coordinate space — matches deployment zones exactly).
    Remove the CSS background and grid pseudo-element. */
