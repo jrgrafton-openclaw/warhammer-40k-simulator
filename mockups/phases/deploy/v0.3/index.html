@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — v0.3 · Deployment Phase</title>
+  <title>WH40K Simulator — v0.12a · Deployment Phase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Component CSS (shared split) -->
@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="../../../shared/components/fx.css">
   <link rel="stylesheet" href="../../../shared/components/battlefield.css">
   <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css?v=20260314-deploy4">
+  <link rel="stylesheet" href="style.css?v=20260314-deploy5">
 </head>
 <body>
 <div id="app">
@@ -39,7 +39,7 @@
           <span class="faction-chevron">▾</span>
         </div>
         <div class="faction-body">
-          <div class="rail-unit active" data-unit="assault-intercessors">
+          <div class="rail-unit" data-unit="assault-intercessors">
             <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div>
             <span class="rn">Assault Intercessors</span><span class="rc">5</span>
             <span class="roster-state-pill deploy-state">UNDEPLOYED</span>
@@ -132,24 +132,13 @@
     </div>
   </aside>
 
-  <!-- ═══════════════════ IMPERIUM STAGING PANEL ═══════════════════ -->
-  <aside id="staging-panel-imp" class="staging-panel imp-side">
-    <div class="staging-header imp">IMPERIUM STAGING</div>
-    <div class="staging-unit-list" id="staging-list-imp"></div>
-    <div class="staging-drop-zone reserves" id="dz-imp-reserves">
-      <span class="dz-title">RESERVES</span>
-      <span class="dz-hint">drag here or click</span>
-      <div class="dz-units" id="dz-imp-reserves-list"></div>
-    </div>
-    <div class="staging-drop-zone deepstrike" id="dz-imp-deepstrike">
-      <span class="dz-title">DEEP STRIKE</span>
-      <span class="dz-hint">drag here or click</span>
-      <div class="dz-units" id="dz-imp-deepstrike-list"></div>
-    </div>
-  </aside>
-
   <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
   <main id="battlefield">
+
+    <!-- Nebula background image (parallax via JS) -->
+    <div id="nebula-bg"></div>
+    <!-- Animated star overlay canvas -->
+    <canvas id="space-bg"></canvas>
 
     <a class="backlink" href="../../../index.html#deploy" title="Back to mockup archive">← Mockups</a>
 
@@ -177,19 +166,34 @@
       </div>
     </div>
 
-    <div class="deploy-badge">v0.3 · DEPLOYMENT</div>
+    <div class="deploy-badge">v0.4 · DEPLOYMENT</div>
 
     <!-- Invalid zone banner -->
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
 
     <div id="battlefield-inner">
-      <!-- SVG 1: terrain + deployment zones (720x528 — no staging) -->
+      <!-- SVG 1: terrain + deployment zones (standard viewBox, staging at negative x renders via overflow:visible) -->
       <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+
+        <!-- ═══ STAGING ZONE (off-table left) ═══ -->
+        <rect class="offboard-zone staging-zone-bg" x="-540" y="20" width="250" height="488" rx="4"/>
+        <text class="offboard-zone-label" x="-415" y="264">STAGING</text>
+
+        <!-- ═══ DEEP STRIKE ZONE ═══ -->
+        <rect class="offboard-zone ds-zone-bg" x="-270" y="20" width="250" height="230" rx="4"/>
+        <text class="offboard-zone-label ds-label" x="-145" y="135">DEEP STRIKE</text>
+
+        <!-- ═══ RESERVES ZONE ═══ -->
+        <rect class="offboard-zone reserves-zone-bg" x="-270" y="278" width="250" height="230" rx="4"/>
+        <text class="offboard-zone-label reserves-label" x="-145" y="393">RESERVES</text>
+
+        <!-- Board edge separator -->
+        <line class="board-edge-separator" x1="0" y1="0" x2="0" y2="528"/>
 
         <!-- ═══ IMPERIUM DEPLOYMENT ZONE (0-240) ═══ -->
         <rect class="deploy-zone-bg imp-zone" x="0" y="0" width="240" height="528"/>
         <line class="deploy-zone-border imp-border" x1="240" y1="0" x2="240" y2="528"/>
-        <text class="deploy-zone-label imp-label" x="120" y="264">IMPERIUM</text>
+        <text class="deploy-zone-label imp-label" x="120" y="264">PLAYER</text>
         <text class="deploy-zone-sublabel imp-label" x="120" y="284">DEPLOYMENT ZONE</text>
 
         <!-- No Man's Land: middle (240-480) -->
@@ -199,7 +203,7 @@
         <!-- ═══ ORK DEPLOYMENT ZONE (480-720) ═══ -->
         <rect class="deploy-zone-bg ork-zone" x="480" y="0" width="240" height="528"/>
         <line class="deploy-zone-border ork-border" x1="480" y1="0" x2="480" y2="528"/>
-        <text class="deploy-zone-label ork-label" x="600" y="264">ORKS</text>
+        <text class="deploy-zone-label ork-label" x="600" y="264">OPPONENT</text>
         <text class="deploy-zone-sublabel ork-label" x="600" y="284">DEPLOYMENT ZONE</text>
 
         <g id="terrain-layer"></g>
@@ -229,7 +233,7 @@
       <div id='range-charge-label' class='range-label rl-charge' style='display:none'>CHARGE</div>
       <div id='range-ds-label' class='range-label rl-ds' style='display:none'>DS</div>
 
-      <!-- SVG 2: model overlays + bases (720x528) -->
+      <!-- SVG 2: model overlays + bases (standard viewBox, models at negative x render via overflow:visible) -->
       <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
         <g id="layer-move-ghosts"></g>
         <g id="layer-range-rings"></g>
@@ -241,7 +245,7 @@
     </div><!-- /battlefield-inner -->
 
     <!-- Unit Card -->
-    <div id="unit-card" class="visible">
+    <div id="unit-card">
       <div class="card-hdr">
         <div style="min-width:0;flex:1;">
           <div class="card-title-row">
@@ -300,22 +304,6 @@
 
   </main>
 
-  <!-- ═══════════════════ ORK STAGING PANEL ═══════════════════ -->
-  <aside id="staging-panel-ork" class="staging-panel ork-side">
-    <div class="staging-header ork">ORKS STAGING</div>
-    <div class="staging-unit-list" id="staging-list-ork"></div>
-    <div class="staging-drop-zone reserves ork" id="dz-ork-reserves">
-      <span class="dz-title">RESERVES</span>
-      <span class="dz-hint">pre-deployed</span>
-      <div class="dz-units" id="dz-ork-reserves-list"></div>
-    </div>
-    <div class="staging-drop-zone deepstrike ork" id="dz-ork-deepstrike">
-      <span class="dz-title">DEEP STRIKE</span>
-      <span class="dz-hint">pre-deployed</span>
-      <div class="dz-units" id="dz-ork-deepstrike-list"></div>
-    </div>
-  </aside>
-
 </div><!-- /app -->
 
 <!-- Stratagem Modal -->
@@ -351,6 +339,7 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script type="module" src="scene.js?v=20260314-deploy4"></script>
+<script src="space-bg.js?v=20260316-v05a"></script>
+<script type="module" src="scene.js?v=20260316-v05a"></script>
 </body>
 </html>

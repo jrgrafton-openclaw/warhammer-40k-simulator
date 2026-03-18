@@ -1,113 +1,78 @@
 /* ══════════════════════════════════════════════════════════════
-   v0.1 Deployment Phase — Overrides
+   v0.5a Deployment Phase — Drop Shadows + Space Background
+   Based on v0.4. Adds: animated space bg, terrain drop shadows.
    All shared styles are in ../../../shared/components/*.css
-   This file contains ONLY deployment-phase-specific styles.
 ══════════════════════════════════════════════════════════════ */
 
-/* ── App layout: 4-column with reserve panels ── */
+/* ── App layout: standard 2-column (roster | battlefield) ── */
 #app {
   display: grid;
-  grid-template-columns: 160px 220px 1fr 160px;
+  grid-template-columns: 220px 1fr;
   height: 100vh;
 }
-#reserves-left  { grid-column: 1; }
-#roster         { grid-column: 2; }
-#battlefield    { grid-column: 3; }
-#reserves-right { grid-column: 4; }
+#roster { grid-column: 1; }
+#battlefield { grid-column: 2; overflow: hidden; position: relative; }
+#bf-svg-terrain, #bf-svg { overflow: visible; }
 
-/* ── Reserves panels ── */
-.reserves-panel {
-  background: var(--bg-surface, #0d1117);
-  border-left: 1px solid rgba(255,255,255,0.04);
-  border-right: 1px solid rgba(255,255,255,0.04);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  font-family: 'Rajdhani', sans-serif;
+/* ── Animated space background canvas ── */
+#space-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
 }
-.reserves-header {
-  font: 700 10px/1 'Rajdhani', sans-serif;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  padding: 10px 10px;
-  text-align: center;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+/* Board surface and grid are now SVG rects inside #bf-svg-terrain
+   (in SVG coordinate space — matches deployment zones exactly).
+   Remove the CSS background and grid pseudo-element. */
+#battlefield-inner {
+  background: transparent !important;
 }
-.reserves-header.imp { color: var(--imp, #00d4ff); background: rgba(0,212,255,0.04); }
-.reserves-header.ork { color: var(--ork, #ff4020); background: rgba(255,64,32,0.04); }
-
-.reserves-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 6px;
-}
-.reserves-section {
-  margin-bottom: 8px;
-}
-.reserves-section-label {
-  font: 700 8px/1 'Rajdhani', sans-serif;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--text-dis, #4a5568);
-  padding: 6px 4px 4px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  margin-bottom: 4px;
+#battlefield-inner::before {
+  display: none !important;
 }
 
-/* ── Reserve unit cards ── */
-.reserve-card {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  margin-bottom: 3px;
-  background: var(--bg-raised, #161b22);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 3px;
-  cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
-  user-select: none;
+/* ── Off-board SVG zones (staging / deep strike / reserves) ── */
+.offboard-zone {
+  fill: rgba(0,212,255,0.03);
+  stroke: rgba(0,212,255,0.2);
+  stroke-width: 1.5;
+  stroke-dasharray: 8 4;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
-.reserve-card:hover {
-  border-color: rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.03);
+.offboard-zone.ds-zone-bg {
+  fill: rgba(255,170,0,0.03);
+  stroke: rgba(255,170,0,0.2);
 }
-.reserve-card.selected {
-  border-color: var(--imp, #00d4ff);
-  background: rgba(0,212,255,0.06);
+.offboard-zone.reserves-zone-bg {
+  fill: rgba(186,126,255,0.03);
+  stroke: rgba(186,126,255,0.2);
 }
-.reserve-card.faction-ork.selected {
-  border-color: var(--ork, #ff4020);
-  background: rgba(255,64,32,0.06);
+
+.offboard-zone-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 5px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: rgba(0,212,255,0.12);
+  pointer-events: none;
 }
-.reserve-card .rc-icon {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 8px/1 'Rajdhani', sans-serif;
-  color: var(--text-muted, #8b949e);
-  flex-shrink: 0;
+.offboard-zone-label.ds-label {
+  fill: rgba(255,170,0,0.12);
 }
-.reserve-card.faction-imp .rc-icon { border-color: rgba(0,212,255,0.25); color: var(--imp); }
-.reserve-card.faction-ork .rc-icon { border-color: rgba(255,64,32,0.25); color: var(--ork); }
-.reserve-card .rc-name {
-  font: 600 9px/1.2 'Rajdhani', sans-serif;
-  color: var(--text-primary, #c9d1d9);
-  letter-spacing: 0.5px;
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.offboard-zone-label.reserves-label {
+  fill: rgba(186,126,255,0.12);
 }
-.reserve-card .rc-count {
-  font: 700 9px/1 'Rajdhani', sans-serif;
-  color: var(--text-dis, #4a5568);
-  flex-shrink: 0;
+
+/* ── Board edge separator ── */
+.board-edge-separator {
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 2;
+  stroke-dasharray: 12 6;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
 /* ── Deployment zone SVG styling ── */
@@ -163,6 +128,31 @@
 /* ── Zone highlight on drag ── */
 .deploy-zone-bg.zone-active.imp-zone { fill: rgba(0,212,255,0.14); transition: fill 0.2s; }
 .deploy-zone-bg.zone-active.ork-zone { fill: rgba(255,64,32,0.14); transition: fill 0.2s; }
+.offboard-zone.zone-active.staging-zone-bg { fill: rgba(0,212,255,0.08); stroke: rgba(0,212,255,0.4); transition: fill 0.2s, stroke 0.2s; }
+.offboard-zone.zone-active.ds-zone-bg { fill: rgba(255,170,0,0.08); stroke: rgba(255,170,0,0.4); transition: fill 0.2s, stroke 0.2s; }
+.offboard-zone.zone-active.reserves-zone-bg { fill: rgba(186,126,255,0.08); stroke: rgba(186,126,255,0.4); transition: fill 0.2s, stroke 0.2s; }
+
+/* ── Deployment complete — hide deployment zone shading + staging only ── */
+/* DS and Reserves zones PERSIST (units enter play later) */
+.deployment-complete .deploy-zone-bg,
+.deployment-complete .deploy-zone-border,
+.deployment-complete .deploy-zone-label,
+.deployment-complete .deploy-zone-sublabel,
+.deployment-complete .nml-label {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.deployment-complete .nml-zone-bg {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+/* Only hide staging zone and board-edge separator, keep DS + Reserves */
+.deployment-complete .staging-zone-bg,
+.deployment-complete .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.deployment-complete .board-edge-separator {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
 
 /* ── Version badge ── */
 .deploy-badge {
@@ -245,14 +235,7 @@
 @keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 .shake-error { animation: shake-err 0.4s ease; }
 
-/* ── Mode buttons active state for deploy ── */
-#btn-place.active {
-  background: rgba(0,212,255,0.1);
-  border-color: rgba(0,212,255,0.35);
-  color: var(--imp, #00d4ff);
-}
-#btn-reserves.active {
-  background: rgba(186,126,255,0.1);
-  border-color: rgba(186,126,255,0.35);
-  color: #ba7eff;
+/* ── Camera transition for deployment lock ── */
+.camera-transition #battlefield-inner {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }

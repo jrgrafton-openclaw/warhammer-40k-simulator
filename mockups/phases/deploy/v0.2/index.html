@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — v0.2 · Deployment Phase</title>
+  <title>WH40K Simulator — v0.6k · Black Void</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Component CSS (shared split) -->
@@ -18,7 +18,8 @@
   <link rel="stylesheet" href="../../../shared/components/fx.css">
   <link rel="stylesheet" href="../../../shared/components/battlefield.css">
   <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css?v=20260314-deploy3">
+  <link rel="stylesheet" href="style.css?v=20260317-fog3">
+  <link rel="stylesheet" href="fog-layers.css?v=20260317-fog3">
 </head>
 <body>
 <div id="app">
@@ -39,7 +40,7 @@
           <span class="faction-chevron">▾</span>
         </div>
         <div class="faction-body">
-          <div class="rail-unit active" data-unit="assault-intercessors">
+          <div class="rail-unit" data-unit="assault-intercessors">
             <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div>
             <span class="rn">Assault Intercessors</span><span class="rc">5</span>
             <span class="roster-state-pill deploy-state">UNDEPLOYED</span>
@@ -135,6 +136,15 @@
   <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
   <main id="battlefield">
 
+    <!-- Fog layers (CSS-animated, textures applied by fog-gen.js) -->
+    <div class="fogwrapper">
+      <div id="foglayer_01"><div class="image01"></div><div class="image02"></div></div>
+      <div id="foglayer_02"><div class="image01"></div><div class="image02"></div></div>
+      <div id="foglayer_03"><div class="image01"></div><div class="image02"></div></div>
+    </div>
+
+    <!-- No viewport mask — fog is BEHIND the board, board occludes naturally -->
+
     <a class="backlink" href="../../../index.html#deploy" title="Back to mockup archive">← Mockups</a>
 
     <!-- VP / Score Bar -->
@@ -161,58 +171,45 @@
       </div>
     </div>
 
-    <div class="deploy-badge">v0.2 · DEPLOYMENT</div>
+    <div class="deploy-badge">v0.6k · BLACK VOID</div>
 
     <!-- Invalid zone banner -->
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
 
     <div id="battlefield-inner">
-      <!-- SVG 1: terrain + deployment zones + staging areas -->
-      <svg id="bf-svg-terrain" viewBox="0 0 900 528" preserveAspectRatio="xMidYMid slice">
+      <!-- SVG 1: terrain + deployment zones (standard viewBox, staging at negative x renders via overflow:visible) -->
+      <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
 
-        <!-- ═══ IMPERIUM STAGING AREA (far left, 0-160) ═══ -->
-        <rect class="staging-bg imp-staging" x="0" y="0" width="160" height="528"/>
-        <line class="staging-border imp-staging-border" x1="160" y1="0" x2="160" y2="528"/>
-        <text class="staging-label imp-staging-label" x="80" y="24">IMPERIUM</text>
-        <text class="staging-sublabel imp-staging-label" x="80" y="38">STAGING</text>
-        <!-- Imp Reserves drop zone -->
-        <rect class="drop-zone-bg imp-reserves-dz" id="imp-reserves-dz" x="10" y="310" width="140" height="100" rx="4"/>
-        <text class="drop-zone-label imp-dz-label" x="80" y="355">RESERVES</text>
-        <text class="drop-zone-sublabel imp-dz-label" x="80" y="370">drop here</text>
-        <!-- Imp Deep Strike drop zone -->
-        <rect class="drop-zone-bg imp-deepstrike-dz" id="imp-deepstrike-dz" x="10" y="420" width="140" height="100" rx="4"/>
-        <text class="drop-zone-label imp-dz-label" x="80" y="465">DEEP STRIKE</text>
-        <text class="drop-zone-sublabel imp-dz-label" x="80" y="480">drop here</text>
+        <!-- ═══ STAGING ZONE (off-table left) ═══ -->
+        <rect class="offboard-zone staging-zone-bg" x="-540" y="20" width="250" height="488" rx="4"/>
+        <text class="offboard-zone-label" x="-415" y="264">STAGING</text>
 
-        <!-- ═══ IMPERIUM DEPLOYMENT ZONE (160-330) ═══ -->
-        <rect class="deploy-zone-bg imp-zone" x="160" y="0" width="170" height="528"/>
-        <line class="deploy-zone-border imp-border" x1="330" y1="0" x2="330" y2="528"/>
-        <text class="deploy-zone-label imp-label" x="245" y="264">IMPERIUM</text>
-        <text class="deploy-zone-sublabel imp-label" x="245" y="284">DEPLOYMENT ZONE</text>
+        <!-- ═══ DEEP STRIKE ZONE ═══ -->
+        <rect class="offboard-zone ds-zone-bg" x="-270" y="20" width="250" height="230" rx="4"/>
+        <text class="offboard-zone-label ds-label" x="-145" y="135">DEEP STRIKE</text>
 
-        <!-- No Man's Land: middle (330-570) -->
-        <rect class="nml-zone-bg" x="330" y="0" width="240" height="528"/>
-        <text class="nml-label" x="450" y="264">NO MAN'S LAND</text>
+        <!-- ═══ RESERVES ZONE ═══ -->
+        <rect class="offboard-zone reserves-zone-bg" x="-270" y="278" width="250" height="230" rx="4"/>
+        <text class="offboard-zone-label reserves-label" x="-145" y="393">RESERVES</text>
 
-        <!-- ═══ ORK DEPLOYMENT ZONE (570-740) ═══ -->
-        <rect class="deploy-zone-bg ork-zone" x="570" y="0" width="170" height="528"/>
-        <line class="deploy-zone-border ork-border" x1="570" y1="0" x2="570" y2="528"/>
-        <text class="deploy-zone-label ork-label" x="655" y="264">ORKS</text>
-        <text class="deploy-zone-sublabel ork-label" x="655" y="284">DEPLOYMENT ZONE</text>
+        <!-- Board edge separator -->
+        <line class="board-edge-separator" x1="0" y1="0" x2="0" y2="528"/>
 
-        <!-- ═══ ORK STAGING AREA (far right, 740-900) ═══ -->
-        <rect class="staging-bg ork-staging" x="740" y="0" width="160" height="528"/>
-        <line class="staging-border ork-staging-border" x1="740" y1="0" x2="740" y2="528"/>
-        <text class="staging-label ork-staging-label" x="820" y="24">ORKS</text>
-        <text class="staging-sublabel ork-staging-label" x="820" y="38">STAGING</text>
-        <!-- Ork Reserves drop zone -->
-        <rect class="drop-zone-bg ork-reserves-dz" id="ork-reserves-dz" x="750" y="310" width="140" height="100" rx="4"/>
-        <text class="drop-zone-label ork-dz-label" x="820" y="355">RESERVES</text>
-        <text class="drop-zone-sublabel ork-dz-label" x="820" y="370">drop here</text>
-        <!-- Ork Deep Strike drop zone -->
-        <rect class="drop-zone-bg ork-deepstrike-dz" id="ork-deepstrike-dz" x="750" y="420" width="140" height="100" rx="4"/>
-        <text class="drop-zone-label ork-dz-label" x="820" y="465">DEEP STRIKE</text>
-        <text class="drop-zone-sublabel ork-dz-label" x="820" y="480">drop here</text>
+        <!-- ═══ IMPERIUM DEPLOYMENT ZONE (0-240) ═══ -->
+        <rect class="deploy-zone-bg imp-zone" x="0" y="0" width="240" height="528"/>
+        <line class="deploy-zone-border imp-border" x1="240" y1="0" x2="240" y2="528"/>
+        <text class="deploy-zone-label imp-label" x="120" y="264">IMPERIUM</text>
+        <text class="deploy-zone-sublabel imp-label" x="120" y="284">DEPLOYMENT ZONE</text>
+
+        <!-- No Man's Land: middle (240-480) -->
+        <rect class="nml-zone-bg" x="240" y="0" width="240" height="528"/>
+        <text class="nml-label" x="360" y="264">NO MAN'S LAND</text>
+
+        <!-- ═══ ORK DEPLOYMENT ZONE (480-720) ═══ -->
+        <rect class="deploy-zone-bg ork-zone" x="480" y="0" width="240" height="528"/>
+        <line class="deploy-zone-border ork-border" x1="480" y1="0" x2="480" y2="528"/>
+        <text class="deploy-zone-label ork-label" x="600" y="264">ORKS</text>
+        <text class="deploy-zone-sublabel ork-label" x="600" y="284">DEPLOYMENT ZONE</text>
 
         <g id="terrain-layer"></g>
       </svg>
@@ -231,7 +228,7 @@
       <div class="obj-hex-wrap neutral" style="left:83.33%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">04</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
       <div class="obj-hex-wrap neutral" style="left:50%;top:86.36%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">05</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
 
-      <!-- Range circles (Bug 6) -->
+      <!-- Range circles -->
       <div id='range-move' class='range-circle rc-move' style='display:none'></div>
       <div id='range-advance' class='range-circle rc-advance' style='display:none'></div>
       <div id='range-charge' class='range-circle rc-charge' style='display:none'></div>
@@ -241,8 +238,8 @@
       <div id='range-charge-label' class='range-label rl-charge' style='display:none'>CHARGE</div>
       <div id='range-ds-label' class='range-label rl-ds' style='display:none'>DS</div>
 
-      <!-- SVG 2: model overlays + bases -->
-      <svg id="bf-svg" viewBox="0 0 900 528" preserveAspectRatio="xMidYMid slice">
+      <!-- SVG 2: model overlays + bases (standard viewBox, models at negative x render via overflow:visible) -->
+      <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
         <g id="layer-move-ghosts"></g>
         <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
@@ -250,14 +247,13 @@
         <g id="layer-move-rulers"></g>
       </svg>
 
-      <!-- ═══ STAGING TOKEN OVERLAYS (HTML, positioned absolute over SVG) ═══ -->
-      <div id="staging-tokens-imp" class="staging-tokens imp-side"></div>
-      <div id="staging-tokens-ork" class="staging-tokens ork-side"></div>
-
     </div><!-- /battlefield-inner -->
 
+    <!-- Effects canvas (explosions, sparks, debris) -->
+    <canvas id="fog-fx"></canvas>
+
     <!-- Unit Card -->
-    <div id="unit-card" class="visible">
+    <div id="unit-card">
       <div class="card-hdr">
         <div style="min-width:0;flex:1;">
           <div class="card-title-row">
@@ -351,6 +347,27 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script type="module" src="scene.js?v=20260314-deploy3"></script>
+<script src="fog-fx.js?v=20260317-fog5"></script>
+<script type="module" src="scene.js?v=20260317-fog5"></script>
+<!-- Fog parallax — reads board pan, offsets fog wrapper -->
+<script>
+(function initFogParallax() {
+  var fogwrap = document.querySelector('.fogwrapper');
+  var inner = document.getElementById('battlefield-inner');
+  if (!fogwrap || !inner) return;
+
+  function updateParallax() {
+    var style = inner.style.transform || '';
+    var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
+    if (match) {
+      var tx = parseFloat(match[1]) * 0.35;
+      var ty = parseFloat(match[2]) * 0.35;
+      fogwrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    }
+    requestAnimationFrame(updateParallax);
+  }
+  requestAnimationFrame(updateParallax);
+})();
+</script>
 </body>
 </html>

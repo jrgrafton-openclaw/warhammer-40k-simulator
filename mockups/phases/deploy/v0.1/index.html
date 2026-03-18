@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — v0.1 · Deployment Phase</title>
+  <title>WH40K Simulator — v0.5a · Deployment Phase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Component CSS (shared split) -->
@@ -18,29 +18,10 @@
   <link rel="stylesheet" href="../../../shared/components/fx.css">
   <link rel="stylesheet" href="../../../shared/components/battlefield.css">
   <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css?v=20260314-deploy1">
+  <link rel="stylesheet" href="style.css?v=20260314-deploy5">
 </head>
 <body>
 <div id="app">
-
-  <!-- ═══════════════════ LEFT RESERVES PANEL ═══════════════════ -->
-  <aside id="reserves-left" class="reserves-panel reserves-imp">
-    <div class="reserves-header imp">IMPERIUM RESERVES</div>
-    <div class="reserves-scroll">
-      <div class="reserves-section">
-        <div class="reserves-section-label">UNDEPLOYED</div>
-        <div class="reserves-list" id="imp-undeployed"></div>
-      </div>
-      <div class="reserves-section">
-        <div class="reserves-section-label">STRATEGIC RESERVES</div>
-        <div class="reserves-list" id="imp-strategic"></div>
-      </div>
-      <div class="reserves-section">
-        <div class="reserves-section-label">DEEP STRIKE</div>
-        <div class="reserves-list" id="imp-deepstrike"></div>
-      </div>
-    </div>
-  </aside>
 
   <!-- ═══════════════════ ROSTER ═══════════════════ -->
   <aside id="roster">
@@ -58,7 +39,7 @@
           <span class="faction-chevron">▾</span>
         </div>
         <div class="faction-body">
-          <div class="rail-unit active" data-unit="assault-intercessors">
+          <div class="rail-unit" data-unit="assault-intercessors">
             <div class="ri pl"><svg viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" stroke-width="2.5"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" stroke-width="2.5"/></svg></div>
             <span class="rn">Assault Intercessors</span><span class="rc">5</span>
             <span class="roster-state-pill deploy-state">UNDEPLOYED</span>
@@ -115,17 +96,17 @@
           <div class="rail-unit" data-unit="boss-nob">
             <div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,3 14.5,9 21,9.5 16,14 17.5,21 12,17.5 6.5,21 8,14 3,9.5 9.5,9" stroke="currentColor" stroke-width="1.5"/></svg></div>
             <span class="rn">Boss Nob</span><span class="rc">1</span>
-            <span class="roster-state-pill deploy-state">UNDEPLOYED</span>
+            <span class="roster-state-pill deploy-state deployed">✓ DEPLOYED</span>
           </div>
           <div class="rail-unit" data-unit="boyz-mob">
             <div class="ri en"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 20 Q5 14 12 14 Q19 14 19 20" stroke="currentColor" stroke-width="1.5"/></svg></div>
             <span class="rn">Boyz Mob</span><span class="rc">10</span>
-            <span class="roster-state-pill deploy-state">UNDEPLOYED</span>
+            <span class="roster-state-pill deploy-state deployed">✓ DEPLOYED</span>
           </div>
           <div class="rail-unit" data-unit="mekboy">
             <div class="ri en"><svg viewBox="0 0 24 24" fill="none"><polygon points="12,4 20,12 12,20 4,12" stroke="currentColor" stroke-width="2"/></svg></div>
             <span class="rn">Mekboy</span><span class="rc">1</span>
-            <span class="roster-state-pill deploy-state">UNDEPLOYED</span>
+            <span class="roster-state-pill deploy-state deployed">✓ DEPLOYED</span>
           </div>
 
           <!-- Army Abilities -->
@@ -154,6 +135,9 @@
   <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
   <main id="battlefield">
 
+    <!-- Animated space background (behind everything) -->
+    <canvas id="space-bg"></canvas>
+
     <a class="backlink" href="../../../index.html#deploy" title="Back to mockup archive">← Mockups</a>
 
     <!-- VP / Score Bar -->
@@ -180,25 +164,41 @@
       </div>
     </div>
 
-    <div class="deploy-badge">v0.1 · DEPLOYMENT</div>
+    <div class="deploy-badge">v0.4 · DEPLOYMENT</div>
 
     <!-- Invalid zone banner -->
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
 
     <div id="battlefield-inner">
-      <!-- SVG 1: terrain + deployment zones -->
+      <!-- SVG 1: terrain + deployment zones (standard viewBox, staging at negative x renders via overflow:visible) -->
       <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
-        <!-- Imperium deployment zone: left third (0-240px = 0-20") -->
+
+        <!-- ═══ STAGING ZONE (off-table left) ═══ -->
+        <rect class="offboard-zone staging-zone-bg" x="-540" y="20" width="250" height="488" rx="4"/>
+        <text class="offboard-zone-label" x="-415" y="264">STAGING</text>
+
+        <!-- ═══ DEEP STRIKE ZONE ═══ -->
+        <rect class="offboard-zone ds-zone-bg" x="-270" y="20" width="250" height="230" rx="4"/>
+        <text class="offboard-zone-label ds-label" x="-145" y="135">DEEP STRIKE</text>
+
+        <!-- ═══ RESERVES ZONE ═══ -->
+        <rect class="offboard-zone reserves-zone-bg" x="-270" y="278" width="250" height="230" rx="4"/>
+        <text class="offboard-zone-label reserves-label" x="-145" y="393">RESERVES</text>
+
+        <!-- Board edge separator -->
+        <line class="board-edge-separator" x1="0" y1="0" x2="0" y2="528"/>
+
+        <!-- ═══ IMPERIUM DEPLOYMENT ZONE (0-240) ═══ -->
         <rect class="deploy-zone-bg imp-zone" x="0" y="0" width="240" height="528"/>
         <line class="deploy-zone-border imp-border" x1="240" y1="0" x2="240" y2="528"/>
         <text class="deploy-zone-label imp-label" x="120" y="264">IMPERIUM</text>
         <text class="deploy-zone-sublabel imp-label" x="120" y="284">DEPLOYMENT ZONE</text>
 
-        <!-- No Man's Land: middle third (240-480px) -->
+        <!-- No Man's Land: middle (240-480) -->
         <rect class="nml-zone-bg" x="240" y="0" width="240" height="528"/>
         <text class="nml-label" x="360" y="264">NO MAN'S LAND</text>
 
-        <!-- Ork deployment zone: right third (480-720px = 40-60") -->
+        <!-- ═══ ORK DEPLOYMENT ZONE (480-720) ═══ -->
         <rect class="deploy-zone-bg ork-zone" x="480" y="0" width="240" height="528"/>
         <line class="deploy-zone-border ork-border" x1="480" y1="0" x2="480" y2="528"/>
         <text class="deploy-zone-label ork-label" x="600" y="264">ORKS</text>
@@ -221,7 +221,17 @@
       <div class="obj-hex-wrap neutral" style="left:83.33%;top:50%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">04</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
       <div class="obj-hex-wrap neutral" style="left:50%;top:86.36%;"><svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97"><polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/><text x="42" y="44" class="obj-n">05</text><text x="42" y="62" class="obj-l">OBJ</text></svg></div>
 
-      <!-- SVG 2: model overlays + bases -->
+      <!-- Range circles -->
+      <div id='range-move' class='range-circle rc-move' style='display:none'></div>
+      <div id='range-advance' class='range-circle rc-advance' style='display:none'></div>
+      <div id='range-charge' class='range-circle rc-charge' style='display:none'></div>
+      <div id='range-ds' class='range-circle rc-ds' style='display:none'></div>
+      <div id='range-move-label' class='range-label rl-move' style='display:none'>MOVE</div>
+      <div id='range-advance-label' class='range-label rl-advance' style='display:none'>ADV</div>
+      <div id='range-charge-label' class='range-label rl-charge' style='display:none'>CHARGE</div>
+      <div id='range-ds-label' class='range-label rl-ds' style='display:none'>DS</div>
+
+      <!-- SVG 2: model overlays + bases (standard viewBox, models at negative x render via overflow:visible) -->
       <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
         <g id="layer-move-ghosts"></g>
         <g id="layer-range-rings"></g>
@@ -229,10 +239,11 @@
         <g id="layer-models"></g>
         <g id="layer-move-rulers"></g>
       </svg>
+
     </div><!-- /battlefield-inner -->
 
     <!-- Unit Card -->
-    <div id="unit-card" class="visible">
+    <div id="unit-card">
       <div class="card-hdr">
         <div style="min-width:0;flex:1;">
           <div class="card-title-row">
@@ -258,8 +269,6 @@
     <!-- ═══ Action Bar ═══ -->
     <div id="action-bar">
       <div class="phase-row">
-        <div class="ph-item active"><span class="ph-dot"></span>DEPLOY</div>
-        <span class="ph-sep">·</span>
         <div class="ph-item"><span class="ph-dot"></span>CMD</div>
         <span class="ph-sep">·</span>
         <div class="ph-item"><span class="ph-dot"></span>MOVE</div>
@@ -273,18 +282,12 @@
 
       <div class="ab-sep"></div>
 
-      <!-- Mode group: PLACE / RESERVES -->
-      <div class="mode-group">
-        <button class="mode-btn active" id="btn-place" data-shortcut="P">PLACE ON BOARD</button>
-        <button class="mode-btn" id="btn-reserves" data-shortcut="R">TO RESERVES</button>
-      </div>
-
       <span id="deploy-status-label">IMPERIUM DEPLOYING · 0/5</span>
 
       <div class="ab-sep"></div>
 
       <!-- Confirm / Cancel -->
-      <button class="action-btn confirm-move" id="btn-confirm-unit" disabled>✓ CONFIRM UNIT</button>
+      <button class="action-btn confirm-move" id="btn-confirm-unit" disabled>✓ CONFIRM</button>
       <button class="action-btn cancel-move"  id="btn-cancel-unit"  disabled>✕ CANCEL</button>
 
       <div class="ab-sep"></div>
@@ -298,25 +301,6 @@
     </div>
 
   </main>
-
-  <!-- ═══════════════════ RIGHT RESERVES PANEL ═══════════════════ -->
-  <aside id="reserves-right" class="reserves-panel reserves-ork">
-    <div class="reserves-header ork">ORKS RESERVES</div>
-    <div class="reserves-scroll">
-      <div class="reserves-section">
-        <div class="reserves-section-label">UNDEPLOYED</div>
-        <div class="reserves-list" id="ork-undeployed"></div>
-      </div>
-      <div class="reserves-section">
-        <div class="reserves-section-label">STRATEGIC RESERVES</div>
-        <div class="reserves-list" id="ork-strategic"></div>
-      </div>
-      <div class="reserves-section">
-        <div class="reserves-section-label">DEEP STRIKE</div>
-        <div class="reserves-list" id="ork-deepstrike"></div>
-      </div>
-    </div>
-  </aside>
 
 </div><!-- /app -->
 
@@ -353,6 +337,7 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script type="module" src="scene.js?v=20260314-deploy1"></script>
+<script src="space-bg.js?v=20260316-v05a"></script>
+<script type="module" src="scene.js?v=20260316-v05a"></script>
 </body>
 </html>
