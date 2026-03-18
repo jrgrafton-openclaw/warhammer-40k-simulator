@@ -48,6 +48,12 @@
 }
 /* Mute hidden during gameplay via JS (CSS sibling selector can't reach it) */
 
+/* Fix: v0.7a forge CSS sets .obj-hex-wrap { opacity:0 } globally.
+   Game screen objectives must always be visible. */
+#screen-game .obj-hex-wrap {
+  opacity: 1;
+}
+
 /* Hide clutter from VP bar and deploy badge in integrated */
 #screen-game #reset-btn,
 #screen-game .vp-round,
