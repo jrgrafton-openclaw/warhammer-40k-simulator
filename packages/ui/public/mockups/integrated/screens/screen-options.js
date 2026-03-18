@@ -124,13 +124,92 @@ export function initOptions() {
   if (optBack) optBack.addEventListener('click', backToPause);
   if (optClose) optClose.addEventListener('click', backToPause);
 
+  // ── Settings persistence + live application ──────────
+  var STORAGE_KEY = 'wh40k-settings';
+
+  function loadSettings() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch (e) { return {}; }
+  }
+
+  function saveSettings(settings) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); } catch (e) {}
+  }
+
+  var settings = loadSettings();
+
+  // Defaults
+  var defaults = {
+    'master-vol': 80,
+    'music-vol': 60,
+    'sfx-vol': 75,
+    'cam-pan': 5,
+    'zoom-sens': 5,
+    'edge-scroll': false
+  };
+
+  // Apply defaults for missing keys
+  Object.keys(defaults).forEach(function(k) {
+    if (settings[k] === undefined) settings[k] = defaults[k];
+  });
+
+  // Expose settings globally for other modules
+  window.__wh40kSettings = settings;
+
+  // Apply audio volumes to the ambient audio element
+  function applyAudioSettings() {
+    var audio = document.getElementById('ambient-audio');
+    if (!audio) return;
+    var master = (settings['master-vol'] || 80) / 100;
+    var music = (settings['music-vol'] || 60) / 100;
+    audio.volume = Math.min(1, master * music);
+  }
+
+  // Apply camera settings to the SVG renderer
+  function applyCameraSettings() {
+    // Store on window for svg-renderer to read
+    window.__camPanSpeed = settings['cam-pan'] || 5;
+    window.__zoomSensitivity = settings['zoom-sens'] || 5;
+    window.__edgeScroll = !!settings['edge-scroll'];
+  }
+
   // Wire sliders
   document.querySelectorAll('.opt-slider').forEach(function(slider) {
     var displayId = slider.getAttribute('data-display');
     var display = document.getElementById(displayId);
     if (!display) return;
-    slider.addEventListener('input', function() {
+
+    // Restore saved value
+    if (settings[displayId] !== undefined) {
+      slider.value = settings[displayId];
       display.textContent = slider.max === '10' ? slider.value : slider.value + '%';
+    }
+
+    slider.addEventListener('input', function() {
+      var val = parseInt(slider.value, 10);
+      display.textContent = slider.max === '10' ? val : val + '%';
+      settings[displayId] = val;
+      saveSettings(settings);
+      window.__wh40kSettings = settings;
+      applyAudioSettings();
+      applyCameraSettings();
     });
   });
+
+  // Wire edge scroll toggle
+  var edgeToggle = document.querySelector('.opt-toggle input[type="checkbox"]');
+  if (edgeToggle) {
+    edgeToggle.checked = !!settings['edge-scroll'];
+    edgeToggle.addEventListener('change', function() {
+      settings['edge-scroll'] = edgeToggle.checked;
+      saveSettings(settings);
+      window.__wh40kSettings = settings;
+      applyCameraSettings();
+    });
+  }
+
+  // Apply on init
+  applyAudioSettings();
+  applyCameraSettings();
 }
