@@ -13,15 +13,16 @@
   pointer-events: none;
 }
 
-/* ── Dense fog wrapper (Z1) — thick cloud mass at edges ── */
+/* ── Dense fog wrapper — INSIDE battlefield-inner, behind SVGs ── */
+/* The SVG's own dark board rect (720x528) covers this naturally.
+   Fog is visible outside the board area (margins, staging zones). */
 .fogwrapper-dense {
   position: absolute;
-  inset: -15% -15% -15% -15%;
-  z-index: 1;
+  inset: -50% -50% -50% -50%; /* Extend far beyond board for full coverage */
+  z-index: 0; /* Behind SVGs which default to z-index auto */
   overflow: hidden;
   pointer-events: none;
   filter: blur(3px) saturate(1.05) sepia(0.08);
-  will-change: transform;
 }
 
 /* ── Surface fog wrapper (Z5) — wispy warzone smoke ── */
