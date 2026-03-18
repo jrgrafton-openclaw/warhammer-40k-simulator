@@ -21,6 +21,18 @@
   z-index: 0;
   pointer-events: none;
 }
+/* CSS blur vignette — adds soft diffusion to fog blobs, GPU-composited */
+#fog-blur-vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  /* Radial mask: transparent center (board area), opaque edges (fog zone) */
+  -webkit-mask-image: radial-gradient(ellipse 42% 46% at 50% 50%, transparent 0%, transparent 60%, rgba(0,0,0,0.3) 75%, rgba(0,0,0,0.8) 90%, black 100%);
+  mask-image: radial-gradient(ellipse 42% 46% at 50% 50%, transparent 0%, transparent 60%, rgba(0,0,0,0.3) 75%, rgba(0,0,0,0.8) 90%, black 100%);
+}
 #fog-fg {
   position: absolute;
   inset: 0;
