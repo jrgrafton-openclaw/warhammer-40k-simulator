@@ -140,11 +140,15 @@ export function _snapBack(uid, unit) {
 }
 
 // ── Zone highlighting ────────────────────────────────────
+// Scope queries to #screen-game to avoid matching forge battlefield duplicates
+var _zoneRoot = function() { return document.getElementById('screen-game') || document; };
+
 export function highlightZones(active) {
-  var impZone = document.querySelector('.deploy-zone-bg.imp-zone');
-  var stagingZone = document.querySelector('.offboard-zone.staging-zone-bg');
-  var dsZone = document.querySelector('.offboard-zone.ds-zone-bg');
-  var reservesZone = document.querySelector('.offboard-zone.reserves-zone-bg');
+  var root = _zoneRoot();
+  var impZone = root.querySelector('.deploy-zone-bg.imp-zone');
+  var stagingZone = root.querySelector('.offboard-zone.staging-zone-bg');
+  var dsZone = root.querySelector('.offboard-zone.ds-zone-bg');
+  var reservesZone = root.querySelector('.offboard-zone.reserves-zone-bg');
 
   if (impZone) impZone.classList.toggle('zone-active', active);
   if (stagingZone) stagingZone.classList.toggle('zone-active', active);
@@ -153,10 +157,11 @@ export function highlightZones(active) {
 }
 
 export function highlightAllZonesByDetection(activeZoneName) {
-  var impZone = document.querySelector('.deploy-zone-bg.imp-zone');
-  var stagingZone = document.querySelector('.offboard-zone.staging-zone-bg');
-  var dsZone = document.querySelector('.offboard-zone.ds-zone-bg');
-  var reservesZone = document.querySelector('.offboard-zone.reserves-zone-bg');
+  var root = _zoneRoot();
+  var impZone = root.querySelector('.deploy-zone-bg.imp-zone');
+  var stagingZone = root.querySelector('.offboard-zone.staging-zone-bg');
+  var dsZone = root.querySelector('.offboard-zone.ds-zone-bg');
+  var reservesZone = root.querySelector('.offboard-zone.reserves-zone-bg');
 
   if (impZone) impZone.classList.toggle('zone-active', activeZoneName === 'imp');
   if (stagingZone) stagingZone.classList.toggle('zone-active', activeZoneName === 'staging');
