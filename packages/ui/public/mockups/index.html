@@ -82,18 +82,18 @@
 
     .page-footer { text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); font: 500 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-dis); text-transform: uppercase; }
     .page-footer .aquila { font-size: 20px; color: var(--imp-dim); opacity: 0.4; margin-bottom: 8px; }
+
+    .section-subtitle { font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 3px; color: var(--text-muted); text-transform: uppercase; margin: 32px 0 16px; }
   </style>
 </head>
 <body>
-
-  <a class="backlink" href="../mockups/index.html">← v1 Mockups</a>
 
   <header class="page-header">
     <div class="page-title">WH40K Simulator</div>
     <div class="page-subtitle">Mockups v2 · ES Module Architecture <span class="arch-badge">ES MODULES</span></div>
     <div class="page-divider">
       <div class="divider-line"></div>
-      <span class="divider-ornament">✦</span>
+      <span class="divider-ornament">&#10022;</span>
       <div class="divider-line"></div>
     </div>
   </header>
@@ -102,269 +102,58 @@
 
     <div class="tab-nav" id="phase-tabs">
       <button class="tab-btn active" data-tab="integrated" onclick="switchTab('integrated')">INTEGRATED</button>
-      <button class="tab-btn" data-tab="start-game" onclick="switchTab('start-game')">START GAME</button>
-      <button class="tab-btn" data-tab="battle-forge" onclick="switchTab('battle-forge')">BATTLE FORGE</button>
       <button class="tab-btn" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
-      <button class="tab-btn" data-tab="command" onclick="switchTab('command')">CMD</button>
-      <button class="tab-btn" data-tab="move" onclick="switchTab('move')">MOVE</button>
-      <button class="tab-btn" data-tab="shoot" onclick="switchTab('shoot')">SHOOT</button>
-      <button class="tab-btn" data-tab="charge" onclick="switchTab('charge')">CHARGE</button>
-      <button class="tab-btn" data-tab="fight" onclick="switchTab('fight')">FIGHT</button>
-      <button class="tab-btn" data-tab="game-end" onclick="switchTab('game-end')">GAME END</button>
-      <button class="tab-btn" data-tab="options" onclick="switchTab('options')">OPTIONS</button>
       <button class="tab-btn" data-tab="terrain" onclick="switchTab('terrain')">TERRAIN</button>
+      <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')">ARCHIVE</button>
     </div>
 
-    <!-- START GAME -->
-    <div id="tab-start-game" class="tab-pane hidden">
-      <div class="section-title">Start Game — Splash Screen</div>
+    <!-- INTEGRATED PROTOTYPE -->
+    <div id="tab-integrated" class="tab-pane">
+      <div class="section-title">Integrated Prototype</div>
       <div class="section-desc">
-        Initial splash screen with parallax animated battlefield background,
-        frosted glass menu panel, and ambient audio. Entry point to the game.
+        Multi-phase prototype combining individual mockup phases into a single continuous game flow.
+        Phases share state, units persist across transitions, and the full turn cycle is playable.
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="start-game/index.html">
+        <a class="card latest" href="integrated/v0.4/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.1</div>
-          <div class="card-codename">SPLASH SCREEN</div>
-          <div class="card-title">Parallax battlefield · Frosted glass menu · Ambient audio</div>
+          <div class="card-version">v0.4</div>
+          <div class="card-codename">FULL GAME FLOW</div>
+          <div class="card-title">Start Screen &rarr; Battle Forge &rarr; 6 Phases &rarr; Game End</div>
           <ul class="card-features">
-            <li>3-layer parallax background (gothic cathedral, ruins, embers)</li>
-            <li>Frosted glass panel with victory-panel styling</li>
-            <li>New Game → Deploy · Load Game / Settings disabled</li>
-            <li>Ambient drone loop with mute toggle</li>
-            <li>CSS ember particles + vignette + grain overlay</li>
-            <li>Stagger-in entrance animations</li>
+            <li>Complete game loop: Start &rarr; Army Select &rarr; Deploy &rarr; Move &rarr; Shoot &rarr; Charge &rarr; Fight &rarr; Game End</li>
+            <li>Cinematic start screen with particles, lightning, ambient audio</li>
+            <li>Battle Forge army selection screen</li>
+            <li>Options modal (audio, display, game speed)</li>
+            <li>Animated screen transitions with audio continuity</li>
           </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">OPEN &rarr;</span>
         </a>
       </div>
-    </div>
 
-    <!-- BATTLE FORGE -->
-    <div id="tab-battle-forge" class="tab-pane hidden">
-      <div class="section-title">Battle Forge — Pre-Game Setup</div>
-      <div class="section-desc">
-        Civ-style game configuration screen between splash and deployment.
-        Faction selection, battlefield layout, army list upload, and game settings.
-      </div>
-
-      <div class="card-grid featured">
-
-        <!-- ═══ v0.7 — Sliding panels + real battlefield ═══ -->
-
-        <a class="card latest" href="battle-forge/v0.7a/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.7a</div>
-          <div class="card-codename">DEFINITIVE</div>
-          <div class="card-title">Deploy v0.4 battlefield · Sliding roster panels · Narrow dock · Scan line</div>
+      <div class="section-subtitle">Previous Versions</div>
+      <div class="card-grid">
+        <a class="card" href="integrated/v0.3/index.html">
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">DEPLOY &rarr; MOVE &rarr; SHOOT &rarr; CHARGE &rarr; FIGHT</div>
+          <div class="card-title">5 phases + Scene Registry + file splitting</div>
           <ul class="card-features">
-            <li>Real SVG battlefield (terrain via ES module import from terrain-data.js)</li>
-            <li>Side panels hidden by default — slide in when armies selected</li>
-            <li>Faction cards dock into panels on selection</li>
-            <li>Narrow bottom dock (~700px), Mission/Mode inline, readable labels</li>
-            <li>Deployment Type (5) + Layout (1-8), scanning line, power-surge button</li>
+            <li>Full combat flow with Game End</li>
+            <li>Scene Registry architecture, GameBus</li>
+            <li>All files split under 400 lines</li>
           </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
-
-        <!-- ═══ v0.6 — Previous ═══ -->
-
-        <a class="card" href="battle-forge/v0.6a/index.html">
-          <div class="card-version">v0.6a</div>
-          <div class="card-codename">COMMAND TABLE — FINAL</div>
-          <div class="card-title">SVG battlefield from deploy v0.4 · Side roster panels · Scanning line</div>
+        <a class="card" href="integrated/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DEPLOY &rarr; MOVE &rarr; SHOOT</div>
+          <div class="card-title">Three phases with debug panel</div>
           <ul class="card-features">
-            <li>Inline SVG battlefield matching deploy v0.4 (16 terrain pieces, zones, objectives)</li>
-            <li>Roster panels on LEFT and RIGHT (full-height, more map visible)</li>
-            <li>Deployment Type (5) + Layout (1-8) as separate selectors</li>
-            <li>Two-phase faction→army selection, empty initial state</li>
-            <li>Scanning line sweep, vignette, grid, gold objectives</li>
-            <li>Progressive map brightness as selections are made</li>
+            <li>Direct DOM transitions, callbacks pattern</li>
+            <li>Debug panel with LoS overlays</li>
           </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <!-- ═══ v0.5 — Previous ═══ -->
-
-        <a class="card" href="battle-forge/v0.5a/index.html">
-          <div class="card-version">v0.5a</div>
-          <div class="card-codename">COMMAND TABLE V3</div>
-          <div class="card-title">v0.3a visuals + v0.4a UX · Two-phase faction→army · Map/deployment split</div>
-          <ul class="card-features">
-            <li>Empty state: "+" slots, map starts dim, activates as you configure</li>
-            <li>Two-phase selection: pick faction → pick army within faction (in overlay)</li>
-            <li>v0.3a visual fidelity: 32px title, holographic map, frosted glass, corner brackets</li>
-            <li>Separate Map and Deployment Layout selectors with zone diagrams</li>
-            <li>BEGIN BATTLE disabled until both armies selected</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <!-- ═══ v0.4 — Previous iterations ═══ -->
-
-        <a class="card" href="battle-forge/v0.4a/index.html">
-          <div class="card-version">v0.4a</div>
-          <div class="card-codename">COMMAND TABLE</div>
-          <div class="card-title">Holographic map activates as you configure · Side panels · Faction browser</div>
-          <ul class="card-features">
-            <li>Empty state: no armies selected, map starts dim, panels show "+"</li>
-            <li>Map progressively activates as selections are made</li>
-            <li>Faction→Army hierarchy with faction browser overlay</li>
-            <li>Separate Map + Deployment Layout selectors</li>
-            <li>BEGIN BATTLE disabled until both armies selected</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.4b/index.html">
-          <div class="card-version">v0.4b</div>
-          <div class="card-codename">THE BRIEFING</div>
-          <div class="card-title">Single scrollable column · Progressive disclosure · Sections unlock</div>
-          <ul class="card-features">
-            <li>Sections start dimmed, unlock as you fill them</li>
-            <li>Empty-state cards with "+" CTA for each army slot</li>
-            <li>Map and Deployment Layout as side-by-side sub-panels</li>
-            <li>Sticky BEGIN BATTLE footer, disabled until ready</li>
-            <li>Ember particles, frosted glass cards, corner brackets</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.4c/index.html">
-          <div class="card-version">v0.4c</div>
-          <div class="card-codename">WARBAND</div>
-          <div class="card-title">Full-screen faction card carousel · P1/P2 slots · Lore + browsing</div>
-          <ul class="card-features">
-            <li>Browse factions one at a time — each gets a full-screen moment</li>
-            <li>P1/P2 card slots fill as you select, VS indicator when both set</li>
-            <li>Background shifts color per faction being browsed</li>
-            <li>Arrow key navigation, dot indicators, slide transitions</li>
-            <li>Roster area, bottom bar config, faction lore snippets</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <!-- ═══ v0.3 — Previous iterations ═══ -->
-
-        <a class="card" href="battle-forge/v0.3a/index.html">
-          <div class="card-version">v0.3a</div>
-          <div class="card-codename">ORBITAL STRIKE V2</div>
-          <div class="card-title">Holographic map + centered faction cards + faction browser overlay</div>
-          <ul class="card-features">
-            <li>Full-bleed holographic tactical map background</li>
-            <li>Centred faction cards with VS divider — click to open faction browser</li>
-            <li>Full-screen faction grid overlay (scales to 20+ armies + upload .ros)</li>
-            <li>Expandable roster panels, map thumbnails, mode toggle</li>
-            <li>Generous sizing, touch-friendly targets, correct button style</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.3b/index.html">
-          <div class="card-version">v0.3b</div>
-          <div class="card-codename">SANCTUM V2</div>
-          <div class="card-title">2-step wizard — configure forces then choose battlefield</div>
-          <ul class="card-features">
-            <li>2 steps (not 4): Configure Forces → Choose Battlefield</li>
-            <li>Centred frosted-glass panel with ember particles background</li>
-            <li>Army dropdown overlay: scrollable grid, 20+ factions, upload .ros</li>
-            <li>Split panel in step 1: Your Forces vs Enemy Forces with VS divider</li>
-            <li>Background glow shifts color per step, crossfade transitions</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.3c/index.html">
-          <div class="card-version">v0.3c</div>
-          <div class="card-codename">WAR COUNCIL</div>
-          <div class="card-title">Total War: Warhammer 3 — armies face off, unit cards, balance bar</div>
-          <ul class="card-features">
-            <li>Two armies face off across the screen (TW pre-battle feel)</li>
-            <li>Balance of power bar showing relative army strength</li>
-            <li>Lord portrait frames with faction emblems</li>
-            <li>Horizontal unit card strip at bottom (TW signature)</li>
-            <li>Gold ornamental borders, faction color bleed, faction browser overlay</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.3d/index.html">
-          <div class="card-version">v0.3d</div>
-          <div class="card-codename">THE ARMOURY</div>
-          <div class="card-title">Fighting game select — faction grid with P1/P2 markers + VS splash</div>
-          <ul class="card-features">
-            <li>Faction grid with P1/P2 selection markers (arcade energy)</li>
-            <li>Dramatic glow borders + scale-up on selection</li>
-            <li>VS splash with pulsing energy burst between factions</li>
-            <li>10 factions (2 playable, 8 locked) + Upload .ros tile</li>
-            <li>Hover: "Begin Battle" → "⚔ Ready? Fight!"</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <!-- ═══ v0.2 — Previous explorations ═══ -->
-
-        <a class="card" href="battle-forge/v0.2a/index.html">
-          <div class="card-version">v0.2a</div>
-          <div class="card-codename">ORBITAL STRIKE</div>
-          <div class="card-title">Destiny 2 / Helldivers 2 — holographic tactical map (first pass)</div>
-          <ul class="card-features">
-            <li>Full-viewport holographic map as hero background</li>
-            <li>Frosted glass army banners from edges, bottom dock</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.2b/index.html">
-          <div class="card-version">v0.2b</div>
-          <div class="card-codename">STRATEGIUM</div>
-          <div class="card-title">Darkest Dungeon / FTL — split-screen roster builder (first pass)</div>
-          <ul class="card-features">
-            <li>70/30 split: scrollable unit cards left, config sidebar right</li>
-            <li>Parchment-tinted cards, role badges, wargear summaries</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.2c/index.html">
-          <div class="card-version">v0.2c</div>
-          <div class="card-codename">SANCTUM</div>
-          <div class="card-title">Hades / Transistor — 4-step wizard flow (first pass)</div>
-          <ul class="card-features">
-            <li>4-step wizard with cinematic reveals, ember particles</li>
-            <li>Centred panel, background glow shifts, faction emblems</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.2b/index.html">
-          <div class="card-version">v0.2b</div>
-          <div class="card-codename">STRATEGIUM</div>
-          <div class="card-title">Darkest Dungeon / FTL inspired — split-screen roster builder with dossier cards</div>
-          <ul class="card-features">
-            <li>70/30 split: scrollable army roster left, fixed sidebar right</li>
-            <li>Parchment-tinted unit cards with role badges and wargear summaries</li>
-            <li>Opponent roster, battlefield diagram, mission, settings in sidebar</li>
-            <li>Canvas deployment zone diagram (Hammer &amp; Anvil)</li>
-            <li>Staggered card entrance animations, candlelight aesthetic</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="battle-forge/v0.1c/index.html">
-          <div class="card-version">v0.1c</div>
-          <div class="card-codename">BRIEFING ROOM</div>
-          <div class="card-title">XCOM/Stellaris inspired — tabbed intel dossier with data readouts</div>
-          <ul class="card-features">
-            <li>Tabbed interface: Forces / Battlefield / Mission</li>
-            <li>Centred 680px dossier panel — military intelligence aesthetic</li>
-            <li>Data-dense: force comparison bars, rules readout, param cards</li>
-            <li>CRT/terminal scanline effects, classification labels</li>
-            <li>Per-tab stagger-in animations on switch</li>
-          </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
       </div>
     </div>
@@ -378,474 +167,39 @@
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="phases/deploy/v0.13a/index.html">
+        <a class="card latest" href="phases/deploy/v0.3/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.13a</div>
-          <div class="card-codename">FROZEN SYNAPSE</div>
-          <div class="card-title">SVG glow terrain · Neon walls · Noise board surface</div>
-          <ul class="card-features">
-            <li>Pure CSS/SVG — no image textures</li>
-            <li>Teal/cyan neon glow on ruin walls</li>
-            <li>Warm amber glow on scatter terrain</li>
-            <li>Board surface with fractal noise texture</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card latest" href="phases/deploy/v0.13b/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.13b</div>
-          <div class="card-codename">SPRITE SHEETS (TILED)</div>
-          <div class="card-title">Imagen 4 sprite sheets · Tiled ground · Per-piece textures</div>
-          <ul class="card-features">
-            <li>Consistent terrain via Imagen 4 sprite sheets</li>
-            <li>Tiled cracked concrete ground texture</li>
-            <li>8 ruins + 8 scatter from 2 sprite sheets</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card latest" href="phases/deploy/v0.13b2/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.13b2</div>
-          <div class="card-codename">SPRITE SHEETS (LARGE)</div>
-          <div class="card-title">Imagen 4 sprite sheets · One-shot ground · Per-piece textures</div>
-          <ul class="card-features">
-            <li>Same terrain as v0.13b</li>
-            <li>One-shot large ground image (no tiling seams)</li>
-            <li>More natural ground variation</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card latest" href="phases/deploy/v0.13c/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.13c</div>
-          <div class="card-codename">FULL BATTLEFIELD</div>
-          <div class="card-title">Single AI-generated battlefield image · Layout-matched</div>
-          <ul class="card-features">
-            <li>Fed SVG terrain layout to Gemini</li>
-            <li>Got back complete styled battlefield</li>
-            <li>Terrain positions preserved from SVG</li>
-            <li>SVG paths hidden (image handles visuals)</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/deploy/v0.12a/index.html">
-          <div class="card-version">v0.12a</div>
+          <div class="card-version">v0.3</div>
           <div class="card-codename">PER-PIECE NB2</div>
-          <div class="card-title">Nano Banana 2 per-piece textures · Top-down orthographic</div>
+          <div class="card-title">Nano Banana 2 per-piece textures &middot; Top-down orthographic</div>
           <ul class="card-features">
             <li>Per-piece LLM-generated textures</li>
             <li>Clipped to SVG terrain paths</li>
           </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/deploy/v0.5a/index.html">
-          <div class="card-version">v0.5a</div>
-          <div class="card-codename">VISUAL ENHANCEMENT</div>
-          <div class="card-title">Animated space background · Terrain drop shadows · Shooting stars</div>
-          <ul class="card-features">
-            <li>Deep space nebula background with rotating stars + flicker</li>
-            <li>Rare shooting stars with gradient trails</li>
-            <li>Consistent terrain drop shadows + light edge highlights</li>
-            <li>All v0.4 functionality preserved</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/deploy/v0.4/index.html">
-          <div class="card-version">v0.4</div>
-          <div class="card-codename">TABLETOP EXTENSION</div>
-          <div class="card-title">In-canvas staging zones · Click-to-drag · DS/reserves persist · Camera center</div>
-          <ul class="card-features">
-            <li>Tabletop extension with in-canvas staging zones</li>
-            <li>Click-to-drag deployment interaction</li>
-            <li>Deep strike and reserves persist between placements</li>
-            <li>No snap — free-form positioning</li>
-            <li>Camera auto-centers on active deployment</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/deploy/v0.3/index.html">
-          <div class="card-version">v0.3</div>
-          <div class="card-codename">ARCHITECTURAL REWORK</div>
-          <div class="card-title">HTML staging panels · Restructured deploy flow</div>
-          <ul class="card-features">
-            <li>Architectural rework with HTML staging panels</li>
-            <li>Restructured deployment flow and component layout</li>
-          </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
 
         <a class="card" href="phases/deploy/v0.2/index.html">
           <div class="card-version">v0.2</div>
-          <div class="card-codename">DRAG-TO-DEPLOY OVERHAUL</div>
-          <div class="card-title">Staging areas · Drag-to-reserves/deep-strike · Auto-deploy enemy</div>
+          <div class="card-codename">BLACK VOID</div>
+          <div class="card-title">Fog layers &middot; Atmospheric deploy &middot; Shared component CSS</div>
           <ul class="card-features">
-            <li>Staging areas on battlefield with clickable unit tokens (no side panels)</li>
-            <li>Drag units to deployment zone, reserves, or deep strike drop areas</li>
-            <li>Auto-deploy enemy (Orks) — user only deploys Imperium</li>
-            <li>Streamlined confirm/cancel — no mode toggle buttons</li>
-            <li>Standard 2-column layout (roster + battlefield)</li>
-            <li>Dynamic confirm button text changes based on drop target</li>
+            <li>Fog FX layers with CSS animation</li>
+            <li>Full shared component architecture</li>
           </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
 
         <a class="card" href="phases/deploy/v0.1/index.html">
           <div class="card-version">v0.1</div>
-          <div class="card-codename">ZONES + RESERVES + DRAG</div>
-          <div class="card-title">Deployment zones · Strategic reserves · Deep strike · Drag-to-deploy</div>
+          <div class="card-codename">VISUAL ENHANCEMENT</div>
+          <div class="card-title">Animated space background &middot; Terrain drop shadows &middot; Shooting stars</div>
           <ul class="card-features">
-            <li>Imperium/Ork deployment zones with colored overlays and boundaries</li>
-            <li>Reserve panels: undeployed, strategic reserves, deep strike holding areas</li>
-            <li>Alternating deployment: Imperium first, then Orks, unit by unit</li>
-            <li>Zone validation: models clamped to faction deployment zone</li>
+            <li>Deep space nebula background with rotating stars + flicker</li>
+            <li>Rare shooting stars with gradient trails</li>
+            <li>Consistent terrain drop shadows + light edge highlights</li>
           </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- COMMAND PHASE -->
-    <div id="tab-command" class="tab-pane hidden">
-      <div class="section-title">Command Phase</div>
-      <div class="section-desc">
-        Start-of-turn phase: Battle-shock tests for below-half units,
-        +1 CP gain, and VP scoring from held objectives.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/command/v0.1/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.1</div>
-          <div class="card-codename">BATTLE-SHOCK · CP · VP</div>
-          <div class="card-title">Battle-shock tests · CP gain animation · VP objective scoring</div>
-          <ul class="card-features">
-            <li>Battle-shock state machine: test below-half units with 2D6 vs Leadership</li>
-            <li>Seeded dice with roll animation and pass/fail display</li>
-            <li>Amber hull pulse for needs-test units, red flicker for battle-shocked</li>
-            <li>CP counter tick animation (+1 CP per turn)</li>
-            <li>VP scoring: objective proximity check with sequential score ticks</li>
-            <li>Auto-advancing phases: battle-shock → CP gain → VP scoring → done</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- MOVE PHASE -->
-    <div id="tab-move" class="tab-pane hidden">
-      <div class="section-title">Movement Phase</div>
-      <div class="section-desc">
-        Movement prototypes ported to the v2 component architecture.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/move/v0.23/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.23</div>
-          <div class="card-codename">MOVEMENT STATE MACHINE</div>
-          <div class="card-title">Full movement flow · ES modules · Shared components</div>
-          <ul class="card-features">
-            <li>Reuses shared tokens, components, and world modules</li>
-            <li>Movement enforcement: zone clamp, terrain collision, overlap resolution</li>
-            <li>Advance D6 roll animation, confirm/cancel, moved-state tracking</li>
-            <li>Drag interceptor blocks moved + enemy units</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- SHOOT PHASE -->
-    <div id="tab-shoot" class="tab-pane hidden">
-      <div class="section-title">Shooting Phase</div>
-      <div class="section-desc">
-        Componentized ES module architecture. WorldAPI coordinate contract.
-        Each file owns one concern — tokens, components, world, state.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/shoot/v0.9/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.12a</div>
-          <div class="card-codename">TALL RUIN LoS</div>
-          <div class="card-title">Per-model line-of-sight through terrain · Benefit of Cover</div>
-          <ul class="card-features">
-            <li>Edge-to-edge LoS: 8-point ray casting through tall ruin polygons</li>
-            <li>Clear/blocked aiming lines with terrain hit points</li>
-            <li>Benefit of Cover: +1 save when inside ruin footprint</li>
-            <li>Visible model count limits attacks + wound allocation</li>
-            <li>Orange projectiles, Escape deselect, Gretchin unit</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/shoot/v0.8a/index.html">
-          <div class="card-version">v0.8a</div>
-          <div class="card-codename">BOTTOM-DOCKED DICE OVERLAY</div>
-          <div class="card-title">Full shooting flow · ES modules · WorldAPI contract</div>
-          <ul class="card-features">
-            <li>10 ES modules replacing 7 IIFE global scripts</li>
-            <li>Full attack pipeline: select → target → hit/wound/save/damage → result</li>
-            <li>Projectile FX, wound rings, model removal, spent-state tracking</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- CHARGE PHASE -->
-    <div id="tab-charge" class="tab-pane hidden">
-      <div class="section-title">Charge Phase</div>
-      <div class="section-desc">
-        Charge declaration, 2D6 roll, engagement placement with wall collision.
-        Reuses shared world modules for terrain/unit collision.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/charge/v0.1/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.1</div>
-          <div class="card-codename">DECLARE + ROLL + ENGAGE</div>
-          <div class="card-title">Charger select · 2D6 roll · engagement placement · wall collision</div>
-          <ul class="card-features">
-            <li>Target declaration: eligible enemies within 12" highlighted orange</li>
-            <li>Animated 2D6 charge roll with success/fail determination</li>
-            <li>Engagement range zones (1") around target models</li>
-            <li>Wall collision via shared terrain AABBs</li>
-            <li>Unit coherency check (2") on confirm</li>
-            <li>Ghost circles + ruler lines during charge movement</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card">
-          <div class="card-version">v0.2</div>
-          <div class="card-codename">OVERWATCH</div>
-          <div class="card-title">Overwatch reaction · interrupt charge · stratagem integration</div>
-          <ul class="card-features">
-            <li>Defender overwatch reaction on charge declaration</li>
-            <li>Overwatch hit penalty (6+ only)</li>
-            <li>Stratagem: Counter-Offensive</li>
-          </ul>
-          <span class="card-link" style="opacity:0.3">Backlog</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- FIGHT PHASE -->
-    <div id="tab-fight" class="tab-pane hidden">
-      <div class="section-title">Fight Phase</div>
-      <div class="section-desc">
-        Melee combat with pile-in, WS-based attack resolution, and consolidation.
-        Reuses shared dice, wound allocation, and model rendering from shooting.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/fight/v0.1/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.1</div>
-          <div class="card-codename">PILE-IN · MELEE · CONSOLIDATE</div>
-          <div class="card-title">Full fight flow · Engagement targeting · Melee slash FX</div>
-          <ul class="card-features">
-            <li>Pile-in: models auto-slide up to 3" toward closest enemy</li>
-            <li>WS-based hit rolls with full wound/save/damage pipeline</li>
-            <li>Melee slash animations (2-3 per model, staggered)</li>
-            <li>Consolidation: 3" toward engagement range or nearest objective</li>
-            <li>Attacker-specific engagement validation (per-unit targeting)</li>
-            <li>Infantry pass through ruins; Vehicles blocked</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- GAME END -->
-    <div id="tab-game-end" class="tab-pane hidden">
-      <div class="section-title">Game End</div>
-      <div class="section-desc">
-        Post-game victory screen with VP summary, per-round breakdown,
-        unit survival statistics, and rematch options.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="phases/game-end/v0.2/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.2</div>
-          <div class="card-codename">DISMISSABLE OVERLAY</div>
-          <div class="card-title">ESC to dismiss · END GAME re-summons · Battlefield review</div>
-          <ul class="card-features">
-            <li>Cinematic full-bleed overlay (opacity 0.9)</li>
-            <li>Press ESC or click backdrop to dismiss → review battlefield</li>
-            <li>END GAME button re-summons overlay (with pulse hint)</li>
-            <li>Staggered entrance animations, fade-out on dismiss</li>
-            <li>Score pillars + round timeline + action buttons</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/game-end/v0.1e/index.html">
-          <div class="card-version">v0.1e</div>
-          <div class="card-codename">CLEAN SLATE</div>
-          <div class="card-title">Dedicated results screen · No battlefield · Full readability</div>
-          <ul class="card-features">
-            <li>No overlay — standalone results page on solid background</li>
-            <li>Battlefield dismissed entirely for full readability</li>
-            <li>VP table + unit stats + MVP callout</li>
-            <li>Staggered entrance animations</li>
-            <li>Zero JS module dependencies</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/game-end/v0.1d/index.html">
-          <div class="card-version">v0.1d</div>
-          <div class="card-codename">FROST GLASS</div>
-          <div class="card-title">Heavy blur backdrop · Abstract colour wash · Noise texture</div>
-          <ul class="card-features">
-            <li>backdrop-filter: blur(40px) — battlefield becomes abstract colour</li>
-            <li>Imperium blue / Ork red zones visible as moody gradient</li>
-            <li>Subtle noise grain texture overlay</li>
-            <li>Same cinematic layout as v0.1c</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/game-end/v0.1c/index.html">
-          <div class="card-version">v0.1c</div>
-          <div class="card-codename">VICTORY MONUMENT</div>
-          <div class="card-title">Cinematic full-bleed · Animated pillars · Round timeline</div>
-          <ul class="card-features">
-            <li>Full-bleed cinematic overlay — semi-transparent</li>
-            <li>Massive faction watermark with pulse animation</li>
-            <li>Score pillars with VS divider + unit stats per side</li>
-            <li>Inline round-by-round scores on timeline</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/game-end/v0.1b/index.html">
-          <div class="card-version">v0.1b</div>
-          <div class="card-codename">WAR ROOM DEBRIEF</div>
-          <div class="card-title">Data-dense · Bar charts · Kill feed · Compact</div>
-          <ul class="card-features">
-            <li>Compact 480px panel — no ceremony, pure data</li>
-            <li>VP by round as horizontal bar chart (CSS-only)</li>
-            <li>Kill feed: narrative list with faction-colored names</li>
-            <li>Single-line MVP callout</li>
-            <li>Information density over whitespace</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/game-end/v0.1a/index.html">
-          <div class="card-version">v0.1a</div>
-          <div class="card-codename">PANEL OVERLAY (FIXED)</div>
-          <div class="card-title">v0.1 with border bug fix + divider lines removed</div>
-          <ul class="card-features">
-            <li>Fixed: border-top clashing with ornamental corners</li>
-            <li>Removed unnecessary divider lines above/below score</li>
-            <li>VP table, unit stats, MVP, action buttons intact</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="phases/game-end/v0.1/index.html">
-          <div class="card-version">v0.1</div>
-          <div class="card-codename">PANEL OVERLAY (ORIGINAL)</div>
-          <div class="card-title">First pass · Known border bug</div>
-          <ul class="card-features">
-            <li>Victory overlay on fight phase battlefield</li>
-            <li>VP breakdown table + unit statistics grid</li>
-            <li>Known: border-top interferes with corner highlights</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-      </div>
-    </div>
-
-    <!-- OPTIONS MENU -->
-    <div id="tab-options" class="tab-pane hidden">
-      <div class="section-title">Options Menu</div>
-      <div class="section-desc">
-        In-game options/settings menu prototypes. Audio controls, display settings, gameplay preferences, and game actions (restart/quit).
-        Three visual directions exploring different layout patterns.
-      </div>
-
-      <div class="card-grid featured">
-        <a class="card latest" href="options/v0.3/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.3</div>
-          <div class="card-codename">PAUSE MENU + OPTIONS</div>
-          <div class="card-title">Civ/XCOM-style two-layer: Pause Menu → Options sub-screen</div>
-          <ul class="card-features">
-            <li>☰ Menu button — standalone, top-right, visible</li>
-            <li>ESC → Pause Menu: Resume · Save · Load · Options · Restart · Quit</li>
-            <li>OPTIONS sub-screen: Audio + Controls only</li>
-            <li>Custom SVG icons for every action (no emoji)</li>
-            <li>Two-layer navigation: ESC backs out, DONE returns to pause</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="options/v0.2/index.html">
-          <div class="card-version">v0.2</div>
-          <div class="card-codename">CINEMATIC MODAL — REFINED</div>
-          <div class="card-title">VP bar gear button · Audio + Controls + Game · Save/Load</div>
-          <ul class="card-features">
-            <li>Gear ⚙ integrated into VP bar (top-right)</li>
-            <li>Audio: Master/Music/SFX volume sliders</li>
-            <li>Controls: Camera pan, zoom, edge scroll</li>
-            <li>Game section: Save Game + Load Game action cards</li>
-            <li>Bottom bar: Close · Restart · Quit (3 buttons)</li>
-            <li>ESC opens/closes, settings apply live</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="options/v0.1b/index.html">
-          <div class="card-version">v0.1b</div>
-          <div class="card-codename">CINEMATIC MODAL</div>
-          <div class="card-title">Full-screen two-column modal</div>
-          <ul class="card-features">
-            <li>Two-column layout: Audio+Display | Gameplay+Controls</li>
-            <li>Custom sliders, toggles, segmented controls</li>
-            <li>Bottom action bar: Apply, Reset, Restart, Quit</li>
-            <li>Cinematic backdrop matching game-end aesthetic</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="options/v0.1c/index.html">
-          <div class="card-version">v0.1c</div>
-          <div class="card-codename">TABBED HUB</div>
-          <div class="card-title">Four-tab organized settings</div>
-          <ul class="card-features">
-            <li>Tabs: Audio · Display · Gameplay · Game</li>
-            <li>Extra controls: Ambient Vol, Narrator Voice, Mute All</li>
-            <li>Game tab: Restart, Battle Report, Quit, Save &amp; Exit</li>
-            <li>Compact modal with smooth tab transitions</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="options/v0.1a/index.html">
-          <div class="card-version">v0.1a</div>
-          <div class="card-codename">SIDE PANEL</div>
-          <div class="card-title">Compact slide-in panel</div>
-          <ul class="card-features">
-            <li>Slides from right with translucent backdrop</li>
-            <li>All settings in scrollable single column</li>
-            <li>Minimal footprint — battlefield stays visible</li>
-            <li>Gear button trigger with smooth slide animation</li>
-          </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
       </div>
     </div>
@@ -854,132 +208,182 @@
     <div id="tab-terrain" class="tab-pane hidden">
       <div class="section-title">Terrain Experiments</div>
       <div class="section-desc">
-        Exploring different approaches to terrain rendering: hand-drawn SVG, AI image generation (OpenAI, Gemini),
+        Exploring different approaches to terrain rendering: hand-drawn SVG, AI image generation,
         and hybrid techniques. Goal: find the best method for producing grimdark top-down terrain pieces with transparency.
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="terrain-experiments/0.16b-single-shot.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.16b</div>
-          <div class="card-codename">SINGLE-SHOT BATTLEFIELD</div>
-          <div class="card-title">Full SVG layout → gpt-image-1 → cohesive textured battlefield</div>
-          <ul class="card-features">
-            <li>Entire SVG terrain layout fed to AI as single image</li>
-            <li>Cohesive battlefield: craters, tank tracks, battle damage</li>
-            <li>Top layer generated FROM floor for alignment</li>
-            <li>6 toggleable layers + CSS ash/ember particles</li>
-            <li>Exact v0.5a models with glow filters</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card latest" href="terrain-experiments/0.16a-per-piece.html">
+        <a class="card latest" href="terrain-experiments/0.16a-editor.html">
           <span class="card-badge badge-latest">LATEST</span>
           <div class="card-version">v0.16a</div>
-          <div class="card-codename">PER-PIECE COMPOSITING</div>
-          <div class="card-title">Battle-damaged ground + per-piece AI floor/top layers</div>
+          <div class="card-codename">TERRAIN SPRITE EDITOR</div>
+          <div class="card-title">Drag-drop sprite editor &middot; SVG + image compositing &middot; Layer management</div>
           <ul class="card-features">
-            <li>Style-matched floor texture with battle damage</li>
-            <li>Per-piece AI images at terrain bounding boxes</li>
-            <li>Fixed blending (normal + opacity, no multiply darkening)</li>
-            <li>7 toggleable layers + CSS ash/ember particles</li>
-            <li>Exact v0.5a models with glow filters</li>
+            <li>Drag-and-drop sprite placement on SVG battlefield</li>
+            <li>Multiple background options (image + SVG gradients)</li>
+            <li>Floor/roof layer separation with opacity controls</li>
+            <li>Multi-select, rotate, resize, copy/paste, layer reordering</li>
+            <li>LocalStorage persistence of layout</li>
           </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="terrain-experiments/0.15-gpt-image-terrain.html">
-          <div class="card-version">v0.15</div>
-          <div class="card-codename">GPT-IMAGE-1 PIPELINE</div>
-          <div class="card-title">AI terrain overlaid on current SVG · Two-layer occlusion · Interactive gen</div>
-          <ul class="card-features">
-            <li>4 terrain types: L-ruin, U-ruin, rect ruin, scatter — overlaid on current SVG</li>
-            <li>Toggle: SVG only / 50% blend / AI replacement</li>
-            <li>Two-layer experiment: floor + wall tops with unit sandwiched between</li>
-            <li>Partial model occlusion from wall overhangs</li>
-            <li>Interactive gpt-image-1 generation</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="terrain-experiments/0.14a-svg-ruins.html">
-          <div class="card-version">v0.14a</div>
-          <div class="card-codename">SVG HAND-DRAWN</div>
-          <div class="card-title">Pure SVG ruins with stone patterns · Broken edges · Rubble · Bullet holes</div>
-          <ul class="card-features">
-            <li>4 terrain pieces: L-ruin, rect ruin, rocky outcrop, wall+arch</li>
-            <li>SVG pattern fills for stone blocks and floor tiles</li>
-            <li>Manually defined jagged break paths with rubble polygons</li>
-            <li>Bullet holes, imperial eagles, structural beams</li>
-            <li>Clean geometry — no noise/random textures</li>
-          </ul>
-          <span class="card-link">Open →</span>
-        </a>
-
-        <a class="card" href="terrain-experiments/0.14b-ai-terrain-gen.html">
-          <div class="card-version">v0.14b</div>
-          <div class="card-codename">AI IMAGE GEN</div>
-          <div class="card-title">Side-by-side AI model comparison · OpenAI vs Gemini · Interactive</div>
-          <ul class="card-features">
-            <li>Interactive test page — paste API keys, generate on demand</li>
-            <li>OpenAI gpt-image-1: real RGBA transparency ✅</li>
-            <li>Gemini 2.5 Flash Image: copies reference, baked checkerboard ❌</li>
-            <li>Gemini 3 Pro Image: novel layouts but JPG output, no alpha ❌</li>
-            <li>Configurable prompt, SVG reference input fed to models</li>
-          </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
       </div>
     </div>
 
-    <!-- INTEGRATED PROTOTYPE -->
-    <div id="tab-integrated" class="tab-pane">
-      <div class="section-title">Integrated Prototype</div>
+    <!-- ARCHIVE -->
+    <div id="tab-archive" class="tab-pane hidden">
+      <div class="section-title">Archive</div>
       <div class="section-desc">
-        Multi-phase prototype combining individual mockup phases into a single continuous game flow.
-        Phases share state, units persist across transitions, and the full turn cycle is playable.
+        Previous phase mockups and explorations. These are preserved for reference but are no longer actively developed.
       </div>
 
-      <div class="card-grid featured">
-        <a class="card latest" href="integrated/index.html">
-          <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.4</div>
-          <div class="card-codename">FULL GAME FLOW</div>
-          <div class="card-title">Start Screen → Battle Forge → 6 Phases → Game End</div>
-          <ul class="card-features">
-            <li>Complete game loop: Start → Army Select → Deploy → Move → Shoot → Charge → Fight → Game End</li>
-            <li>Cinematic start screen with particles, lightning, ambient audio</li>
-            <li>Battle Forge army selection screen</li>
-            <li>Options modal (audio, display, game speed)</li>
-            <li>Animated screen transitions with audio continuity</li>
-          </ul>
-          <span class="card-link">OPEN →</span>
-        </a>
-      </div>
-
-      <div class="section-subtitle">Previous Versions</div>
+      <!-- Start Game -->
+      <div class="section-subtitle">Start Game</div>
       <div class="card-grid">
-        <a class="card" href="integrated-v0.3/index.html">
-          <div class="card-version">v0.3</div>
-          <div class="card-codename">DEPLOY → MOVE → SHOOT → CHARGE → FIGHT</div>
-          <div class="card-title">5 phases + Scene Registry + file splitting</div>
+        <a class="card" href="start-game/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">SPLASH SCREEN</div>
+          <div class="card-title">Parallax battlefield &middot; Frosted glass menu &middot; Ambient audio</div>
           <ul class="card-features">
-            <li>Full combat flow with Game End</li>
-            <li>Scene Registry architecture, GameBus</li>
-            <li>All files split under 400 lines</li>
+            <li>3-layer parallax background (gothic cathedral, ruins, embers)</li>
+            <li>Frosted glass panel with victory-panel styling</li>
+            <li>CSS ember particles + vignette + grain overlay</li>
           </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
         </a>
-        <a class="card" href="integrated-v0.2/index.html">
-          <div class="card-version">v0.2</div>
-          <div class="card-codename">DEPLOY → MOVE → SHOOT</div>
-          <div class="card-title">Three phases with debug panel</div>
+      </div>
+
+      <!-- Battle Forge -->
+      <div class="section-subtitle">Battle Forge</div>
+      <div class="card-grid">
+        <a class="card" href="battle-forge/v0.7a/index.html">
+          <div class="card-version">v0.7a</div>
+          <div class="card-codename">DEFINITIVE</div>
+          <div class="card-title">Deploy v0.4 battlefield &middot; Sliding roster panels &middot; Narrow dock</div>
           <ul class="card-features">
-            <li>Direct DOM transitions, callbacks pattern</li>
-            <li>Debug panel with LoS overlays</li>
+            <li>Real SVG battlefield (terrain via ES module import)</li>
+            <li>Side panels hidden by default &mdash; slide in when armies selected</li>
+            <li>Deployment Type (5) + Layout (1-8), scanning line</li>
           </ul>
-          <span class="card-link">Open →</span>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.6a/index.html">
+          <div class="card-version">v0.6a</div>
+          <div class="card-codename">COMMAND TABLE &mdash; FINAL</div>
+          <div class="card-title">SVG battlefield from deploy v0.4 &middot; Side roster panels</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.5a/index.html">
+          <div class="card-version">v0.5a</div>
+          <div class="card-codename">COMMAND TABLE V3</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.4a/index.html">
+          <div class="card-version">v0.4a</div>
+          <div class="card-codename">COMMAND TABLE</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.3a/index.html">
+          <div class="card-version">v0.3a</div>
+          <div class="card-codename">ORBITAL STRIKE V2</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Command Phase -->
+      <div class="section-subtitle">Command Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/command/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">BATTLE-SHOCK &middot; CP &middot; VP</div>
+          <div class="card-title">Battle-shock tests &middot; CP gain animation &middot; VP objective scoring</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Movement Phase -->
+      <div class="section-subtitle">Movement Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/move/v0.23/index.html">
+          <div class="card-version">v0.23</div>
+          <div class="card-codename">MOVEMENT STATE MACHINE</div>
+          <div class="card-title">Full movement flow &middot; ES modules &middot; Shared components</div>
+          <ul class="card-features">
+            <li>Movement enforcement: zone clamp, terrain collision, overlap resolution</li>
+            <li>Advance D6 roll animation, confirm/cancel, moved-state tracking</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Shooting Phase -->
+      <div class="section-subtitle">Shooting Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/shoot/v0.9/index.html">
+          <div class="card-version">v0.12a</div>
+          <div class="card-codename">TALL RUIN LoS</div>
+          <div class="card-title">Per-model line-of-sight through terrain &middot; Benefit of Cover</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="phases/shoot/v0.8a/index.html">
+          <div class="card-version">v0.8a</div>
+          <div class="card-codename">BOTTOM-DOCKED DICE OVERLAY</div>
+          <div class="card-title">Full shooting flow &middot; ES modules &middot; WorldAPI contract</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Charge Phase -->
+      <div class="section-subtitle">Charge Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/charge/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">DECLARE + ROLL + ENGAGE</div>
+          <div class="card-title">Charger select &middot; 2D6 roll &middot; engagement placement &middot; wall collision</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Fight Phase -->
+      <div class="section-subtitle">Fight Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/fight/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">PILE-IN &middot; MELEE &middot; CONSOLIDATE</div>
+          <div class="card-title">Full fight flow &middot; Engagement targeting &middot; Melee slash FX</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Game End -->
+      <div class="section-subtitle">Game End</div>
+      <div class="card-grid">
+        <a class="card" href="phases/game-end/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DISMISSABLE OVERLAY</div>
+          <div class="card-title">ESC to dismiss &middot; END GAME re-summons &middot; Battlefield review</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="phases/game-end/v0.1e/index.html">
+          <div class="card-version">v0.1e</div>
+          <div class="card-codename">CLEAN SLATE</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Options -->
+      <div class="section-subtitle">Options Menu</div>
+      <div class="card-grid">
+        <a class="card" href="options/v0.3/index.html">
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">PAUSE MENU + OPTIONS</div>
+          <div class="card-title">Civ/XCOM-style two-layer: Pause Menu &rarr; Options sub-screen</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="options/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">CINEMATIC MODAL &mdash; REFINED</div>
+          <span class="card-link">Open &rarr;</span>
         </a>
       </div>
     </div>
@@ -987,8 +391,8 @@
   </div>
 
   <footer class="page-footer">
-    <div class="aquila">⚜</div>
-    <div>WH40K Simulator · Mockups v2 · ES Module Architecture</div>
+    <div class="aquila">&#9878;</div>
+    <div>WH40K Simulator &middot; Mockups v2 &middot; ES Module Architecture</div>
   </footer>
 
   <script>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — v0.5a · Deployment Phase</title>
+  <title>WH40K Simulator — v0.6k · Black Void</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Component CSS (shared split) -->
@@ -18,7 +18,8 @@
   <link rel="stylesheet" href="../../../shared/components/fx.css">
   <link rel="stylesheet" href="../../../shared/components/battlefield.css">
   <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css?v=20260314-deploy5">
+  <link rel="stylesheet" href="style.css?v=20260317-fog3">
+  <link rel="stylesheet" href="fog-layers.css?v=20260317-fog3">
 </head>
 <body>
 <div id="app">
@@ -135,8 +136,17 @@
   <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
   <main id="battlefield">
 
-    <!-- Animated space background (behind everything) -->
-    <canvas id="space-bg"></canvas>
+    <!-- Dark atmospheric base -->
+    <div style="position:absolute;inset:0;z-index:0;background:#12131a;"></div>
+
+    <!-- Fog layers (CSS-animated, textures applied by fog-gen.js) -->
+    <div class="fogwrapper">
+      <div id="foglayer_01"><div class="image01"></div><div class="image02"></div></div>
+      <div id="foglayer_02"><div class="image01"></div><div class="image02"></div></div>
+      <div id="foglayer_03"><div class="image01"></div><div class="image02"></div></div>
+    </div>
+
+    <!-- No viewport mask — fog is BEHIND the board, board occludes naturally -->
 
     <a class="backlink" href="../../../index.html#deploy" title="Back to mockup archive">← Mockups</a>
 
@@ -164,7 +174,7 @@
       </div>
     </div>
 
-    <div class="deploy-badge">v0.4 · DEPLOYMENT</div>
+    <div class="deploy-badge">v0.6k · BLACK VOID</div>
 
     <!-- Invalid zone banner -->
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
@@ -241,6 +251,9 @@
       </svg>
 
     </div><!-- /battlefield-inner -->
+
+    <!-- Effects canvas (explosions, sparks, debris) -->
+    <canvas id="fog-fx"></canvas>
 
     <!-- Unit Card -->
     <div id="unit-card">
@@ -337,7 +350,27 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script src="space-bg.js?v=20260316-v05a"></script>
-<script type="module" src="scene.js?v=20260316-v05a"></script>
+<script src="fog-fx.js?v=20260317-fog5"></script>
+<script type="module" src="scene.js?v=20260317-fog5"></script>
+<!-- Fog parallax — reads board pan, offsets fog wrapper -->
+<script>
+(function initFogParallax() {
+  var fogwrap = document.querySelector('.fogwrapper');
+  var inner = document.getElementById('battlefield-inner');
+  if (!fogwrap || !inner) return;
+
+  function updateParallax() {
+    var style = inner.style.transform || '';
+    var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
+    if (match) {
+      var tx = parseFloat(match[1]) * 0.35;
+      var ty = parseFloat(match[2]) * 0.35;
+      fogwrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    }
+    requestAnimationFrame(updateParallax);
+  }
+  requestAnimationFrame(updateParallax);
+})();
+</script>
 </body>
 </html>
