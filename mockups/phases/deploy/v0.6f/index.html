@@ -378,23 +378,23 @@
       if (dense) dense.style.transform = 'translate(' + (btx * 0.15) + 'px,' + (bty * 0.15) + 'px)';
       if (surface) surface.style.transform = 'translate(' + (btx * 0.25) + 'px,' + (bty * 0.25) + 'px)';
 
-      // Update board-tracking mask on dense fog wrapper
-      // Board center in viewport: 50% + offset from translate
-      var bfW = bf.clientWidth;
-      var bfH = bf.clientHeight;
-      // Compensate for the dense wrapper's own -15% inset + parallax offset
-      var denseOffsetX = btx * 0.15;
-      var denseOffsetY = bty * 0.15;
-      var cx = ((bfW / 2 + btx - denseOffsetX) / (bfW * 1.3)) * 100;
-      var cy = ((bfH / 2 + bty - denseOffsetY) / (bfH * 1.3)) * 100;
-      var rx = (scale * 38) + '%';
-      var ry = (scale * 42) + '%';
-
+      // Set mask-image directly on dense fog to track board position
       if (dense) {
-        dense.style.setProperty('--board-cx', cx + '%');
-        dense.style.setProperty('--board-cy', cy + '%');
-        dense.style.setProperty('--board-rx', rx);
-        dense.style.setProperty('--board-ry', ry);
+        var bfW = bf.clientWidth;
+        var bfH = bf.clientHeight;
+        var dox = btx * 0.15;
+        var doy = bty * 0.15;
+        // Board center relative to the dense wrapper (which has -15% inset)
+        var cx = ((bfW / 2 + btx - dox) / (bfW * 1.3)) * 100;
+        var cy = ((bfH / 2 + bty - doy) / (bfH * 1.3)) * 100;
+        var rx = (scale * 52);
+        var ry = (scale * 55);
+        var mask = 'radial-gradient(ellipse ' + rx + '% ' + ry + '% at ' + cx + '% ' + cy + '%, ' +
+          'transparent 0%, transparent 60%, ' +
+          'rgba(0,0,0,0.1) 65%, rgba(0,0,0,0.25) 70%, rgba(0,0,0,0.45) 75%, ' +
+          'rgba(0,0,0,0.65) 80%, rgba(0,0,0,0.82) 85%, rgba(0,0,0,0.94) 90%, black 95%)';
+        dense.style.webkitMaskImage = mask;
+        dense.style.maskImage = mask;
       }
     }
     requestAnimationFrame(updateParallax);
