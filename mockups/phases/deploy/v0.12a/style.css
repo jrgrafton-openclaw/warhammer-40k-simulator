@@ -17,14 +17,7 @@
   position: relative;
   background: #040810;
 }
-#bf-svg-terrain, #bf-svg, #bf-svg-overhang { overflow: visible; }
-
-/* Overhang layer — above models, renders broken floor pieces */
-#bf-svg-overhang {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none;
-  z-index: 7; /* above #bf-svg (z-index: 6 from shared CSS) */
-}
+#bf-svg-terrain, #bf-svg { overflow: visible; }
 
 /* Nebula background image — positioned via JS for parallax */
 #nebula-bg {
