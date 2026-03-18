@@ -68,7 +68,8 @@ export function initBoard(opts) {
     inner.classList.add('zoom-easing');
     clearTimeout(zoomEaseTimer);
     zoomEaseTimer = setTimeout(function(){ inner.classList.remove('zoom-easing'); }, 220);
-    scale = Math.min(3, Math.max(.35, scale * (e.deltaY>0 ? .9 : 1.1)));
+    var zoomFactor = 1 + ((window.__zoomSensitivity || 5) / 50); // 5 → 1.1, 10 → 1.2
+    scale = Math.min(3, Math.max(.35, scale * (e.deltaY>0 ? 1/zoomFactor : zoomFactor)));
     applyTx();
     clearTimeout(zoomSettleTimer);
     zoomSettleTimer = setTimeout(showRangeCirclesNow, 220);
@@ -85,8 +86,9 @@ export function initBoard(opts) {
 
   document.addEventListener('mousemove', function(e) {
     if (!isDragging) return;
-    tx = e.clientX - startX;
-    ty = e.clientY - startY;
+    var panMult = (window.__camPanSpeed || 5) / 5; // 5 → 1x, 10 → 2x
+    tx = (e.clientX - startX) * panMult;
+    ty = (e.clientY - startY) * panMult;
     applyTx();
     if (currentUnit && activeRangeTypes.size > 0 && typeof callbacks.updateRangeCircles === 'function') {
       callbacks.updateRangeCircles(currentUnit);
