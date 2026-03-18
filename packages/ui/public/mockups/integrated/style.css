@@ -46,10 +46,7 @@
   z-index: 200;
   opacity: 1; /* Override start-game/style.css opacity:0 default — mute is always visible in integrated */
 }
-/* Hide mute button during gameplay — audio controlled via pause menu */
-#screen-game.screen-active ~ .mute-toggle {
-  display: none;
-}
+/* Mute hidden during gameplay via JS (CSS sibling selector can't reach it) */
 
 /* Hide clutter from VP bar and deploy badge in integrated */
 #screen-game #reset-btn,
