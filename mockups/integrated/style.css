@@ -46,9 +46,18 @@
   z-index: 200;
   opacity: 1; /* Override start-game/style.css opacity:0 default — mute is always visible in integrated */
 }
-/* When game screen is active, position mute above the action bar */
+/* When game screen is active, position mute on the left above the action bar */
 #screen-game.screen-active ~ .mute-toggle {
-  bottom: 62px; /* action bar is ~46px + 16px gap */
+  bottom: 62px; /* above action bar */
+  right: auto;
+  left: 228px; /* right of roster panel (220px wide) + 8px gap */
+}
+
+/* Hide clutter from VP bar and deploy badge in integrated */
+#screen-game #reset-btn,
+#screen-game .vp-round,
+#screen-game .deploy-badge {
+  display: none !important;
 }
 .mute-toggle:hover {
   border-color: var(--imp-dim);
@@ -127,6 +136,40 @@
   color: var(--text-muted); letter-spacing: 1px;
   opacity: 0; animation: fade-in 0.4s ease-out 0.8s both;
 }
+
+/* ── Start screen debug menu ── */
+.start-debug {
+  position: fixed; bottom: 16px; left: 16px; z-index: 50;
+  font-family: 'Rajdhani', sans-serif;
+}
+.start-debug-toggle {
+  background: rgba(30,35,40,0.85); color: #8af;
+  border: 1px solid rgba(100,140,200,0.3); border-radius: 4px;
+  padding: 3px 10px; cursor: pointer;
+  font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+  transition: all 0.15s ease;
+}
+.start-debug-toggle:hover { background: rgba(40,50,65,0.9); border-color: rgba(100,140,200,0.5); }
+.start-debug-panel {
+  margin-top: 4px; background: rgba(16,20,26,0.95);
+  border: 1px solid rgba(100,140,200,0.2); border-radius: 6px;
+  padding: 8px 10px; min-width: 140px;
+  backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.start-debug-label {
+  font: 700 9px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px;
+  color: rgba(138,170,255,0.5); margin-bottom: 2px;
+}
+.start-debug-btn {
+  display: block; width: 100%;
+  background: rgba(138,170,255,0.08); color: #8af;
+  border: 1px solid rgba(138,170,255,0.15); border-radius: 4px;
+  padding: 5px 8px; cursor: pointer; text-align: center;
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  transition: all 0.12s ease;
+}
+.start-debug-btn:hover { background: rgba(138,170,255,0.15); border-color: rgba(138,170,255,0.35); }
 
 /* ── Backlink: position below VP bar in game screen ── */
 #screen-game .backlink {
