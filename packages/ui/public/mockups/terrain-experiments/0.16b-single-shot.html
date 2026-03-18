@@ -26,7 +26,7 @@
 <div class="layer-toggles">
   <label><input type="checkbox" checked onchange="t('layer-bf')">☑ Battlefield</label>
   <label><input type="checkbox" checked onchange="t('layer-dz')">☑ Deploy Zones</label>
-  <label><input type="checkbox" checked onchange="t('layer-terrain')">☑ SVG Terrain</label>
+  <label><input type="checkbox" onchange="t('layer-terrain')">☐ SVG Terrain</label>
   <label><input type="checkbox" checked onchange="t('layer-models')">☑ Models</label>
   <label><input type="checkbox" checked onchange="t('layer-top')">☑ Top Layer</label>
   <label><input type="checkbox" checked onchange="document.getElementById('embers').style.display=this.checked?'':'none'">☑ Embers</label>
@@ -55,7 +55,7 @@
 </g>
 
 <!-- SVG Terrain (outlines over texture) -->
-<g id="layer-terrain" opacity="0.5">
+<g id="layer-terrain" opacity="0.3" style="display:none">
   <g transform="translate(144,60) rotate(90) translate(-144,-60)"><path d="M144 60L288 60L288 132L144 132Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M145.2 61.2L241.2 61.2L241.2 67.2L151.2 67.2L151.2 109.2L145.2 109.2Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
   <g transform="translate(264,336) rotate(90) translate(-264,-336)"><path d="M264 336L408 336L408 408L264 408Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M288 337.2L385.2 337.2L385.2 385.2L379.2 385.2L379.2 343.2L294 343.2L294 385.2L288 385.2Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
   <g transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)"><path d="M192 264L288 264L288 336L192 336Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M193.2 265.2L286.8 265.2L286.8 271.2L199.2 270L199.2 312L193.2 312Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
