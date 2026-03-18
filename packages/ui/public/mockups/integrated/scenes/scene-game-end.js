@@ -19,8 +19,8 @@ function initGameEndScene() {
     var clone = btn.cloneNode(true);
     btn.parentNode.replaceChild(clone, btn);
     clone.addEventListener('click', function() {
-      // Return to start screen — full page reload for clean state
-      window.location.reload();
+      // Dispatch restart event — app.js handles state reset + transition to deploy
+      window.dispatchEvent(new CustomEvent('wh40k:restart'));
     });
   }
 }
