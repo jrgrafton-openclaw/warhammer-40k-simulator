@@ -2,7 +2,7 @@
  * scene.js — Army data + initialisation wiring for deployment v0.12a.
  * ES module entry point. Imperium units start in the SVG Staging zone.
  * Ork units are pre-deployed on the board.
- * v0.8: single-source shadows, correct pan limits, grid fix.
+ * v0.8: correct pan limits, grid fix. Plain SVG terrain (no textures/shadows).
  */
 
 import { R32, R40, simState } from '../../../shared/state/store.js';

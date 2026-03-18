@@ -133,6 +133,15 @@ function initGameModules() {
 // ── Screen lifecycle callbacks ───────────────────────────
 onScreenShow('start', function() {
   initStartScreen();
+  // Switch back to ambient drone for start screen
+  var audio = document.getElementById('ambient-audio');
+  if (audio) {
+    var src = audio.querySelector('source');
+    if (src) src.src = 'assets/ambient-loop.mp3';
+    audio.src = 'assets/ambient-loop.mp3';
+    audio.load();
+    audio.play().catch(function() {});
+  }
 });
 
 onScreenHide('start', function() {
@@ -143,6 +152,15 @@ onScreenShow('game', function() {
   if (!_gameInitialized) {
     initGameModules();
   }
+  // Switch to battle music — "Grim March of the Forty-First Millennium"
+  var audio = document.getElementById('ambient-audio');
+  if (audio) {
+    var src = audio.querySelector('source');
+    if (src) src.src = '../shared/assets/music/suno-grim-march.mp3';
+    audio.src = '../shared/assets/music/suno-grim-march.mp3';
+    audio.load();
+    audio.play().catch(function() {});
+  }
 });
 
 // ── Initialize options modal ─────────────────────────────
@@ -151,6 +169,27 @@ initOptions();
 // ── Initialize screen modules ────────────────────────────
 initStartScreen();
 initBattleForge();
+
+// ── Restart handler — resets state + transitions to deploy ──
+window.addEventListener('wh40k:restart', function() {
+  // Reset units to initial positions
+  simState.units = JSON.parse(JSON.stringify(_initialUnits));
+
+  // Reset roster pills
+  document.querySelectorAll('.roster-state-pill').forEach(function(pill) {
+    pill.textContent = 'UNDEPLOYED';
+    pill.className = 'roster-state-pill deploy-state';
+  });
+
+  // Reset deployed unit tracking
+  if (window.__deployedUnitIds) window.__deployedUnitIds.clear();
+
+  // Reset game init flag so modules re-initialize
+  _gameInitialized = false;
+
+  // Show game screen → re-init
+  showScreen('game');
+});
 
 // ── Start at the Start Screen ────────────────────────────
 showScreen('start');
