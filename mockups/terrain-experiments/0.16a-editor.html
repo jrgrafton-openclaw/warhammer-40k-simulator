@@ -31,7 +31,15 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 <div class="sidebar">
   <h3>Background</h3>
   <div class="bg-row">
-    <select id="bgSel" onchange="setBg(this.value)"><option value="v16-ground-better.png">v16-ground-better</option><option value="bg-variation-1.png">bg-variation-1</option><option value="bg-variation-2.png">bg-variation-2</option><option value="bg-variation-3.png">bg-variation-3</option></select>
+    <select id="bgSel" onchange="setBg(this.value)">
+      <option value="v16-ground-better.png">v16-ground-better</option>
+      <option value="bg-variation-1.png">bg-variation-1</option>
+      <option value="bg-variation-2.png">bg-variation-2</option>
+      <option value="bg-variation-3.png">bg-variation-3</option>
+      <option value="bg-variation-4.png">bg-variation-4 (oil)</option>
+      <option value="bg-variation-5.png">bg-variation-5 (wet)</option>
+      <option value="svg">— SVG Ground —</option>
+    </select>
   </div>
   <h3>Toggles</h3>
   <div class="toggle-row">
@@ -40,6 +48,10 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
     <button class="tbtn on" onclick="tgl(this,'deployZones')">Deploy</button>
     <button class="tbtn on" onclick="tgl(this,'modelLayer')">Models</button>
     <button class="tbtn on" onclick="tgl(this,'objectives')">Obj</button>
+  </div>
+  <h3>Roof Opacity</h3>
+  <div class="bg-row">
+    <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('spriteTop').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'"><span style="font-size:10px;width:30px">85%</span>
   </div>
   <h3>Ruins — Floor</h3>
   <div class="thumb-grid" id="tRuinsFloor"></div>
@@ -56,6 +68,8 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
         <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       </defs>
+      <!-- SVG ground (shown when bg=svg) -->
+      <rect width="720" height="528" fill="#0c1218"/>
       <!-- BG image -->
       <image id="bgImg" href="v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/>
       <!-- Deploy zones -->
@@ -112,10 +126,10 @@ const selUI=document.getElementById('selUI'),debug=document.getElementById('debu
 
 // Toggle layers
 function tgl(btn,id){btn.classList.toggle('on');const el=document.getElementById(id);if(el)el.style.display=btn.classList.contains('on')?'':'none'}
-function setBg(v){document.getElementById('bgImg').setAttribute('href',v)}
+function setBg(v){const img=document.getElementById('bgImg');if(v==='svg'){img.style.display='none'}else{img.style.display='';img.setAttribute('href',v)}}
 
 // Toolbox sprites
-const thumbs={tRuinsFloor:['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],tRuinsTop:['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','t10-layer-top.png'],tScatter:['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png']};
+const thumbs={tRuinsFloor:['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],tRuinsTop:['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','layer-top-v4.png','layer-top-v5.png','t10-layer-top.png'],tScatter:['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png']};
 Object.entries(thumbs).forEach(([id,files])=>{const c=document.getElementById(id);files.forEach(f=>{const img=document.createElement('img');img.className='thumb';img.src=f;img.dataset.file=f;img.dataset.cat=id;img.draggable=false;c.appendChild(img)})});
 
 // Models (exact v0.5a positions, fill=url(#mg-fill))
@@ -185,10 +199,16 @@ function startMove(e,sp){const pt=svgPt(e.clientX,e.clientY),ox=pt.x-sp.x,oy=pt.
   const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY);sp.x=p.x-ox;sp.y=p.y-oy;applySp(sp);drawSel();upDebug()};
   const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up)};
   document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
-function startResize(e,sp,c){e.preventDefault();const o={x:sp.x,y:sp.y,w:sp.w,h:sp.h},p0=svgPt(e.clientX,e.clientY);
+function startResize(e,sp,c){e.preventDefault();const o={x:sp.x,y:sp.y,w:sp.w,h:sp.h},ar=o.w/o.h,p0=svgPt(e.clientX,e.clientY);
   const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY),dx=p.x-p0.x,dy=p.y-p0.y;
-    if(c.includes('e'))sp.w=Math.max(20,o.w+dx);if(c.includes('w')){sp.x=o.x+dx;sp.w=Math.max(20,o.w-dx)}
-    if(c.includes('s'))sp.h=Math.max(20,o.h+dy);if(c.includes('n')){sp.y=o.y+dy;sp.h=Math.max(20,o.h-dy)}
+    if(e2.shiftKey){// Preserve aspect ratio
+      const d=Math.abs(dx)>Math.abs(dy)?dx:dy*ar;
+      if(c.includes('e'))sp.w=Math.max(20,o.w+d);if(c.includes('w')){sp.x=o.x+d;sp.w=Math.max(20,o.w-d)}
+      sp.h=sp.w/ar;if(c.includes('n'))sp.y=o.y+o.h-sp.h;
+    }else{
+      if(c.includes('e'))sp.w=Math.max(20,o.w+dx);if(c.includes('w')){sp.x=o.x+dx;sp.w=Math.max(20,o.w-dx)}
+      if(c.includes('s'))sp.h=Math.max(20,o.h+dy);if(c.includes('n')){sp.y=o.y+dy;sp.h=Math.max(20,o.h-dy)}
+    }
     applySp(sp);drawSel();upDebug()};
   const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up)};
   document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
