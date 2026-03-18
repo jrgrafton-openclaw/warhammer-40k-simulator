@@ -22,11 +22,11 @@ callbacks.updateRangeCircles = updateRangeCirclesFromUnit;
 
 // ── Range helpers ──────────────────────────────────────
 export function getRangeInches(unit) {
-  return { move: unit.M, advance: unit.M + 3.5, charge: unit.M + 7, ds: 9 };
+  return { move: unit.M, advance: unit.M + 3.5, charge: unit.M + 7, 'max-charge': unit.M + 12, ds: 9 };
 }
 
 export function clearRangeCircles() {
-  ['move','advance','charge','ds'].forEach(function(type) {
+  ['move','advance','charge','max-charge','ds'].forEach(function(type) {
     var c = document.getElementById('range-' + type);
     var l = document.getElementById('range-' + type + '-label');
     if (c) c.style.display = 'none';
@@ -61,7 +61,7 @@ export function updateRangeCirclesFromUnit(uid) {
   var ppi = (bfRect.width / 60) * sc;
 
   var radii = getRangeInches(u);
-  ['move','advance','charge','ds'].forEach(function(type) {
+  ['move','advance','charge','max-charge','ds'].forEach(function(type) {
     var circle = document.getElementById('range-' + type);
     var label  = document.getElementById('range-' + type + '-label');
     var R_px   = radii[type] * ppi;
@@ -134,7 +134,7 @@ export function initBattleControls() {
       document.querySelectorAll('.rail-unit').forEach(function(e){ e.classList.remove('active'); });
       activeRangeTypes.clear();
       clearRangeCircles();
-      ['move','advance','charge','ds'].forEach(function(t) {
+      ['move','advance','charge','max-charge','ds'].forEach(function(t) {
         var btn = document.getElementById('rt-'+t);
         if (btn) btn.classList.remove('active');
       });
@@ -144,7 +144,7 @@ export function initBattleControls() {
   }
 
   // Range toggles
-  ['move','advance','charge','ds'].forEach(function(type) {
+  ['move','advance','charge','max-charge','ds'].forEach(function(type) {
     var btn = document.getElementById('rt-' + type);
     if (!btn) return;
     btn.addEventListener('click', function() {

@@ -88,6 +88,20 @@
 
     <div class="version-badge" id="version">v0.4 · Integrated</div>
     <a class="splash-backlink" id="backlink" href="../index.html#integrated">← Mockups</a>
+
+    <!-- Debug quick-start menu -->
+    <div class="start-debug" id="start-debug">
+      <button class="start-debug-toggle" id="start-debug-toggle">⚙ Debug</button>
+      <div class="start-debug-panel" id="start-debug-panel" style="display:none;">
+        <span class="start-debug-label">SKIP TO PHASE</span>
+        <button class="start-debug-btn" data-skip="deploy">→ Deploy</button>
+        <button class="start-debug-btn" data-skip="move">→ Move</button>
+        <button class="start-debug-btn" data-skip="shoot">→ Shoot</button>
+        <button class="start-debug-btn" data-skip="charge">→ Charge</button>
+        <button class="start-debug-btn" data-skip="fight">→ Fight</button>
+        <button class="start-debug-btn" data-skip="game-end">→ Game End</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -605,6 +619,7 @@
         <button class="range-toggle move" id="rt-move" data-range-type="move">MOVE<br>6"</button>
         <button class="range-toggle advance" id="rt-advance" data-range-type="advance">AVG ADV<br>10"</button>
         <button class="range-toggle charge" id="rt-charge" data-range-type="charge">AVG CHRG<br>13"</button>
+        <button class="range-toggle charge" id="rt-max-charge" data-range-type="max-charge">MAX CHG<br>18"</button>
         <button class="range-toggle ds" id="rt-ds" data-range-type="ds">DS<br>9"</button>
       </div>
       <div id="card-wargear"></div>

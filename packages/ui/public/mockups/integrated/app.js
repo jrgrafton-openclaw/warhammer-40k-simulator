@@ -191,6 +191,37 @@ window.addEventListener('wh40k:restart', function() {
   showScreen('game');
 });
 
+// ── Start screen debug menu — skip to any phase ─────────
+(function() {
+  var toggle = document.getElementById('start-debug-toggle');
+  var panel = document.getElementById('start-debug-panel');
+  if (toggle && panel) {
+    toggle.addEventListener('click', function() {
+      panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    });
+  }
+  document.querySelectorAll('.start-debug-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var phase = btn.dataset.skip;
+      if (!phase) return;
+      // Jump to game screen, auto-deploy, then skip to phase
+      showScreen('game');
+      setTimeout(function() {
+        // Auto-deploy if in deploy phase
+        var autoBtn = document.getElementById('dbg-auto-deploy');
+        if (autoBtn) autoBtn.click();
+        // Skip to target phase via debug buttons
+        if (phase !== 'deploy') {
+          setTimeout(function() {
+            var skipBtn = document.getElementById('dbg-skip-' + phase);
+            if (skipBtn) skipBtn.click();
+          }, 300);
+        }
+      }, 500);
+    });
+  });
+})();
+
 // ── Start at the Start Screen ────────────────────────────
 showScreen('start');
 

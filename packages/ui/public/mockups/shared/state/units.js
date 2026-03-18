@@ -244,12 +244,14 @@ export function buildCard(uid) {
     var advBtn  = document.getElementById('rt-advance');
     var chrgBtn = document.getElementById('rt-charge');
     var dsBtn   = document.getElementById('rt-ds');
+    var maxChrgBtn = document.getElementById('rt-max-charge');
     if (moveBtn) moveBtn.innerHTML = 'MOVE<br>' + u.M + '"';
     if (advBtn)  advBtn.innerHTML  = 'AVG ADV<br>' + Math.round(radii.advance) + '"';
     if (chrgBtn) chrgBtn.innerHTML = 'AVG CHRG<br>' + Math.round(radii.charge) + '"';
+    if (maxChrgBtn) maxChrgBtn.innerHTML = 'MAX CHG<br>' + (u.M + 12) + '"';
     if (dsBtn)   dsBtn.innerHTML   = 'DS<br>' + Math.round(radii.ds) + '"';
     // Sync active state on toggles
-    ['move','advance','charge','ds'].forEach(function(t) {
+    ['move','advance','charge','max-charge','ds'].forEach(function(t) {
       var btn = document.getElementById('rt-' + t);
       if (btn) btn.classList.toggle('active', activeRangeTypes.has(t));
     });
