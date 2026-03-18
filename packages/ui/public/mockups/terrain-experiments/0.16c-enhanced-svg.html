@@ -1,263 +1,256 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>v0.16c — Enhanced SVG Battlefield</title>
-<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<title>v0.16c Enhanced SVG Battlefield</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#1a1a2e;color:#c8d0d8;font-family:system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;padding:24px}
-h1{font-family:Anton,sans-serif;font-size:1.6rem;color:#00d4ff;margin-bottom:4px}
-.sub{font-size:0.82rem;color:#6a7a8a;margin-bottom:14px}
-.controls{display:flex;flex-wrap:wrap;gap:10px 18px;margin-bottom:16px;font-size:0.82rem}
-.controls label{cursor:pointer;user-select:none;display:flex;align-items:center;gap:4px}
-.controls input{accent-color:#00d4ff}
-.map-wrap{position:relative;width:1080px;overflow:hidden;border-radius:12px;border:1px solid #1e2d44;background:#0c1218}
-.map-wrap svg{display:block;width:100%;height:auto}
-.obj-area-ring{position:absolute;width:72px;height:72px;border:2px solid rgba(255,200,0,0.15);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
-.obj-hex{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
-.obj-hex svg{width:28px;height:28px}
-/* Smoke */
-@keyframes smoke-drift{0%{transform:translateX(0);opacity:0.08}50%{transform:translateX(12px);opacity:0.12}100%{transform:translateX(0);opacity:0.08}}
-.smoke ellipse{animation:smoke-drift 18s ease-in-out infinite}
-/* Embers */
-.ember{position:absolute;border-radius:50%;pointer-events:none}
-@keyframes ember-drift{0%{transform:translateX(0) translateY(0);opacity:0.5}25%{transform:translateX(40px) translateY(-6px);opacity:0.35}50%{transform:translateX(90px) translateY(4px);opacity:0.45}75%{transform:translateX(140px) translateY(-8px);opacity:0.3}100%{transform:translateX(180px) translateY(2px);opacity:0}}
-</style>
-</head><body>
-<h1>⚔️ v0.16c — Enhanced SVG Battlefield</h1>
-<p class="sub">Pure SVG terrain with rich patterns + AI scatter images + atmospheric FX</p>
+body{background:#0a0a14;color:#e0e0e0;font-family:system-ui;display:flex;flex-direction:column;align-items:center;padding:16px}
+h1{font-size:14px;color:#00d4ff;margin-bottom:8px;letter-spacing:1px}
+.controls{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:10px;font-size:11px;align-items:center}
+.controls label{cursor:pointer;display:flex;align-items:center;gap:3px}
+.controls select{background:#1a1a2e;color:#e0e0e0;border:1px solid #333;border-radius:3px;padding:1px 4px;font-size:11px}
+.wrap{position:relative;width:1080px;border:1px solid #222;border-radius:4px;overflow:hidden}
+svg{display:block;width:1080px;height:auto}
+</style></head><body>
+<h1>⚔ v0.16c — ENHANCED SVG BATTLEFIELD</h1>
 <div class="controls">
-<label><input type="radio" name="ground" value="ai" checked onchange="tog()"> AI Ground</label>
-<label><input type="radio" name="ground" value="svg" onchange="tog()"> SVG Ground</label>
-<label><input type="checkbox" checked id="ck-dz" onchange="tog()"> Deploy Zones</label>
-<label><input type="checkbox" checked id="ck-ruins" onchange="tog()"> Ruins</label>
-<label><input type="checkbox" checked id="ck-scatter" onchange="tog()"> Scatter</label>
-<label><input type="checkbox" checked id="ck-models" onchange="tog()"> Models</label>
-<label><input type="checkbox" checked id="ck-smoke" onchange="tog()"> Smoke</label>
-<label><input type="checkbox" checked id="ck-embers" onchange="tog()"> Embers</label>
-<label><input type="checkbox" checked id="ck-obj" onchange="tog()"> Objectives</label>
+  <label><input type="radio" name="bg" value="ai" checked onchange="toggleBg()">AI Ground</label>
+  <label><input type="radio" name="bg" value="svg" onchange="toggleBg()">SVG Ground</label>
+  <select id="bgSelect" onchange="changeBg()">
+    <option value="v16-ground-better.png">v16-ground-better</option>
+    <option value="bg-variation-1.png">bg-variation-1</option>
+    <option value="bg-variation-2.png">bg-variation-2</option>
+    <option value="bg-variation-3.png">bg-variation-3</option>
+  </select>
+  <span style="color:#444">|</span>
+  <label><input type="checkbox" checked onchange="tog('deployZones',this.checked)">Deploy Zones</label>
+  <label><input type="checkbox" checked onchange="tog('ruinsBottom',this.checked)">Ruins</label>
+  <label><input type="checkbox" onchange="tog('origRuins',this.checked)">Orig Ruins</label>
+  <label><input type="checkbox" checked onchange="tog('ruinsTop',this.checked)">Ruins Top</label>
+  <label><input type="checkbox" checked onchange="tog('scatterImg',this.checked)">Scatter</label>
+  <label><input type="checkbox" onchange="tog('origScatter',this.checked)">Orig Scatter</label>
+  <label><input type="checkbox" checked onchange="tog('models',this.checked)">Models</label>
+  <label><input type="checkbox" checked onchange="tog('smoke',this.checked)">Smoke</label>
+  <label><input type="checkbox" checked onchange="tog('embers',this.checked)">Embers</label>
+  <label><input type="checkbox" checked onchange="tog('objectives',this.checked)">Objectives</label>
 </div>
-<div class="map-wrap" id="mapWrap">
-<svg viewBox="0 0 720 528" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<div class="wrap">
+<svg id="bf" viewBox="0 0 720 528" xmlns="http://www.w3.org/2000/svg">
 <defs>
-<!-- Stone patterns -->
-<pattern id="stone-pat" width="20" height="12" patternUnits="userSpaceOnUse">
-<rect width="20" height="12" fill="#3a4248"/><rect x="0" y="0" width="9" height="5" fill="#424a50" rx="0.3"/>
-<rect x="11" y="0" width="9" height="5" fill="#3e464c" rx="0.3"/><rect x="5" y="7" width="9" height="5" fill="#404850" rx="0.3"/>
-<line x1="0" y1="6" x2="20" y2="6" stroke="#2e3438" stroke-width="0.5"/>
-<line x1="10" y1="0" x2="10" y2="6" stroke="#2e3438" stroke-width="0.5"/>
-<line x1="5" y1="6" x2="5" y2="12" stroke="#2e3438" stroke-width="0.5"/>
-<line x1="15" y1="6" x2="15" y2="12" stroke="#2e3438" stroke-width="0.5"/>
-</pattern>
-<pattern id="stone-pat-light" width="20" height="12" patternUnits="userSpaceOnUse">
-<rect width="20" height="12" fill="#48505a"/><rect x="0" y="0" width="9" height="5" fill="#525a62" rx="0.3"/>
-<rect x="11" y="0" width="9" height="5" fill="#4e565e" rx="0.3"/><rect x="5" y="7" width="9" height="5" fill="#505860" rx="0.3"/>
-<line x1="0" y1="6" x2="20" y2="6" stroke="#3a4048" stroke-width="0.5"/>
-<line x1="10" y1="0" x2="10" y2="6" stroke="#3a4048" stroke-width="0.5"/>
-<line x1="5" y1="6" x2="5" y2="12" stroke="#3a4048" stroke-width="0.5"/>
-<line x1="15" y1="6" x2="15" y2="12" stroke="#3a4048" stroke-width="0.5"/>
-</pattern>
-<!-- Cracked concrete pattern for SVG ground -->
-<pattern id="concrete-cracks" width="60" height="60" patternUnits="userSpaceOnUse">
-<rect width="60" height="60" fill="#0c1218"/>
-<line x1="5" y1="12" x2="28" y2="18" stroke="#161e28" stroke-width="0.4"/>
-<line x1="40" y1="5" x2="55" y2="30" stroke="#141c24" stroke-width="0.3"/>
-<line x1="10" y1="45" x2="35" y2="52" stroke="#161e28" stroke-width="0.4"/>
-<line x1="48" y1="38" x2="58" y2="55" stroke="#141c24" stroke-width="0.3"/>
-</pattern>
-<!-- Grid pattern -->
-<pattern id="grid-pat" width="12" height="12" patternUnits="userSpaceOnUse">
-<path d="M12 0L12 12M0 12L12 12" fill="none" stroke="rgba(200,170,50,0.03)" stroke-width="0.5"/>
-</pattern>
-<!-- Drop shadow filter -->
-<filter id="ruin-shadow"><feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/></filter>
-<!-- Smoke blur -->
-<filter id="smoke-blur"><feGaussianBlur stdDeviation="6"/></filter>
-<!-- Model defs -->
-<radialGradient id="mg-fill" cx="38%" cy="32%" r="62%">
-<stop offset="0%" stop-color="#0a1020"/><stop offset="60%" stop-color="#060c14"/><stop offset="100%" stop-color="#030609"/>
-</radialGradient>
-<filter id="mf-imp"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="f"/><feComposite in="f" in2="SourceAlpha" operator="in" result="c"/><feGaussianBlur in="c" stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-<filter id="mf-ork"><feFlood flood-color="#ff4020" flood-opacity="0.7" result="f"/><feComposite in="f" in2="SourceAlpha" operator="in" result="c"/><feGaussianBlur in="c" stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <pattern id="floor-pat" width="24" height="24" patternUnits="userSpaceOnUse">
+    <rect width="24" height="24" fill="#3a4044"/><rect x=".5" y=".5" width="11" height="11" fill="#424a4e" rx=".3"/>
+    <rect x="12.5" y=".5" width="11" height="11" fill="#3e4648" rx=".3"/><rect x=".5" y="12.5" width="11" height="11" fill="#404848" rx=".3"/>
+    <rect x="12.5" y="12.5" width="11" height="11" fill="#444c50" rx=".3"/>
+    <line x1="0" y1="12" x2="24" y2="12" stroke="#2e3438" stroke-width=".5"/>
+    <line x1="12" y1="0" x2="12" y2="24" stroke="#2e3438" stroke-width=".5"/>
+  </pattern>
+  <pattern id="wall-pat" width="16" height="10" patternUnits="userSpaceOnUse">
+    <rect width="16" height="10" fill="#505a60"/><rect x="0" y="0" width="7" height="4" fill="#586268" rx=".3"/>
+    <rect x="9" y="0" width="7" height="4" fill="#4e585e" rx=".3"/><rect x="4" y="6" width="7" height="4" fill="#545e64" rx=".3"/>
+    <line x1="0" y1="5" x2="16" y2="5" stroke="#3a4044" stroke-width=".8"/>
+    <line x1="8" y1="0" x2="8" y2="5" stroke="#3a4044" stroke-width=".8"/>
+    <line x1="4" y1="5" x2="4" y2="10" stroke="#3a4044" stroke-width=".8"/>
+    <line x1="12" y1="5" x2="12" y2="10" stroke="#3a4044" stroke-width=".8"/>
+  </pattern>
+  <filter id="wallShadow"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity=".5"/></filter>
+  <filter id="smokeBlur"><feGaussianBlur stdDeviation="8"/></filter>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <!-- Model icons -->
+  <g id="ico-infantry"><line x1="-3" y1="3" x2="0" y2="-3" stroke="#fff" stroke-width="1.2"/><line x1="0" y1="-3" x2="3" y2="3" stroke="#fff" stroke-width="1.2"/><line x1="-2" y1="1" x2="2" y2="1" stroke="#fff" stroke-width="1"/></g>
+  <g id="ico-character"><circle r="2.5" fill="none" stroke="#fff" stroke-width="1"/><line x1="0" y1="-4" x2="0" y2="-2.5" stroke="#fff" stroke-width="1"/><line x1="0" y1="2.5" x2="0" y2="4" stroke="#fff" stroke-width="1"/></g>
+  <g id="ico-elite"><rect x="-3" y="-3" width="6" height="6" fill="none" stroke="#fff" stroke-width="1" transform="rotate(45)"/></g>
+  <g id="ico-vehicle"><rect x="-5" y="-3" width="10" height="6" fill="none" stroke="#fff" stroke-width="1" rx="1"/><line x1="0" y1="-3" x2="0" y2="3" stroke="#fff" stroke-width=".6"/></g>
 </defs>
 
-<!-- AI Ground -->
-<g id="ly-ai-ground"><image href="v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/></g>
-<!-- SVG Ground -->
-<g id="ly-svg-ground" display="none">
-<rect width="720" height="528" fill="url(#concrete-cracks)"/>
-<circle cx="180" cy="140" r="22" fill="#080e14" stroke="#0e151e" stroke-width="1.5"/>
-<circle cx="520" cy="420" r="28" fill="#080e14" stroke="#0e151e" stroke-width="1.5"/>
-<circle cx="400" cy="80" r="16" fill="#070d12" stroke="#0d1319" stroke-width="1"/>
-<circle cx="300" cy="480" r="20" fill="#080e14" stroke="#0e151e" stroke-width="1.2"/>
-<rect width="720" height="528" fill="url(#grid-pat)"/>
-</g>
+<!-- Background -->
+<rect width="720" height="528" fill="#1a1a2e" id="svgBg"/>
+<image id="aiBg" href="v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/>
 
 <!-- Deploy Zones -->
-<g id="ly-dz">
-<rect x="0" y="0" width="240" height="528" fill="rgba(0,140,200,0.06)"/>
-<line x1="240" y1="0" x2="240" y2="528" stroke="rgba(0,140,200,0.2)" stroke-width="1" stroke-dasharray="8,6"/>
-<rect x="480" y="0" width="240" height="528" fill="rgba(255,64,32,0.06)"/>
-<line x1="480" y1="0" x2="480" y2="528" stroke="rgba(255,64,32,0.2)" stroke-width="1" stroke-dasharray="8,6"/>
+<g id="deployZones" opacity=".18">
+  <rect x="0" y="0" width="144" height="528" fill="#3366ff"/>
+  <rect x="576" y="0" width="144" height="528" fill="#ff3333"/>
 </g>
 
-<!-- Ruins -->
-<g id="ly-ruins" filter="url(#ruin-shadow)">
-<!-- t1: 144x72 ruin -->
-<g transform="translate(144,60) rotate(90) translate(-144,-60)">
-<rect x="144" y="60" width="144" height="72" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<rect x="154" y="66" width="80" height="40" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t2: 144x72 ruin -->
-<g transform="translate(264,336) rotate(90) translate(-264,-336)">
-<rect x="264" y="336" width="144" height="72" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<rect x="274" y="342" width="80" height="40" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t3: 96x72 ruin -->
-<g transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)">
-<rect x="192" y="264" width="96" height="72" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<path d="M202,270 L202,310 L260,310 L260,290 L230,290 L230,270 Z" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t6: 78x60 ruin -->
-<g transform="translate(360,204) scale(-1,1) rotate(-45) translate(-360,-204)">
-<rect x="360" y="204" width="78" height="60" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<rect x="368" y="210" width="44" height="34" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t9: 144x72 ruin -->
-<g transform="translate(576,468) rotate(-90) translate(-576,-468)">
-<rect x="576" y="468" width="144" height="72" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<rect x="586" y="474" width="80" height="40" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t10: 144x72 ruin -->
-<g transform="translate(456,192) rotate(-90) translate(-456,-192)">
-<rect x="456" y="192" width="144" height="72" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<rect x="466" y="198" width="80" height="40" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t11: 96x72 ruin -->
-<g transform="translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)">
-<rect x="528" y="264" width="96" height="72" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<path d="M538,270 L538,310 L596,310 L596,290 L566,290 L566,270 Z" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
-<!-- t14: 78x60 ruin -->
-<g transform="translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)">
-<rect x="360" y="324" width="78" height="60" fill="url(#stone-pat)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-<rect x="368" y="330" width="44" height="34" fill="url(#stone-pat-light)" stroke="rgba(80,90,100,0.4)" stroke-width="1"/>
-</g>
+<!-- RUINS BOTTOM (floor layer) -->
+<g id="ruinsBottom">
+  <!-- t1 --> <path d="M144,60 L288,60 L288,132 L144,132 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="180" cy="90" r="2.5" fill="#2a2e32"/><circle cx="250" cy="110" r="2" fill="#2a2e32"/><rect x="210" y="100" width="6" height="2" fill="#4a5258" opacity=".5" transform="rotate(25,213,101)"/>
+  <!-- t2 --> <path d="M264,336 L408,336 L408,408 L264,408 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="300" cy="360" r="2" fill="#2a2e32"/><circle cx="370" cy="390" r="2.5" fill="#2a2e32"/><rect x="330" y="375" width="5" height="2" fill="#4a5258" opacity=".5" transform="rotate(-15,332,376)"/>
+  <!-- t3 --> <path d="M192,264 L288,264 L288,336 L192,336 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="230" cy="290" r="2" fill="#2a2e32"/><circle cx="260" cy="320" r="2.5" fill="#2a2e32"/>
+  <!-- t6 --> <path d="M360,204 L438,204 L438,264 L360,264 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="390" cy="230" r="2" fill="#2a2e32"/><circle cx="420" cy="250" r="2.5" fill="#2a2e32"/>
+  <!-- t9 --> <path d="M576,468 L720,468 L720,540 L576,540 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="620" cy="490" r="2.5" fill="#2a2e32"/><circle cx="680" cy="520" r="2" fill="#2a2e32"/><rect x="650" y="500" width="6" height="2" fill="#4a5258" opacity=".5" transform="rotate(40,653,501)"/>
+  <!-- t10 --> <path d="M456,192 L600,192 L600,264 L456,264 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="500" cy="220" r="2" fill="#2a2e32"/><circle cx="560" cy="240" r="2.5" fill="#2a2e32"/>
+  <!-- t11 --> <path d="M528,264 L624,264 L624,336 L528,336 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="570" cy="290" r="2.5" fill="#2a2e32"/><circle cx="600" cy="310" r="2" fill="#2a2e32"/>
+  <!-- t14 --> <path d="M360,324 L438,324 L438,384 L360,384 Z" fill="url(#floor-pat)" stroke="#2e3438" stroke-width="1"/>
+  <circle cx="390" cy="350" r="2" fill="#2a2e32"/><circle cx="420" cy="370" r="2.5" fill="#2a2e32"/>
 </g>
 
-<!-- Scatter -->
-<g id="ly-scatter">
-<g transform="translate(48,264) rotate(0) translate(-48,-264)"><image href="scatter-layer.png" x="48" y="264" width="48" height="72" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(336,0) rotate(0) translate(-336,0)"><image href="scatter-v2.png" x="336" y="0" width="48" height="72" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)"><image href="scatter-layer.png" x="304.8" y="148.8" width="42" height="60" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(317.76,247.2) scale(-1,1) rotate(-45) translate(-317.76,-247.2)"><image href="scatter-v2.png" x="317.76" y="247.2" width="48" height="72" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(672,264) rotate(-180) translate(-672,-264)"><image href="scatter-layer.png" x="672" y="264" width="48" height="72" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(384,528) rotate(-180) translate(-384,-528)"><image href="scatter-v2.png" x="384" y="528" width="48" height="72" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"><image href="scatter-layer.png" x="415.2" y="379.2" width="42" height="60" preserveAspectRatio="xMidYMid meet"/></g>
-<g transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"><image href="scatter-v2.png" x="402.24" y="280.8" width="48" height="72" preserveAspectRatio="xMidYMid meet"/></g>
+<!-- ORIGINAL RUINS (flat colored, off by default) -->
+<g id="origRuins" style="display:none">
+  <path d="M144,60 L288,60 L288,132 L144,132 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M145.2,61.2 L241.2,61.2 L241.2,67.2 L151.2,67.2 L151.2,109.2 L145.2,109.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M264,336 L408,336 L408,408 L264,408 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M288,337.2 L385.2,337.2 L385.2,385.2 L379.2,385.2 L379.2,343.2 L294,343.2 L294,385.2 L288,385.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M192,264 L288,264 L288,336 L192,336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M193.2,265.2 L286.8,265.2 L286.8,271.2 L199.2,270 L199.2,312 L193.2,312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M360,204 L438,204 L438,264 L360,264 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M361.2,205.2 L436.8,205.2 L436.8,211.2 L367.2,211.2 L367.2,262.8 L361.2,262.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M576,468 L720,468 L720,540 L576,540 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M577.2,469.2 L673.2,469.2 L673.2,475.2 L583.2,475.2 L583.2,517.2 L577.2,517.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M456,192 L600,192 L600,264 L456,264 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M480,193.2 L577.2,193.2 L577.2,241.2 L571.2,241.2 L571.2,199.2 L486,199.2 L486,241.2 L480,241.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M528,264 L624,264 L624,336 L528,336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M529.2,265.2 L622.8,265.2 L622.8,271.2 L535.2,270 L535.2,312 L529.2,312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
+  <path d="M360,324 L438,324 L438,384 L360,384 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+  <path d="M361.2,325.2 L436.8,325.2 L436.8,331.2 L367.2,331.2 L367.2,382.8 L361.2,382.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)"/>
 </g>
 
-<!-- Models -->
-<g id="ly-models">
-<!-- Imperium -->
-<g id="imp-models">
-<!-- Assault Intercessors (infantry) -->
-<g transform="translate(100,64)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(117,64)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(134,64)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(108,81)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(125,81)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<!-- Primaris Lieutenant (character - 10pt star) -->
-<g transform="translate(120,160)" filter="url(#mf-imp)"><circle r="9" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><polygon points="0,-4.5 1.04,-1.43 4.28,-1.39 1.68,0.55 2.63,3.64 0,1.78 -2.63,3.64 -1.68,0.55 -4.28,-1.39 -1.04,-1.43" fill="#006688"/></g>
-<!-- Intercessor Squad A (infantry) -->
-<g transform="translate(80,300)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(97,300)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(114,300)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(88,317)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<g transform="translate(105,317)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#006688" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#006688" stroke-width="1.224"/></g>
-<!-- Hellblasters (elite - diamond) -->
-<g transform="translate(150,400)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><polygon points="0,-3.196 2.5568,0 0,3.196 -2.5568,0" fill="#006688"/></g>
-<g transform="translate(167,400)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><polygon points="0,-3.196 2.5568,0 0,3.196 -2.5568,0" fill="#006688"/></g>
-<g transform="translate(184,400)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><polygon points="0,-3.196 2.5568,0 0,3.196 -2.5568,0" fill="#006688"/></g>
-<g transform="translate(158,417)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><polygon points="0,-3.196 2.5568,0 0,3.196 -2.5568,0" fill="#006688"/></g>
-<g transform="translate(175,417)" filter="url(#mf-imp)"><circle r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><polygon points="0,-3.196 2.5568,0 0,3.196 -2.5568,0" fill="#006688"/></g>
-<!-- Redemptor Dreadnought (vehicle) -->
-<g transform="translate(60,480)" filter="url(#mf-imp)"><rect x="-21.5" y="-12.5" width="43" height="25" rx="4" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.2"/><rect x="-14" y="-6" width="28" height="12" rx="2" fill="none" stroke="#006688" stroke-width="0.8"/><line x1="-14" y1="0" x2="14" y2="0" stroke="#006688" stroke-width="0.6"/></g>
-</g>
-<!-- Orks -->
-<g id="ork-models">
-<!-- Boss Nob (character) -->
-<g transform="translate(560,100)" filter="url(#mf-ork)"><circle r="9" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><polygon points="0,-4.5 1.04,-1.43 4.28,-1.39 1.68,0.55 2.63,3.64 0,1.78 -2.63,3.64 -1.68,0.55 -4.28,-1.39 -1.04,-1.43" fill="#882010"/></g>
-<!-- Boyz Mob (infantry) -->
-<g transform="translate(500,200)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(517,200)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(534,200)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(551,200)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(568,200)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(500,217)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(517,217)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(534,217)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(551,217)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<g transform="translate(568,217)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><line x1="-3.06" y1="0" x2="3.06" y2="0" stroke="#882010" stroke-width="1.224"/><line x1="0" y1="-3.06" x2="0" y2="3.06" stroke="#882010" stroke-width="1.224"/></g>
-<!-- Mekboy (elite) -->
-<g transform="translate(560,350)" filter="url(#mf-ork)"><circle r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.2"/><polygon points="0,-3.196 2.5568,0 0,3.196 -2.5568,0" fill="#882010"/></g>
-</g>
+<!-- SCATTER IMAGES -->
+<g id="scatterImg">
+  <image href="scatter-layer.png" x="48" y="264" width="48" height="72" preserveAspectRatio="none"/>
+  <image href="scatter-v2.png" x="336" y="0" width="48" height="72" preserveAspectRatio="none"/>
+  <image href="scatter-v3.png" x="304.8" y="148.8" width="42" height="60" preserveAspectRatio="none"/>
+  <image href="scatter-v4.png" x="317.76" y="247.2" width="48" height="72" preserveAspectRatio="none"/>
+  <image href="scatter-v5.png" x="672" y="264" width="48" height="72" preserveAspectRatio="none"/>
+  <image href="scatter-v6.png" x="384" y="528" width="48" height="72" preserveAspectRatio="none"/>
+  <image href="scatter-layer.png" x="415.2" y="379.2" width="42" height="60" preserveAspectRatio="none"/>
+  <image href="scatter-v2.png" x="402.24" y="280.8" width="48" height="72" preserveAspectRatio="none"/>
 </g>
 
-<!-- Smoke -->
-<g id="ly-smoke" class="smoke" filter="url(#smoke-blur)">
-<g><ellipse cx="200" cy="96" rx="24" ry="10" fill="rgba(180,180,190,0.09)" style="animation-duration:18s"/></g>
-<g><ellipse cx="240" cy="290" rx="20" ry="8" fill="rgba(180,180,190,0.08)" style="animation-duration:22s;animation-delay:-5s"/></g>
-<g><ellipse cx="510" cy="228" rx="26" ry="12" fill="rgba(180,180,190,0.10)" style="animation-duration:20s;animation-delay:-10s"/></g>
-<g><ellipse cx="620" cy="500" rx="22" ry="9" fill="rgba(180,180,190,0.08)" style="animation-duration:25s;animation-delay:-3s"/></g>
+<!-- ORIGINAL SCATTER (flat colored, off by default) -->
+<g id="origScatter" style="display:none">
+  <rect x="48" y="264" width="48" height="72" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="336" y="0" width="48" height="72" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="304.8" y="148.8" width="42" height="60" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="317.76" y="247.2" width="48" height="72" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="672" y="264" width="48" height="72" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="384" y="528" width="48" height="72" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="415.2" y="379.2" width="42" height="60" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+  <rect x="402.24" y="280.8" width="48" height="72" rx="4" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)"/>
+</g>
+
+<!-- OBJECTIVES -->
+<g id="objectives" filter="url(#glow)">
+  <circle cx="360" cy="72" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity=".5"/><polygon points="360,66 363,72 360,78 357,72" fill="#00d4ff" opacity=".7"/>
+  <circle cx="120" cy="264" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity=".5"/><polygon points="120,258 123,264 120,270 117,264" fill="#00d4ff" opacity=".7"/>
+  <circle cx="360" cy="264" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity=".5"/><polygon points="360,258 363,264 360,270 357,264" fill="#00d4ff" opacity=".7"/>
+  <circle cx="600" cy="264" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity=".5"/><polygon points="600,258 603,264 600,270 597,264" fill="#00d4ff" opacity=".7"/>
+  <circle cx="360" cy="456" r="18" fill="none" stroke="#00d4ff" stroke-width="1.5" opacity=".5"/><polygon points="360,450 363,456 360,462 357,456" fill="#00d4ff" opacity=".7"/>
+</g>
+
+<!-- MODELS -->
+<g id="models">
+  <!-- Imperium (blue) -->
+  <g fill="#3366ff" stroke="#3366ff">
+    <circle cx="100" cy="64" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="100" y="64"/>
+    <circle cx="117" cy="64" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="117" y="64"/>
+    <circle cx="134" cy="64" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="134" y="64"/>
+    <circle cx="108" cy="81" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="108" y="81"/>
+    <circle cx="125" cy="81" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="125" y="81"/>
+    <circle cx="120" cy="160" r="9" fill="#3366ff" opacity=".3" stroke="#5588ff"/><use href="#ico-character" x="120" y="160"/>
+    <circle cx="80" cy="300" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="80" y="300"/>
+    <circle cx="97" cy="300" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="97" y="300"/>
+    <circle cx="114" cy="300" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="114" y="300"/>
+    <circle cx="88" cy="317" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="88" y="317"/>
+    <circle cx="105" cy="317" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-infantry" x="105" y="317"/>
+    <circle cx="150" cy="400" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-elite" x="150" y="400"/>
+    <circle cx="167" cy="400" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-elite" x="167" y="400"/>
+    <circle cx="184" cy="400" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-elite" x="184" y="400"/>
+    <circle cx="158" cy="417" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-elite" x="158" y="417"/>
+    <circle cx="175" cy="417" r="8" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-elite" x="175" y="417"/>
+    <rect x="38.5" y="467.5" width="43" height="25" rx="2" fill="#3366ff" opacity=".25" stroke="#5588ff"/><use href="#ico-vehicle" x="60" y="480"/>
+  </g>
+  <!-- Orks (red) -->
+  <g fill="#cc3333" stroke="#cc3333">
+    <circle cx="560" cy="100" r="9" fill="#cc3333" opacity=".3" stroke="#ff5555"/><use href="#ico-character" x="560" y="100"/>
+    <circle cx="500" cy="200" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="500" y="200"/>
+    <circle cx="517" cy="200" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="517" y="200"/>
+    <circle cx="534" cy="200" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="534" y="200"/>
+    <circle cx="551" cy="200" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="551" y="200"/>
+    <circle cx="568" cy="200" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="568" y="200"/>
+    <circle cx="500" cy="217" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="500" y="217"/>
+    <circle cx="517" cy="217" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="517" y="217"/>
+    <circle cx="534" cy="217" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="534" y="217"/>
+    <circle cx="551" cy="217" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="551" y="217"/>
+    <circle cx="568" cy="217" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-infantry" x="568" y="217"/>
+    <circle cx="560" cy="350" r="8" fill="#cc3333" opacity=".25" stroke="#ff5555"/><use href="#ico-elite" x="560" y="350"/>
+  </g>
+</g>
+
+<!-- RUINS TOP (wall overhangs) -->
+<g id="ruinsTop" filter="url(#wallShadow)">
+  <path d="M145.2,61.2 L241.2,61.2 L241.2,67.2 L151.2,67.2 L151.2,109.2 L145.2,109.2 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M288,337.2 L385.2,337.2 L385.2,385.2 L379.2,385.2 L379.2,343.2 L294,343.2 L294,385.2 L288,385.2 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M193.2,265.2 L286.8,265.2 L286.8,271.2 L199.2,270 L199.2,312 L193.2,312 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M361.2,205.2 L436.8,205.2 L436.8,211.2 L367.2,211.2 L367.2,262.8 L361.2,262.8 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M577.2,469.2 L673.2,469.2 L673.2,475.2 L583.2,475.2 L583.2,517.2 L577.2,517.2 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M480,193.2 L577.2,193.2 L577.2,241.2 L571.2,241.2 L571.2,199.2 L486,199.2 L486,241.2 L480,241.2 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M529.2,265.2 L622.8,265.2 L622.8,271.2 L535.2,270 L535.2,312 L529.2,312 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+  <path d="M361.2,325.2 L436.8,325.2 L436.8,331.2 L367.2,331.2 L367.2,382.8 L361.2,382.8 Z" fill="url(#wall-pat)" stroke="#3a4044" stroke-width="1.5"/>
+</g>
+
+<!-- SMOKE -->
+<g id="smoke" filter="url(#smokeBlur)" opacity=".15">
+  <ellipse cx="200" cy="100" rx="30" ry="15" fill="#888"><animate attributeName="cx" values="200;215;200" dur="12s" repeatCount="indefinite"/></ellipse>
+  <ellipse cx="400" cy="240" rx="25" ry="12" fill="#777"><animate attributeName="cx" values="400;385;400" dur="15s" repeatCount="indefinite"/></ellipse>
+  <ellipse cx="580" cy="500" rx="35" ry="14" fill="#888"><animate attributeName="cx" values="580;600;580" dur="10s" repeatCount="indefinite"/></ellipse>
+  <ellipse cx="370" cy="350" rx="20" ry="10" fill="#777"><animate attributeName="cx" values="370;355;370" dur="14s" repeatCount="indefinite"/></ellipse>
+</g>
+
+<!-- EMBERS -->
+<g id="embers">
+  <style>
+    @keyframes drift{0%{transform:translateX(0);opacity:.8}50%{opacity:1}100%{transform:translateX(60px);opacity:0}}
+    .ember{animation:drift linear infinite;fill:#ff6600}
+  </style>
+  <circle class="ember" cx="150" cy="95" r="1" style="animation-duration:10s;animation-delay:0s"/>
+  <circle class="ember" cx="280" cy="370" r="1.2" style="animation-duration:12s;animation-delay:1s"/>
+  <circle class="ember" cx="200" cy="280" r=".8" style="animation-duration:8s;animation-delay:2s"/>
+  <circle class="ember" cx="400" cy="230" r="1" style="animation-duration:14s;animation-delay:0.5s"/>
+  <circle class="ember" cx="580" cy="490" r="1.1" style="animation-duration:9s;animation-delay:3s"/>
+  <circle class="ember" cx="360" cy="340" r=".9" style="animation-duration:11s;animation-delay:1.5s"/>
+  <circle class="ember" cx="100" cy="70" r="1" style="animation-duration:13s;animation-delay:4s"/>
+  <circle class="ember" cx="500" cy="210" r="1.2" style="animation-duration:10s;animation-delay:2.5s"/>
+  <circle class="ember" cx="320" cy="150" r=".7" style="animation-duration:15s;animation-delay:0s"/>
+  <circle class="ember" cx="450" cy="260" r="1" style="animation-duration:8s;animation-delay:5s"/>
+  <circle class="ember" cx="170" cy="310" r="1.1" style="animation-duration:12s;animation-delay:3.5s"/>
+  <circle class="ember" cx="600" cy="470" r=".9" style="animation-duration:16s;animation-delay:1s"/>
+  <circle class="ember" cx="250" cy="100" r="1" style="animation-duration:9s;animation-delay:6s"/>
+  <circle class="ember" cx="380" cy="200" r="1.3" style="animation-duration:11s;animation-delay:2s"/>
+  <circle class="ember" cx="530" cy="280" r=".8" style="animation-duration:14s;animation-delay:4.5s"/>
+  <circle class="ember" cx="110" cy="400" r="1" style="animation-duration:10s;animation-delay:7s"/>
+  <circle class="ember" cx="470" cy="350" r="1.1" style="animation-duration:13s;animation-delay:0.5s"/>
+  <circle class="ember" cx="300" cy="260" r=".9" style="animation-duration:8s;animation-delay:3s"/>
+  <circle class="ember" cx="650" cy="500" r="1" style="animation-duration:12s;animation-delay:5.5s"/>
+  <circle class="ember" cx="190" cy="140" r="1.2" style="animation-duration:15s;animation-delay:1.5s"/>
+  <circle class="ember" cx="420" cy="380" r=".7" style="animation-duration:9s;animation-delay:6.5s"/>
+  <circle class="ember" cx="550" cy="190" r="1" style="animation-duration:11s;animation-delay:8s"/>
+  <circle class="ember" cx="80" cy="250" r="1.1" style="animation-duration:10s;animation-delay:2s"/>
+  <circle class="ember" cx="340" cy="120" r=".8" style="animation-duration:14s;animation-delay:4s"/>
+  <circle class="ember" cx="480" cy="300" r="1" style="animation-duration:16s;animation-delay:0s"/>
+  <circle class="ember" cx="220" cy="420" r="1.2" style="animation-duration:8s;animation-delay:7.5s"/>
+  <circle class="ember" cx="610" cy="250" r=".9" style="animation-duration:13s;animation-delay:1s"/>
+  <circle class="ember" cx="140" cy="180" r="1" style="animation-duration:10s;animation-delay:3.5s"/>
+  <circle class="ember" cx="390" cy="450" r="1.1" style="animation-duration:12s;animation-delay:5s"/>
+  <circle class="ember" cx="560" cy="330" r=".7" style="animation-duration:9s;animation-delay:6s"/>
+  <circle class="ember" cx="260" cy="50" r="1" style="animation-duration:11s;animation-delay:8.5s"/>
+  <circle class="ember" cx="440" cy="160" r="1.3" style="animation-duration:14s;animation-delay:2.5s"/>
 </g>
 </svg>
-
-<!-- Embers (HTML overlay) -->
-<div id="ly-embers" style="position:absolute;inset:0;pointer-events:none;overflow:hidden"></div>
-
-<!-- Objectives -->
-<div id="ly-obj">
-<div class="obj-area-ring" style="left:50%;top:13.64%"></div>
-<div class="obj-area-ring" style="left:16.67%;top:50%"></div>
-<div class="obj-area-ring" style="left:50%;top:50%"></div>
-<div class="obj-area-ring" style="left:83.33%;top:50%"></div>
-<div class="obj-area-ring" style="left:50%;top:86.36%"></div>
-<div class="obj-hex" style="left:50%;top:13.64%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">01</text></svg></div>
-<div class="obj-hex" style="left:16.67%;top:50%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">02</text></svg></div>
-<div class="obj-hex" style="left:50%;top:50%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">03</text></svg></div>
-<div class="obj-hex" style="left:83.33%;top:50%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">04</text></svg></div>
-<div class="obj-hex" style="left:50%;top:86.36%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">05</text></svg></div>
 </div>
-</div>
-
 <script>
-// Generate embers
-(function(){
-const c=document.getElementById('ly-embers');
-for(let i=0;i<35;i++){
-const d=document.createElement('div');
-d.className='ember';
-const sz=2+Math.random()*2.5;
-const x=Math.random()*100;
-const y=Math.random()*100;
-const dur=8+Math.random()*12;
-const del=Math.random()*dur;
-d.style.cssText=`width:${sz}px;height:${sz}px;background:rgba(255,${140+Math.random()*40|0},${40+Math.random()*30|0},${0.3+Math.random()*0.2});left:${x}%;top:${y}%;animation:ember-drift ${dur}s linear ${del}s infinite`;
-c.appendChild(d);
+function tog(id,v){const e=document.getElementById(id);if(e)e.style.display=v?'':'none'}
+function toggleBg(){
+  const ai=document.querySelector('input[name="bg"][value="ai"]').checked;
+  document.getElementById('aiBg').style.display=ai?'':'none';
+  document.getElementById('svgBg').setAttribute('fill',ai?'#1a1a2e':'#2a2e1a');
 }
-})();
-
-function tog(){
-const gr=document.querySelector('input[name=ground]:checked').value;
-document.getElementById('ly-ai-ground').style.display=gr==='ai'?'':'none';
-document.getElementById('ly-svg-ground').style.display=gr==='svg'?'':'none';
-const m={dz:'ly-dz',ruins:'ly-ruins',scatter:'ly-scatter',models:'ly-models',smoke:'ly-smoke',embers:'ly-embers',obj:'ly-obj'};
-for(const[k,id]of Object.entries(m)){
-const el=document.getElementById(id);
-const on=document.getElementById('ck-'+k).checked;
-if(el.tagName==='g'||el.tagName==='G') el.style.display=on?'':'none';
-else el.style.display=on?'':'none';
-}
-}
+function changeBg(){document.getElementById('aiBg').setAttribute('href',document.getElementById('bgSelect').value)}
 </script>
 </body></html>
