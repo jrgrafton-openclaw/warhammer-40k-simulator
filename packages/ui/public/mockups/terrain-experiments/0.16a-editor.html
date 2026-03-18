@@ -49,6 +49,10 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
     <button class="tbtn on" onclick="tgl(this,'modelLayer')">Models</button>
     <button class="tbtn on" onclick="tgl(this,'objectives')">Obj</button>
   </div>
+  <h3>SVG Ruins Opacity</h3>
+  <div class="bg-row">
+    <input type="range" min="0" max="100" value="92" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('svgRuins').style.opacity=this.value/100;document.getElementById('svgScatter').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'"><span style="font-size:10px;width:30px">92%</span>
+  </div>
   <h3>Roof Opacity</h3>
   <div class="bg-row">
     <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('spriteTop').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'"><span style="font-size:10px;width:30px">85%</span>
