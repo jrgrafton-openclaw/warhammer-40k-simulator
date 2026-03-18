@@ -1,0 +1,121 @@
+/* ══════════════════════════════════════════════════════════════
+   Fog Layer Animation — CSS-only scrolling cloud layers
+   Based on danielstuart14/CSS_FOG_ANIMATION technique.
+   3 layers, each 200% width with 2 copies floated side-by-side.
+   CSS keyframes translate left → seamless loop.
+   Opacity keyframes cycle for breathing effect.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Fog wrapper (contains all 3 layers) ── */
+.fogwrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  /* Warm fog tinting + slight blur for softness */
+  filter: blur(1px) saturate(1.1) sepia(0.15);
+}
+
+/* ── Individual fog layers ── */
+#foglayer_01, #foglayer_02, #foglayer_03 {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+}
+
+/* ── Fog image tiles (2 copies per layer for seamless loop) ── */
+#foglayer_01 .image01, #foglayer_01 .image02,
+#foglayer_02 .image01, #foglayer_02 .image02,
+#foglayer_03 .image01, #foglayer_03 .image02 {
+  float: left;
+  width: 50%;
+  height: 100%;
+  background-repeat: repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+/* v0.6d: Pre-made fog PNG textures */
+#foglayer_01 .image01, #foglayer_01 .image02 {
+  background-image: url('fog1.png');
+}
+#foglayer_02 .image01, #foglayer_02 .image02 {
+  background-image: url('fog2.png');
+}
+#foglayer_03 .image01, #foglayer_03 .image02 {
+  background-image: url('fog1.png');
+}
+
+/* ── Layer 1: Dense base — slow scroll (18s), subtle opacity pulse ── */
+#foglayer_01 {
+  animation: fog_opacity_01 12s linear infinite, fog_scroll 18s linear infinite;
+}
+
+/* ── Layer 2: Medium wisps — medium scroll (14s), breathing opacity ── */
+#foglayer_02 {
+  animation: fog_opacity_02 18s linear infinite, fog_scroll 14s linear infinite;
+}
+
+/* ── Layer 3: Fine detail — fast scroll (10s), strong opacity pulse ── */
+#foglayer_03 {
+  animation: fog_opacity_03 15s linear infinite, fog_scroll 10s linear infinite;
+}
+
+/* ── Scroll animation: translate from 0 to -100% for seamless loop ── */
+@keyframes fog_scroll {
+  0%   { left: 0; }
+  100% { left: -100%; }
+}
+
+/* ── Opacity breathing animations (each layer cycles differently) ── */
+@keyframes fog_opacity_01 {
+  0%   { opacity: 0.08; }
+  22%  { opacity: 0.35; }
+  40%  { opacity: 0.18; }
+  58%  { opacity: 0.30; }
+  80%  { opacity: 0.12; }
+  100% { opacity: 0.08; }
+}
+
+@keyframes fog_opacity_02 {
+  0%   { opacity: 0.35; }
+  25%  { opacity: 0.15; }
+  50%  { opacity: 0.08; }
+  80%  { opacity: 0.22; }
+  100% { opacity: 0.35; }
+}
+
+@keyframes fog_opacity_03 {
+  0%   { opacity: 0.45; }
+  27%  { opacity: 0.12; }
+  52%  { opacity: 0.35; }
+  68%  { opacity: 0.18; }
+  100% { opacity: 0.45; }
+}
+
+/* ── Viewport mask — radial gradient reveals the board center ── */
+.fog-viewport-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  /* Dark overlay that gets erased in the center */
+  background: radial-gradient(
+    ellipse 48% 52% at 52% 48%,
+    transparent 0%,
+    transparent 55%,
+    rgba(18, 19, 26, 0.3) 68%,
+    rgba(18, 19, 26, 0.7) 80%,
+    rgba(18, 19, 26, 0.92) 90%,
+    rgba(18, 19, 26, 1) 100%
+  );
+}
+
+/* ── Effects canvas (explosions, sparks, debris) ── */
+#fog-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 11;
+  pointer-events: none;
+}
