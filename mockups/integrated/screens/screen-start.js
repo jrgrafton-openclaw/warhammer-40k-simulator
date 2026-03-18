@@ -16,9 +16,12 @@ var lightningSfx = [];
 var sfxVolume = [[0.20, 0.12], [0.12, 0.08], [0.18, 0.10]];
 var lastSfxIdx = -1, secondLastSfxIdx = -1;
 
-// ── Audio state (shared with mute button) ──
+// ── Audio state (shared with mute button + options) ──
 var audioCtx = null, gainNode = null;
 var TARGET_VOL = 0.85, FADE_IN_SEC = 1.0, FADE_MUTE_SEC = 0.15, FADE_UNMUTE_SEC = 0.2;
+
+// Expose gain node globally so options can control volume
+window.__wh40kAudioGain = null;
 var muted = localStorage.getItem('wh40k-splash-muted') === 'true';
 window._audioMuted = muted;
 
@@ -158,6 +161,8 @@ function ensureAudioContext() {
   gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
   source.connect(gainNode);
   gainNode.connect(audioCtx.destination);
+  window.__wh40kAudioGain = gainNode;
+  window.__wh40kAudioCtx = audioCtx;
 }
 
 function rampGain(target, dur) {

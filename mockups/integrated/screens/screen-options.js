@@ -146,7 +146,6 @@ export function initOptions() {
     'sfx-vol': 75,
     'cam-pan': 5,
     'zoom-sens': 5,
-    'edge-scroll': false
   };
 
   // Apply defaults for missing keys
@@ -157,13 +156,26 @@ export function initOptions() {
   // Expose settings globally for other modules
   window.__wh40kSettings = settings;
 
-  // Apply audio volumes to the ambient audio element
+  // Apply audio volumes via Web Audio API gain node
   function applyAudioSettings() {
-    var audio = document.getElementById('ambient-audio');
-    if (!audio) return;
-    var master = (settings['master-vol'] || 80) / 100;
-    var music = (settings['music-vol'] || 60) / 100;
-    audio.volume = Math.min(1, master * music);
+    var gainNode = window.__wh40kAudioGain;
+    var audioCtx = window.__wh40kAudioCtx;
+    if (!gainNode || !audioCtx) {
+      // Fallback: set audio.volume directly (before AudioContext is created)
+      var audio = document.getElementById('ambient-audio');
+      if (audio) {
+        var master = settings['master-vol'] / 100;
+        var music = settings['music-vol'] / 100;
+        audio.volume = Math.min(1, master * music);
+      }
+      return;
+    }
+    var master = settings['master-vol'] / 100;
+    var music = settings['music-vol'] / 100;
+    var targetVol = master * music;
+    gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(targetVol, audioCtx.currentTime + 0.1);
   }
 
   // Apply camera settings to the SVG renderer
@@ -171,7 +183,7 @@ export function initOptions() {
     // Store on window for svg-renderer to read
     window.__camPanSpeed = settings['cam-pan'] || 5;
     window.__zoomSensitivity = settings['zoom-sens'] || 5;
-    window.__edgeScroll = !!settings['edge-scroll'];
+  
   }
 
   // Wire sliders
@@ -196,18 +208,6 @@ export function initOptions() {
       applyCameraSettings();
     });
   });
-
-  // Wire edge scroll toggle
-  var edgeToggle = document.querySelector('.opt-toggle input[type="checkbox"]');
-  if (edgeToggle) {
-    edgeToggle.checked = !!settings['edge-scroll'];
-    edgeToggle.addEventListener('change', function() {
-      settings['edge-scroll'] = edgeToggle.checked;
-      saveSettings(settings);
-      window.__wh40kSettings = settings;
-      applyCameraSettings();
-    });
-  }
 
   // Apply on init
   applyAudioSettings();
