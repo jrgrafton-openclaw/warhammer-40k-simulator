@@ -6,54 +6,59 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 .main{display:flex;flex:1;overflow:hidden}
-.sidebar{width:280px;min-width:280px;background:#0f1520;border-right:1px solid #1a2a3a;overflow-y:auto;padding:12px}
-.sidebar h3{color:#00d4ff;font-size:11px;letter-spacing:2px;margin:12px 0 6px;text-transform:uppercase}
+.sidebar{width:260px;min-width:260px;background:#0f1520;border-right:1px solid #1a2a3a;overflow-y:auto;padding:10px;font-size:11px}
+.sidebar h3{color:#00d4ff;font-size:10px;letter-spacing:2px;margin:10px 0 4px;text-transform:uppercase}
 .sidebar h3:first-child{margin-top:0}
-.thumb-grid{display:flex;flex-wrap:wrap;gap:6px}
-.thumb{width:80px;height:80px;border:1px solid #1a2a3a;border-radius:4px;cursor:grab;object-fit:cover;background:#0a0e18;transition:border-color .2s}
+.thumb-grid{display:flex;flex-wrap:wrap;gap:4px}
+.thumb{width:72px;height:72px;border:1px solid #1a2a3a;border-radius:3px;cursor:grab;object-fit:cover;background:#0a0e18}
 .thumb:hover{border-color:#00d4ff}
-.bg-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
-.bg-row select,.bg-row button{background:#0a0e18;color:#ccc;border:1px solid #1a2a3a;padding:4px 8px;border-radius:4px;font-size:11px;cursor:pointer}
-.bg-row button.active{border-color:#00d4ff;color:#00d4ff}
-.canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:16px}
+.bg-row{display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:wrap}
+.bg-row select{background:#0a0e18;color:#ccc;border:1px solid #1a2a3a;padding:3px 6px;border-radius:3px;font-size:10px;flex:1}
+.tbtn{background:#0a0e18;color:#8090a0;border:1px solid #1a2a3a;padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer;white-space:nowrap}
+.tbtn.on{border-color:#00d4ff;color:#00d4ff}
+.toggle-row{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0}
+.canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px}
 .map-wrapper{position:relative;display:inline-block}
-#battlefield{display:block;background:#030609;border:1px solid #1a2a3a}
+#battlefield{display:block;background:#030609;border:1px solid #1a2a3a;border-radius:4px}
 .obj-marker{position:absolute;pointer-events:none;transform:translate(-50%,-50%)}
 .obj-ring{width:72px;height:72px;border:2px solid rgba(255,200,50,0.18);border-radius:50%}
 .obj-hex{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-.bottom{background:#0a0e14;border-top:1px solid #1a2a3a;padding:8px 12px;display:flex;gap:8px;align-items:center}
-#debug{flex:1;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:10px;height:60px;resize:none;padding:4px;border-radius:4px}
-.btn{background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff33;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:11px}
+.bottom{background:#0a0e14;border-top:1px solid #1a2a3a;padding:6px 12px;display:flex;gap:6px;align-items:center}
+#debug{flex:1;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:9px;height:50px;resize:none;padding:4px;border-radius:3px}
 .ghost{position:fixed;pointer-events:none;opacity:0.6;z-index:9999}
-.sel-handle{fill:#00d4ff;cursor:pointer;stroke:none}
 </style></head><body>
 <div class="main">
 <div class="sidebar">
   <h3>Background</h3>
   <div class="bg-row">
-    <select id="bgSelect"><option value="v16-ground-better.png">v16-ground-better</option><option value="bg-variation-1.png">bg-variation-1</option><option value="bg-variation-2.png">bg-variation-2</option><option value="bg-variation-3.png">bg-variation-3</option></select>
-    <button id="svgGroundBtn" class="btn">SVG Ground</button>
+    <select id="bgSel" onchange="setBg(this.value)"><option value="v16-ground-better.png">v16-ground-better</option><option value="bg-variation-1.png">bg-variation-1</option><option value="bg-variation-2.png">bg-variation-2</option><option value="bg-variation-3.png">bg-variation-3</option></select>
+  </div>
+  <h3>Toggles</h3>
+  <div class="toggle-row">
+    <button class="tbtn on" onclick="tgl(this,'svgRuins')">SVG Ruins</button>
+    <button class="tbtn on" onclick="tgl(this,'svgScatter')">SVG Scatter</button>
+    <button class="tbtn on" onclick="tgl(this,'deployZones')">Deploy</button>
+    <button class="tbtn on" onclick="tgl(this,'modelLayer')">Models</button>
+    <button class="tbtn on" onclick="tgl(this,'objectives')">Obj</button>
   </div>
   <h3>Ruins — Floor</h3>
-  <div class="thumb-grid" id="ruinsFloor"></div>
+  <div class="thumb-grid" id="tRuinsFloor"></div>
   <h3>Ruins — Top</h3>
-  <div class="thumb-grid" id="ruinsTop"></div>
+  <div class="thumb-grid" id="tRuinsTop"></div>
   <h3>Scatter</h3>
-  <div class="thumb-grid" id="scatter"></div>
+  <div class="thumb-grid" id="tScatter"></div>
 </div>
 <div class="canvas-wrap">
-  <div class="map-wrapper" id="mapWrapper">
-    <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528" width="720" height="528">
+  <div class="map-wrapper" id="mapWrap">
+    <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528" width="1024" height="751">
       <defs>
         <radialGradient id="mg-fill" cx="38%" cy="32%" r="62%"><stop offset="0%" stop-color="#0a1020"/><stop offset="60%" stop-color="#060c14"/><stop offset="100%" stop-color="#030609"/></radialGradient>
         <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-        <pattern id="grid-pat" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24,0L0,0L0,24" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5"/></pattern>
       </defs>
-      <rect id="bgRect" width="720" height="528" fill="url(#mg-fill)"/>
-      <image id="bgImage" href="v16-ground-better.png" width="720" height="528" style="display:none"/>
-      <rect id="svgGrid" width="720" height="528" fill="url(#grid-pat)" style="display:none"/>
-      <!-- Deployment zones -->
+      <!-- BG image -->
+      <image id="bgImg" href="v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/>
+      <!-- Deploy zones -->
       <g id="deployZones">
         <rect x="0" y="0" width="240" height="528" fill="rgba(0,140,200,0.06)"/>
         <line x1="240" y1="0" x2="240" y2="528" stroke="rgba(0,212,255,0.3)" stroke-width="1" stroke-dasharray="8,4"/>
@@ -62,248 +67,142 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
         <line x1="480" y1="0" x2="480" y2="528" stroke="rgba(255,64,32,0.3)" stroke-width="1" stroke-dasharray="8,4"/>
         <text x="600" y="15" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" letter-spacing="3" fill="rgba(255,64,32,0.15)">ORK DEPLOY</text>
       </g>
-      <!-- Terrain outlines -->
-      <g id="terrainLayer"></g>
-      <!-- Sprite layer for dropped images -->
-      <g id="spriteLayer"></g>
-      <!-- Model layer -->
+      <!-- ACTUAL SVG terrain — ruins -->
+      <g id="svgRuins" opacity="0.92">
+        <g transform="translate(144,60) rotate(90) translate(-144,-60)"><path d="M 144 60 L 288 60 L 288 132 L 144 132 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(264,336) rotate(90) translate(-264,-336)"><path d="M 264 336 L 408 336 L 408 408 L 264 408 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)"><path d="M 192 264 L 288 264 L 288 336 L 192 336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(360,204) scale(-1,1) rotate(-45) translate(-360,-204)"><path d="M 360 204 L 438 204 L 438 264 L 360 264 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 205.2 L 436.8 205.2 L 436.8 211.2 L 367.2 211.2 L 367.2 262.8 L 361.2 262.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(576,468) rotate(-90) translate(-576,-468)"><path d="M 576 468 L 720 468 L 720 540 L 576 540 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 577.2 469.2 L 673.2 469.2 L 673.2 475.2 L 583.2 475.2 L 583.2 517.2 L 577.2 517.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(456,192) rotate(-90) translate(-456,-192)"><path d="M 456 192 L 600 192 L 600 264 L 456 264 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)"><path d="M 528 264 L 624 264 L 624 336 L 528 336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)"><path d="M 360 324 L 438 324 L 438 384 L 360 384 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      </g>
+      <!-- ACTUAL SVG terrain — scatter -->
+      <g id="svgScatter" opacity="0.92">
+        <g transform="translate(48,264) rotate(0) translate(-48,-264)"><path d="M 48 264 L 96 264 L 96 336 L 48 336 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(336,0) rotate(0) translate(-336,0)"><path d="M 336 0 L 384 0 L 384 72 L 336 72 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)"><path d="M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(317.76,247.2) scale(-1,1) rotate(-45) translate(-317.76,-247.2)"><path d="M 317.76 247.2 L 365.76 247.2 L 365.76 319.2 L 317.76 319.2 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(672,264) rotate(-180) translate(-672,-264)"><path d="M 672 264 L 720 264 L 720 336 L 672 336 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(384,528) rotate(-180) translate(-384,-528)"><path d="M 384 528 L 432 528 L 432 600 L 384 600 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"><path d="M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"><path d="M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 Z" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      </g>
+      <!-- Dropped floor sprites go here -->
+      <g id="spriteFloor"></g>
+      <!-- Models -->
       <g id="modelLayer"></g>
+      <!-- Dropped roof/top sprites go here (ABOVE models for occlusion) -->
+      <g id="spriteTop"></g>
       <!-- Selection UI -->
-      <g id="selectionUI" style="display:none"></g>
+      <g id="selUI" style="display:none"></g>
     </svg>
-    <!-- Objectives -->
     <div id="objectives"></div>
   </div>
 </div>
 </div>
 <div class="bottom">
   <textarea id="debug" readonly></textarea>
-  <button class="btn" onclick="navigator.clipboard.writeText(debug.value)">Copy JSON</button>
+  <button class="tbtn" onclick="navigator.clipboard.writeText(debug.value)">Copy JSON</button>
 </div>
 <script>
-const NS='http://www.w3.org/2000/svg';
-const svg=document.getElementById('battlefield');
-const spriteLayer=document.getElementById('spriteLayer');
-const selUI=document.getElementById('selectionUI');
-const debug=document.getElementById('debug');
+const NS='http://www.w3.org/2000/svg',svg=document.getElementById('battlefield');
+const selUI=document.getElementById('selUI'),debug=document.getElementById('debug');
 
-// --- Toolbox thumbnails ---
-const sprites={
-  ruinsFloor:['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],
-  ruinsTop:['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','t10-layer-top.png'],
-  scatter:['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png']
-};
-Object.entries(sprites).forEach(([id,files])=>{
-  const c=document.getElementById(id);
-  files.forEach(f=>{const img=document.createElement('img');img.className='thumb';img.src=f;img.dataset.file=f;img.draggable=false;c.appendChild(img)});
-});
+// Toggle layers
+function tgl(btn,id){btn.classList.toggle('on');const el=document.getElementById(id);if(el)el.style.display=btn.classList.contains('on')?'':'none'}
+function setBg(v){document.getElementById('bgImg').setAttribute('href',v)}
 
-// --- Background controls ---
-const bgImage=document.getElementById('bgImage'),bgRect=document.getElementById('bgRect'),svgGrid=document.getElementById('svgGrid');
-let useSvgGround=false;
-document.getElementById('bgSelect').onchange=e=>{bgImage.setAttribute('href',e.target.value);if(!useSvgGround){bgImage.style.display='';bgRect.style.display='none'}};
-document.getElementById('svgGroundBtn').onclick=e=>{
-  useSvgGround=!useSvgGround;e.target.classList.toggle('active',useSvgGround);
-  if(useSvgGround){bgImage.style.display='none';bgRect.style.display='';svgGrid.style.display=''}
-  else{bgImage.style.display='';bgRect.style.display='none';svgGrid.style.display='none'}
-};
-// Start with SVG ground
-document.getElementById('svgGroundBtn').click();
+// Toolbox sprites
+const thumbs={tRuinsFloor:['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],tRuinsTop:['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','t10-layer-top.png'],tScatter:['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png']};
+Object.entries(thumbs).forEach(([id,files])=>{const c=document.getElementById(id);files.forEach(f=>{const img=document.createElement('img');img.className='thumb';img.src=f;img.dataset.file=f;img.dataset.cat=id;img.draggable=false;c.appendChild(img)})});
 
-// --- Terrain outlines (exact v0.5a transforms) ---
-const terrainData=[
-  {t:'translate(144,60) rotate(90) translate(-144,-60)',p:['M144,60 L288,60 L288,132 L144,132 Z','M145.2,61.2 L241.2,61.2 L241.2,130.8 L145.2,130.8 Z']},
-  {t:'translate(264,336) rotate(90) translate(-264,-336)',p:['M264,336 L408,336 L408,408 L264,408 Z','M288,337.2 L406.8,337.2 L406.8,406.8 L288,406.8 Z']},
-  {t:'translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)',p:['M192,264 L288,264 L288,336 L192,336 Z','M193.2,265.2 L286.8,265.2 L286.8,334.8 L193.2,334.8 Z']},
-  {t:'translate(48,264) rotate(0) translate(-48,-264)',p:['M48,264 L96,264 L96,336 L48,336 Z']},
-  {t:'translate(336,0) rotate(0) translate(-336,0)',p:['M336,0 L384,0 L384,72 L336,72 Z']},
-  {t:'translate(360,204) scale(-1,1) rotate(-45) translate(-360,-204)',p:['M360,204 L438,204 L438,264 L360,264 Z','M361.2,205.2 L436.8,205.2 L436.8,262.8 L361.2,262.8 Z']},
-  {t:'translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)',p:['M304.8,148.8 L346.8,148.8 L346.8,208.8 L304.8,208.8 Z']},
-  {t:'translate(317.76,247.2) scale(-1,1) rotate(-45) translate(-317.76,-247.2)',p:['M317.76,247.2 L365.76,247.2 L365.76,319.2 L317.76,319.2 Z']},
-  {t:'translate(576,468) rotate(-90) translate(-576,-468)',p:['M576,468 L720,468 L720,540 L576,540 Z','M577.2,469.2 L718.8,469.2 L718.8,538.8 L577.2,538.8 Z']},
-  {t:'translate(456,192) rotate(-90) translate(-456,-192)',p:['M456,192 L600,192 L600,264 L456,264 Z','M480,193.2 L598.8,193.2 L598.8,262.8 L480,262.8 Z']},
-  {t:'translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)',p:['M528,264 L624,264 L624,336 L528,336 Z','M529.2,265.2 L622.8,265.2 L622.8,334.8 L529.2,334.8 Z']},
-  {t:'translate(672,264) rotate(-180) translate(-672,-264)',p:['M672,264 L720,264 L720,336 L672,336 Z']},
-  {t:'translate(384,528) rotate(-180) translate(-384,-528)',p:['M384,528 L432,528 L432,600 L384,600 Z']},
-  {t:'translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)',p:['M360,324 L438,324 L438,384 L360,384 Z','M361.2,325.2 L436.8,325.2 L436.8,382.8 L361.2,382.8 Z']},
-  {t:'translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)',p:['M415.2,379.2 L457.2,379.2 L457.2,439.2 L415.2,439.2 Z']},
-  {t:'translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)',p:['M402.24,280.8 L450.24,280.8 L450.24,352.8 L402.24,352.8 Z']}
-];
-const tl=document.getElementById('terrainLayer');
-terrainData.forEach(td=>{
-  const g=document.createElementNS(NS,'g');g.setAttribute('opacity','0.92');g.setAttribute('transform',td.t);
-  td.p.forEach(d=>{const p=document.createElementNS(NS,'path');p.setAttribute('d',d);p.setAttribute('fill','none');p.setAttribute('stroke','rgba(0,212,255,0.3)');p.setAttribute('stroke-dasharray','4,2');g.appendChild(p)});
-  tl.appendChild(g);
-});
-
-// --- Models ---
-function crosshair(x,y){return`<line x1="${x}" y1="${y-3.06}" x2="${x}" y2="${y+3.06}" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="${x-3.06}" y1="${y}" x2="${x+3.06}" y2="${y}" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/>`}
-function star(x,y){let pts='';for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,r=i%2?1.6:3.52;pts+=`${x+r*Math.cos(a)},${y-r*Math.sin(a)} `}return`<polygon points="${pts.trim()}" stroke="currentColor" stroke-width="1" fill="none"/>`}
-function diamond(x,y){return`<polygon points="${x},${y-3.196} ${x+2.5568},${y} ${x},${y+3.196} ${x-2.5568},${y}" stroke="currentColor" stroke-width="1.02" fill="none"/>`}
-function addModel(cx,cy,r,stroke,filter,icon){
-  const g=document.createElementNS(NS,'g');g.setAttribute('filter',filter);g.style.color=stroke;
-  const c=document.createElementNS(NS,'circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke',stroke);c.setAttribute('stroke-width','1.5');g.appendChild(c);
-  const tmp=document.createElementNS(NS,'g');tmp.innerHTML=icon;Array.from(tmp.children).forEach(ch=>g.appendChild(ch));
-  document.getElementById('modelLayer').appendChild(g);
+// Models (exact v0.5a positions, fill=url(#mg-fill))
+function mkIcon(x,y,type){
+  if(type==='cross')return`<line x1="${x}" y1="${y-3.06}" x2="${x}" y2="${y+3.06}" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="${x-3.06}" y1="${y}" x2="${x+3.06}" y2="${y}" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/>`;
+  if(type==='star'){let p='';for(let i=0;i<10;i++){const a=Math.PI/2+i*Math.PI/5,r=i%2?1.6:3.52;p+=`${(x+r*Math.cos(a)).toFixed(2)},${(y-r*Math.sin(a)).toFixed(2)} `}return`<polygon points="${p.trim()}" stroke="currentColor" stroke-width="0.765" fill="none"/>`}
+  if(type==='diamond')return`<polygon points="${x},${y-3.196} ${x+2.5568},${y} ${x},${y+3.196} ${x-2.5568},${y}" stroke="currentColor" stroke-width="1.02" fill="none"/>`;
+  return'';
 }
-function addRectModel(x,y,w,h,rx,stroke,filter){
-  const g=document.createElementNS(NS,'g');g.setAttribute('filter',filter);g.style.color=stroke;
-  const r=document.createElementNS(NS,'rect');r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx',rx);r.setAttribute('fill','none');r.setAttribute('stroke',stroke);r.setAttribute('stroke-width','1.5');g.appendChild(r);
-  const l=document.createElementNS(NS,'line');l.setAttribute('x1',x+4);l.setAttribute('y1',y+h/2);l.setAttribute('x2',x+w-4);l.setAttribute('y2',y+h/2);l.setAttribute('stroke',stroke);l.setAttribute('stroke-width','1.2');g.appendChild(l);
-  document.getElementById('modelLayer').appendChild(g);
-}
+function addM(cx,cy,r,s,f,icon){const g=document.createElementNS(NS,'g');const c=document.createElementNS(NS,'circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill','url(#mg-fill)');c.setAttribute('stroke',s);c.setAttribute('stroke-width','1.5');c.setAttribute('filter',f);g.appendChild(c);const ig=document.createElementNS(NS,'g');ig.setAttribute('color',s==='#0088aa'?'#006688':'#882010');ig.setAttribute('fill','none');ig.innerHTML=icon;g.appendChild(ig);document.getElementById('modelLayer').appendChild(g)}
+function addV(x,y,w,h,s,f){const g=document.createElementNS(NS,'g');const r=document.createElementNS(NS,'rect');r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('rx','4');r.setAttribute('fill','url(#mg-fill)');r.setAttribute('stroke',s);r.setAttribute('stroke-width','1.5');r.setAttribute('filter',f);g.appendChild(r);const ig=document.createElementNS(NS,'g');ig.setAttribute('color','#006688');ig.setAttribute('fill','none');ig.innerHTML=`<rect x="${x+w/2-6}" y="${y+h/2-4}" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.9" fill="none"/><line x1="${x+w/2-6}" y1="${y+h/2}" x2="${x+w/2+6}" y2="${y+h/2}" stroke="currentColor" stroke-width="1.2"/>`;g.appendChild(ig);document.getElementById('modelLayer').appendChild(g)}
 // Imperium
-[[100,64],[117,64],[134,64],[108,81],[125,81]].forEach(([x,y])=>addModel(x,y,8,'#0088aa','url(#mf-imp)',crosshair(x,y)));
-addModel(120,160,9,'#0088aa','url(#mf-imp)',star(120,160));
-[[80,300],[97,300],[114,300],[88,317],[105,317]].forEach(([x,y])=>addModel(x,y,8,'#0088aa','url(#mf-imp)',crosshair(x,y)));
-[[150,400],[167,400],[184,400],[158,417],[175,417]].forEach(([x,y])=>addModel(x,y,8,'#0088aa','url(#mf-imp)',diamond(x,y)));
-addRectModel(38.5,467.5,43,25,4,'#0088aa','url(#mf-imp)');
+[[100,64],[117,64],[134,64],[108,81],[125,81]].forEach(([x,y])=>addM(x,y,8,'#0088aa','url(#mf-imp)',mkIcon(x,y,'cross')));
+addM(120,160,9,'#0088aa','url(#mf-imp)',mkIcon(120,160,'star'));
+[[80,300],[97,300],[114,300],[88,317],[105,317]].forEach(([x,y])=>addM(x,y,8,'#0088aa','url(#mf-imp)',mkIcon(x,y,'cross')));
+[[150,400],[167,400],[184,400],[158,417],[175,417]].forEach(([x,y])=>addM(x,y,8,'#0088aa','url(#mf-imp)',mkIcon(x,y,'diamond')));
+addV(38.5,467.5,43,25,'#0088aa','url(#mf-imp)');
 // Orks
-addModel(560,100,9,'#aa2810','url(#mf-ork)',star(560,100));
-[[500,200],[517,200],[534,200],[551,200],[568,200],[500,217],[517,217],[534,217],[551,217],[568,217]].forEach(([x,y])=>addModel(x,y,8,'#aa2810','url(#mf-ork)',crosshair(x,y)));
-addModel(560,350,8,'#aa2810','url(#mf-ork)',diamond(560,350));
+addM(560,100,9,'#aa2810','url(#mf-ork)',mkIcon(560,100,'star'));
+[[500,200],[517,200],[534,200],[551,200],[568,200],[500,217],[517,217],[534,217],[551,217],[568,217]].forEach(([x,y])=>addM(x,y,8,'#aa2810','url(#mf-ork)',mkIcon(x,y,'cross')));
+addM(560,350,8,'#aa2810','url(#mf-ork)',mkIcon(560,350,'diamond'));
 
-// --- Objectives ---
+// Objectives
 const objPos=[[50,13.64],[16.67,50],[50,50],[83.33,50],[50,86.36]];
 const objDiv=document.getElementById('objectives');
-objPos.forEach((p,i)=>{
-  const d=document.createElement('div');d.className='obj-marker';d.style.cssText=`left:${p[0]}%;top:${p[1]}%`;
-  d.innerHTML=`<div class="obj-ring"></div><svg class="obj-hex" width="30" height="30" viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="rgba(0,0,0,0.5)" stroke="rgba(255,200,50,0.5)" stroke-width="1.5"/><text x="15" y="19" text-anchor="middle" font-family="Anton,sans-serif" font-size="13" fill="rgba(255,200,50,0.7)">${i+1}</text></svg>`;
-  objDiv.appendChild(d);
-});
+objPos.forEach(([l,t],i)=>{const d=document.createElement('div');d.className='obj-marker';d.style.cssText=`left:${l}%;top:${t}%`;d.innerHTML=`<div class="obj-ring"></div><svg class="obj-hex" width="28" height="28" viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="rgba(0,0,0,0.5)" stroke="rgba(255,200,50,0.5)" stroke-width="1.5"/><text x="15" y="19" text-anchor="middle" font-family="Anton,sans-serif" font-size="12" fill="rgba(255,200,50,0.7)">${i+1}</text></svg>`;objDiv.appendChild(d)});
 
 // --- Drag & Drop Editor ---
-let spriteId=0,allSprites=[],selected=null,dragging=null,ghostEl=null;
-let dragState=null; // {type:'move'|'resize'|'rotate', startX, startY, orig{}}
-
+let sid=0,allSprites=[],selected=null,ghostEl=null;
 function svgPt(ex,ey){const p=svg.createSVGPoint();p.x=ex;p.y=ey;return p.matrixTransform(svg.getScreenCTM().inverse())}
 
-// Toolbox drag
-document.querySelectorAll('.thumb').forEach(th=>{
-  th.onmousedown=e=>{
-    e.preventDefault();
-    ghostEl=document.createElement('img');ghostEl.src=th.src;ghostEl.className='ghost';ghostEl.style.width='80px';document.body.appendChild(ghostEl);
-    ghostEl.style.left=e.clientX-40+'px';ghostEl.style.top=e.clientY-40+'px';
-    dragging=th.dataset.file;
-    const mv=e2=>{ghostEl.style.left=e2.clientX-40+'px';ghostEl.style.top=e2.clientY-40+'px'};
-    const up=e2=>{
-      document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
-      ghostEl.remove();ghostEl=null;
-      const pt=svgPt(e2.clientX,e2.clientY);
-      if(pt.x>=0&&pt.x<=720&&pt.y>=0&&pt.y<=528) addSprite(dragging,pt.x-50,pt.y-50);
-      dragging=null;
-    };
-    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-  };
-});
+// Determine layer: top sprites go to spriteTop, floor sprites go to spriteFloor
+function getLayer(file,cat){return cat==='tRuinsTop'?'spriteTop':'spriteFloor'}
 
-function addSprite(file,x,y,w=100,h=100,rot=0){
-  const id='s'+(spriteId++);
-  const img=document.createElementNS(NS,'image');
-  img.setAttribute('href',file);img.setAttribute('x',x);img.setAttribute('y',y);img.setAttribute('width',w);img.setAttribute('height',h);
-  if(rot) img.setAttribute('transform',`rotate(${rot},${x+w/2},${y+h/2})`);
+document.querySelectorAll('.thumb').forEach(th=>{th.onmousedown=e=>{
+  e.preventDefault();ghostEl=document.createElement('img');ghostEl.src=th.src;ghostEl.className='ghost';ghostEl.style.width='72px';document.body.appendChild(ghostEl);
+  ghostEl.style.left=e.clientX-36+'px';ghostEl.style.top=e.clientY-36+'px';
+  const file=th.dataset.file,cat=th.dataset.cat;
+  const mv=e2=>{ghostEl.style.left=e2.clientX-36+'px';ghostEl.style.top=e2.clientY-36+'px'};
+  const up=e2=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);ghostEl.remove();ghostEl=null;
+    const pt=svgPt(e2.clientX,e2.clientY);if(pt.x>=0&&pt.x<=720&&pt.y>=0&&pt.y<=528)addSprite(file,pt.x-50,pt.y-40,100,80,0,getLayer(file,cat))};
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}});
+
+function addSprite(file,x,y,w,h,rot,layer){
+  const id='s'+(sid++),img=document.createElementNS(NS,'image');
+  img.setAttribute('href',file);img.setAttribute('x',x);img.setAttribute('y',y);img.setAttribute('width',w);img.setAttribute('height',h);img.setAttribute('preserveAspectRatio','none');
+  if(rot)img.setAttribute('transform',`rotate(${rot},${x+w/2},${y+h/2})`);
   img.dataset.id=id;img.style.cursor='pointer';
-  spriteLayer.appendChild(img);
-  const sp={id,file,x,y,w,h,rot,el:img};allSprites.push(sp);
-  img.onmousedown=e=>{e.stopPropagation();selectSprite(sp);startMove(e,sp)};
-  selectSprite(sp);updateDebug();return sp;
-}
+  document.getElementById(layer).appendChild(img);
+  const sp={id,file,x,y,w,h,rot,el:img,layer};allSprites.push(sp);
+  img.onmousedown=e=>{e.stopPropagation();select(sp);startMove(e,sp)};
+  select(sp);upDebug();return sp}
 
-function selectSprite(sp){
-  selected=sp;drawSelUI();
-}
+function select(sp){selected=sp;drawSel()}
 function deselect(){selected=null;selUI.style.display='none';selUI.innerHTML=''}
-
-function drawSelUI(){
-  if(!selected){selUI.style.display='none';return}
-  selUI.style.display='';selUI.innerHTML='';
+function drawSel(){if(!selected){selUI.style.display='none';return}selUI.style.display='';selUI.innerHTML='';
   const s=selected,cx=s.x+s.w/2,cy=s.y+s.h/2;
-  const r=document.createElementNS(NS,'rect');
-  r.setAttribute('x',s.x-2);r.setAttribute('y',s.y-2);r.setAttribute('width',s.w+4);r.setAttribute('height',s.h+4);
-  r.setAttribute('fill','none');r.setAttribute('stroke','#00d4ff');r.setAttribute('stroke-dasharray','4,3');r.setAttribute('stroke-width','1.5');
-  if(s.rot) r.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);
-  selUI.appendChild(r);
-  // Corner handles
-  const corners=[[s.x,s.y,'nw'],[s.x+s.w,s.y,'ne'],[s.x,s.y+s.h,'sw'],[s.x+s.w,s.y+s.h,'se']];
-  corners.forEach(([hx,hy,pos])=>{
-    const h=document.createElementNS(NS,'rect');
-    h.setAttribute('x',hx-4);h.setAttribute('y',hy-4);h.setAttribute('width',8);h.setAttribute('height',8);
-    h.setAttribute('class','sel-handle');h.setAttribute('fill','#00d4ff');h.style.cursor=pos+'-resize';
-    if(s.rot) h.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);
-    h.onmousedown=e=>{e.stopPropagation();startResize(e,selected,pos)};
-    selUI.appendChild(h);
-  });
-  // Rotation handle
-  const rh=document.createElementNS(NS,'circle');
-  rh.setAttribute('cx',cx);rh.setAttribute('cy',s.y-18);rh.setAttribute('r',5);rh.setAttribute('fill','#00d4ff');rh.setAttribute('cursor','grab');
-  if(s.rot) rh.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);
-  rh.onmousedown=e=>{e.stopPropagation();startRotate(e,selected)};
-  selUI.appendChild(rh);
-  const rl=document.createElementNS(NS,'line');
-  rl.setAttribute('x1',cx);rl.setAttribute('y1',s.y);rl.setAttribute('x2',cx);rl.setAttribute('y2',s.y-13);
-  rl.setAttribute('stroke','#00d4ff');rl.setAttribute('stroke-width','1');
-  if(s.rot) rl.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);
-  selUI.appendChild(rl);
-}
+  const r=document.createElementNS(NS,'rect');r.setAttribute('x',s.x-2);r.setAttribute('y',s.y-2);r.setAttribute('width',s.w+4);r.setAttribute('height',s.h+4);r.setAttribute('fill','none');r.setAttribute('stroke','#00d4ff');r.setAttribute('stroke-dasharray','4,3');r.setAttribute('stroke-width','1.5');
+  if(s.rot)r.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);selUI.appendChild(r);
+  [[s.x,s.y,'nw'],[s.x+s.w,s.y,'ne'],[s.x,s.y+s.h,'sw'],[s.x+s.w,s.y+s.h,'se']].forEach(([hx,hy,pos])=>{
+    const h=document.createElementNS(NS,'rect');h.setAttribute('x',hx-3);h.setAttribute('y',hy-3);h.setAttribute('width',6);h.setAttribute('height',6);h.setAttribute('fill','#00d4ff');h.style.cursor=pos+'-resize';
+    if(s.rot)h.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);h.onmousedown=e=>{e.stopPropagation();startResize(e,selected,pos)};selUI.appendChild(h)});
+  const rh=document.createElementNS(NS,'circle');rh.setAttribute('cx',cx);rh.setAttribute('cy',s.y-16);rh.setAttribute('r',4);rh.setAttribute('fill','#00d4ff');rh.style.cursor='grab';
+  if(s.rot)rh.setAttribute('transform',`rotate(${s.rot},${cx},${cy})`);rh.onmousedown=e=>{e.stopPropagation();startRotate(e,selected)};selUI.appendChild(rh)}
 
-function startMove(e,sp){
-  const pt=svgPt(e.clientX,e.clientY);const ox=pt.x-sp.x,oy=pt.y-sp.y;
-  const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY);sp.x=p.x-ox;sp.y=p.y-oy;applySprite(sp);drawSelUI();updateDebug()};
+function startMove(e,sp){const pt=svgPt(e.clientX,e.clientY),ox=pt.x-sp.x,oy=pt.y-sp.y;
+  const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY);sp.x=p.x-ox;sp.y=p.y-oy;applySp(sp);drawSel();upDebug()};
   const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up)};
-  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-}
-
-function startResize(e,sp,corner){
-  e.preventDefault();const orig={x:sp.x,y:sp.y,w:sp.w,h:sp.h};const pt0=svgPt(e.clientX,e.clientY);
-  const mv=e2=>{
-    const pt=svgPt(e2.clientX,e2.clientY);const dx=pt.x-pt0.x,dy=pt.y-pt0.y;
-    if(corner.includes('e')){sp.w=Math.max(20,orig.w+dx)}
-    if(corner.includes('w')){sp.x=orig.x+dx;sp.w=Math.max(20,orig.w-dx)}
-    if(corner.includes('s')){sp.h=Math.max(20,orig.h+dy)}
-    if(corner.includes('n')){sp.y=orig.y+dy;sp.h=Math.max(20,orig.h-dy)}
-    applySprite(sp);drawSelUI();updateDebug();
-  };
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
+function startResize(e,sp,c){e.preventDefault();const o={x:sp.x,y:sp.y,w:sp.w,h:sp.h},p0=svgPt(e.clientX,e.clientY);
+  const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY),dx=p.x-p0.x,dy=p.y-p0.y;
+    if(c.includes('e'))sp.w=Math.max(20,o.w+dx);if(c.includes('w')){sp.x=o.x+dx;sp.w=Math.max(20,o.w-dx)}
+    if(c.includes('s'))sp.h=Math.max(20,o.h+dy);if(c.includes('n')){sp.y=o.y+dy;sp.h=Math.max(20,o.h-dy)}
+    applySp(sp);drawSel();upDebug()};
   const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up)};
-  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-}
-
-function startRotate(e,sp){
-  e.preventDefault();const cx=sp.x+sp.w/2,cy=sp.y+sp.h/2;
-  const mv=e2=>{
-    const pt=svgPt(e2.clientX,e2.clientY);
-    sp.rot=Math.round(Math.atan2(pt.x-cx,-(pt.y-cy))*180/Math.PI);
-    applySprite(sp);drawSelUI();updateDebug();
-  };
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
+function startRotate(e,sp){e.preventDefault();const cx=sp.x+sp.w/2,cy=sp.y+sp.h/2;
+  const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY);sp.rot=Math.round(Math.atan2(p.x-cx,-(p.y-cy))*180/Math.PI);applySp(sp);drawSel();upDebug()};
   const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up)};
-  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
-}
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
+function applySp(sp){const el=sp.el,cx=sp.x+sp.w/2,cy=sp.y+sp.h/2;el.setAttribute('x',sp.x);el.setAttribute('y',sp.y);el.setAttribute('width',sp.w);el.setAttribute('height',sp.h);el.setAttribute('transform',sp.rot?`rotate(${sp.rot},${cx},${cy})`:'')}
+function upDebug(){debug.value=JSON.stringify(allSprites.map(s=>({id:s.id,file:s.file,x:Math.round(s.x),y:Math.round(s.y),w:Math.round(s.w),h:Math.round(s.h),rot:s.rot,layer:s.layer})),null,1)}
 
-function applySprite(sp){
-  const el=sp.el,cx=sp.x+sp.w/2,cy=sp.y+sp.h/2;
-  el.setAttribute('x',sp.x);el.setAttribute('y',sp.y);el.setAttribute('width',sp.w);el.setAttribute('height',sp.h);
-  el.setAttribute('transform',sp.rot?`rotate(${sp.rot},${cx},${cy})`:'');
-}
-
-function updateDebug(){
-  debug.value=JSON.stringify(allSprites.map(s=>({id:s.id,file:s.file,x:Math.round(s.x),y:Math.round(s.y),w:Math.round(s.w),h:Math.round(s.h),rot:s.rot})),null,1);
-}
-
-// Click on SVG background to deselect
-svg.addEventListener('mousedown',e=>{if(e.target===svg||e.target.id==='bgRect'||e.target.id==='bgImage'||e.target.id==='svgGrid')deselect()});
-
-// Keyboard
-document.addEventListener('keydown',e=>{
-  if(!selected)return;
-  if(e.key==='Delete'||e.key==='Backspace'){
-    selected.el.remove();allSprites=allSprites.filter(s=>s!==selected);deselect();updateDebug();e.preventDefault();
-  }
-  if(e.key==='d'){
-    const s=selected;addSprite(s.file,s.x+15,s.y+15,s.w,s.h,s.rot);
-  }
-  if(e.key==='r'||e.key==='R'){
-    selected.rot=(selected.rot+15)%360;applySprite(selected);drawSelUI();updateDebug();
-  }
-});
-
-updateDebug();
+svg.addEventListener('mousedown',e=>{if(e.target===svg||e.target.id==='bgImg')deselect()});
+document.addEventListener('keydown',e=>{if(!selected)return;
+  if(e.key==='Delete'||e.key==='Backspace'){selected.el.remove();allSprites=allSprites.filter(s=>s!==selected);deselect();upDebug();e.preventDefault()}
+  if(e.key==='d'){addSprite(selected.file,selected.x+15,selected.y+15,selected.w,selected.h,selected.rot,selected.layer)}
+  if(e.key==='r'||e.key==='R'){selected.rot=(selected.rot+15)%360;applySp(selected);drawSel();upDebug()}});
+upDebug();
 </script></body></html>
