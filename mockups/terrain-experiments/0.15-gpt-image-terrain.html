@@ -3,288 +3,354 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>v0.15 — GPT Image Terrain Compositor</title>
+<title>v0.15 — GPT Image Terrain Compositing</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#1a1a2e;color:#ccc;font-family:'Segoe UI',sans-serif;padding:20px}
-h1{color:#00d4ff;font-size:22px;margin-bottom:4px}
-.subtitle{color:#667;font-size:13px;margin-bottom:20px}
-.section-label{font-size:16px;color:#00d4ff;border-bottom:1px solid #1e2d44;padding-bottom:6px;margin:24px 0 12px}
-.cards{display:flex;gap:16px;flex-wrap:wrap}
-.card{background:#0f1520;border:1px solid #1e2d44;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
-.card-title{font-size:13px;color:#00d4ff;font-weight:600}
-.terrain-container{position:relative;background:#080c10;overflow:hidden;border-radius:4px}
-.terrain-container img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
-.terrain-container svg{position:absolute;top:0;left:0;width:100%;height:100%}
-.controls{display:flex;gap:10px;flex-wrap:wrap}
-.controls label{font-size:11px;color:#889;cursor:pointer;display:flex;align-items:center;gap:3px}
-.controls input[type=checkbox]{accent-color:#00d4ff}
-.bf-wrap{position:relative;width:1080px;height:792px;background:#080c10;border-radius:6px;overflow:hidden;border:1px solid #1e2d44}
-.bf-wrap img,.bf-wrap svg{position:absolute;top:0;left:0;width:100%;height:100%}
-.bf-controls{display:flex;gap:14px;margin-bottom:10px;flex-wrap:wrap}
-.bf-controls label{font-size:12px;color:#aab;cursor:pointer;display:flex;align-items:center;gap:4px}
-details{margin-top:20px;background:#0f1520;border:1px solid #1e2d44;border-radius:8px;padding:12px}
-details summary{color:#00d4ff;cursor:pointer;font-size:14px}
-details .legacy-imgs{display:flex;gap:10px;margin-top:10px}
-details .legacy-imgs img{width:200px;border-radius:4px;border:1px solid #1e2d44}
-.gen-section{background:#0f1520;border:1px solid #1e2d44;border-radius:8px;padding:14px;margin-top:16px;max-width:600px}
-.gen-section input,.gen-section textarea{width:100%;background:#080c10;border:1px solid #1e2d44;color:#ccc;padding:6px 8px;border-radius:4px;font-size:12px;margin-bottom:8px}
-.gen-section textarea{height:50px;resize:vertical}
-.gen-section button{background:#00d4ff;color:#0f1520;border:none;padding:6px 16px;border-radius:4px;font-weight:600;cursor:pointer;font-size:12px}
-.gen-section button:hover{opacity:0.85}
-.gen-result{margin-top:10px}
-.gen-result img{max-width:300px;border-radius:4px;border:1px solid #1e2d44}
+  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#1a1a2e;color:#c8d0e0;font-family:'Inter',sans-serif;padding:24px;min-height:100vh}
+  h1{font-family:'Anton',sans-serif;font-size:28px;color:#00d4ff;letter-spacing:2px;margin-bottom:4px}
+  h2{font-family:'Anton',sans-serif;font-size:20px;color:#00d4ff;letter-spacing:1.5px;margin:32px 0 12px}
+  .subtitle{font-size:13px;color:#607090;margin-bottom:24px}
+  .card{background:#0f1520;border:1px solid #1e2d44;border-radius:10px;padding:16px;margin-bottom:16px}
+  .cards-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px}
+  .card-title{font-size:13px;font-weight:700;color:#00d4ff;margin-bottom:8px;text-transform:uppercase;letter-spacing:1px}
+  .layer-toggles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .layer-toggles label{font-size:11px;color:#8090a8;cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none}
+  .layer-toggles input[type=checkbox]{accent-color:#00d4ff;width:13px;height:13px}
+  .map-container{position:relative;width:1080px;max-width:100%;margin:0 auto;background:#080c10;border-radius:12px;overflow:hidden;border:1px solid #1e2d44}
+  .map-container svg{display:block;width:100%;height:auto}
+  .obj-area-ring{position:absolute;width:72px;height:72px;border:2px solid rgba(255,200,0,0.15);border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}
+  .obj-hex{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
+  .obj-hex svg{width:28px;height:28px}
+  details{margin:16px 0}
+  details summary{cursor:pointer;color:#607090;font-size:13px;padding:8px 0}
+  details summary:hover{color:#00d4ff}
+  .gen-section{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px}
+  .gen-section button{background:#0f1520;border:1px solid #1e2d44;color:#00d4ff;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:12px;font-family:'Inter',sans-serif}
+  .gen-section button:hover{border-color:#00d4ff;background:#0a1828}
+  @keyframes smoke{0%{transform:translateY(0) scale(1);opacity:0.3}50%{opacity:0.15}100%{transform:translateY(-30px) scale(1.5);opacity:0}}
+  .smoke-wisp{animation:smoke 4s ease-out infinite;pointer-events:none}
+  .thumb-row{display:flex;gap:12px;flex-wrap:wrap;padding:8px 0}
+  .thumb-row img{width:120px;height:80px;object-fit:cover;border-radius:6px;border:1px solid #1e2d44}
 </style>
 </head>
 <body>
-<h1>v0.15 — GPT Image Terrain Compositor</h1>
-<p class="subtitle">AI-generated terrain layers composited with SVG paths and unit models</p>
 
-<!-- SECTION 1: Composited Terrain Pieces -->
-<div class="section-label">§1 Composited Terrain Pieces</div>
-<div class="cards" id="cards"></div>
+<h1>⚔️ v0.15 — GPT Image Terrain Compositing</h1>
+<p class="subtitle">AI-generated terrain textures composited onto SVG battlefield with layer controls</p>
 
-<!-- SECTION 2: Full Battlefield Map -->
-<div class="section-label">§2 Full Battlefield Map (1.5× scale)</div>
-<div class="bf-controls" id="bf-controls">
-  <label><input type="checkbox" checked data-bf="ground"> Battlefield</label>
-  <label><input type="checkbox" checked data-bf="svg"> SVG Terrain</label>
-  <label><input type="checkbox" checked data-bf="floor"> Floor Layer</label>
-  <label><input type="checkbox" checked data-bf="models"> Models</label>
-  <label><input type="checkbox" checked data-bf="top"> Top Layer</label>
+<!-- ═══════════ SECTION 1: COMPOSITED TERRAIN PIECES ═══════════ -->
+<h2>§1 — Composited Terrain Pieces</h2>
+<div class="cards-row">
+  <!-- Card 1: Large Ruin (t1/t9 style) -->
+  <div class="card">
+    <div class="card-title">Large Ruin (L-Wall)</div>
+    <div class="layer-toggles">
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c1-svg')">SVG</label>
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c1-floor')">Floor</label>
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c1-top')">Top</label>
+    </div>
+    <svg viewBox="130 46 172 100" width="100%" style="background:#080c10;border-radius:6px">
+      <defs><radialGradient id="c1mg" cx="38%" cy="32%" r="62%"><stop offset="0%" stop-color="#0a1020"/><stop offset="60%" stop-color="#060c14"/><stop offset="100%" stop-color="#030609"/></radialGradient></defs>
+      <g id="c1-floor"><image href="layer-bottom-aligned.png" x="130" y="46" width="172" height="100" style="mix-blend-mode:luminosity;opacity:0.7" preserveAspectRatio="xMidYMid slice"/></g>
+      <g id="c1-svg" opacity="0.92">
+        <path d="M 144 60 L 288 60 L 288 132 L 144 132 L 144 60" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+        <path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 L 145.2 61.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      </g>
+      <g id="c1-top"><image href="layer-top-aligned.png" x="130" y="46" width="172" height="100" style="mix-blend-mode:multiply;opacity:0.8" preserveAspectRatio="xMidYMid slice"/></g>
+    </svg>
+  </div>
+
+  <!-- Card 2: U-Shape Ruin (t2/t10 style) -->
+  <div class="card">
+    <div class="card-title">U-Shape Ruin</div>
+    <div class="layer-toggles">
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c2-svg')">SVG</label>
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c2-floor')">Floor</label>
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c2-top')">Top</label>
+    </div>
+    <svg viewBox="250 180 164 86" width="100%" style="background:#080c10;border-radius:6px">
+      <g id="c2-floor"><image href="t10-layer-bottom.png" x="250" y="180" width="164" height="86" style="mix-blend-mode:luminosity;opacity:0.7" preserveAspectRatio="xMidYMid slice"/></g>
+      <g id="c2-svg" opacity="0.92">
+        <path d="M 264 336 L 408 336 L 408 408 L 264 408 L 264 336" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke" transform="translate(0,-150)"/>
+        <path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 L 288 337.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke" transform="translate(0,-150)"/>
+      </g>
+      <g id="c2-top"><image href="t10-layer-top.png" x="250" y="180" width="164" height="86" style="mix-blend-mode:multiply;opacity:0.8" preserveAspectRatio="xMidYMid slice"/></g>
+    </svg>
+  </div>
+
+  <!-- Card 3: Mirror Ruin (t3/t11 style) -->
+  <div class="card">
+    <div class="card-title">Mirror Ruin</div>
+    <div class="layer-toggles">
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c3-svg')">SVG</label>
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c3-img')">AI Image</label>
+    </div>
+    <svg viewBox="180 252 120 96" width="100%" style="background:#080c10;border-radius:6px">
+      <g id="c3-img"><image href="openai-ruin-2.png" x="180" y="252" width="120" height="96" style="mix-blend-mode:luminosity;opacity:0.7" preserveAspectRatio="xMidYMid slice"/></g>
+      <g id="c3-svg" opacity="0.92">
+        <path d="M 192 264 L 288 264 L 288 336 L 192 336 L 192 264" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+        <path d="M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 L 193.2 265.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- Card 4: Scatter Terrain -->
+  <div class="card">
+    <div class="card-title">Scatter Terrain</div>
+    <div class="layer-toggles">
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c4-svg')">SVG</label>
+      <label><input type="checkbox" checked onchange="toggleLayer(this,'c4-img')">AI Image</label>
+    </div>
+    <svg viewBox="36 252 72 96" width="100%" style="background:#080c10;border-radius:6px">
+      <g id="c4-img"><image href="scatter-layer.png" x="36" y="252" width="72" height="96" style="mix-blend-mode:luminosity;opacity:0.7" preserveAspectRatio="xMidYMid slice"/></g>
+      <g id="c4-svg" opacity="0.92">
+        <path d="M 48 264 L 96 264 L 96 336 L 48 336 L 48 264" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/>
+      </g>
+    </svg>
+  </div>
 </div>
-<div class="bf-wrap" id="bf-wrap"></div>
 
-<!-- SECTION 3: Legacy -->
-<div class="section-label">§3 Legacy</div>
+<!-- ═══════════ SECTION 2: FULL BATTLEFIELD MAP ═══════════ -->
+<h2>§2 — Full Battlefield Map (1.5× Scale)</h2>
+<div class="layer-toggles" id="map-toggles">
+  <label><input type="checkbox" checked onchange="toggleMapLayer('layer-battlefield')">☑ Battlefield</label>
+  <label><input type="checkbox" checked onchange="toggleMapLayer('layer-deploy')">☑ Deploy Zones</label>
+  <label><input type="checkbox" checked onchange="toggleMapLayer('layer-terrain')">☑ SVG Terrain</label>
+  <label><input type="checkbox" checked onchange="toggleMapLayer('layer-floor')">☑ Floor Layer</label>
+  <label><input type="checkbox" checked onchange="toggleMapLayer('layer-models')">☑ Models</label>
+  <label><input type="checkbox" checked onchange="toggleMapLayer('layer-top')">☑ Top Layer</label>
+</div>
+
+<div class="map-container" id="battlefield-wrap">
+  <svg id="battlefield-svg" viewBox="0 0 720 528" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="mg-fill" cx="38%" cy="32%" r="62%">
+        <stop offset="0%" stop-color="#0a1020"/>
+        <stop offset="60%" stop-color="#060c14"/>
+        <stop offset="100%" stop-color="#030609"/>
+      </radialGradient>
+      <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+        <feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/>
+        <feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>
+        <feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+        <feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/>
+        <feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/>
+        <feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <!-- Board grid pattern -->
+      <pattern id="board-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+        <rect width="60" height="60" fill="none"/>
+        <line x1="0" y1="0" x2="60" y2="0" stroke="rgba(180,160,80,0.06)" stroke-width="0.5"/>
+        <line x1="0" y1="0" x2="0" y2="60" stroke="rgba(180,160,80,0.06)" stroke-width="0.5"/>
+        <line x1="12" y1="0" x2="12" y2="60" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="24" y1="0" x2="24" y2="60" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="36" y1="0" x2="36" y2="60" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="48" y1="0" x2="48" y2="60" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="0" y1="12" x2="60" y2="12" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="0" y1="24" x2="60" y2="24" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="0" y1="36" x2="60" y2="36" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+        <line x1="0" y1="48" x2="60" y2="48" stroke="rgba(180,160,80,0.03)" stroke-width="0.3"/>
+      </pattern>
+      <!-- Explosion gradients -->
+      <radialGradient id="explosion1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(255,140,20,0.25)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+      <radialGradient id="explosion2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(255,80,10,0.2)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+      <radialGradient id="explosion3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="rgba(255,200,50,0.15)"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+      <filter id="smoke-blur"><feGaussianBlur stdDeviation="3"/></filter>
+    </defs>
+
+    <!-- LAYER: Battlefield ground -->
+    <g id="layer-battlefield">
+      <image href="battlefield-ground.png" x="0" y="0" width="720" height="528" preserveAspectRatio="xMidYMid slice"/>
+      <rect x="0" y="0" width="720" height="528" fill="rgba(8,14,22,0.88)"/>
+      <rect x="0" y="0" width="720" height="528" fill="url(#board-grid)" pointer-events="none"/>
+    </g>
+
+    <!-- LAYER: Deployment Zones -->
+    <g id="layer-deploy">
+      <rect x="0" y="0" width="240" height="528" fill="rgba(0,140,200,0.06)"/>
+      <line x1="240" y1="0" x2="240" y2="528" stroke="rgba(0,140,200,0.15)" stroke-width="1" stroke-dasharray="6,4"/>
+      <rect x="480" y="0" width="240" height="528" fill="rgba(255,64,32,0.06)"/>
+      <line x1="480" y1="0" x2="480" y2="528" stroke="rgba(255,64,32,0.15)" stroke-width="1" stroke-dasharray="6,4"/>
+      <text x="120" y="270" font-family="Anton,sans-serif" font-size="14" letter-spacing="5" fill="#00d4ff" fill-opacity="0.12" text-anchor="middle">IMPERIUM</text>
+      <text x="600" y="270" font-family="Anton,sans-serif" font-size="14" letter-spacing="5" fill="#ff4020" fill-opacity="0.12" text-anchor="middle">ORKS</text>
+      <text x="360" y="270" font-family="Anton,sans-serif" font-size="14" letter-spacing="5" fill="#ffffff" fill-opacity="0.06" text-anchor="middle">NO MAN'S LAND</text>
+    </g>
+
+    <!-- LAYER: Floor images -->
+    <g id="layer-floor">
+      <!-- t1 floor --><image href="layer-bottom-aligned.png" x="100" y="16" width="188" height="116" style="mix-blend-mode:luminosity;mask-image:radial-gradient(ellipse,black 60%,transparent 100%);-webkit-mask-image:radial-gradient(ellipse,black 60%,transparent 100%)" opacity="0.6" transform="translate(144,60) rotate(90) translate(-144,-60)"/>
+      <!-- t2 floor --><image href="t10-layer-bottom.png" x="220" y="296" width="188" height="116" style="mix-blend-mode:luminosity" opacity="0.6" transform="translate(264,336) rotate(90) translate(-264,-336)"/>
+      <!-- t3 floor --><image href="openai-ruin-2.png" x="180" y="252" width="120" height="96" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)"/>
+      <!-- t4 floor --><image href="scatter-layer.png" x="36" y="252" width="72" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(48,264) rotate(0) translate(-48,-264)"/>
+      <!-- t5 floor --><image href="scatter-layer.png" x="324" y="-12" width="72" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(336,0) rotate(0) translate(-336,0)"/>
+      <!-- t6 floor --><image href="openai-ruin-2.png" x="348" y="192" width="102" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(360,204) scale(-1,1) rotate(-45) translate(-360,-204)"/>
+      <!-- t7 floor --><image href="scatter-layer.png" x="293" y="137" width="66" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)"/>
+      <!-- t8 floor --><image href="scatter-layer.png" x="306" y="235" width="72" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(317.76,247.2) scale(-1,1) rotate(-45) translate(-317.76,-247.2)"/>
+      <!-- t9 floor --><image href="layer-bottom-aligned.png" x="532" y="424" width="188" height="116" style="mix-blend-mode:luminosity" opacity="0.6" transform="translate(576,468) rotate(-90) translate(-576,-468)"/>
+      <!-- t10 floor --><image href="t10-layer-bottom.png" x="412" y="148" width="188" height="116" style="mix-blend-mode:luminosity" opacity="0.6" transform="translate(456,192) rotate(-90) translate(-456,-192)"/>
+      <!-- t11 floor --><image href="openai-ruin-2.png" x="516" y="252" width="120" height="96" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)"/>
+      <!-- t12 floor --><image href="scatter-layer.png" x="660" y="252" width="72" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(672,264) rotate(-180) translate(-672,-264)"/>
+      <!-- t13 floor --><image href="scatter-layer.png" x="372" y="516" width="72" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(384,528) rotate(-180) translate(-384,-528)"/>
+      <!-- t14 floor --><image href="openai-ruin-2.png" x="348" y="312" width="102" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)"/>
+      <!-- t15 floor --><image href="scatter-layer.png" x="403" y="367" width="66" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"/>
+      <!-- t16 floor --><image href="scatter-layer.png" x="390" y="269" width="72" height="84" style="mix-blend-mode:luminosity" opacity="0.5" transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"/>
+    </g>
+
+    <!-- LAYER: SVG Terrain pieces -->
+    <g id="layer-terrain">
+      <!-- t1 --><g opacity="0.92" transform="translate(144,60) rotate(90) translate(-144,-60)"><path d="M 144 60 L 288 60 L 288 132 L 144 132 L 144 60" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 L 145.2 61.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t2 --><g opacity="0.92" transform="translate(264,336) rotate(90) translate(-264,-336)"><path d="M 264 336 L 408 336 L 408 408 L 264 408 L 264 336" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 L 288 337.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t3 --><g opacity="0.92" transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)"><path d="M 192 264 L 288 264 L 288 336 L 192 336 L 192 264" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 L 193.2 265.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t4 --><g opacity="0.92" transform="translate(48,264) rotate(0) translate(-48,-264)"><path d="M 48 264 L 96 264 L 96 336 L 48 336 L 48 264" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t5 --><g opacity="0.92" transform="translate(336,0) rotate(0) translate(-336,0)"><path d="M 336 0 L 384 0 L 384 72 L 336 72 L 336 0" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t6 --><g opacity="0.92" transform="translate(360,204) scale(-1,1) rotate(-45) translate(-360,-204)"><path d="M 360 204 L 438 204 L 438 264 L 360 264 L 360 204" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 205.2 L 436.8 205.2 L 436.8 211.2 L 367.2 211.2 L 367.2 262.8 L 361.2 262.8 L 361.2 205.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t7 --><g opacity="0.92" transform="translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)"><path d="M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 L 304.8 148.8" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t8 --><g opacity="0.92" transform="translate(317.76,247.2) scale(-1,1) rotate(-45) translate(-317.76,-247.2)"><path d="M 317.76 247.2 L 365.76 247.2 L 365.76 319.2 L 317.76 319.2 L 317.76 247.2" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t9 --><g opacity="0.92" transform="translate(576,468) rotate(-90) translate(-576,-468)"><path d="M 576 468 L 720 468 L 720 540 L 576 540 L 576 468" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 577.2 469.2 L 673.2 469.2 L 673.2 475.2 L 583.2 475.2 L 583.2 517.2 L 577.2 517.2 L 577.2 469.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t10 --><g opacity="0.92" transform="translate(456,192) rotate(-90) translate(-456,-192)"><path d="M 456 192 L 600 192 L 600 264 L 456 264 L 456 192" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 L 480 193.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t11 --><g opacity="0.92" transform="translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)"><path d="M 528 264 L 624 264 L 624 336 L 528 336 L 528 264" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 L 529.2 265.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t12 --><g opacity="0.92" transform="translate(672,264) rotate(-180) translate(-672,-264)"><path d="M 672 264 L 720 264 L 720 336 L 672 336 L 672 264" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t13 --><g opacity="0.92" transform="translate(384,528) rotate(-180) translate(-384,-528)"><path d="M 384 528 L 432 528 L 432 600 L 384 600 L 384 528" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t14 --><g opacity="0.92" transform="translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)"><path d="M 360 324 L 438 324 L 438 384 L 360 384 L 360 324" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 L 361.2 325.2" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t15 --><g opacity="0.92" transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"><path d="M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 L 415.2 379.2" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      <!-- t16 --><g opacity="0.92" transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"><path d="M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 L 402.24 280.8" fill="rgba(58,48,24,0.7)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+    </g>
+
+    <!-- LAYER: Models -->
+    <g id="layer-models">
+      <!-- === IMPERIUM === -->
+      <!-- Assault Intercessors -->
+      <g class="model-base" data-unit-id="assault-intercessors" data-model-id="ai1"><circle cx="100" cy="64" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="100" y1="60.94" x2="100" y2="67.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="96.94" y1="64" x2="103.06" y2="64" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="assault-intercessors" data-model-id="ai2"><circle cx="117" cy="64" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="117" y1="60.94" x2="117" y2="67.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="113.94" y1="64" x2="120.06" y2="64" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="assault-intercessors" data-model-id="ai3"><circle cx="134" cy="64" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="134" y1="60.94" x2="134" y2="67.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="130.94" y1="64" x2="137.06" y2="64" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="assault-intercessors" data-model-id="ai4"><circle cx="108" cy="81" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="108" y1="77.94" x2="108" y2="84.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="104.94" y1="81" x2="111.06" y2="81" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="assault-intercessors" data-model-id="ai5"><circle cx="125" cy="81" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="125" y1="77.94" x2="125" y2="84.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="121.94" y1="81" x2="128.06" y2="81" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <!-- Primaris Lieutenant (character r=9) -->
+      <g class="model-base" data-unit-id="primaris-lieutenant" data-model-id="pl1"><circle cx="120" cy="160" r="9" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><polygon points="120,156.48 120.90,158.76 123.35,158.91 121.46,160.47 122.07,162.85 120,161.53 117.93,162.85 118.54,160.47 116.65,158.91 119.10,158.76" stroke="currentColor" stroke-width="0.765" fill="none"/></g></g>
+      <!-- Intercessor Squad A -->
+      <g class="model-base" data-unit-id="intercessor-squad-a" data-model-id="isa1"><circle cx="80" cy="300" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="80" y1="296.94" x2="80" y2="303.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="76.94" y1="300" x2="83.06" y2="300" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="intercessor-squad-a" data-model-id="isa2"><circle cx="97" cy="300" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="97" y1="296.94" x2="97" y2="303.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="93.94" y1="300" x2="100.06" y2="300" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="intercessor-squad-a" data-model-id="isa3"><circle cx="114" cy="300" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="114" y1="296.94" x2="114" y2="303.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="110.94" y1="300" x2="117.06" y2="300" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="intercessor-squad-a" data-model-id="isa4"><circle cx="88" cy="317" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="88" y1="313.94" x2="88" y2="320.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="84.94" y1="317" x2="91.06" y2="317" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="intercessor-squad-a" data-model-id="isa5"><circle cx="105" cy="317" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><line x1="105" y1="313.94" x2="105" y2="320.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="101.94" y1="317" x2="108.06" y2="317" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <!-- Hellblasters (elite/diamond) -->
+      <g class="model-base" data-unit-id="hellblasters" data-model-id="hb1"><circle cx="150" cy="400" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><polygon points="150,396.804 152.5568,400 150,403.196 147.4432,400" stroke="currentColor" stroke-width="1.02" fill="none"/></g></g>
+      <g class="model-base" data-unit-id="hellblasters" data-model-id="hb2"><circle cx="167" cy="400" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><polygon points="167,396.804 169.5568,400 167,403.196 164.4432,400" stroke="currentColor" stroke-width="1.02" fill="none"/></g></g>
+      <g class="model-base" data-unit-id="hellblasters" data-model-id="hb3"><circle cx="184" cy="400" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><polygon points="184,396.804 186.5568,400 184,403.196 181.4432,400" stroke="currentColor" stroke-width="1.02" fill="none"/></g></g>
+      <g class="model-base" data-unit-id="hellblasters" data-model-id="hb4"><circle cx="158" cy="417" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><polygon points="158,413.804 160.5568,417 158,420.196 155.4432,417" stroke="currentColor" stroke-width="1.02" fill="none"/></g></g>
+      <g class="model-base" data-unit-id="hellblasters" data-model-id="hb5"><circle cx="175" cy="417" r="8" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><polygon points="175,413.804 177.5568,417 175,420.196 172.4432,417" stroke="currentColor" stroke-width="1.02" fill="none"/></g></g>
+      <!-- Redemptor Dreadnought (vehicle) -->
+      <g class="model-base" data-unit-id="redemptor-dreadnought" data-model-id="rd1"><rect x="38.5" y="467.5" width="43" height="25" rx="4" ry="4" fill="url(#mg-fill)" stroke="#0088aa" stroke-width="1.5" filter="url(#mf-imp)"/><g color="#006688" fill="none" pointer-events="none"><rect x="53.95" y="475.875" width="12.1" height="8.25" rx="1.1" stroke="currentColor" stroke-width="1.925" fill="none"/><line x1="53.95" y1="480" x2="66.05" y2="480" stroke="currentColor" stroke-width="1.2375"/></g></g>
+
+      <!-- === ORKS === -->
+      <!-- Boss Nob (character r=9) -->
+      <g class="model-base" data-unit-id="boss-nob" data-model-id="bn1"><circle cx="560" cy="100" r="9" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><polygon points="560,96.48 560.90,98.76 563.35,98.91 561.46,100.47 562.07,102.85 560,101.53 557.93,102.85 558.54,100.47 556.65,98.91 559.10,98.76" stroke="currentColor" stroke-width="0.765" fill="none"/></g></g>
+      <!-- Boyz Mob -->
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm1"><circle cx="500" cy="200" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="500" y1="196.94" x2="500" y2="203.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="496.94" y1="200" x2="503.06" y2="200" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm2"><circle cx="517" cy="200" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="517" y1="196.94" x2="517" y2="203.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="513.94" y1="200" x2="520.06" y2="200" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm3"><circle cx="534" cy="200" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="534" y1="196.94" x2="534" y2="203.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="530.94" y1="200" x2="537.06" y2="200" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm4"><circle cx="551" cy="200" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="551" y1="196.94" x2="551" y2="203.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="547.94" y1="200" x2="554.06" y2="200" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm5"><circle cx="568" cy="200" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="568" y1="196.94" x2="568" y2="203.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="564.94" y1="200" x2="571.06" y2="200" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm6"><circle cx="500" cy="217" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="500" y1="213.94" x2="500" y2="220.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="496.94" y1="217" x2="503.06" y2="217" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm7"><circle cx="517" cy="217" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="517" y1="213.94" x2="517" y2="220.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="513.94" y1="217" x2="520.06" y2="217" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm8"><circle cx="534" cy="217" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="534" y1="213.94" x2="534" y2="220.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="530.94" y1="217" x2="537.06" y2="217" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm9"><circle cx="551" cy="217" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="551" y1="213.94" x2="551" y2="220.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="547.94" y1="217" x2="554.06" y2="217" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <g class="model-base" data-unit-id="boyz-mob" data-model-id="bm10"><circle cx="568" cy="217" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><line x1="568" y1="213.94" x2="568" y2="220.06" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/><line x1="564.94" y1="217" x2="571.06" y2="217" stroke="currentColor" stroke-width="1.224" stroke-linecap="round"/></g></g>
+      <!-- Mekboy (elite/diamond) -->
+      <g class="model-base" data-unit-id="mekboy" data-model-id="mb1"><circle cx="560" cy="350" r="8" fill="url(#mg-fill)" stroke="#aa2810" stroke-width="1.5" filter="url(#mf-ork)"/><g color="#882010" fill="none" pointer-events="none"><polygon points="560,346.804 562.5568,350 560,353.196 557.4432,350" stroke="currentColor" stroke-width="1.02" fill="none"/></g></g>
+    </g>
+
+    <!-- LAYER: Top (wall-top images for ruins) -->
+    <g id="layer-top">
+      <image href="layer-top-aligned.png" x="100" y="16" width="188" height="116" style="mix-blend-mode:multiply" opacity="0.6" transform="translate(144,60) rotate(90) translate(-144,-60)"/>
+      <image href="t10-layer-top.png" x="220" y="296" width="188" height="116" style="mix-blend-mode:multiply" opacity="0.6" transform="translate(264,336) rotate(90) translate(-264,-336)"/>
+      <image href="layer-top-aligned.png" x="532" y="424" width="188" height="116" style="mix-blend-mode:multiply" opacity="0.6" transform="translate(576,468) rotate(-90) translate(-576,-468)"/>
+      <image href="t10-layer-top.png" x="412" y="148" width="188" height="116" style="mix-blend-mode:multiply" opacity="0.6" transform="translate(456,192) rotate(-90) translate(-456,-192)"/>
+    </g>
+
+    <!-- Explosion FX (always on) -->
+    <g id="fx-explosions" pointer-events="none">
+      <circle cx="320" cy="280" r="25" fill="url(#explosion1)" opacity="0.7"/>
+      <circle cx="440" cy="180" r="18" fill="url(#explosion2)" opacity="0.6"/>
+      <circle cx="380" cy="400" r="22" fill="url(#explosion3)" opacity="0.5"/>
+      <circle cx="520" cy="320" r="15" fill="url(#explosion1)" opacity="0.4"/>
+      <circle cx="260" cy="150" r="20" fill="url(#explosion2)" opacity="0.5"/>
+      <!-- Scorch marks -->
+      <ellipse cx="330" cy="290" rx="18" ry="8" fill="rgba(15,10,5,0.4)" transform="rotate(-20,330,290)"/>
+      <ellipse cx="445" cy="185" rx="12" ry="6" fill="rgba(15,10,5,0.35)" transform="rotate(15,445,185)"/>
+      <ellipse cx="515" cy="325" rx="10" ry="5" fill="rgba(15,10,5,0.3)" transform="rotate(-40,515,325)"/>
+      <!-- Smoke wisps -->
+      <circle class="smoke-wisp" cx="325" cy="275" r="4" fill="rgba(200,200,200,0.15)" filter="url(#smoke-blur)" style="animation-delay:0s"/>
+      <circle class="smoke-wisp" cx="442" cy="175" r="3" fill="rgba(200,200,200,0.12)" filter="url(#smoke-blur)" style="animation-delay:1.2s"/>
+      <circle class="smoke-wisp" cx="385" cy="395" r="5" fill="rgba(200,200,200,0.1)" filter="url(#smoke-blur)" style="animation-delay:2.5s"/>
+      <circle class="smoke-wisp" cx="265" cy="145" r="3.5" fill="rgba(200,200,200,0.12)" filter="url(#smoke-blur)" style="animation-delay:0.7s"/>
+    </g>
+  </svg>
+
+  <!-- Objective rings + hexagons (absolute positioned over SVG) -->
+  <div class="obj-area-ring" style="left:50%;top:13.64%"></div>
+  <div class="obj-area-ring" style="left:16.67%;top:50%"></div>
+  <div class="obj-area-ring" style="left:50%;top:50%"></div>
+  <div class="obj-area-ring" style="left:83.33%;top:50%"></div>
+  <div class="obj-area-ring" style="left:50%;top:86.36%"></div>
+
+  <div class="obj-hex" style="left:50%;top:13.64%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">01</text></svg></div>
+  <div class="obj-hex" style="left:16.67%;top:50%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">02</text></svg></div>
+  <div class="obj-hex" style="left:50%;top:50%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">03</text></svg></div>
+  <div class="obj-hex" style="left:83.33%;top:50%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">04</text></svg></div>
+  <div class="obj-hex" style="left:50%;top:86.36%"><svg viewBox="0 0 30 30"><polygon points="15,2 27,9 27,21 15,28 3,21 3,9" fill="none" stroke="rgba(255,200,0,0.4)" stroke-width="1.5"/><text x="15" y="18" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" fill="rgba(255,200,0,0.6)">05</text></svg></div>
+</div>
+
+<!-- ═══════════ SECTION 3: LEGACY ═══════════ -->
 <details>
-  <summary>Gemini Terrain Experiments</summary>
-  <div class="legacy-imgs">
+  <summary>§3 — Legacy Gemini Thumbnails</summary>
+  <div class="thumb-row">
     <img src="gemini-ruin-1.png" alt="Gemini ruin 1">
     <img src="gemini-ruin-2.jpg" alt="Gemini ruin 2">
+    <img src="openai-ruin-1.png" alt="OpenAI ruin 1">
+    <img src="openai-ruin-2.png" alt="OpenAI ruin 2">
+    <img src="openai-scatter.png" alt="OpenAI scatter">
+    <img src="reference-ruin.png" alt="Reference ruin">
+    <img src="comparison.png" alt="Comparison">
   </div>
 </details>
 
-<!-- SECTION 4: Interactive Generation -->
-<div class="section-label">§4 Interactive Generation</div>
-<div class="gen-section">
-  <textarea id="gen-prompt" placeholder="Describe the terrain texture...">Top-down dark gothic ruins floor texture, cracked stone tiles, 40K grimdark style, seamless, dark palette</textarea>
-  <input id="gen-key" type="password" placeholder="OpenAI API key">
-  <button onclick="generateImage()">Generate via GPT Image Edit</button>
-  <div class="gen-result" id="gen-result"></div>
+<!-- ═══════════ SECTION 4: INTERACTIVE GENERATION ═══════════ -->
+<h2>§4 — Interactive Generation</h2>
+<div class="card" style="max-width:600px">
+  <div class="card-title">Generate Terrain Textures</div>
+  <p style="font-size:12px;color:#607090;margin-bottom:12px">Select a terrain piece and layer type to generate AI textures.</p>
+  <div class="gen-section">
+    <select id="gen-piece" style="background:#0a1020;border:1px solid #1e2d44;color:#c8d0e0;padding:6px 10px;border-radius:6px;font-size:12px">
+      <option>t1 — Large Ruin (L-Wall)</option>
+      <option>t2 — U-Shape Ruin</option>
+      <option>t3 — Mirror Ruin</option>
+      <option>t6 — Angled Ruin</option>
+      <option>t4 — Scatter Block</option>
+    </select>
+    <select id="gen-layer" style="background:#0a1020;border:1px solid #1e2d44;color:#c8d0e0;padding:6px 10px;border-radius:6px;font-size:12px">
+      <option>Floor (bottom layer)</option>
+      <option>Wall-top (top layer)</option>
+      <option>Combined (single texture)</option>
+    </select>
+    <button onclick="alert('Generation would call GPT Image API here')">🎨 Generate</button>
+    <button onclick="alert('Would regenerate with adjusted prompt')">🔄 Regenerate</button>
+  </div>
 </div>
 
 <script>
-// ── Terrain Data (EXACT from terrain-data.js) ──
-const terrain=[
-{id:'t1',type:'ruins',paths:[{d:'M 144 60 L 288 60 L 288 132 L 144 132 L 144 60',fill:'rgba(58,64,64,0.75)'},{d:'M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 L 145.2 61.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t2',type:'ruins',paths:[{d:'M 264 336 L 408 336 L 408 408 L 264 408 L 264 336',fill:'rgba(58,64,64,0.75)'},{d:'M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 L 288 337.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t3',type:'ruins',paths:[{d:'M 192 264 L 288 264 L 288 336 L 192 336 L 192 264',fill:'rgba(58,64,64,0.75)'},{d:'M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 L 193.2 265.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t4',type:'scatter',paths:[{d:'M 48 264 L 96 264 L 96 336 L 48 336 L 48 264',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t5',type:'scatter',paths:[{d:'M 336 0 L 384 0 L 384 72 L 336 72 L 336 0',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t6',type:'ruins',paths:[{d:'M 360 204 L 438 204 L 438 264 L 360 264 L 360 204',fill:'rgba(58,64,64,0.75)'},{d:'M 361.2 205.2 L 436.8 205.2 L 436.8 211.2 L 367.2 211.2 L 367.2 262.8 L 361.2 262.8 L 361.2 205.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t7',type:'scatter',paths:[{d:'M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 L 304.8 148.8',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t8',type:'scatter',paths:[{d:'M 317.76 247.2 L 365.76 247.2 L 365.76 319.2 L 317.76 319.2 L 317.76 247.2',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t9',type:'ruins',paths:[{d:'M 576 468 L 720 468 L 720 540 L 576 540 L 576 468',fill:'rgba(58,64,64,0.75)'},{d:'M 577.2 469.2 L 673.2 469.2 L 673.2 475.2 L 583.2 475.2 L 583.2 517.2 L 577.2 517.2 L 577.2 469.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t10',type:'ruins',paths:[{d:'M 456 192 L 600 192 L 600 264 L 456 264 L 456 192',fill:'rgba(58,64,64,0.75)'},{d:'M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 L 480 193.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t11',type:'ruins',paths:[{d:'M 528 264 L 624 264 L 624 336 L 528 336 L 528 264',fill:'rgba(58,64,64,0.75)'},{d:'M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 L 529.2 265.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t12',type:'scatter',paths:[{d:'M 672 264 L 720 264 L 720 336 L 672 336 L 672 264',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t13',type:'scatter',paths:[{d:'M 384 528 L 432 528 L 432 600 L 384 600 L 384 528',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t14',type:'ruins',paths:[{d:'M 360 324 L 438 324 L 438 384 L 360 384 L 360 324',fill:'rgba(58,64,64,0.75)'},{d:'M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 L 361.2 325.2',fill:'rgba(106,114,114,0.85)'}]},
-{id:'t15',type:'scatter',paths:[{d:'M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 L 415.2 379.2',fill:'rgba(58,48,24,0.7)'}]},
-{id:'t16',type:'scatter',paths:[{d:'M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 L 402.24 280.8',fill:'rgba(58,48,24,0.7)'}]}
-];
-
-// ── Image mapping ──
-function getImages(t){
-  const id=t.id;
-  if(id==='t1'||id==='t9') return {bottom:'layer-bottom-aligned.png',top:'layer-top-aligned.png'};
-  if(id==='t2'||id==='t10') return {bottom:'t10-layer-bottom.png',top:'openai-ruin-ushape.png'};
-  if(id==='t3'||id==='t6'||id==='t11'||id==='t14') return {bottom:'openai-ruin-2.png',top:null};
-  return {bottom:'scatter-layer.png',top:null};
+function toggleLayer(cb, id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = cb.checked ? '' : 'none';
 }
-
-// ── Bounding box helper ──
-function bbox(t){
-  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
-  t.paths.forEach(p=>{
-    const nums=p.d.match(/[\d.]+/g).map(Number);
-    for(let i=0;i<nums.length;i+=2){x0=Math.min(x0,nums[i]);x1=Math.max(x1,nums[i]);y0=Math.min(y0,nums[i+1]);y1=Math.max(y1,nums[i+1]);}
-  });
-  return {x:x0,y:y0,w:x1-x0,h:y1-y0};
-}
-
-// ── Model icon SVG generators ──
-function iconInfantry(cx,cy,r,color){
-  return `<line x1="${cx-r}" y1="${cy}" x2="${cx+r}" y2="${cy}" stroke="${color}" stroke-width="1.5"/>
-  <line x1="${cx}" y1="${cy-r}" x2="${cx}" y2="${cy+r}" stroke="${color}" stroke-width="1.5"/>
-  <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="1"/>`;
-}
-function iconCharacter(cx,cy,r,color){
-  let pts=[];for(let i=0;i<20;i++){const a=Math.PI*2*i/20-Math.PI/2;const rad=i%2===0?r:r*0.5;pts.push((cx+rad*Math.cos(a)).toFixed(1)+','+(cy+rad*Math.sin(a)).toFixed(1));}
-  return `<polygon points="${pts.join(' ')}" fill="${color}" opacity="0.9"/>`;
-}
-function iconElite(cx,cy,r,color){
-  return `<polygon points="${cx},${cy-r} ${cx+r},${cy} ${cx},${cy+r} ${cx-r},${cy}" fill="none" stroke="${color}" stroke-width="1.5"/>`;
-}
-function iconVehicle(cx,cy,r,color){
-  const hw=r*1.2,hh=r*0.8;
-  return `<rect x="${cx-hw}" y="${cy-hh}" width="${hw*2}" height="${hh*2}" rx="3" fill="none" stroke="${color}" stroke-width="1.5"/>
-  <line x1="${cx-hw}" y1="${cy}" x2="${cx+hw}" y2="${cy}" stroke="${color}" stroke-width="1"/>`;
-}
-function modelSvg(cx,cy,r,type,color){
-  if(type==='infantry') return iconInfantry(cx,cy,r,color);
-  if(type==='character') return iconCharacter(cx,cy,r,color);
-  if(type==='elite') return iconElite(cx,cy,r,color);
-  if(type==='vehicle') return iconVehicle(cx,cy,r,color);
-  return '';
-}
-
-// ── Units ──
-const IMP='#00d4ff',ORK='#ff4020';
-const units=[
-  // Imperium
-  ...[[92,72],[100,72],[108,72],[100,84],[108,84]].map(([x,y])=>({x,y,r:8,type:'infantry',color:IMP})),
-  {x:120,y:160,r:9,type:'character',color:IMP},
-  ...[[72,292],[80,292],[88,292],[80,308],[88,308]].map(([x,y])=>({x,y,r:8,type:'infantry',color:IMP})),
-  ...[[142,392],[150,392],[158,392],[146,408],[154,408]].map(([x,y])=>({x,y,r:8,type:'elite',color:IMP})),
-  {x:60,y:480,r:22,type:'vehicle',color:IMP},
-  // Orks
-  {x:560,y:100,r:9,type:'character',color:ORK},
-  ...[[500,200],[517,200],[534,200],[551,200],[568,200],[500,217],[517,217],[534,217],[551,217],[568,217]].map(([x,y])=>({x,y,r:8,type:'infantry',color:ORK})),
-  {x:560,y:350,r:8,type:'elite',color:ORK}
-];
-
-// ── Objectives ──
-const objectives=[{x:360,y:72},{x:120,y:264},{x:360,y:264},{x:600,y:264},{x:360,y:456}];
-function hexSvg(cx,cy,r,color){
-  let pts=[];for(let i=0;i<6;i++){const a=Math.PI*2*i/6-Math.PI/6;pts.push((cx+r*Math.cos(a)).toFixed(1)+','+(cy+r*Math.sin(a)).toFixed(1));}
-  return `<polygon points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2" opacity="0.8"/>
-  <text x="${cx}" y="${cy+3}" text-anchor="middle" fill="${color}" font-size="8" font-weight="bold">${objectives.indexOf(arguments[3])+1}</text>`;
-}
-
-// ── SECTION 1: Terrain Cards ──
-const cardDefs=[
-  {t:terrain[0],label:'t1 L-Ruins',w:300,h:150,models:[[200,90,'infantry'],[250,110,'infantry']],hasTop:true},
-  {t:terrain[9],label:'t10 U-Ruins',w:300,h:150,models:[[520,220,'infantry'],[550,240,'infantry']],hasTop:true},
-  {t:terrain[2],label:'t3 Small Ruins',w:200,h:150,models:[[240,300,'infantry']],hasTop:false},
-  {t:terrain[3],label:'t4 Scatter',w:100,h:150,models:[[72,300,'infantry']],hasTop:false}
-];
-
-const cardsEl=document.getElementById('cards');
-cardDefs.forEach((cd,ci)=>{
-  const b=bbox(cd.t);const imgs=getImages(cd.t);
-  const card=document.createElement('div');card.className='card';
-  card.innerHTML=`<div class="card-title">${cd.label}</div>
-    <div class="terrain-container" style="width:${cd.w}px;height:${cd.h}px" id="tc${ci}">
-      <img class="lyr-bottom" src="${imgs.bottom}" style="z-index:1">
-      <svg class="lyr-svg" viewBox="${b.x} ${b.y} ${b.w} ${b.h}" preserveAspectRatio="none" style="z-index:2">
-        ${cd.t.paths.map(p=>`<path d="${p.d}" fill="${p.fill}"/>`).join('')}
-      </svg>
-      <svg class="lyr-models" viewBox="${b.x} ${b.y} ${b.w} ${b.h}" preserveAspectRatio="none" style="z-index:3">
-        ${cd.models.map(m=>modelSvg(m[0],m[1],8,m[2],IMP)).join('')}
-      </svg>
-      ${imgs.top?`<img class="lyr-top" src="${imgs.top}" style="z-index:4">`:''}
-    </div>
-    <div class="controls">
-      <label><input type="checkbox" checked onchange="togLyr(${ci},'svg',this.checked)"> SVG</label>
-      <label><input type="checkbox" checked onchange="togLyr(${ci},'bottom',this.checked)"> Bottom</label>
-      <label><input type="checkbox" checked onchange="togLyr(${ci},'models',this.checked)"> Models</label>
-      ${imgs.top?`<label><input type="checkbox" checked onchange="togLyr(${ci},'top',this.checked)"> Top</label>`:''}
-    </div>`;
-  cardsEl.appendChild(card);
-});
-
-function togLyr(ci,layer,on){
-  const c=document.getElementById('tc'+ci);
-  const map={svg:'.lyr-svg',bottom:'.lyr-bottom',models:'.lyr-models',top:'.lyr-top'};
-  const el=c.querySelector(map[layer]);
-  if(el) el.style.display=on?'':'none';
-}
-
-// ── SECTION 2: Full Battlefield ──
-const bfWrap=document.getElementById('bf-wrap');
-
-// Ground layer
-bfWrap.innerHTML=`<img id="bf-ground" src="battlefield-ground.png" style="z-index:0">`;
-
-// SVG terrain layer
-let svgPaths='';terrain.forEach(t=>{t.paths.forEach(p=>{svgPaths+=`<path d="${p.d}" fill="${p.fill}"/>`;});});
-bfWrap.innerHTML+=`<svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="none" style="z-index:1">${svgPaths}</svg>`;
-
-// Floor image layers (clipped to each terrain bbox)
-let floorHtml='<svg id="bf-floor" viewBox="0 0 720 528" preserveAspectRatio="none" style="z-index:2"><defs>';
-terrain.forEach(t=>{
-  const b=bbox(t);
-  floorHtml+=`<clipPath id="clip-${t.id}"><rect x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}"/></clipPath>`;
-});
-floorHtml+='</defs>';
-terrain.forEach(t=>{
-  const b=bbox(t);const imgs=getImages(t);
-  floorHtml+=`<image href="${imgs.bottom}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" clip-path="url(#clip-${t.id})" preserveAspectRatio="xMidYMid slice"/>`;
-});
-floorHtml+='</svg>';
-bfWrap.innerHTML+=floorHtml;
-
-// Models layer
-let modelsHtml='<svg id="bf-models" viewBox="0 0 720 528" preserveAspectRatio="none" style="z-index:3">';
-units.forEach(u=>{modelsHtml+=modelSvg(u.x,u.y,u.r,u.type,u.color);});
-// Objectives
-objectives.forEach((o,i)=>{
-  let pts=[];for(let j=0;j<6;j++){const a=Math.PI*2*j/6-Math.PI/6;pts.push((o.x+10*Math.cos(a)).toFixed(1)+','+(o.y+10*Math.sin(a)).toFixed(1));}
-  modelsHtml+=`<polygon points="${pts.join(' ')}" fill="none" stroke="#fbca1b" stroke-width="2" opacity="0.8"/>`;
-  modelsHtml+=`<text x="${o.x}" y="${o.y+4}" text-anchor="middle" fill="#fbca1b" font-size="9" font-weight="bold">0${i+1}</text>`;
-});
-// Deployment zones
-modelsHtml+=`<rect x="0" y="0" width="240" height="528" fill="${IMP}" opacity="0.06"/>`;
-modelsHtml+=`<rect x="480" y="0" width="240" height="528" fill="${ORK}" opacity="0.06"/>`;
-modelsHtml+='</svg>';
-bfWrap.innerHTML+=modelsHtml;
-
-// Top image layers
-let topHtml='<svg id="bf-top" viewBox="0 0 720 528" preserveAspectRatio="none" style="z-index:4"><defs>';
-terrain.forEach(t=>{if(t.type==='ruins'){topHtml+=`<clipPath id="clipt-${t.id}"><rect x="${bbox(t).x}" y="${bbox(t).y}" width="${bbox(t).w}" height="${bbox(t).h}"/></clipPath>`;}});
-topHtml+='</defs>';
-terrain.forEach(t=>{
-  if(t.type!=='ruins') return;
-  const b=bbox(t);const imgs=getImages(t);
-  const src=imgs.top||imgs.bottom;
-  topHtml+=`<image href="${src}" x="${b.x}" y="${b.y}" width="${b.w}" height="${b.h}" clip-path="url(#clipt-${t.id})" preserveAspectRatio="xMidYMid slice"/>`;
-});
-topHtml+='</svg>';
-bfWrap.innerHTML+=topHtml;
-
-// Battlefield toggle controls
-document.querySelectorAll('[data-bf]').forEach(cb=>{
-  cb.addEventListener('change',()=>{
-    const map={ground:'bf-ground',svg:'bf-svg',floor:'bf-floor',models:'bf-models',top:'bf-top'};
-    const el=document.getElementById(map[cb.dataset.bf]);
-    if(el) el.style.display=cb.checked?'':'none';
-  });
-});
-
-// ── SECTION 4: Image Generation ──
-async function generateImage(){
-  const key=document.getElementById('gen-key').value.trim();
-  const prompt=document.getElementById('gen-prompt').value.trim();
-  const result=document.getElementById('gen-result');
-  if(!key){result.innerHTML='<p style="color:#f66">API key required</p>';return;}
-  result.innerHTML='<p style="color:#00d4ff">Generating...</p>';
-  try{
-    const refResp=await fetch('reference-ruin.png');
-    const refBlob=await refResp.blob();
-    const fd=new FormData();
-    fd.append('image',refBlob,'reference-ruin.png');
-    fd.append('prompt',prompt);
-    fd.append('model','gpt-image-1');
-    fd.append('size','1024x1024');
-    const resp=await fetch('https://api.openai.com/v1/images/edits',{method:'POST',headers:{'Authorization':'Bearer '+key},body:fd});
-    const json=await resp.json();
-    if(json.data&&json.data[0]){
-      const src=json.data[0].url||'data:image/png;base64,'+json.data[0].b64_json;
-      result.innerHTML=`<img src="${src}" alt="Generated terrain">`;
-    }else{result.innerHTML=`<p style="color:#f66">${JSON.stringify(json.error||json)}</p>`;}
-  }catch(e){result.innerHTML=`<p style="color:#f66">${e.message}</p>`;}
+function toggleMapLayer(id) {
+  const el = document.getElementById(id);
+  if (el) el.style.display = el.style.display === 'none' ? '' : 'none';
 }
 </script>
 </body>
