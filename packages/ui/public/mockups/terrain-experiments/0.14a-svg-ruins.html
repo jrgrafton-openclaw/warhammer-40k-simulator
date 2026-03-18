@@ -2,346 +2,526 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>0.14a — SVG Ruins (Hand-drawn)</title>
+<title>0.14a — SVG Ruins: SOTA Filters + Floor/Roof Layers</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #1a1a2e; color: #c0c8d0; font-family: 'Segoe UI', sans-serif; padding: 24px; }
-  h1 { font-size: 18px; color: #00d4ff; margin-bottom: 4px; }
-  .subtitle { font-size: 13px; color: #607080; margin-bottom: 24px; }
-
-  .comparison-row { display: flex; gap: 24px; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; }
-  .comparison-col { flex: 1; min-width: 300px; }
-  .comparison-col h2 { font-size: 14px; margin-bottom: 8px; }
-  .comparison-col .desc { font-size: 11px; color: #4a6080; margin-bottom: 12px; }
-
-  .card { background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 16px; margin-bottom: 16px; }
-  .card h2 { font-size: 14px; color: #8090a0; margin-bottom: 4px; }
-  .card h2.current { color: #cc4444; }
-  .card h2.new { color: #00d4ff; }
-  .card .desc { font-size: 11px; color: #4a6080; margin-bottom: 12px; }
-
-  .checker {
-    background-image:
-      linear-gradient(45deg, #252535 25%, transparent 25%),
-      linear-gradient(-45deg, #252535 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #252535 75%),
-      linear-gradient(-45deg, transparent 75%, #252535 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-    background-color: #1a1a28;
-    display: inline-block;
-    border-radius: 4px;
-  }
-
-  .reference { display: flex; gap: 24px; align-items: flex-start; margin-bottom: 32px; background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; padding: 16px; }
-  .reference img { max-height: 300px; border-radius: 4px; border: 1px solid #2a3a4a; }
-  .reference .info { max-width: 360px; }
-  .reference .info h2 { font-size: 14px; color: #00d4ff; margin-bottom: 8px; }
-  .reference .info p { font-size: 12px; color: #8090a0; line-height: 1.6; }
-
-  .section-label { font-size: 16px; color: #00d4ff; margin: 32px 0 16px; border-bottom: 1px solid #1e2d44; padding-bottom: 8px; }
-  .side-by-side { display: flex; gap: 16px; flex-wrap: wrap; }
-  .side-by-side > .card { flex: 1; min-width: 280px; }
-
-  .notes { margin-top: 32px; padding: 16px; background: #0f1520; border: 1px solid #1e2d44; border-radius: 6px; }
-  .notes h2 { font-size: 14px; color: #00d4ff; margin-bottom: 8px; }
-  .notes ul { font-size: 12px; color: #8090a0; line-height: 1.8; list-style: disc; padding-left: 20px; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#c0c8d0;font-family:'Segoe UI',sans-serif;padding:24px}
+h1{font-size:20px;color:#00d4ff;margin-bottom:4px}
+.subtitle{font-size:13px;color:#607080;margin-bottom:24px}
+.section-label{font-size:16px;color:#00d4ff;margin:32px 0 12px;border-bottom:1px solid #1e2d44;padding-bottom:8px}
+.section-desc{font-size:12px;color:#607080;margin-bottom:16px}
+.dim-label{font-size:11px;color:#8090a0;margin-bottom:4px}
+.row{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:24px}
+.card{background:#0f1520;border:1px solid #1e2d44;border-radius:6px;padding:14px;flex:1;min-width:280px}
+.card h3{font-size:13px;color:#8090a0;margin-bottom:6px}
+.card .tech{font-size:10px;color:#405060;margin-bottom:8px}
+.toggles{display:flex;gap:12px;margin-bottom:8px}
+.toggles label{font-size:11px;color:#8090a0;cursor:pointer;user-select:none}
+.toggles input{margin-right:3px}
+.checker{
+  background-image:
+    linear-gradient(45deg,#252535 25%,transparent 25%),
+    linear-gradient(-45deg,#252535 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#252535 75%),
+    linear-gradient(-45deg,transparent 75%,#252535 75%);
+  background-size:16px 16px;
+  background-position:0 0,0 8px,8px -8px,-8px 0;
+  background-color:#1a1a28;
+  display:inline-block;
+  border-radius:4px;
+  overflow:hidden;
+}
+.notes{margin-top:32px;padding:16px;background:#0f1520;border:1px solid #1e2d44;border-radius:6px}
+.notes h2{font-size:14px;color:#00d4ff;margin-bottom:8px}
+.notes ul{font-size:12px;color:#8090a0;line-height:1.8;list-style:disc;padding-left:20px}
 </style>
 </head>
 <body>
 
-<h1>0.14a — SVG Ruins: Current vs Proposed</h1>
-<p class="subtitle">Side-by-side comparison of current in-game SVG terrain vs hand-drawn SVG experiments. Goal: see if pure SVG can produce acceptable grimdark ruins.</p>
+<h1>0.14a — SVG Ruins: SOTA Filters + Floor/Roof Layers</h1>
+<p class="subtitle">18 terrain pieces (6 types × 3 variations) with advanced SVG filters: feTurbulence, feDiffuseLighting, feSpecularLighting, feDisplacementMap, feColorMatrix. Each piece has toggleable Floor and Roof layers.</p>
 
-<div class="reference">
-  <img src="reference-ruin.png" alt="Reference L-shaped ruin">
-  <div class="info">
-    <h2>Target Reference</h2>
-    <p>L-shaped ruin with: stone block walls, jagged broken edges with rubble, bullet holes/craters, pillars, imperial eagle motifs, structural beams visible in broken sections. Transparent background.</p>
-    <p style="margin-top:8px; color:#607080;">This is what we're trying to achieve — either via SVG or AI image generation.</p>
-  </div>
-</div>
+<!-- ═══ SHARED DEFS ═══ -->
+<svg width="0" height="0" style="position:absolute">
+<defs>
+  <!-- Stone surface filter: turbulence bump map + diffuse + specular lighting -->
+  <filter id="f-stone-a" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="1" result="noise"/>
+    <feDiffuseLighting in="noise" surfaceScale="3" diffuseConstant="0.8" result="diffuse">
+      <feDistantLight azimuth="225" elevation="45"/>
+    </feDiffuseLighting>
+    <feComposite in="diffuse" in2="SourceGraphic" operator="multiply" result="lit"/>
+    <feSpecularLighting in="noise" surfaceScale="2" specularConstant="0.3" specularExponent="20" result="spec">
+      <feDistantLight azimuth="225" elevation="50"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="lit" operator="arithmetic" k1="0" k2="1" k3="0.15" k4="0"/>
+  </filter>
+  <filter id="f-stone-b" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" seed="42" result="noise"/>
+    <feDiffuseLighting in="noise" surfaceScale="4" diffuseConstant="0.7" result="diffuse">
+      <feDistantLight azimuth="315" elevation="40"/>
+    </feDiffuseLighting>
+    <feComposite in="diffuse" in2="SourceGraphic" operator="multiply" result="lit"/>
+    <feSpecularLighting in="noise" surfaceScale="2.5" specularConstant="0.25" specularExponent="15" result="spec">
+      <feDistantLight azimuth="315" elevation="55"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="lit" operator="arithmetic" k1="0" k2="1" k3="0.12" k4="0"/>
+  </filter>
+  <filter id="f-stone-c" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="5" seed="99" result="noise"/>
+    <feDiffuseLighting in="noise" surfaceScale="3.5" diffuseConstant="0.9" result="diffuse">
+      <feDistantLight azimuth="180" elevation="35"/>
+    </feDiffuseLighting>
+    <feComposite in="diffuse" in2="SourceGraphic" operator="multiply" result="lit"/>
+    <feSpecularLighting in="noise" surfaceScale="1.8" specularConstant="0.35" specularExponent="25" result="spec">
+      <feDistantLight azimuth="180" elevation="60"/>
+    </feSpecularLighting>
+    <feComposite in="spec" in2="lit" operator="arithmetic" k1="0" k2="1" k3="0.18" k4="0"/>
+  </filter>
 
-<!-- ═══ COMPARISON 1: L-Shaped Ruin ═══ -->
-<div class="section-label">L-Shaped Ruin</div>
-<div class="side-by-side">
+  <!-- Floor texture filter: subtle noise + warm tint -->
+  <filter id="f-floor-a" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="3" seed="7" result="n"/>
+    <feDiffuseLighting in="n" surfaceScale="1.5" diffuseConstant="0.9" result="d">
+      <feDistantLight azimuth="200" elevation="55"/>
+    </feDiffuseLighting>
+    <feComposite in="d" in2="SourceGraphic" operator="multiply"/>
+  </filter>
+  <filter id="f-floor-b" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.07" numOctaves="4" seed="23" result="n"/>
+    <feDiffuseLighting in="n" surfaceScale="1.8" diffuseConstant="0.85" result="d">
+      <feDistantLight azimuth="270" elevation="50"/>
+    </feDiffuseLighting>
+    <feComposite in="d" in2="SourceGraphic" operator="multiply"/>
+  </filter>
+  <filter id="f-floor-c" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="3" seed="61" result="n"/>
+    <feDiffuseLighting in="n" surfaceScale="2" diffuseConstant="0.8" result="d">
+      <feDistantLight azimuth="135" elevation="45"/>
+    </feDiffuseLighting>
+    <feComposite in="d" in2="SourceGraphic" operator="multiply"/>
+  </filter>
 
-  <div class="card">
-    <h2 class="current">⬤ CURRENT (in-game)</h2>
-    <div class="desc">terrain-data.js t1 — L-shaped ruins as rendered in the game today</div>
-    <div class="checker">
-      <svg width="300" height="200" viewBox="100 20 200 140" xmlns="http://www.w3.org/2000/svg">
-        <!-- Current in-game terrain: just flat colored paths -->
-        <path d="M 144 60 L 288 60 L 288 132 L 144 132 L 144 60" fill="rgba(58,64,64,0.75)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
-        <path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 L 145.2 61.2" fill="rgba(106,114,114,0.85)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
-      </svg>
-    </div>
-  </div>
+  <!-- Weathering overlay: greenish grime via colorMatrix -->
+  <filter id="f-grime" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="13" result="g"/>
+    <feColorMatrix in="g" type="matrix" values="0.1 0 0 0 0.15  0 0.2 0 0 0.22  0 0 0.1 0 0.12  0 0 0 0.25 0"/>
+  </filter>
 
-  <div class="card">
-    <h2 class="new">⬤ PROPOSED (v0.14a)</h2>
-    <div class="desc">Hand-drawn SVG with stone patterns, broken edges, rubble, bullet holes, imperial eagles</div>
-    <div class="checker">
-      <svg width="300" height="375" viewBox="0 0 400 500" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="stone-blocks" x="0" y="0" width="40" height="24" patternUnits="userSpaceOnUse">
-            <rect width="40" height="24" fill="#4a5258"/>
-            <rect x="0" y="0" width="19" height="11" fill="#505a60" rx="0.5"/>
-            <rect x="21" y="0" width="19" height="11" fill="#485056" rx="0.5"/>
-            <rect x="10" y="13" width="19" height="11" fill="#4e5860" rx="0.5"/>
-            <rect x="31" y="13" width="9" height="11" fill="#525c62" rx="0.5"/>
-            <rect x="0" y="13" width="8" height="11" fill="#485258" rx="0.5"/>
-            <line x1="0" y1="12" x2="40" y2="12" stroke="#3a4044" stroke-width="1"/>
-            <line x1="20" y1="0" x2="20" y2="12" stroke="#3a4044" stroke-width="1"/>
-            <line x1="10" y1="12" x2="10" y2="24" stroke="#3a4044" stroke-width="1"/>
-            <line x1="30" y1="12" x2="30" y2="24" stroke="#3a4044" stroke-width="1"/>
-          </pattern>
-          <pattern id="floor-tiles" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-            <rect width="32" height="32" fill="#5a6468"/>
-            <rect x="1" y="1" width="14" height="14" fill="#626c72" rx="0.3"/>
-            <rect x="17" y="1" width="14" height="14" fill="#5e686e" rx="0.3"/>
-            <rect x="1" y="17" width="14" height="14" fill="#606a70" rx="0.3"/>
-            <rect x="17" y="17" width="14" height="14" fill="#646e74" rx="0.3"/>
-            <line x1="0" y1="16" x2="32" y2="16" stroke="#4a5458" stroke-width="1"/>
-            <line x1="16" y1="0" x2="16" y2="32" stroke="#4a5458" stroke-width="1"/>
-          </pattern>
-        </defs>
-        <clipPath id="l-shape-clip">
-          <rect x="120" y="20" width="260" height="120"/>
-          <rect x="260" y="20" width="120" height="460"/>
-        </clipPath>
-        <g clip-path="url(#l-shape-clip)">
-          <rect x="120" y="20" width="260" height="460" fill="url(#floor-tiles)"/>
-          <rect x="120" y="20" width="260" height="460" fill="rgba(80,90,96,0.3)"/>
-        </g>
-        <rect x="115" y="14" width="270" height="12" fill="url(#stone-blocks)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="374" y="14" width="12" height="472" fill="url(#stone-blocks)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="254" y="474" width="132" height="12" fill="url(#stone-blocks)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="254" y="134" width="12" height="352" fill="url(#stone-blocks)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="115" y="26" width="12" height="40" fill="url(#stone-blocks)" stroke="#2a2e32" stroke-width="1.5"/>
-        <path d="M 127 66 L 132 72 L 128 80 L 140 95 L 135 105 L 145 118 L 138 125 L 148 138 L 142 148 L 155 165 L 148 175 L 160 192 L 152 205 L 165 222 L 158 235 L 168 250 L 162 260 L 172 278 L 165 290 L 175 308 L 168 320 L 178 338 L 170 348 L 182 365 L 175 378 L 185 395 L 178 408 L 188 425 L 180 440 L 190 455 L 185 465 L 254 474 L 254 134 L 127 134 L 127 66" fill="url(#stone-blocks)" stroke="none"/>
-        <path d="M 127 66 L 132 72 L 128 80 L 140 95 L 135 105 L 145 118 L 138 125 L 148 138 L 142 148 L 155 165 L 148 175 L 160 192 L 152 205 L 165 222 L 158 235 L 168 250 L 162 260 L 172 278 L 165 290 L 175 308 L 168 320 L 178 338 L 170 348 L 182 365 L 175 378 L 185 395 L 178 408 L 188 425 L 180 440 L 190 455 L 185 465" fill="none" stroke="#1e2226" stroke-width="3" stroke-linejoin="round"/>
-        <g fill="#5a6468" stroke="#2a2e32" stroke-width="1">
-          <polygon points="122,78 130,74 134,82 126,86"/>
-          <polygon points="130,100 138,96 142,104 134,108"/>
-          <polygon points="140,142 149,138 153,147 144,150"/>
-          <polygon points="155,200 164,196 168,205 158,208"/>
-          <polygon points="168,275 176,270 180,278 170,282"/>
-          <polygon points="178,355 186,350 190,358 180,362"/>
-          <polygon points="186,445 194,440 198,448 188,452"/>
-          <circle cx="118" cy="85" r="3" fill="#4a5258"/>
-          <circle cx="138" cy="155" r="3.5" fill="#4e5860"/>
-          <circle cx="170" cy="298" r="3" fill="#4e5860"/>
-          <circle cx="180" cy="380" r="3.5" fill="#505a60"/>
-        </g>
-        <g>
-          <circle cx="220" cy="40" r="8" fill="#3a3e42" stroke="#2a2e32" stroke-width="1"/>
-          <circle cx="220" cy="40" r="5" fill="#323638"/>
-          <circle cx="350" cy="420" r="9" fill="#3a3e42" stroke="#2a2e32" stroke-width="1"/>
-          <circle cx="350" cy="420" r="6" fill="#323638"/>
-          <circle cx="300" cy="60" r="3" fill="#323638" stroke="#2a2e32" stroke-width="0.5"/>
-          <circle cx="310" cy="300" r="3" fill="#323638" stroke="#2a2e32" stroke-width="0.5"/>
-        </g>
-        <g stroke="#2a2e32" stroke-width="1" fill="none" opacity="0.7">
-          <path d="M 180,18 L 185,24 L 190,20 L 195,26"/>
-          <path d="M 376,80 L 382,85 L 378,92 L 384,98"/>
-          <path d="M 376,380 L 383,386 L 379,394 L 385,400"/>
-        </g>
-        <g stroke="#2a2e32" stroke-width="1.5" opacity="0.6">
-          <line x1="130" y1="90" x2="145" y2="90" stroke="#3a3e42" stroke-width="4"/>
-          <line x1="130" y1="90" x2="145" y2="90" stroke="#4a4e52" stroke-width="2"/>
-          <line x1="148" y1="180" x2="162" y2="180" stroke="#3a3e42" stroke-width="4"/>
-          <line x1="148" y1="180" x2="162" y2="180" stroke="#4a4e52" stroke-width="2"/>
-          <line x1="170" y1="310" x2="184" y2="310" stroke="#3a3e42" stroke-width="4"/>
-          <line x1="170" y1="310" x2="184" y2="310" stroke="#4a4e52" stroke-width="2"/>
-        </g>
-        <rect x="122" y="58" width="12" height="16" fill="#58626a" stroke="#2a2e32" stroke-width="1" rx="1"/>
-        <rect x="248" y="126" width="14" height="16" fill="#58626a" stroke="#2a2e32" stroke-width="1" rx="1"/>
-        <rect x="248" y="468" width="14" height="14" fill="#58626a" stroke="#2a2e32" stroke-width="1" rx="1"/>
-        <g transform="translate(355, 35) scale(0.5)" fill="#4a5258" stroke="#3a3e42" stroke-width="1" opacity="0.5">
-          <path d="M 0,-15 L 8,-5 L 20,-8 L 12,2 L 20,12 L 8,8 L 0,18 L -8,8 L -20,12 L -12,2 L -20,-8 L -8,-5 Z"/>
-          <circle cx="0" cy="2" r="4" fill="#3a3e42"/>
-        </g>
-        <path d="M 140,95 Q 155,80 170,95" fill="none" stroke="#3a3e42" stroke-width="3"/>
-        <path d="M 140,95 Q 155,82 170,95" fill="none" stroke="#505a60" stroke-width="1.5"/>
-      </svg>
-    </div>
-  </div>
+  <!-- Edge displacement filter -->
+  <filter id="f-displace" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="turbulence" baseFrequency="0.05" numOctaves="2" seed="5" result="warp"/>
+    <feDisplacementMap in="SourceGraphic" in2="warp" scale="2" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
 
-</div>
+  <!-- Stone block patterns -->
+  <pattern id="p-blocks" width="20" height="12" patternUnits="userSpaceOnUse">
+    <rect width="20" height="12" fill="#4a5258"/>
+    <rect x="0" y="0" width="9" height="5" fill="#505a60" rx="0.3"/>
+    <rect x="10.5" y="0" width="9.5" height="5" fill="#485056" rx="0.3"/>
+    <rect x="5" y="6.5" width="9.5" height="5.5" fill="#4e5860" rx="0.3"/>
+    <rect x="15.5" y="6.5" width="4.5" height="5.5" fill="#525c62" rx="0.3"/>
+    <rect x="0" y="6.5" width="4" height="5.5" fill="#485258" rx="0.3"/>
+    <line x1="0" y1="6" x2="20" y2="6" stroke="#3a4044" stroke-width="0.5"/>
+    <line x1="10" y1="0" x2="10" y2="6" stroke="#3a4044" stroke-width="0.5"/>
+    <line x1="5" y1="6" x2="5" y2="12" stroke="#3a4044" stroke-width="0.5"/>
+    <line x1="15" y1="6" x2="15" y2="12" stroke="#3a4044" stroke-width="0.5"/>
+  </pattern>
 
-<!-- ═══ COMPARISON 2: Rectangular Ruin ═══ -->
-<div class="section-label">Rectangular Ruin (one broken wall)</div>
-<div class="side-by-side">
+  <pattern id="p-floor-tile" width="12" height="12" patternUnits="userSpaceOnUse">
+    <rect width="12" height="12" fill="#5a6468"/>
+    <rect x="0.5" y="0.5" width="5" height="5" fill="#626c72" rx="0.2"/>
+    <rect x="6.5" y="0.5" width="5" height="5" fill="#5e686e" rx="0.2"/>
+    <rect x="0.5" y="6.5" width="5" height="5" fill="#606a70" rx="0.2"/>
+    <rect x="6.5" y="6.5" width="5" height="5" fill="#646e74" rx="0.2"/>
+    <line x1="0" y1="6" x2="12" y2="6" stroke="#4a5458" stroke-width="0.4"/>
+    <line x1="6" y1="0" x2="6" y2="12" stroke="#4a5458" stroke-width="0.4"/>
+  </pattern>
+</defs>
+</svg>
 
-  <div class="card">
-    <h2 class="current">⬤ CURRENT (in-game)</h2>
-    <div class="desc">terrain-data.js t10 — U-shaped ruins with inner walls</div>
-    <div class="checker">
-      <svg width="300" height="200" viewBox="410 155 200 140" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 456 192 L 600 192 L 600 264 L 456 264 L 456 192" fill="rgba(58,64,64,0.75)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
-        <path d="M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 L 480 193.2" fill="rgba(106,114,114,0.85)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
-      </svg>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2 class="new">⬤ PROPOSED (v0.14a)</h2>
-    <div class="desc">Rectangular ruin — 3 intact walls, one broken side with rubble</div>
-    <div class="checker">
-      <svg width="300" height="250" viewBox="0 0 300 250" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="stone2" x="0" y="0" width="40" height="24" patternUnits="userSpaceOnUse">
-            <rect width="40" height="24" fill="#4a5258"/>
-            <rect x="0" y="0" width="19" height="11" fill="#505a60" rx="0.5"/>
-            <rect x="21" y="0" width="19" height="11" fill="#485056" rx="0.5"/>
-            <rect x="10" y="13" width="19" height="11" fill="#4e5860" rx="0.5"/>
-            <line x1="0" y1="12" x2="40" y2="12" stroke="#3a4044" stroke-width="1"/>
-            <line x1="20" y1="0" x2="20" y2="12" stroke="#3a4044" stroke-width="1"/>
-            <line x1="10" y1="12" x2="10" y2="24" stroke="#3a4044" stroke-width="1"/>
-          </pattern>
-          <pattern id="floor2" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-            <rect width="32" height="32" fill="#5a6468"/>
-            <rect x="1" y="1" width="14" height="14" fill="#626c72" rx="0.3"/>
-            <rect x="17" y="1" width="14" height="14" fill="#5e686e" rx="0.3"/>
-            <rect x="1" y="17" width="14" height="14" fill="#606a70" rx="0.3"/>
-            <rect x="17" y="17" width="14" height="14" fill="#646e74" rx="0.3"/>
-            <line x1="0" y1="16" x2="32" y2="16" stroke="#4a5458" stroke-width="1"/>
-            <line x1="16" y1="0" x2="16" y2="32" stroke="#4a5458" stroke-width="1"/>
-          </pattern>
-        </defs>
-        <rect x="30" y="20" width="240" height="210" fill="url(#floor2)"/>
-        <rect x="30" y="20" width="240" height="210" fill="rgba(80,90,96,0.25)"/>
-        <rect x="24" y="14" width="252" height="12" fill="url(#stone2)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="264" y="14" width="12" height="222" fill="url(#stone2)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="24" y="224" width="252" height="12" fill="url(#stone2)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="24" y="14" width="12" height="50" fill="url(#stone2)" stroke="#2a2e32" stroke-width="1.5"/>
-        <rect x="24" y="190" width="12" height="46" fill="url(#stone2)" stroke="#2a2e32" stroke-width="1.5"/>
-        <path d="M 36,64 L 30,72 L 38,82 L 32,95 L 40,110 L 34,125 L 42,140 L 36,155 L 40,168 L 34,180 L 36,190" fill="none" stroke="#1e2226" stroke-width="2.5" stroke-linejoin="round"/>
-        <g fill="#5a6468" stroke="#2a2e32" stroke-width="0.8">
-          <polygon points="22,75 28,72 32,78 26,82"/>
-          <polygon points="24,105 30,100 34,108 28,112"/>
-          <polygon points="28,140 34,136 38,144 30,148"/>
-          <polygon points="26,170 32,166 36,174 28,178"/>
-          <circle cx="18" cy="88" r="2.5"/>
-          <circle cx="20" cy="128" r="3"/>
-          <circle cx="22" cy="160" r="2"/>
-        </g>
-        <circle cx="150" cy="40" r="6" fill="#3a3e42" stroke="#2a2e32" stroke-width="1"/>
-        <circle cx="150" cy="40" r="3.5" fill="#323638"/>
-        <circle cx="200" cy="180" r="5" fill="#3a3e42" stroke="#2a2e32" stroke-width="1"/>
-        <circle cx="200" cy="180" r="3" fill="#323638"/>
-        <rect x="28" y="56" width="10" height="14" fill="#58626a" stroke="#2a2e32" stroke-width="1" rx="1"/>
-        <rect x="28" y="184" width="10" height="12" fill="#58626a" stroke="#2a2e32" stroke-width="1" rx="1"/>
-      </svg>
-    </div>
-  </div>
-
-</div>
-
-<!-- ═══ COMPARISON 3: Scatter Terrain ═══ -->
-<div class="section-label">Scatter Terrain</div>
-<div class="side-by-side">
-
-  <div class="card">
-    <h2 class="current">⬤ CURRENT (in-game)</h2>
-    <div class="desc">terrain-data.js t4 — Scatter as a flat colored rectangle</div>
-    <div class="checker">
-      <svg width="150" height="200" viewBox="30 245 80 110" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 48 264 L 96 264 L 96 336 L 48 336 L 48 264" fill="rgba(58,48,24,0.7)" stroke="rgba(30,30,30,0.4)" stroke-width="0.5"/>
-      </svg>
-    </div>
-  </div>
-
-  <div class="card">
-    <h2 class="new">⬤ PROPOSED (v0.14a)</h2>
-    <div class="desc">Rocky outcrop with surface detail, lighter faces, scattered debris</div>
-    <div class="checker">
-      <svg width="160" height="160" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 50,30 L 80,22 L 110,28 L 130,45 L 135,70 L 128,95 L 110,115 L 85,125 L 55,120 L 35,100 L 28,72 L 32,48 Z" fill="#4a5258" stroke="#2a2e32" stroke-width="2"/>
-        <path d="M 55,35 L 78,28 L 100,32 L 118,48 L 125,68" fill="none" stroke="#3a4044" stroke-width="1" opacity="0.5"/>
-        <path d="M 40,65 L 55,55 L 75,50 L 95,55" fill="none" stroke="#3a4044" stroke-width="1" opacity="0.4"/>
-        <path d="M 50,100 L 70,90 L 95,88 L 115,95" fill="none" stroke="#3a4044" stroke-width="1" opacity="0.5"/>
-        <path d="M 60,40 L 90,34 L 105,45 L 100,65 L 70,60 Z" fill="#525c62" opacity="0.6"/>
-        <path d="M 45,85 L 65,80 L 80,95 L 70,110 L 48,105 Z" fill="#3a4044" opacity="0.4"/>
-        <g fill="#4a5258" stroke="#2a2e32" stroke-width="0.8">
-          <polygon points="25,55 30,50 35,54 32,60"/>
-          <polygon points="130,80 136,76 140,82 134,86"/>
-          <polygon points="75,130 82,126 86,132 78,136"/>
-          <circle cx="140" cy="60" r="4" fill="#485056"/>
-          <circle cx="22" cy="80" r="3" fill="#505a60"/>
-          <circle cx="95" cy="130" r="3.5" fill="#4e5860"/>
-        </g>
-      </svg>
-    </div>
-  </div>
-
-</div>
-
-<!-- ═══ COMPARISON 4: Wall Section ═══ -->
-<div class="section-label">Wall Section with Arch</div>
-<div class="side-by-side">
-
-  <div class="card">
-    <h2 class="current">⬤ CURRENT (in-game)</h2>
-    <div class="desc">No equivalent — current terrain has no standalone wall segments</div>
-    <div class="checker" style="padding: 40px 20px; text-align: center; color: #4a6080; font-size: 12px; min-width: 200px;">
-      N/A — new piece type
-    </div>
-  </div>
-
-  <div class="card">
-    <h2 class="new">⬤ PROPOSED (v0.14a)</h2>
-    <div class="desc">Straight wall with arched doorway, broken ends, keystone</div>
-    <div class="checker">
-      <svg width="300" height="120" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <pattern id="stone3" x="0" y="0" width="40" height="24" patternUnits="userSpaceOnUse">
-            <rect width="40" height="24" fill="#4a5258"/>
-            <rect x="0" y="0" width="19" height="11" fill="#505a60" rx="0.5"/>
-            <rect x="21" y="0" width="19" height="11" fill="#485056" rx="0.5"/>
-            <rect x="10" y="13" width="19" height="11" fill="#4e5860" rx="0.5"/>
-            <line x1="0" y1="12" x2="40" y2="12" stroke="#3a4044" stroke-width="1"/>
-            <line x1="20" y1="0" x2="20" y2="12" stroke="#3a4044" stroke-width="1"/>
-            <line x1="10" y1="12" x2="10" y2="24" stroke="#3a4044" stroke-width="1"/>
-          </pattern>
-        </defs>
-        <rect x="10" y="30" width="280" height="60" fill="url(#stone3)" stroke="#2a2e32" stroke-width="1.5"/>
-        <path d="M 120,90 L 120,55 Q 150,35 180,55 L 180,90 Z" fill="#2a2e30"/>
-        <path d="M 120,90 L 120,55 Q 150,35 180,55 L 180,90" fill="none" stroke="#3a3e42" stroke-width="2"/>
-        <polygon points="145,40 155,40 152,48 148,48" fill="#58626a" stroke="#2a2e32" stroke-width="1"/>
-        <g fill="#4a5258" stroke="#2a2e32" stroke-width="0.5">
-          <polygon points="125,88 132,84 136,90 128,94"/>
-          <polygon points="165,86 172,82 176,88 168,92"/>
-          <circle cx="140" cy="92" r="3"/>
-          <circle cx="158" cy="94" r="2.5"/>
-        </g>
-        <circle cx="50" cy="55" r="4" fill="#3a3e42" stroke="#2a2e32" stroke-width="0.8"/>
-        <circle cx="50" cy="55" r="2.5" fill="#323638"/>
-        <circle cx="240" cy="65" r="5" fill="#3a3e42" stroke="#2a2e32" stroke-width="0.8"/>
-        <circle cx="240" cy="65" r="3" fill="#323638"/>
-        <path d="M 10,30 L 15,35 L 12,42 L 16,50 L 10,58 L 14,65 L 10,72 L 15,80 L 10,90" fill="none" stroke="#1e2226" stroke-width="2"/>
-        <path d="M 290,30 L 285,37 L 290,45 L 286,52 L 290,60 L 285,68 L 290,76 L 286,84 L 290,90" fill="none" stroke="#1e2226" stroke-width="2"/>
-        <g transform="translate(50, 75) scale(0.3)" fill="#4a5258" stroke="#3a3e42" stroke-width="1" opacity="0.35">
-          <path d="M 0,-12 L 6,-4 L 16,-6 L 10,2 L 16,10 L 6,6 L 0,14 L -6,6 L -16,10 L -10,2 L -16,-6 L -6,-4 Z"/>
-        </g>
-      </svg>
-    </div>
-  </div>
-
-</div>
+<div id="terrain-container"></div>
 
 <div class="notes">
-  <h2>Notes</h2>
+  <h2>SVG Filter Techniques Used</h2>
   <ul>
-    <li><span style="color:#cc4444;">CURRENT</span> terrain = flat colored SVG paths from terrain-data.js — no detail, no texture</li>
-    <li><span style="color:#00d4ff;">PROPOSED</span> uses SVG patterns for stone blocks/floor tiles, hand-drawn break edges, rubble polygons</li>
-    <li>The proposed SVG is significantly more detailed but still well below the reference art quality</li>
-    <li>SVG patterns are resolution-independent and render crisply at any zoom</li>
-    <li>All pieces have transparent backgrounds (checkerboard shown via CSS only)</li>
-    <li>Verdict: SVG alone can improve on current but can't match AI-generated art quality</li>
+    <li><strong>feTurbulence + feDiffuseLighting:</strong> Perlin noise bump map with directional lighting creates realistic 3D stone texture</li>
+    <li><strong>feSpecularLighting:</strong> Wet/metallic highlights on stone surfaces for grimdark industrial look</li>
+    <li><strong>feColorMatrix:</strong> Greenish grime weathering overlay shifts colors for decay</li>
+    <li><strong>feDisplacementMap:</strong> Turbulence displaces wall edges for organic irregularity</li>
+    <li><strong>SVG Patterns:</strong> Stone block and floor tile patterns with mortar lines</li>
+    <li><strong>Composite filter chains:</strong> Base color → stone grain → lighting → weathering → damage</li>
+    <li><strong>Floor/Roof layer separation:</strong> Floor renders below units, Roof (walls + ceiling fragments) renders above</li>
   </ul>
 </div>
+
+<script>
+// Terrain piece type definitions
+const TYPES = [
+  {
+    id: 'large-l-ruin', name: 'Large L-Ruin', w: 144, h: 72, cat: 'Ruins',
+    desc: 'Used by t1, t9. L-shaped wall along top (~96) and left (~48), 6 units thick.',
+    cssW: 420,
+    floor: (v) => {
+      // Floor rect with tile pattern + cracks + debris
+      const cracks = [
+        [`M 30 ${20+v*8} Q 50 ${35+v*5} 80 ${40+v*7}`, `M 100 ${55+v*6} L 120 ${60+v*4}`],
+        [`M 20 ${15+v*10} Q 60 ${45+v*3} 90 ${30+v*8}`, `M 50 ${50+v*5} Q 70 55 110 ${65+v*3}`],
+        [`M 40 ${25+v*6} L 70 ${50+v*4} Q 90 ${35+v*7} 130 ${45+v*5}`, `M 15 ${60+v*3} L 45 ${55+v*6}`]
+      ][v];
+      const rubble = [
+        [{x:110,y:55,r:3},{x:115,y:60,r:2},{x:105,y:62,r:2.5},{x:130,y:45,r:1.5}],
+        [{x:95,y:50,r:2.5},{x:100,y:58,r:3},{x:90,y:65,r:2},{x:120,y:55,r:1.8}],
+        [{x:125,y:48,r:2},{x:130,y:55,r:3},{x:118,y:60,r:2.5},{x:135,y:62,r:1.5}]
+      ][v];
+      let s = `<rect x="0" y="0" width="144" height="72" fill="url(#p-floor-tile)" filter="url(#f-floor-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="144" height="72" filter="url(#f-grime)" opacity="0.3"/>`;
+      cracks.forEach(c => { s += `<path d="${c}" fill="none" stroke="#3a4044" stroke-width="0.5" opacity="0.7"/>`; });
+      rubble.forEach(r => { s += `<circle cx="${r.x}" cy="${r.y}" r="${r.r}" fill="#4a5258" opacity="0.6"/>`; });
+      // Scorch marks
+      s += `<circle cx="${60+v*15}" cy="${35+v*8}" r="${4+v}" fill="#2a2420" opacity="0.3"/>`;
+      return s;
+    },
+    roof: (v) => {
+      // L-shaped wall: top edge ~96 long, left edge ~48 tall, 6 units thick
+      const breaks = [
+        // Variation A: jagged breaks
+        { topEnd: 'L 96 0 L 97 2 L 95 4 L 98 6', leftEnd: 'L 0 48 L 2 49 L 1 51 L 3 48' },
+        // Variation B: crumbled
+        { topEnd: 'L 94 0 L 96 1 L 93 3 L 97 5 L 95 6', leftEnd: 'L 0 46 L 1.5 48 L 0.5 50 L 2 47' },
+        // Variation C: blasted
+        { topEnd: 'L 90 0 L 93 2 L 88 4 L 95 5 L 91 6', leftEnd: 'L 0 44 L 3 46 L 1 49 L 4 48' }
+      ][v];
+      // Wall path - L shape along top and left
+      let wallPath = `M 0 0 ${breaks.topEnd} L 96 6 L 6 6 L 6 48 ${breaks.leftEnd} L 0 48 Z`;
+      let s = `<path d="${wallPath}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<path d="${wallPath}" fill="none" stroke="#2a2e32" stroke-width="0.8"/>`;
+      // Bullet holes
+      const holes = [
+        [{x:20,y:3},{x:45,y:2},{x:70,y:4},{x:3,y:20},{x:2,y:35}],
+        [{x:15,y:2},{x:50,y:4},{x:80,y:3},{x:4,y:25},{x:3,y:40}],
+        [{x:25,y:1},{x:55,y:5},{x:75,y:2},{x:2,y:15},{x:4,y:30}]
+      ][v];
+      holes.forEach(h => { s += `<circle cx="${h.x}" cy="${h.y}" r="1" fill="#2a2e32" opacity="0.7"/><circle cx="${h.x}" cy="${h.y}" r="1.5" fill="none" stroke="#3a3e42" stroke-width="0.3"/>`; });
+      // Ceiling fragments
+      s += `<rect x="8" y="8" width="${12+v*3}" height="${8+v*2}" fill="#4a5258" opacity="0.4" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      return s;
+    }
+  },
+  {
+    id: 'large-u-ruin', name: 'Large U-Ruin', w: 144, h: 72, cat: 'Ruins',
+    desc: 'Used by t2, t10. U-shaped wall — top bar + left + right columns, 6 thick, open bottom.',
+    cssW: 420,
+    floor: (v) => {
+      let s = `<rect x="0" y="0" width="144" height="72" fill="url(#p-floor-tile)" filter="url(#f-floor-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="144" height="72" filter="url(#f-grime)" opacity="0.25"/>`;
+      const cracks = [
+        [`M 30 30 Q 72 40 110 35`, `M 50 55 L 90 60`],
+        [`M 20 25 Q 72 50 120 30`, `M 40 60 L 100 55`],
+        [`M 35 20 Q 72 45 130 25`, `M 60 50 Q 72 65 100 58`]
+      ][v];
+      cracks.forEach(c => { s += `<path d="${c}" fill="none" stroke="#3a4044" stroke-width="0.5" opacity="0.6"/>`; });
+      // Debris inside
+      for(let i=0;i<5;i++){
+        const dx=20+Math.sin(i*2+v)*50, dy=30+Math.cos(i*3+v)*15;
+        s += `<circle cx="${dx}" cy="${dy}" r="${1.5+i%2}" fill="#4a5258" opacity="0.5"/>`;
+      }
+      s += `<circle cx="${72+v*10}" cy="${50+v*3}" r="${5+v}" fill="#2a2420" opacity="0.25"/>`;
+      return s;
+    },
+    roof: (v) => {
+      // U-shape: top bar full width, left col and right col down sides
+      const brL = [
+        'L 0 50 L 2 51 L 1 53 L 3 50',
+        'L 0 48 L 1.5 50 L 0.5 52 L 2.5 49',
+        'L 0 45 L 3 47 L 1 50 L 4 48'
+      ][v];
+      const brR = [
+        'L 144 50 L 142 51 L 143 53 L 141 50',
+        'L 144 48 L 142.5 50 L 143.5 52 L 141.5 49',
+        'L 144 45 L 141 47 L 143 50 L 140 48'
+      ][v];
+      // Top bar
+      let s = `<rect x="0" y="0" width="144" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="144" height="6" fill="none" stroke="#2a2e32" stroke-width="0.8"/>`;
+      // Left column with broken bottom
+      let leftPath = `M 0 0 L 6 0 L 6 50 ${brL} L 0 50 Z`;
+      s += `<path d="${leftPath}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<path d="${leftPath}" fill="none" stroke="#2a2e32" stroke-width="0.8"/>`;
+      // Right column with broken bottom
+      let rightPath = `M 138 0 L 144 0 L 144 50 ${brR} L 138 50 Z`;
+      s += `<path d="${rightPath}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<path d="${rightPath}" fill="none" stroke="#2a2e32" stroke-width="0.8"/>`;
+      // Bullet holes on top bar
+      [20+v*10, 60+v*8, 100+v*5].forEach(x => {
+        s += `<circle cx="${x}" cy="3" r="0.8" fill="#2a2e32" opacity="0.7"/>`;
+      });
+      // Ceiling fragment
+      s += `<rect x="${10+v*5}" y="8" width="${15+v*3}" height="6" fill="#4a5258" opacity="0.35" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      return s;
+    }
+  },
+  {
+    id: 'medium-l-ruin', name: 'Medium L-Ruin', w: 96, h: 72, cat: 'Ruins',
+    desc: 'Used by t3, t11. L-shaped wall, 96 wide × 72 tall.',
+    cssW: 340,
+    floor: (v) => {
+      let s = `<rect x="0" y="0" width="96" height="72" fill="url(#p-floor-tile)" filter="url(#f-floor-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="96" height="72" filter="url(#f-grime)" opacity="0.3"/>`;
+      const cracks = [
+        [`M 15 20 Q 48 35 80 30`],
+        [`M 10 40 Q 48 25 85 45`],
+        [`M 20 15 L 50 50 Q 70 35 90 55`]
+      ][v];
+      cracks.forEach(c => { s += `<path d="${c}" fill="none" stroke="#3a4044" stroke-width="0.5" opacity="0.7"/>`; });
+      for(let i=0;i<4;i++){
+        s += `<circle cx="${60+i*8+v*3}" cy="${50+i*4+v*2}" r="${1.5+i%2}" fill="#4a5258" opacity="0.5"/>`;
+      }
+      return s;
+    },
+    roof: (v) => {
+      const breaks = [
+        { topEnd: 'L 66 0 L 67 2 L 65 4 L 68 6', leftEnd: 'L 0 48 L 2 49 L 1 51 L 3 48' },
+        { topEnd: 'L 64 0 L 66 1.5 L 63 3.5 L 67 5.5 L 65 6', leftEnd: 'L 0 46 L 1.5 48 L 0.5 50 L 2 47' },
+        { topEnd: 'L 60 0 L 63 2 L 58 4 L 65 5 L 61 6', leftEnd: 'L 0 44 L 3 46 L 1 49 L 4 48' }
+      ][v];
+      let wallPath = `M 0 0 ${breaks.topEnd} L 66 6 L 6 6 L 6 48 ${breaks.leftEnd} L 0 48 Z`;
+      let s = `<path d="${wallPath}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<path d="${wallPath}" fill="none" stroke="#2a2e32" stroke-width="0.8"/>`;
+      const holes = [
+        [{x:15,y:3},{x:35,y:2},{x:55,y:4},{x:3,y:20},{x:2,y:35}],
+        [{x:10,y:2},{x:30,y:4},{x:50,y:3},{x:4,y:25},{x:3,y:40}],
+        [{x:20,y:1},{x:40,y:5},{x:3,y:15},{x:2,y:30},{x:4,y:42}]
+      ][v];
+      holes.forEach(h => { s += `<circle cx="${h.x}" cy="${h.y}" r="0.8" fill="#2a2e32" opacity="0.7"/>`; });
+      s += `<rect x="8" y="8" width="${10+v*2}" height="${6+v}" fill="#4a5258" opacity="0.4" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      return s;
+    }
+  },
+  {
+    id: 'small-l-ruin', name: 'Small L-Ruin', w: 78, h: 60, cat: 'Ruins',
+    desc: 'Used by t6, t14. L-shaped wall, 78 wide × 60 tall.',
+    cssW: 300,
+    floor: (v) => {
+      let s = `<rect x="0" y="0" width="78" height="60" fill="url(#p-floor-tile)" filter="url(#f-floor-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="78" height="60" filter="url(#f-grime)" opacity="0.28"/>`;
+      const cracks = [
+        [`M 10 15 Q 39 30 70 25`],
+        [`M 15 40 Q 39 20 65 45`],
+        [`M 20 10 L 40 40 Q 55 30 70 50`]
+      ][v];
+      cracks.forEach(c => { s += `<path d="${c}" fill="none" stroke="#3a4044" stroke-width="0.4" opacity="0.7"/>`; });
+      for(let i=0;i<3;i++){
+        s += `<circle cx="${50+i*7+v*2}" cy="${42+i*4+v}" r="${1.2+i%2}" fill="#4a5258" opacity="0.5"/>`;
+      }
+      return s;
+    },
+    roof: (v) => {
+      const breaks = [
+        { topEnd: 'L 54 0 L 55 1.5 L 53 3.5 L 56 5 L 54 6', leftEnd: 'L 0 40 L 1.5 41 L 0.5 43 L 2.5 40' },
+        { topEnd: 'L 52 0 L 54 1 L 51 3 L 55 5 L 53 6', leftEnd: 'L 0 38 L 1 40 L 0.5 42 L 2 39' },
+        { topEnd: 'L 48 0 L 51 2 L 47 4 L 53 5 L 50 6', leftEnd: 'L 0 36 L 2.5 38 L 0.5 41 L 3 40' }
+      ][v];
+      let wallPath = `M 0 0 ${breaks.topEnd} L 54 6 L 6 6 L 6 40 ${breaks.leftEnd} L 0 40 Z`;
+      let s = `<path d="${wallPath}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<path d="${wallPath}" fill="none" stroke="#2a2e32" stroke-width="0.7"/>`;
+      const holes = [
+        [{x:12,y:3},{x:30,y:2},{x:3,y:18},{x:2,y:30}],
+        [{x:18,y:4},{x:40,y:2},{x:4,y:22},{x:3,y:35}],
+        [{x:15,y:1},{x:35,y:4},{x:2,y:15},{x:4,y:28}]
+      ][v];
+      holes.forEach(h => { s += `<circle cx="${h.x}" cy="${h.y}" r="0.7" fill="#2a2e32" opacity="0.7"/>`; });
+      return s;
+    }
+  },
+  {
+    id: 'large-scatter', name: 'Large Scatter', w: 48, h: 72, cat: 'Scatter',
+    desc: 'Used by t4, t5, t8, t12, t13, t16. Simple 48×72 rectangular terrain.',
+    cssW: 220,
+    floor: (v) => {
+      let s = `<rect x="0" y="0" width="48" height="72" fill="url(#p-floor-tile)" filter="url(#f-floor-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="48" height="72" filter="url(#f-grime)" opacity="0.2"/>`;
+      // Rubble/debris
+      for(let i=0;i<4;i++){
+        const dx=8+i*10+v*2, dy=15+i*12+v*3;
+        s += `<circle cx="${dx}" cy="${dy}" r="${1+i%2}" fill="#4a5258" opacity="0.5"/>`;
+      }
+      s += `<path d="M ${10+v*5} ${20+v*8} Q 24 ${36+v*4} ${38+v*3} ${50+v*5}" fill="none" stroke="#3a4044" stroke-width="0.4" opacity="0.6"/>`;
+      return s;
+    },
+    roof: (v) => {
+      // Full rectangular walls with broken edges
+      const breaks = [
+        { top:'M 0 0 L 48 0 L 48 6 L 0 6 Z', right:'M 42 0 L 48 0 L 48 72 L 42 72 Z',
+          bottom:'M 0 66 L 48 66 L 48 72 L 0 72 Z', left:'M 0 0 L 6 0 L 6 72 L 0 72 Z' },
+        { top:'M 0 0 L 48 0 L 47 2 L 48 4 L 48 6 L 0 6 Z', right:'M 42 0 L 48 0 L 48 72 L 42 72 Z',
+          bottom:'M 0 66 L 48 66 L 48 72 L 1 72 L 0 70 L 0 66 Z', left:'M 0 0 L 6 0 L 6 72 L 0 72 Z' },
+        { top:'M 0 0 L 48 0 L 48 6 L 0 6 Z', right:'M 42 0 L 48 0 L 48 70 L 46 72 L 42 72 Z',
+          bottom:'M 0 66 L 48 66 L 48 72 L 0 72 Z', left:'M 0 0 L 6 0 L 6 70 L 4 72 L 0 72 Z' }
+      ][v];
+      // For scatter: just walls around the perimeter, each 6 thick
+      // But with gaps/breaks for variety
+      const gapVariants = [
+        // A: gap on right wall mid-section
+        {skipRight:[20,40]},
+        // B: gap on bottom
+        {skipBottom:[15,35]},
+        // C: gap on left
+        {skipLeft:[25,50]}
+      ][v];
+      let s = '';
+      // Top wall always present
+      s += `<rect x="0" y="0" width="48" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="48" height="6" fill="none" stroke="#2a2e32" stroke-width="0.6"/>`;
+      // Right wall
+      if(gapVariants.skipRight) {
+        const [g1,g2] = gapVariants.skipRight;
+        s += `<rect x="42" y="0" width="6" height="${g1}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+        s += `<rect x="42" y="${g2}" width="6" height="${72-g2}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      } else {
+        s += `<rect x="42" y="0" width="6" height="72" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      }
+      // Bottom wall
+      if(gapVariants.skipBottom) {
+        const [g1,g2] = gapVariants.skipBottom;
+        s += `<rect x="0" y="66" width="${g1}" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+        s += `<rect x="${g2}" y="66" width="${48-g2}" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      } else {
+        s += `<rect x="0" y="66" width="48" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      }
+      // Left wall
+      if(gapVariants.skipLeft) {
+        const [g1,g2] = gapVariants.skipLeft;
+        s += `<rect x="0" y="0" width="6" height="${g1}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+        s += `<rect x="0" y="${g2}" width="6" height="${72-g2}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      } else {
+        s += `<rect x="0" y="0" width="6" height="72" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      }
+      // Stroke outlines on all walls
+      s += `<rect x="0" y="0" width="48" height="72" fill="none" stroke="#2a2e32" stroke-width="0.4"/>`;
+      // Bullet holes
+      [12+v*5,30+v*3].forEach(x => {
+        s += `<circle cx="${x}" cy="3" r="0.6" fill="#2a2e32" opacity="0.7"/>`;
+      });
+      return s;
+    }
+  },
+  {
+    id: 'small-scatter', name: 'Small Scatter', w: 42, h: 60, cat: 'Scatter',
+    desc: 'Used by t7, t15. Simple 42×60 rectangular terrain.',
+    cssW: 200,
+    floor: (v) => {
+      let s = `<rect x="0" y="0" width="42" height="60" fill="url(#p-floor-tile)" filter="url(#f-floor-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="42" height="60" filter="url(#f-grime)" opacity="0.22"/>`;
+      for(let i=0;i<3;i++){
+        const dx=6+i*12+v*2, dy=12+i*14+v*3;
+        s += `<circle cx="${dx}" cy="${dy}" r="${1+i%2*0.5}" fill="#4a5258" opacity="0.5"/>`;
+      }
+      s += `<path d="M ${8+v*4} ${15+v*6} Q 21 ${30+v*3} ${34+v*2} ${45+v*4}" fill="none" stroke="#3a4044" stroke-width="0.4" opacity="0.6"/>`;
+      return s;
+    },
+    roof: (v) => {
+      const gapVariants = [
+        {skipRight:[15,35]},
+        {skipBottom:[10,28]},
+        {skipLeft:[18,40]}
+      ][v];
+      let s = '';
+      // Top wall
+      s += `<rect x="0" y="0" width="42" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      s += `<rect x="0" y="0" width="42" height="6" fill="none" stroke="#2a2e32" stroke-width="0.6"/>`;
+      // Right wall
+      if(gapVariants.skipRight) {
+        const [g1,g2] = gapVariants.skipRight;
+        s += `<rect x="36" y="0" width="6" height="${g1}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+        s += `<rect x="36" y="${g2}" width="6" height="${60-g2}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      } else {
+        s += `<rect x="36" y="0" width="6" height="60" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      }
+      // Bottom wall
+      if(gapVariants.skipBottom) {
+        const [g1,g2] = gapVariants.skipBottom;
+        s += `<rect x="0" y="54" width="${g1}" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+        s += `<rect x="${g2}" y="54" width="${42-g2}" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      } else {
+        s += `<rect x="0" y="54" width="42" height="6" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      }
+      // Left wall
+      if(gapVariants.skipLeft) {
+        const [g1,g2] = gapVariants.skipLeft;
+        s += `<rect x="0" y="0" width="6" height="${g1}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+        s += `<rect x="0" y="${g2}" width="6" height="${60-g2}" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      } else {
+        s += `<rect x="0" y="0" width="6" height="60" fill="url(#p-blocks)" filter="url(#f-stone-${['a','b','c'][v]})"/>`;
+      }
+      s += `<rect x="0" y="0" width="42" height="60" fill="none" stroke="#2a2e32" stroke-width="0.4"/>`;
+      [10+v*4,25+v*3].forEach(x => {
+        s += `<circle cx="${x}" cy="3" r="0.5" fill="#2a2e32" opacity="0.7"/>`;
+      });
+      return s;
+    }
+  }
+];
+
+const VARS = ['A','B','C'];
+const container = document.getElementById('terrain-container');
+let currentCat = '';
+
+TYPES.forEach((type, ti) => {
+  // Section header if new category
+  if(type.cat !== currentCat) {
+    currentCat = type.cat;
+    const sh = document.createElement('div');
+    sh.className = 'section-label';
+    sh.textContent = currentCat;
+    container.appendChild(sh);
+  }
+
+  // Type label + dims
+  const header = document.createElement('div');
+  header.innerHTML = `<div class="dim-label" style="margin-top:16px"><strong>${type.name}</strong> — ${type.w}×${type.h} SVG units | ${type.desc}</div>`;
+  container.appendChild(header);
+
+  // Row of 3 variations
+  const row = document.createElement('div');
+  row.className = 'row';
+
+  VARS.forEach((vl, vi) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+
+    const uid = `${type.id}-${vl.toLowerCase()}`;
+    const techDescs = [
+      'Jagged breaks, directional lighting at 225°, dense turbulence',
+      'Crumbled edges, rear lighting at 315°, medium grain',
+      'Blast damage, front lighting at 180°, fine detail turbulence'
+    ];
+
+    card.innerHTML = `
+      <h3>Variation ${vl}</h3>
+      <div class="tech">${techDescs[vi]}</div>
+      <div class="toggles">
+        <label><input type="checkbox" checked onchange="toggleLayer('${uid}','floor',this.checked)"> Floor</label>
+        <label><input type="checkbox" checked onchange="toggleLayer('${uid}','roof',this.checked)"> Roof</label>
+      </div>
+      <div class="checker">
+        <svg width="${type.cssW}" viewBox="0 0 ${type.w} ${type.h}" xmlns="http://www.w3.org/2000/svg">
+          <g id="${uid}-floor">${type.floor(vi)}</g>
+          <g id="${uid}-roof">${type.roof(vi)}</g>
+        </svg>
+      </div>
+    `;
+    row.appendChild(card);
+  });
+
+  container.appendChild(row);
+});
+
+function toggleLayer(uid, layer, visible) {
+  const el = document.getElementById(`${uid}-${layer}`);
+  if(el) el.style.display = visible ? '' : 'none';
+}
+</script>
 
 </body>
 </html>
