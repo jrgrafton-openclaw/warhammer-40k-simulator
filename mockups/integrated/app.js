@@ -133,6 +133,9 @@ function initGameModules() {
 // ── Screen lifecycle callbacks ───────────────────────────
 onScreenShow('start', function() {
   initStartScreen();
+  // Show mute button on start/forge screens
+  var muteBtn = document.getElementById('mute-toggle');
+  if (muteBtn) muteBtn.style.display = '';
   // Switch back to ambient drone for start screen
   var audio = document.getElementById('ambient-audio');
   if (audio) {
@@ -149,6 +152,10 @@ onScreenHide('start', function() {
 });
 
 onScreenShow('game', function() {
+  // Hide mute button during gameplay — volume controlled via pause menu
+  var muteBtn = document.getElementById('mute-toggle');
+  if (muteBtn) muteBtn.style.display = 'none';
+
   if (!_gameInitialized) {
     initGameModules();
   }
