@@ -38,7 +38,9 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
       <option value="bg-variation-3.png">bg-variation-3</option>
       <option value="bg-variation-4.png">bg-variation-4 (oil)</option>
       <option value="bg-variation-5.png">bg-variation-5 (wet)</option>
-      <option value="svg">— SVG Ground —</option>
+      <option value="svg-gradient">— SVG: Gradient Depth —</option>
+      <option value="svg-concrete">— SVG: Concrete Slabs —</option>
+      <option value="svg-tactical">— SVG: Frozen Synapse —</option>
     </select>
   </div>
   <h3>Toggles</h3>
@@ -87,9 +89,53 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
           <line x1="4" y1="5" x2="4" y2="10" stroke="#3a4044" stroke-width=".8"/>
           <line x1="12" y1="5" x2="12" y2="10" stroke="#3a4044" stroke-width=".8"/>
         </pattern>
+        <!-- Ground option: Gradient Depth -->
+        <radialGradient id="grd-depth" cx="50%" cy="45%" r="65%"><stop offset="0%" stop-color="#0e1822"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>
+        <!-- Ground option: Concrete slabs -->
+        <pattern id="slab-pat" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#0b1018"/>
+          <rect x="1" y="1" width="58" height="58" fill="#0d1420" rx="1"/>
+          <line x1="0" y1="0" x2="60" y2="0" stroke="#0a0e14" stroke-width="1.5"/>
+          <line x1="0" y1="0" x2="0" y2="60" stroke="#0a0e14" stroke-width="1.5"/>
+        </pattern>
+        <!-- Ground option: Frozen Synapse tactical -->
+        <pattern id="tac-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#060c14"/>
+          <line x1="0" y1="0" x2="60" y2="0" stroke="#00d4ff" stroke-width="0.4" opacity="0.06"/>
+          <line x1="0" y1="0" x2="0" y2="60" stroke="#00d4ff" stroke-width="0.4" opacity="0.06"/>
+          <line x1="0" y1="12" x2="60" y2="12" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="12" y1="0" x2="12" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="0" y1="24" x2="60" y2="24" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="24" y1="0" x2="24" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="0" y1="36" x2="60" y2="36" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="36" y1="0" x2="36" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="0" y1="48" x2="60" y2="48" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="48" y1="0" x2="48" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+        </pattern>
       </defs>
-      <!-- SVG ground (shown when bg=svg) -->
+      <!-- SVG ground base -->
       <rect width="720" height="528" fill="#0c1218"/>
+      <!-- SVG ground options (hidden by default, shown when selected) -->
+      <g id="svgGroundGradient" style="display:none">
+        <rect width="720" height="528" fill="url(#grd-depth)"/>
+        <rect width="720" height="528" fill="url(#slab-pat)" opacity="0.15"/>
+      </g>
+      <g id="svgGroundConcrete" style="display:none">
+        <rect width="720" height="528" fill="url(#slab-pat)"/>
+        <path d="M50,80 Q180,90 300,75 Q450,60 600,85" fill="none" stroke="#080c12" stroke-width="1.5" opacity="0.6"/>
+        <path d="M100,250 Q250,240 400,260 Q550,280 700,255" fill="none" stroke="#080c12" stroke-width="1" opacity="0.5"/>
+        <path d="M20,400 Q200,410 380,395 Q500,385 680,405" fill="none" stroke="#080c12" stroke-width="1.2" opacity="0.5"/>
+        <circle cx="200" cy="150" r="15" fill="url(#grd-depth)" opacity="0.3"/>
+        <circle cx="550" cy="380" r="20" fill="url(#grd-depth)" opacity="0.25"/>
+        <circle cx="400" cy="480" r="12" fill="url(#grd-depth)" opacity="0.2"/>
+      </g>
+      <g id="svgGroundTactical" style="display:none">
+        <rect width="720" height="528" fill="url(#tac-grid)"/>
+        <circle cx="200" cy="180" r="80" fill="#00d4ff" opacity="0.012"/>
+        <circle cx="520" cy="350" r="100" fill="#00d4ff" opacity="0.01"/>
+        <circle cx="360" cy="264" r="120" fill="#00d4ff" opacity="0.008"/>
+        <rect x="0" y="0" width="720" height="1" fill="#00d4ff" opacity="0.03"><animate attributeName="y" from="0" to="528" dur="8s" repeatCount="indefinite"/></rect>
+      </g>
       <!-- BG image -->
       <image id="bgImg" href="v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/>
       <!-- Deploy zones -->
@@ -103,11 +149,9 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
       </g>
       <!-- Dropped floor sprites go here -->
       <g id="spriteFloor"></g>
-      <!-- Models -->
-      <g id="modelLayer"></g>
-      <!-- Dropped roof/top sprites go here (ABOVE models for occlusion) -->
+      <!-- Dropped roof/top sprites go here -->
       <g id="spriteTop"></g>
-      <!-- SVG terrain ALWAYS ON TOP (above sprites + models) -->
+      <!-- SVG terrain -->
       <g id="svgRuins" opacity="0.92">
         <g transform="translate(144,60) rotate(90) translate(-144,-60)"><path d="M 144 60 L 288 60 L 288 132 L 144 132 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(264,336) rotate(90) translate(-264,-336)"><path d="M 264 336 L 408 336 L 408 408 L 264 408 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
@@ -128,6 +172,8 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
         <g transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"><path d="M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"><path d="M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
       </g>
+      <!-- Models ON TOP of SVG terrain -->
+      <g id="modelLayer"></g>
       <!-- Selection UI -->
       <g id="selUI" style="display:none"></g>
     </svg>
@@ -146,7 +192,17 @@ const selUI=document.getElementById('selUI'),debug=document.getElementById('debu
 
 // Toggle layers
 function tgl(btn,id){btn.classList.toggle('on');const el=document.getElementById(id);if(el)el.style.display=btn.classList.contains('on')?'':'none'}
-function setBg(v){const img=document.getElementById('bgImg');if(v==='svg'){img.style.display='none'}else{img.style.display='';img.setAttribute('href',v)}}
+function setBg(v){
+  const img=document.getElementById('bgImg');
+  document.getElementById('svgGroundGradient').style.display='none';
+  document.getElementById('svgGroundConcrete').style.display='none';
+  document.getElementById('svgGroundTactical').style.display='none';
+  if(v.startsWith('svg-')){img.style.display='none';
+    if(v==='svg-gradient')document.getElementById('svgGroundGradient').style.display='';
+    if(v==='svg-concrete')document.getElementById('svgGroundConcrete').style.display='';
+    if(v==='svg-tactical')document.getElementById('svgGroundTactical').style.display='';
+  }else{img.style.display='';img.setAttribute('href',v)}
+}
 
 // Toolbox sprites
 const thumbs={tRuinsFloor:['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],tRuinsTop:['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','layer-top-v4.png','layer-top-v5.png','t10-layer-top.png'],tScatter:['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png']};
