@@ -363,8 +363,8 @@
     var style = inner.style.transform || '';
     var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
     if (match) {
-      var tx = parseFloat(match[1]) * 0.06;
-      var ty = parseFloat(match[2]) * 0.06;
+      var tx = parseFloat(match[1]) * 0.35;
+      var ty = parseFloat(match[2]) * 0.35;
       fogwrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     }
     requestAnimationFrame(updateParallax);

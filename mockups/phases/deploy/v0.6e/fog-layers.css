@@ -5,59 +5,19 @@
    Parallax via JS on fogwrapper transform.
 ══════════════════════════════════════════════════════════════ */
 
-/* ── Fog wrapper — ABOVE the board, masked to surround it ── */
+/* ── Fog wrapper — covers entire scene, no mask ── */
+/* No oval mask. Fog covers everything — over the dark board it reads
+   as warzone smoke/haze; over the dark margins it's dense fog.
+   The fog texture's own transparency creates natural variation.
+   Parallax via JS keeps it connected to the board. */
 .fogwrapper {
   position: absolute;
-  inset: 0;
+  inset: -10% -10% -10% -10%; /* Extend beyond viewport for parallax room */
   z-index: 5;
   overflow: hidden;
   pointer-events: none;
-  filter: blur(1px) saturate(1.1) sepia(0.12);
+  filter: blur(2px) saturate(1.15) sepia(0.1);
   will-change: transform;
-  /* Smooth radial mask: transparent center → opaque edges.
-     15+ stops to eliminate banding artifacts. */
-  -webkit-mask-image: radial-gradient(
-    ellipse 46% 50% at 52% 48%,
-    transparent 0%,
-    transparent 48%,
-    rgba(0,0,0,0.01) 51%,
-    rgba(0,0,0,0.03) 53%,
-    rgba(0,0,0,0.06) 55%,
-    rgba(0,0,0,0.10) 57%,
-    rgba(0,0,0,0.16) 59%,
-    rgba(0,0,0,0.23) 61%,
-    rgba(0,0,0,0.32) 63%,
-    rgba(0,0,0,0.42) 65%,
-    rgba(0,0,0,0.52) 67%,
-    rgba(0,0,0,0.62) 69%,
-    rgba(0,0,0,0.72) 72%,
-    rgba(0,0,0,0.80) 75%,
-    rgba(0,0,0,0.88) 78%,
-    rgba(0,0,0,0.93) 82%,
-    rgba(0,0,0,0.97) 87%,
-    black 93%
-  );
-  mask-image: radial-gradient(
-    ellipse 46% 50% at 52% 48%,
-    transparent 0%,
-    transparent 48%,
-    rgba(0,0,0,0.01) 51%,
-    rgba(0,0,0,0.03) 53%,
-    rgba(0,0,0,0.06) 55%,
-    rgba(0,0,0,0.10) 57%,
-    rgba(0,0,0,0.16) 59%,
-    rgba(0,0,0,0.23) 61%,
-    rgba(0,0,0,0.32) 63%,
-    rgba(0,0,0,0.42) 65%,
-    rgba(0,0,0,0.52) 67%,
-    rgba(0,0,0,0.62) 69%,
-    rgba(0,0,0,0.72) 72%,
-    rgba(0,0,0,0.80) 75%,
-    rgba(0,0,0,0.88) 78%,
-    rgba(0,0,0,0.93) 82%,
-    rgba(0,0,0,0.97) 87%,
-    black 93%
-  );
 }
 
 /* ── Individual fog layers ── */
@@ -119,30 +79,30 @@
   100% { left: -100%; }
 }
 
-/* ── Opacity breathing — DENSER than v0.6d ── */
+/* ── Opacity breathing — moderate so board visible through smoke ── */
 @keyframes fog_opacity_01 {
-  0%   { opacity: 0.25; }
-  22%  { opacity: 0.65; }
-  40%  { opacity: 0.40; }
-  58%  { opacity: 0.55; }
-  80%  { opacity: 0.30; }
-  100% { opacity: 0.25; }
+  0%   { opacity: 0.12; }
+  22%  { opacity: 0.35; }
+  40%  { opacity: 0.20; }
+  58%  { opacity: 0.30; }
+  80%  { opacity: 0.15; }
+  100% { opacity: 0.12; }
 }
 
 @keyframes fog_opacity_02 {
-  0%   { opacity: 0.55; }
-  25%  { opacity: 0.30; }
-  50%  { opacity: 0.18; }
-  80%  { opacity: 0.45; }
-  100% { opacity: 0.55; }
+  0%   { opacity: 0.30; }
+  25%  { opacity: 0.15; }
+  50%  { opacity: 0.10; }
+  80%  { opacity: 0.25; }
+  100% { opacity: 0.30; }
 }
 
 @keyframes fog_opacity_03 {
-  0%   { opacity: 0.60; }
-  27%  { opacity: 0.25; }
-  52%  { opacity: 0.50; }
-  68%  { opacity: 0.30; }
-  100% { opacity: 0.60; }
+  0%   { opacity: 0.35; }
+  27%  { opacity: 0.12; }
+  52%  { opacity: 0.28; }
+  68%  { opacity: 0.15; }
+  100% { opacity: 0.35; }
 }
 
 /* ── Effects canvas (explosions, sparks, debris) ── */
