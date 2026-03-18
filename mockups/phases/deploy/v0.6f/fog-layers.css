@@ -1,7 +1,9 @@
 /* ══════════════════════════════════════════════════════════════
    Fog Layer Animation v0.6f — Dual-density fog stack
-   Z1: Dense base fog (thick, slow, fills black gaps)
-   Z5: Surface detail fog (wispy, faster, warzone smoke)
+   Z0: Solid warm grey base
+   Z1: Dense base fog (thick, slow, fills margins behind board)
+   Z2: Board (#battlefield-inner)
+   Z5: Surface detail fog (wispy, faster, warzone smoke ON TOP)
 ══════════════════════════════════════════════════════════════ */
 
 /* ── Solid warm grey base — no black gaps possible ── */
@@ -13,16 +15,15 @@
   pointer-events: none;
 }
 
-/* ── Dense fog — ABOVE board, JS sets mask-image directly ── */
+/* ── Dense fog — BEHIND board (z-index 1), board occludes naturally ── */
 .fogwrapper-dense {
   position: absolute;
   inset: -15% -15% -15% -15%;
-  z-index: 3;
+  z-index: 1;
   overflow: hidden;
   pointer-events: none;
   filter: blur(3px) saturate(1.05) sepia(0.08);
-  will-change: transform, -webkit-mask-image;
-  /* mask-image set by JS to track board position */
+  will-change: transform;
 }
 
 /* ── Surface fog wrapper (Z5) — wispy warzone smoke ── */
