@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terrain Sprite Editor — v0.16a</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#1a1a2e; color:#c8d0d8; font-family:'Segoe UI',sans-serif; display:flex; flex-direction:column; height:100vh; overflow:hidden; user-select:none; }
+  #top { display:flex; flex:1; min-height:0; }
+  /* Sidebar */
+  #sidebar { width:280px; min-width:280px; background:#0f1520; border-right:1px solid #1e2d44; overflow-y:auto; padding:8px; }
+  #sidebar h3 { color:#00d4ff; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:10px 0 4px; }
+  #sidebar h3:first-child { margin-top:2px; }
+  .thumb-grid { display:flex; flex-wrap:wrap; gap:6px; }
+  .thumb-item { cursor:grab; border:1px solid #2a3a4a; border-radius:4px; padding:3px; text-align:center; width:124px; transition:border-color .15s; }
+  .thumb-item:hover { border-color:#00d4ff; }
+  .thumb-item img { width:118px; height:80px; object-fit:contain; pointer-events:none; display:block; }
+  .thumb-item span { font-size:9px; color:#6a7a8a; display:block; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* BG selector */
+  #bg-select { width:100%; background:#0a0f18; color:#c8d0d8; border:1px solid #2a3a4a; border-radius:3px; padding:4px; font-size:11px; margin-top:4px; }
+  /* Toggles */
+  .toggle-row { display:flex; gap:8px; flex-wrap:wrap; margin:8px 0 4px; }
+  .toggle-btn { font-size:10px; padding:3px 8px; background:#1a2530; border:1px solid #2a3a4a; border-radius:3px; color:#8a9aaa; cursor:pointer; }
+  .toggle-btn.active { border-color:#00d4ff; color:#00d4ff; }
+  /* Main area */
+  #main { flex:1; display:flex; align-items:center; justify-content:center; background:#0a0e16; overflow:hidden; position:relative; }
+  #battlefield { width:100%; height:100%; display:block; }
+  /* Bottom */
+  #bottom { height:110px; background:#0f1520; border-top:1px solid #1e2d44; display:flex; align-items:stretch; padding:6px; gap:6px; }
+  #debug-box { flex:1; background:#080c14; color:#8ab4d0; font-family:'Consolas','Courier New',monospace; font-size:11px; border:1px solid #1e2d44; border-radius:3px; padding:4px; resize:none; }
+  #copy-btn { background:#1a2530; border:1px solid #2a3a4a; border-radius:3px; color:#8a9aaa; padding:6px 12px; cursor:pointer; font-size:11px; align-self:flex-start; }
+  #copy-btn:hover { border-color:#00d4ff; color:#00d4ff; }
+  /* Ghost */
+  #ghost { position:fixed; pointer-events:none; opacity:0.7; z-index:9999; display:none; }
+  #ghost img { width:100px; height:70px; object-fit:contain; }
+</style>
+</head>
+<body>
+
+<div id="top">
+  <div id="sidebar">
+    <h3>Ruins — Floor</h3>
+    <div class="thumb-grid">
+      <div class="thumb-item" data-src="layer-bottom-aligned.png" data-cat="ruins"><img src="layer-bottom-aligned.png"><span>layer-bottom-aligned</span></div>
+      <div class="thumb-item" data-src="t10-layer-bottom.png" data-cat="ruins"><img src="t10-layer-bottom.png"><span>t10-layer-bottom</span></div>
+      <div class="thumb-item" data-src="openai-ruin-2.png" data-cat="ruins"><img src="openai-ruin-2.png"><span>openai-ruin-2</span></div>
+      <div class="thumb-item" data-src="openai-ruin-1.png" data-cat="ruins"><img src="openai-ruin-1.png"><span>openai-ruin-1</span></div>
+      <div class="thumb-item" data-src="openai-ruin-ushape.png" data-cat="ruins"><img src="openai-ruin-ushape.png"><span>openai-ruin-ushape</span></div>
+    </div>
+    <h3>Ruins — Top</h3>
+    <div class="thumb-grid">
+      <div class="thumb-item" data-src="layer-top-aligned.png" data-cat="ruins"><img src="layer-top-aligned.png"><span>layer-top-aligned</span></div>
+      <div class="thumb-item" data-src="t10-layer-top.png" data-cat="ruins"><img src="t10-layer-top.png"><span>t10-layer-top</span></div>
+    </div>
+    <h3>Scatter</h3>
+    <div class="thumb-grid">
+      <div class="thumb-item" data-src="scatter-layer.png" data-cat="scatter"><img src="scatter-layer.png"><span>scatter-layer</span></div>
+      <div class="thumb-item" data-src="scatter-v2.png" data-cat="scatter"><img src="scatter-v2.png"><span>scatter-v2</span></div>
+      <div class="thumb-item" data-src="openai-scatter.png" data-cat="scatter"><img src="openai-scatter.png"><span>openai-scatter</span></div>
+    </div>
+    <h3>Background</h3>
+    <select id="bg-select">
+      <option value="v16-ground-better.png">v16-ground-better</option>
+      <option value="bg-variation-1.png">bg-variation-1</option>
+      <option value="bg-variation-2.png">bg-variation-2</option>
+      <option value="bg-variation-3.png">bg-variation-3</option>
+    </select>
+    <div class="toggle-row">
+      <button class="toggle-btn active" data-layer="outlines">Outlines</button>
+      <button class="toggle-btn active" data-layer="deploy">Deploy</button>
+      <button class="toggle-btn active" data-layer="models">Models</button>
+      <button class="toggle-btn active" data-layer="objectives">Objectives</button>
+      <button class="toggle-btn active" data-layer="grid">Grid</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <svg id="battlefield" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="mg-fill" cx="38%" cy="32%" r="62%">
+          <stop offset="0%" stop-color="#0a1020"/><stop offset="60%" stop-color="#060c14"/><stop offset="100%" stop-color="#030609"/>
+        </radialGradient>
+        <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB">
+          <feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- Background -->
+      <image id="bg-img" href="v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/>
+      <!-- Grid -->
+      <g id="grid-layer" opacity="0.12">
+        <g stroke="rgba(180,160,80,0.15)" stroke-width="0.3"></g>
+        <g stroke="rgba(180,160,80,0.35)" stroke-width="0.5"></g>
+      </g>
+      <!-- Terrain outlines -->
+      <g id="outline-layer"></g>
+      <!-- Sprite layer (user-placed) -->
+      <g id="sprite-layer"></g>
+      <!-- Deploy zones -->
+      <g id="deploy-layer">
+        <rect x="0" y="0" width="144" height="528" fill="none" stroke="#0088aa" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.4"/>
+        <rect x="576" y="0" width="144" height="528" fill="none" stroke="#aa2810" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.4"/>
+        <text x="72" y="18" text-anchor="middle" fill="#0088aa" font-size="9" opacity="0.5">IMPERIUM DEPLOY</text>
+        <text x="648" y="18" text-anchor="middle" fill="#aa2810" font-size="9" opacity="0.5">ORK DEPLOY</text>
+      </g>
+      <!-- Models -->
+      <g id="model-layer"></g>
+      <!-- Objectives -->
+      <g id="objective-layer">
+        <circle cx="360" cy="264" r="10" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/><text x="360" y="267" text-anchor="middle" fill="#ffd700" font-size="8" opacity="0.7">1</text>
+        <circle cx="180" cy="132" r="10" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/><text x="180" y="135" text-anchor="middle" fill="#ffd700" font-size="8" opacity="0.7">2</text>
+        <circle cx="540" cy="396" r="10" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/><text x="540" y="399" text-anchor="middle" fill="#ffd700" font-size="8" opacity="0.7">3</text>
+        <circle cx="180" cy="396" r="10" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/><text x="180" y="399" text-anchor="middle" fill="#ffd700" font-size="8" opacity="0.7">4</text>
+        <circle cx="540" cy="132" r="10" fill="none" stroke="#ffd700" stroke-width="1.2" opacity="0.6"/><text x="540" y="135" text-anchor="middle" fill="#ffd700" font-size="8" opacity="0.7">5</text>
+      </g>
+      <!-- Selection UI (handles drawn dynamically) -->
+      <g id="selection-ui"></g>
+    </svg>
+  </div>
+</div>
+
+<div id="bottom">
+  <textarea id="debug-box" readonly>{"sprites":[]}</textarea>
+  <button id="copy-btn">📋 Copy</button>
+</div>
+
+<div id="ghost"><img id="ghost-img"></div>
+
+<script>
+(function(){
+  const svg = document.getElementById('battlefield');
+  const spriteLayer = document.getElementById('sprite-layer');
+  const selectionUI = document.getElementById('selection-ui');
+  const debugBox = document.getElementById('debug-box');
+  const ghost = document.getElementById('ghost');
+  const ghostImg = document.getElementById('ghost-img');
+
+  // ── State ──
+  let sprites = []; // {el, src, x, y, w, h, rot, id}
+  let nextId = 1;
+  let selected = null; // sprite object
+  let dragging = null; // {type:'new'|'move'|'resize'|'rotate', ...}
+
+  // ── Helpers ──
+  function svgPt(clientX, clientY) {
+    const ctm = svg.getScreenCTM().inverse();
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const sp = pt.matrixTransform(ctm);
+    return { x: sp.x, y: sp.y };
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  // ── Grid ──
+  (function buildGrid(){
+    const gSmall = document.querySelector('#grid-layer g:first-child');
+    const gBig = document.querySelector('#grid-layer g:last-child');
+    for(let x=12; x<720; x+=12){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x); l.setAttribute('y1',0); l.setAttribute('x2',x); l.setAttribute('y2',528); gSmall.appendChild(l); }
+    for(let y=12; y<528; y+=12){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',0); l.setAttribute('y1',y); l.setAttribute('x2',720); l.setAttribute('y2',y); gSmall.appendChild(l); }
+    for(let x=60; x<720; x+=60){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x); l.setAttribute('y1',0); l.setAttribute('x2',x); l.setAttribute('y2',528); gBig.appendChild(l); }
+    for(let y=60; y<528; y+=60){ const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',0); l.setAttribute('y1',y); l.setAttribute('x2',720); l.setAttribute('y2',y); gBig.appendChild(l); }
+  })();
+
+  // ── Terrain outlines ──
+  const terrainData = [
+    {id:'t1',paths:['M 144 60 L 288 60 L 288 132 L 144 132 Z','M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 Z']},
+    {id:'t2',paths:['M 264 336 L 408 336 L 408 408 L 264 408 Z','M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 Z']},
+    {id:'t3',paths:['M 192 264 L 288 264 L 288 336 L 192 336 Z','M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 Z']},
+    {id:'t4',paths:['M 48 264 L 96 264 L 96 336 L 48 336 Z']},
+    {id:'t5',paths:['M 336 0 L 384 0 L 384 72 L 336 72 Z']},
+    {id:'t6',paths:['M 360 204 L 438 204 L 438 264 L 360 264 Z','M 361.2 205.2 L 436.8 205.2 L 436.8 211.2 L 367.2 211.2 L 367.2 262.8 L 361.2 262.8 Z']},
+    {id:'t7',paths:['M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 Z']},
+    {id:'t8',paths:['M 317.76 247.2 L 365.76 247.2 L 365.76 319.2 L 317.76 319.2 Z']},
+    {id:'t9',paths:['M 576 468 L 720 468 L 720 540 L 576 540 Z','M 577.2 469.2 L 673.2 469.2 L 673.2 475.2 L 583.2 475.2 L 583.2 517.2 L 577.2 517.2 Z']},
+    {id:'t10',paths:['M 456 192 L 600 192 L 600 264 L 456 264 Z','M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 Z']},
+    {id:'t11',paths:['M 528 264 L 624 264 L 624 336 L 528 336 Z','M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 Z']},
+    {id:'t12',paths:['M 672 264 L 720 264 L 720 336 L 672 336 Z']},
+    {id:'t13',paths:['M 384 528 L 432 528 L 432 600 L 384 600 Z']},
+    {id:'t14',paths:['M 360 324 L 438 324 L 438 384 L 360 384 Z','M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 Z']},
+    {id:'t15',paths:['M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 Z']},
+    {id:'t16',paths:['M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 Z']},
+  ];
+  (function buildOutlines(){
+    const layer = document.getElementById('outline-layer');
+    terrainData.forEach(t => {
+      t.paths.forEach(d => {
+        const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+        p.setAttribute('d', d);
+        p.setAttribute('fill','none');
+        p.setAttribute('stroke','rgba(0,212,255,0.3)');
+        p.setAttribute('stroke-width','1');
+        p.setAttribute('stroke-dasharray','4,2');
+        layer.appendChild(p);
+      });
+    });
+  })();
+
+  // ── Models ──
+  const impUnits = [
+    ...[{x:100,y:64},{x:117,y:64},{x:134,y:64},{x:108,y:81},{x:125,y:81}].map(p=>({...p,r:8,icon:'infantry'})),
+    {x:120,y:160,r:9,icon:'character'},
+    ...[{x:80,y:300},{x:97,y:300},{x:114,y:300},{x:88,y:317},{x:105,y:317}].map(p=>({...p,r:8,icon:'infantry'})),
+    ...[{x:150,y:400},{x:167,y:400},{x:184,y:400},{x:158,y:417},{x:175,y:417}].map(p=>({...p,r:8,icon:'elite'})),
+    {x:60,y:480,r:22,icon:'vehicle',w:43,h:25},
+  ];
+  const orkUnits = [
+    {x:560,y:100,r:9,icon:'character'},
+    ...[{x:500,y:200},{x:517,y:200},{x:534,y:200},{x:551,y:200},{x:568,y:200},{x:500,y:217},{x:517,y:217},{x:534,y:217},{x:551,y:217},{x:568,y:217}].map(p=>({...p,r:8,icon:'infantry'})),
+    {x:560,y:350,r:8,icon:'elite'},
+  ];
+
+  function drawIcon(g, u, stroke, fill, filter) {
+    const s = u.r || 8;
+    if(u.icon==='infantry'){
+      // crosshair
+      g.innerHTML += `<line x1="${u.x-s*.6}" y1="${u.y}" x2="${u.x+s*.6}" y2="${u.y}" stroke="${stroke}" stroke-width="1.2" filter="${filter}"/>
+        <line x1="${u.x}" y1="${u.y-s*.6}" x2="${u.x}" y2="${u.y+s*.6}" stroke="${stroke}" stroke-width="1.2" filter="${filter}"/>
+        <circle cx="${u.x}" cy="${u.y}" r="${s*.4}" fill="none" stroke="${stroke}" stroke-width="0.8" filter="${filter}"/>`;
+    } else if(u.icon==='character'){
+      const pts = [];
+      for(let i=0;i<5;i++){const a=Math.PI*2*i/5-Math.PI/2;const b=Math.PI*2*(i+0.5)/5-Math.PI/2;pts.push(`${u.x+s*.7*Math.cos(a)},${u.y+s*.7*Math.sin(a)}`);pts.push(`${u.x+s*.3*Math.cos(b)},${u.y+s*.3*Math.sin(b)}`);}
+      g.innerHTML += `<polygon points="${pts.join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="0.8" filter="${filter}"/>`;
+    } else if(u.icon==='elite'){
+      g.innerHTML += `<polygon points="${u.x},${u.y-s*.7} ${u.x+s*.5},${u.y} ${u.x},${u.y+s*.7} ${u.x-s*.5},${u.y}" fill="${fill}" stroke="${stroke}" stroke-width="0.8" filter="${filter}"/>`;
+    } else if(u.icon==='vehicle'){
+      const hw=(u.w||40)/2, hh=(u.h||24)/2;
+      g.innerHTML += `<rect x="${u.x-hw}" y="${u.y-hh}" width="${u.w||40}" height="${u.h||24}" fill="none" stroke="${stroke}" stroke-width="1.2" filter="${filter}"/>
+        <line x1="${u.x-hw}" y1="${u.y}" x2="${u.x+hw}" y2="${u.y}" stroke="${stroke}" stroke-width="0.8" filter="${filter}"/>`;
+    }
+  }
+
+  (function buildModels(){
+    const ml = document.getElementById('model-layer');
+    impUnits.forEach(u => drawIcon(ml, u, '#0088aa', '#006688', 'url(#mf-imp)'));
+    orkUnits.forEach(u => drawIcon(ml, u, '#aa2810', '#882010', 'url(#mf-ork)'));
+  })();
+
+  // ── Background selector ──
+  document.getElementById('bg-select').addEventListener('change', e => {
+    document.getElementById('bg-img').setAttribute('href', e.target.value);
+  });
+
+  // ── Toggle buttons ──
+  const layerMap = { outlines:'outline-layer', deploy:'deploy-layer', models:'model-layer', objectives:'objective-layer', grid:'grid-layer' };
+  document.querySelectorAll('.toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('active');
+      const el = document.getElementById(layerMap[btn.dataset.layer]);
+      if(el) el.style.display = btn.classList.contains('active') ? '' : 'none';
+    });
+  });
+
+  // ── Sprite management ──
+  function addSprite(src, cat, svgX, svgY) {
+    const w = cat === 'scatter' ? 60 : 120;
+    const h = cat === 'scatter' ? 60 : 90;
+    const x = svgX - w/2, y = svgY - h/2;
+    const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+    img.setAttribute('href', src);
+    img.setAttribute('x', x); img.setAttribute('y', y);
+    img.setAttribute('width', w); img.setAttribute('height', h);
+    img.style.cursor = 'move';
+    spriteLayer.appendChild(img);
+    const sp = { el:img, src, x, y, w, h, rot:0, id:nextId++ };
+    img.__sprite = sp;
+    sprites.push(sp);
+    selectSprite(sp);
+    updateDebug();
+    return sp;
+  }
+
+  function removeSprite(sp) {
+    sp.el.remove();
+    sprites = sprites.filter(s => s !== sp);
+    if(selected === sp) { selected = null; drawHandles(); }
+    updateDebug();
+  }
+
+  function duplicateSprite(sp) {
+    const ns = addSprite(sp.src, sp.w <= 60 ? 'scatter' : 'ruins', sp.x + sp.w/2 + 12, sp.y + sp.h/2 + 12);
+    ns.w = sp.w; ns.h = sp.h; ns.rot = sp.rot;
+    applyTransform(ns);
+    updateDebug();
+  }
+
+  function applyTransform(sp) {
+    sp.el.setAttribute('x', sp.x);
+    sp.el.setAttribute('y', sp.y);
+    sp.el.setAttribute('width', sp.w);
+    sp.el.setAttribute('height', sp.h);
+    const cx = sp.x + sp.w/2, cy = sp.y + sp.h/2;
+    sp.el.setAttribute('transform', sp.rot ? `rotate(${sp.rot},${cx},${cy})` : '');
+  }
+
+  function selectSprite(sp) {
+    selected = sp;
+    drawHandles();
+  }
+
+  function drawHandles() {
+    selectionUI.innerHTML = '';
+    if(!selected) return;
+    const s = selected;
+    const cx = s.x + s.w/2, cy = s.y + s.h/2;
+    // Wrapper group with rotation
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    if(s.rot) g.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
+    // Dashed border
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x',s.x); r.setAttribute('y',s.y); r.setAttribute('width',s.w); r.setAttribute('height',s.h);
+    r.setAttribute('fill','none'); r.setAttribute('stroke','#00d4ff'); r.setAttribute('stroke-width','1');
+    r.setAttribute('stroke-dasharray','4,2');
+    g.appendChild(r);
+    // Corner handles
+    const corners = [[s.x,s.y,'nw'],[s.x+s.w,s.y,'ne'],[s.x,s.y+s.h,'sw'],[s.x+s.w,s.y+s.h,'se']];
+    corners.forEach(([hx,hy,pos]) => {
+      const hr = document.createElementNS('http://www.w3.org/2000/svg','rect');
+      hr.setAttribute('x',hx-3); hr.setAttribute('y',hy-3); hr.setAttribute('width',6); hr.setAttribute('height',6);
+      hr.setAttribute('fill','#00d4ff'); hr.setAttribute('stroke','#004466'); hr.setAttribute('stroke-width','0.5');
+      hr.style.cursor = pos+'-resize';
+      hr.dataset.handle = pos;
+      g.appendChild(hr);
+    });
+    // Rotation handle
+    const rc = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    rc.setAttribute('cx', cx); rc.setAttribute('cy', s.y - 20);
+    rc.setAttribute('r', 5); rc.setAttribute('fill','#00d4ff'); rc.setAttribute('stroke','#004466'); rc.setAttribute('stroke-width','0.5');
+    rc.style.cursor = 'crosshair';
+    rc.dataset.handle = 'rotate';
+    g.appendChild(rc);
+    // Line to rotation handle
+    const rl = document.createElementNS('http://www.w3.org/2000/svg','line');
+    rl.setAttribute('x1',cx); rl.setAttribute('y1',s.y); rl.setAttribute('x2',cx); rl.setAttribute('y2',s.y-15);
+    rl.setAttribute('stroke','#00d4ff'); rl.setAttribute('stroke-width','0.5');
+    g.appendChild(rl);
+    selectionUI.appendChild(g);
+  }
+
+  function updateDebug() {
+    const data = { sprites: sprites.map(s => ({
+      src: s.src,
+      x: Math.round(s.x * 10) / 10,
+      y: Math.round(s.y * 10) / 10,
+      width: Math.round(s.w * 10) / 10,
+      height: Math.round(s.h * 10) / 10,
+      rotation: Math.round(s.rot)
+    }))};
+    debugBox.value = JSON.stringify(data, null, 2);
+  }
+
+  // ── Drag from toolbox ──
+  let dragSrc = null, dragCat = null;
+  document.querySelectorAll('.thumb-item').forEach(item => {
+    item.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      dragSrc = item.dataset.src;
+      dragCat = item.dataset.cat;
+      ghostImg.src = dragSrc;
+      ghost.style.display = 'block';
+      ghost.style.left = (e.clientX - 50) + 'px';
+      ghost.style.top = (e.clientY - 35) + 'px';
+      dragging = { type: 'new' };
+      item.setPointerCapture(e.pointerId);
+    });
+    item.addEventListener('pointermove', e => {
+      if(dragging && dragging.type === 'new') {
+        ghost.style.left = (e.clientX - 50) + 'px';
+        ghost.style.top = (e.clientY - 35) + 'px';
+      }
+    });
+    item.addEventListener('pointerup', e => {
+      if(dragging && dragging.type === 'new') {
+        ghost.style.display = 'none';
+        // Check if over battlefield
+        const rect = svg.getBoundingClientRect();
+        if(e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+          const pt = svgPt(e.clientX, e.clientY);
+          addSprite(dragSrc, dragCat, pt.x, pt.y);
+        }
+        dragging = null; dragSrc = null; dragCat = null;
+      }
+    });
+  });
+
+  // ── Battlefield pointer events ──
+  svg.addEventListener('pointerdown', e => {
+    if(dragging) return;
+    const pt = svgPt(e.clientX, e.clientY);
+    const target = e.target;
+    // Check handles first
+    if(target.dataset && target.dataset.handle) {
+      e.preventDefault();
+      const h = target.dataset.handle;
+      if(h === 'rotate') {
+        const sp = selected;
+        const cx = sp.x + sp.w/2, cy = sp.y + sp.h/2;
+        dragging = { type:'rotate', sp, cx, cy, startAngle: Math.atan2(pt.y - cy, pt.x - cx) * 180/Math.PI, startRot: sp.rot };
+        svg.setPointerCapture(e.pointerId);
+        return;
+      }
+      // Resize
+      const sp = selected;
+      dragging = { type:'resize', sp, handle:h, startX:pt.x, startY:pt.y, origX:sp.x, origY:sp.y, origW:sp.w, origH:sp.h };
+      svg.setPointerCapture(e.pointerId);
+      return;
+    }
+    // Check if clicking a sprite
+    if(target.__sprite) {
+      e.preventDefault();
+      const sp = target.__sprite;
+      selectSprite(sp);
+      dragging = { type:'move', sp, offX: pt.x - sp.x, offY: pt.y - sp.y };
+      svg.setPointerCapture(e.pointerId);
+      return;
+    }
+    // Clicked empty space
+    if(target === svg || target.id === 'bg-img' || !target.__sprite) {
+      selected = null;
+      drawHandles();
+    }
+  });
+
+  svg.addEventListener('pointermove', e => {
+    if(!dragging || dragging.type === 'new') return;
+    const pt = svgPt(e.clientX, e.clientY);
+    const sp = dragging.sp;
+    if(dragging.type === 'move') {
+      sp.x = pt.x - dragging.offX;
+      sp.y = pt.y - dragging.offY;
+      applyTransform(sp);
+      drawHandles();
+      updateDebug();
+    } else if(dragging.type === 'resize') {
+      const dx = pt.x - dragging.startX, dy = pt.y - dragging.startY;
+      const h = dragging.handle;
+      let nx = dragging.origX, ny = dragging.origY, nw = dragging.origW, nh = dragging.origH;
+      if(h.includes('e')) { nw = Math.max(12, dragging.origW + dx); }
+      if(h.includes('w')) { nw = Math.max(12, dragging.origW - dx); nx = dragging.origX + dx; }
+      if(h.includes('s')) { nh = Math.max(12, dragging.origH + dy); }
+      if(h.includes('n')) { nh = Math.max(12, dragging.origH - dy); ny = dragging.origY + dy; }
+      sp.x = nx; sp.y = ny; sp.w = nw; sp.h = nh;
+      applyTransform(sp);
+      drawHandles();
+      updateDebug();
+    } else if(dragging.type === 'rotate') {
+      const angle = Math.atan2(pt.y - dragging.cy, pt.x - dragging.cx) * 180/Math.PI;
+      sp.rot = dragging.startRot + (angle - dragging.startAngle);
+      // Normalize
+      sp.rot = ((sp.rot % 360) + 360) % 360;
+      applyTransform(sp);
+      drawHandles();
+      updateDebug();
+    }
+  });
+
+  svg.addEventListener('pointerup', e => {
+    if(dragging && dragging.type !== 'new') dragging = null;
+  });
+
+  // ── Keyboard shortcuts ──
+  document.addEventListener('keydown', e => {
+    if(!selected) return;
+    if(e.key === 'Delete' || e.key === 'Backspace') {
+      e.preventDefault();
+      removeSprite(selected);
+    } else if(e.key === 'r' || e.key === 'R') {
+      selected.rot = (Math.round(selected.rot / 45) * 45 + 45) % 360;
+      applyTransform(selected);
+      drawHandles();
+      updateDebug();
+    } else if(e.key === 'd' || e.key === 'D') {
+      duplicateSprite(selected);
+    }
+  });
+
+  // ── Copy button ──
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(debugBox.value).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy', 1500);
+    });
+  });
+
+  updateDebug();
+})();
+</script>
+</body>
+</html>
