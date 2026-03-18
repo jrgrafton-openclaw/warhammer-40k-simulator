@@ -75,11 +75,15 @@ export function initBoard(opts) {
     zoomSettleTimer = setTimeout(showRangeCirclesNow, 220);
   }, {passive:false});
 
+  var lastMX = 0, lastMY = 0;
+
   bf.addEventListener('mousedown', function(e) {
     if (e.target.closest('.token,.obj-hex-wrap,#unit-card,#vp-bar,#phase-header,#action-bar,#bf-svg')) return;
     isDragging = true;
     startX = e.clientX - tx;
     startY = e.clientY - ty;
+    lastMX = e.clientX;
+    lastMY = e.clientY;
     inner.classList.add('dragging');
     inner.classList.remove('zoom-easing');
   });
@@ -87,8 +91,12 @@ export function initBoard(opts) {
   document.addEventListener('mousemove', function(e) {
     if (!isDragging) return;
     var panMult = (window.__camPanSpeed || 5) / 5; // 5 → 1x, 10 → 2x
-    tx = (e.clientX - startX) * panMult;
-    ty = (e.clientY - startY) * panMult;
+    var dx = (e.clientX - lastMX) * panMult;
+    var dy = (e.clientY - lastMY) * panMult;
+    lastMX = e.clientX;
+    lastMY = e.clientY;
+    tx += dx;
+    ty += dy;
     applyTx();
     if (currentUnit && activeRangeTypes.size > 0 && typeof callbacks.updateRangeCircles === 'function') {
       callbacks.updateRangeCircles(currentUnit);
