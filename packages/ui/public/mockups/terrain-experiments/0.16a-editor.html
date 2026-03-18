@@ -26,6 +26,18 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 .bottom{background:#0a0e14;border-top:1px solid #1a2a3a;padding:6px 12px;display:flex;gap:6px;align-items:center}
 #debug{flex:1;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:9px;height:50px;resize:none;padding:4px;border-radius:3px}
 .ghost{position:fixed;pointer-events:none;opacity:0.6;z-index:9999}
+/* Layers panel */
+.layers-panel{margin-top:8px;border-top:1px solid #1a2a3a;padding-top:6px}
+.layer-row{display:flex;align-items:center;gap:4px;padding:3px 4px;border-radius:3px;cursor:pointer;font-size:9px;border:1px solid transparent}
+.layer-row:hover{background:#1a2a3a}
+.layer-row.sel{border-color:#00d4ff;background:#0a1828}
+.layer-row img{width:24px;height:24px;object-fit:cover;border-radius:2px;flex-shrink:0}
+.layer-row .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8090a0}
+.layer-row .lbtn{background:none;border:none;color:#607080;cursor:pointer;font-size:11px;padding:0 2px}
+.layer-row .lbtn:hover{color:#00d4ff}
+.layer-row.hidden-sprite .lname{opacity:0.4;text-decoration:line-through}
+/* Selection rect */
+.sel-rect{fill:rgba(0,212,255,0.08);stroke:#00d4ff;stroke-width:1;stroke-dasharray:4,2;pointer-events:none}
 </style></head><body>
 <div class="main">
 <div class="sidebar">
@@ -68,6 +80,10 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
   <div class="thumb-grid" id="tRuinsTop"></div>
   <h3>Scatter</h3>
   <div class="thumb-grid" id="tScatter"></div>
+  <div class="layers-panel">
+    <h3>Layers</h3>
+    <div id="layersList"></div>
+  </div>
 </div>
 <div class="canvas-wrap">
   <div class="map-wrapper" id="mapWrap">
@@ -206,6 +222,8 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
       <g id="modelLayer"></g>
       <!-- Selection UI -->
       <g id="selUI" style="display:none"></g>
+      <!-- Drag selection rectangle -->
+      <rect id="dragRect" class="sel-rect" style="display:none"/>
     </svg>
     <div id="objectives"></div>
   </div>
@@ -283,11 +301,11 @@ function addSprite(file,x,y,w,h,rot,layer){
   img.dataset.id=id;img.style.cursor='pointer';
   document.getElementById(layer).appendChild(img);
   const sp={id,file,x,y,w,h,rot,el:img,layer};allSprites.push(sp);
-  img.onmousedown=e=>{e.stopPropagation();select(sp);startMove(e,sp)};
-  select(sp);upDebug();save();return sp}
+  img.onmousedown=e=>{e.stopPropagation();if(!multiSel.includes(sp)){select(sp)}startMoveMulti(e,sp)};
+  select(sp);upDebug();save();rebuildLayers();return sp}
 
-function select(sp){selected=sp;drawSel()}
-function deselect(){selected=null;selUI.style.display='none';selUI.innerHTML=''}
+function select(sp){selected=sp;multiSel=[sp];drawSel();rebuildLayers()}
+function deselect(){selected=null;multiSel=[];selUI.style.display='none';selUI.innerHTML='';rebuildLayers()}
 function drawSel(){if(!selected){selUI.style.display='none';return}selUI.style.display='';selUI.innerHTML='';
   const s=selected,cx=s.x+s.w/2,cy=s.y+s.h/2;
   const r=document.createElementNS(NS,'rect');r.setAttribute('x',s.x-2);r.setAttribute('y',s.y-2);r.setAttribute('width',s.w+4);r.setAttribute('height',s.h+4);r.setAttribute('fill','none');r.setAttribute('stroke','#00d4ff');r.setAttribute('stroke-dasharray','4,3');r.setAttribute('stroke-width','1.5');
@@ -326,7 +344,10 @@ svg.addEventListener('mousedown',e=>{if(e.target===svg||e.target.id==='bgImg')de
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){deselect();return}
   if(!selected)return;
-  if(e.key==='Delete'||e.key==='Backspace'){selected.el.remove();allSprites=allSprites.filter(s=>s!==selected);deselect();upDebug();save();e.preventDefault()}
+  if(e.key==='Delete'||e.key==='Backspace'){
+    const toDelete=multiSel.length>1?multiSel:[selected];
+    toDelete.forEach(s=>{s.el.remove();allSprites=allSprites.filter(x=>x!==s)});
+    deselect();upDebug();save();rebuildLayers();e.preventDefault()}
   if(e.key==='d'){addSprite(selected.file,selected.x+15,selected.y+15,selected.w,selected.h,selected.rot,selected.layer)}
   if(e.key==='r'||e.key==='R'){const step=e.shiftKey?45:15;selected.rot=(selected.rot+step)%360;applySp(selected);drawSel();upDebug();save()}
   if(e.key==='='||e.key==='+'){// Move forward in z-order
@@ -336,6 +357,96 @@ document.addEventListener('keydown',e=>{
     const layer=document.getElementById(selected.layer);const prev=selected.el.previousElementSibling;
     if(prev)layer.insertBefore(selected.el,prev);save()}
 });
+
+// --- Layers Panel ---
+function rebuildLayers(){
+  const list=document.getElementById('layersList');list.innerHTML='';
+  allSprites.slice().reverse().forEach(sp=>{
+    const row=document.createElement('div');row.className='layer-row'+(sp===selected?' sel':'')+(sp.hidden?' hidden-sprite':'');
+    row.innerHTML=`<img src="${sp.file}"><span class="lname">${sp.file.replace(/\.(png|jpg)/,'')}</span>
+      <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();toggleVis('${sp.id}')">${sp.hidden?'🔇':'👁'}</button>
+      <button class="lbtn" title="Duplicate" onclick="event.stopPropagation();dupSprite('${sp.id}')">📋</button>
+      <button class="lbtn" title="Delete" onclick="event.stopPropagation();delSprite('${sp.id}')">🗑</button>`;
+    row.onclick=()=>{const s=allSprites.find(x=>x.id===sp.id);if(s){select(s);rebuildLayers()}};
+    list.appendChild(row);
+  });
+}
+function toggleVis(id){const sp=allSprites.find(s=>s.id===id);if(!sp)return;sp.hidden=!sp.hidden;sp.el.style.display=sp.hidden?'none':'';rebuildLayers();save()}
+function dupSprite(id){const s=allSprites.find(x=>x.id===id);if(s)addSprite(s.file,s.x+15,s.y+15,s.w,s.h,s.rot,s.layer);rebuildLayers()}
+function delSprite(id){const sp=allSprites.find(s=>s.id===id);if(!sp)return;sp.el.remove();allSprites=allSprites.filter(s=>s!==sp);if(selected===sp)deselect();upDebug();save();rebuildLayers()}
+
+// --- Drag-to-Select Multiple ---
+let multiSel=[];
+const dragRectEl=document.getElementById('dragRect');
+let isDragSelecting=false,dragStart=null;
+
+svg.addEventListener('mousedown',e=>{
+  if(e.target===svg||e.target.id==='bgImg'||e.target.tagName==='rect'&&!e.target.classList.contains('sel-handle')){
+    // Check if clicking on empty area (not a sprite)
+    const clickedSprite=allSprites.find(sp=>sp.el===e.target);
+    if(!clickedSprite){
+      deselect();multiSel=[];rebuildLayers();
+      // Start drag-select
+      isDragSelecting=true;dragStart=svgPt(e.clientX,e.clientY);
+      dragRectEl.setAttribute('x',dragStart.x);dragRectEl.setAttribute('y',dragStart.y);
+      dragRectEl.setAttribute('width',0);dragRectEl.setAttribute('height',0);
+      dragRectEl.style.display='';
+      const mv=e2=>{
+        if(!isDragSelecting)return;
+        const p=svgPt(e2.clientX,e2.clientY);
+        const x=Math.min(dragStart.x,p.x),y=Math.min(dragStart.y,p.y);
+        const w=Math.abs(p.x-dragStart.x),h=Math.abs(p.y-dragStart.y);
+        dragRectEl.setAttribute('x',x);dragRectEl.setAttribute('y',y);
+        dragRectEl.setAttribute('width',w);dragRectEl.setAttribute('height',h);
+      };
+      const up=e2=>{
+        document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);
+        isDragSelecting=false;dragRectEl.style.display='none';
+        // Find sprites in rect
+        const p=svgPt(e2.clientX,e2.clientY);
+        const rx=Math.min(dragStart.x,p.x),ry=Math.min(dragStart.y,p.y);
+        const rw=Math.abs(p.x-dragStart.x),rh=Math.abs(p.y-dragStart.y);
+        if(rw<5&&rh<5)return; // too small, just a click
+        multiSel=allSprites.filter(sp=>!sp.hidden&&sp.x+sp.w>rx&&sp.x<rx+rw&&sp.y+sp.h>ry&&sp.y<ry+rh);
+        if(multiSel.length>0){selected=multiSel[0];drawMultiSel();rebuildLayers()}
+      };
+      document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+    }
+  }
+});
+
+function drawMultiSel(){
+  if(multiSel.length<=1){if(selected)drawSel();return}
+  selUI.style.display='';selUI.innerHTML='';
+  // Combined bounding box
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  multiSel.forEach(s=>{minX=Math.min(minX,s.x);minY=Math.min(minY,s.y);maxX=Math.max(maxX,s.x+s.w);maxY=Math.max(maxY,s.y+s.h)});
+  const r=document.createElementNS(NS,'rect');
+  r.setAttribute('x',minX-3);r.setAttribute('y',minY-3);r.setAttribute('width',maxX-minX+6);r.setAttribute('height',maxY-minY+6);
+  r.setAttribute('fill','none');r.setAttribute('stroke','#00d4ff');r.setAttribute('stroke-dasharray','6,3');r.setAttribute('stroke-width','1.5');
+  selUI.appendChild(r);
+  // Individual highlights
+  multiSel.forEach(s=>{
+    const h=document.createElementNS(NS,'rect');
+    h.setAttribute('x',s.x);h.setAttribute('y',s.y);h.setAttribute('width',s.w);h.setAttribute('height',s.h);
+    h.setAttribute('fill','rgba(0,212,255,0.05)');h.setAttribute('stroke','#00d4ff');h.setAttribute('stroke-width','0.5');h.setAttribute('stroke-dasharray','3,2');
+    if(s.rot)h.setAttribute('transform',`rotate(${s.rot},${s.x+s.w/2},${s.y+s.h/2})`);
+    selUI.appendChild(h);
+  });
+}
+
+// Multi-select move: when moving selected and multiSel has items, move all
+function startMoveMulti(e,sp){
+  if(multiSel.length>1&&multiSel.includes(sp)){
+    const pt=svgPt(e.clientX,e.clientY);
+    const offsets=multiSel.map(s=>({s,ox:pt.x-s.x,oy:pt.y-s.y}));
+    const mv=e2=>{const p=svgPt(e2.clientX,e2.clientY);offsets.forEach(({s,ox,oy})=>{s.x=p.x-ox;s.y=p.y-oy;applySp(s)});drawMultiSel();upDebug()};
+    const up=()=>{document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);save()};
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+  }else{
+    multiSel=[sp];startMove(e,sp);
+  }
+}
 
 // --- LocalStorage persistence ---
 const STORAGE_KEY='wh40k-editor-layout';
@@ -357,4 +468,5 @@ function loadSaved(){
 }
 loadSaved();
 upDebug();
+rebuildLayers();
 </script></body></html>
