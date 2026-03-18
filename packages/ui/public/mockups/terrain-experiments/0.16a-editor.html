@@ -39,6 +39,9 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
       <option value="bg-variation-4.png">bg-variation-4 (oil)</option>
       <option value="bg-variation-5.png">bg-variation-5 (wet)</option>
       <option value="svg-gradient">— SVG: Gradient Depth —</option>
+      <option value="svg-warm">— SVG: Warm Core —</option>
+      <option value="svg-dual">— SVG: Dual Light Pools —</option>
+      <option value="svg-haze">— SVG: Atmospheric Haze —</option>
       <option value="svg-concrete">— SVG: Concrete Slabs —</option>
       <option value="svg-tactical">— SVG: Frozen Synapse —</option>
     </select>
@@ -91,6 +94,14 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
         </pattern>
         <!-- Ground option: Gradient Depth -->
         <radialGradient id="grd-depth" cx="50%" cy="45%" r="65%"><stop offset="0%" stop-color="#0e1822"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>
+        <!-- Ground option: Warm Core -->
+        <radialGradient id="grd-warm" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#14181e"/><stop offset="50%" stop-color="#0c1018"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>
+        <radialGradient id="grd-warm-tint" cx="50%" cy="40%" r="50%"><stop offset="0%" stop-color="rgba(40,30,15,0.06)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <!-- Ground option: Dual Light Pools -->
+        <radialGradient id="grd-imp-pool" cx="22%" cy="50%" r="35%"><stop offset="0%" stop-color="rgba(0,80,120,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <radialGradient id="grd-ork-pool" cx="78%" cy="50%" r="35%"><stop offset="0%" stop-color="rgba(120,30,10,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <!-- Ground option: Atmospheric Haze -->
+        <linearGradient id="grd-haze-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="35%" stop-color="rgba(15,20,28,0.04)"/><stop offset="55%" stop-color="rgba(15,20,28,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></linearGradient>
         <!-- Ground option: Concrete slabs -->
         <pattern id="slab-pat" width="60" height="60" patternUnits="userSpaceOnUse">
           <rect width="60" height="60" fill="#0b1018"/>
@@ -119,6 +130,25 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
       <g id="svgGroundGradient" style="display:none">
         <rect width="720" height="528" fill="url(#grd-depth)"/>
         <rect width="720" height="528" fill="url(#slab-pat)" opacity="0.15"/>
+      </g>
+      <g id="svgGroundWarm" style="display:none">
+        <rect width="720" height="528" fill="url(#grd-warm)"/>
+        <rect width="720" height="528" fill="url(#grd-warm-tint)"/>
+        <rect width="720" height="528" fill="url(#slab-pat)" opacity="0.1"/>
+      </g>
+      <g id="svgGroundDual" style="display:none">
+        <rect width="720" height="528" fill="url(#grd-depth)"/>
+        <rect width="720" height="528" fill="url(#grd-imp-pool)"/>
+        <rect width="720" height="528" fill="url(#grd-ork-pool)"/>
+        <rect width="720" height="528" fill="url(#slab-pat)" opacity="0.08"/>
+      </g>
+      <g id="svgGroundHaze" style="display:none">
+        <rect width="720" height="528" fill="url(#grd-depth)"/>
+        <rect width="720" height="528" fill="url(#grd-haze-band)"/>
+        <circle cx="180" cy="140" r="60" fill="#0e1822" opacity="0.3"/>
+        <circle cx="540" cy="400" r="70" fill="#0e1822" opacity="0.25"/>
+        <circle cx="360" cy="280" r="50" fill="#0e1822" opacity="0.2"/>
+        <rect width="720" height="528" fill="url(#slab-pat)" opacity="0.1"/>
       </g>
       <g id="svgGroundConcrete" style="display:none">
         <rect width="720" height="528" fill="url(#slab-pat)"/>
@@ -152,7 +182,7 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
       <!-- Dropped roof/top sprites go here -->
       <g id="spriteTop"></g>
       <!-- SVG terrain -->
-      <g id="svgRuins" opacity="0.92">
+      <g id="svgRuins" opacity="0.92" style="pointer-events:none">
         <g transform="translate(144,60) rotate(90) translate(-144,-60)"><path d="M 144 60 L 288 60 L 288 132 L 144 132 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(264,336) rotate(90) translate(-264,-336)"><path d="M 264 336 L 408 336 L 408 408 L 264 408 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)"><path d="M 192 264 L 288 264 L 288 336 L 192 336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
@@ -162,7 +192,7 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
         <g transform="translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)"><path d="M 528 264 L 624 264 L 624 336 L 528 336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)"><path d="M 360 324 L 438 324 L 438 384 L 360 384 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
       </g>
-      <g id="svgScatter">
+      <g id="svgScatter" style="pointer-events:none">
         <g transform="translate(48,264) rotate(0) translate(-48,-264)"><path d="M 48 264 L 96 264 L 96 336 L 48 336 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(336,0) rotate(0) translate(-336,0)"><path d="M 336 0 L 384 0 L 384 72 L 336 72 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)"><path d="M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
@@ -194,13 +224,10 @@ const selUI=document.getElementById('selUI'),debug=document.getElementById('debu
 function tgl(btn,id){btn.classList.toggle('on');const el=document.getElementById(id);if(el)el.style.display=btn.classList.contains('on')?'':'none'}
 function setBg(v){
   const img=document.getElementById('bgImg');
-  document.getElementById('svgGroundGradient').style.display='none';
-  document.getElementById('svgGroundConcrete').style.display='none';
-  document.getElementById('svgGroundTactical').style.display='none';
+  ['svgGroundGradient','svgGroundWarm','svgGroundDual','svgGroundHaze','svgGroundConcrete','svgGroundTactical'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none'});
   if(v.startsWith('svg-')){img.style.display='none';
-    if(v==='svg-gradient')document.getElementById('svgGroundGradient').style.display='';
-    if(v==='svg-concrete')document.getElementById('svgGroundConcrete').style.display='';
-    if(v==='svg-tactical')document.getElementById('svgGroundTactical').style.display='';
+    const map={'svg-gradient':'svgGroundGradient','svg-warm':'svgGroundWarm','svg-dual':'svgGroundDual','svg-haze':'svgGroundHaze','svg-concrete':'svgGroundConcrete','svg-tactical':'svgGroundTactical'};
+    if(map[v])document.getElementById(map[v]).style.display='';
   }else{img.style.display='';img.setAttribute('href',v)}
 }
 
@@ -301,7 +328,7 @@ document.addEventListener('keydown',e=>{
   if(!selected)return;
   if(e.key==='Delete'||e.key==='Backspace'){selected.el.remove();allSprites=allSprites.filter(s=>s!==selected);deselect();upDebug();save();e.preventDefault()}
   if(e.key==='d'){addSprite(selected.file,selected.x+15,selected.y+15,selected.w,selected.h,selected.rot,selected.layer)}
-  if(e.key==='r'||e.key==='R'){selected.rot=(selected.rot+15)%360;applySp(selected);drawSel();upDebug();save()}
+  if(e.key==='r'||e.key==='R'){const step=e.shiftKey?45:15;selected.rot=(selected.rot+step)%360;applySp(selected);drawSel();upDebug();save()}
   if(e.key==='='||e.key==='+'){// Move forward in z-order
     const layer=document.getElementById(selected.layer);const next=selected.el.nextElementSibling;
     if(next)layer.insertBefore(next,selected.el);save()}
