@@ -118,14 +118,13 @@ simState.units = [
 
   defs.appendChild(gridPat);
 
-  // Board surface — fully opaque. Fog is BEHIND the board, not over it.
-  // The board occludes the fog naturally.
+  // Board surface — dark background for the playable area.
   var boardBg = document.createElementNS(NS, 'rect');
   boardBg.setAttribute('x', '0');
   boardBg.setAttribute('y', '0');
   boardBg.setAttribute('width', '720');
   boardBg.setAttribute('height', '528');
-  boardBg.setAttribute('fill', 'rgba(8,14,22,0.92)');
+  boardBg.setAttribute('fill', 'rgba(8,14,22,0.88)');
   terrainSvg.insertBefore(boardBg, terrainSvg.firstChild);
 
   // Grid overlay rect — same area, uses the grid pattern

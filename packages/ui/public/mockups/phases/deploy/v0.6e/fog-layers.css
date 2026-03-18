@@ -1,19 +1,63 @@
 /* ══════════════════════════════════════════════════════════════
    Fog Layer Animation v0.6e — Fog SURROUNDS the battlefield
-   Fog sits BELOW the board (z-index 0). Board occludes it naturally.
-   No viewport mask needed. Parallax via JS on fogwrapper transform.
+   Fog sits ABOVE the board with CSS mask revealing the board center.
+   The mask makes fog transparent over the board = "surrounding" effect.
+   Parallax via JS on fogwrapper transform.
 ══════════════════════════════════════════════════════════════ */
 
-/* ── Fog wrapper — BEHIND the board ── */
+/* ── Fog wrapper — ABOVE the board, masked to surround it ── */
 .fogwrapper {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 5;
   overflow: hidden;
   pointer-events: none;
   filter: blur(1px) saturate(1.1) sepia(0.12);
-  /* JS adds transform: translate(Xpx, Ypx) for parallax */
   will-change: transform;
+  /* Smooth radial mask: transparent center → opaque edges.
+     15+ stops to eliminate banding artifacts. */
+  -webkit-mask-image: radial-gradient(
+    ellipse 46% 50% at 52% 48%,
+    transparent 0%,
+    transparent 48%,
+    rgba(0,0,0,0.01) 51%,
+    rgba(0,0,0,0.03) 53%,
+    rgba(0,0,0,0.06) 55%,
+    rgba(0,0,0,0.10) 57%,
+    rgba(0,0,0,0.16) 59%,
+    rgba(0,0,0,0.23) 61%,
+    rgba(0,0,0,0.32) 63%,
+    rgba(0,0,0,0.42) 65%,
+    rgba(0,0,0,0.52) 67%,
+    rgba(0,0,0,0.62) 69%,
+    rgba(0,0,0,0.72) 72%,
+    rgba(0,0,0,0.80) 75%,
+    rgba(0,0,0,0.88) 78%,
+    rgba(0,0,0,0.93) 82%,
+    rgba(0,0,0,0.97) 87%,
+    black 93%
+  );
+  mask-image: radial-gradient(
+    ellipse 46% 50% at 52% 48%,
+    transparent 0%,
+    transparent 48%,
+    rgba(0,0,0,0.01) 51%,
+    rgba(0,0,0,0.03) 53%,
+    rgba(0,0,0,0.06) 55%,
+    rgba(0,0,0,0.10) 57%,
+    rgba(0,0,0,0.16) 59%,
+    rgba(0,0,0,0.23) 61%,
+    rgba(0,0,0,0.32) 63%,
+    rgba(0,0,0,0.42) 65%,
+    rgba(0,0,0,0.52) 67%,
+    rgba(0,0,0,0.62) 69%,
+    rgba(0,0,0,0.72) 72%,
+    rgba(0,0,0,0.80) 75%,
+    rgba(0,0,0,0.88) 78%,
+    rgba(0,0,0,0.93) 82%,
+    rgba(0,0,0,0.97) 87%,
+    black 93%
+  );
 }
 
 /* ── Individual fog layers ── */
