@@ -1,12 +1,14 @@
 /**
  * fog-bg.js — Fog-of-war background layer for v0.6a.
  *
- * Renders behind the battlefield:
- *   1. Procedural tileable cloud textures (two layers, scrolling)
- *   2. Explosion glows in the fog (orange/yellow flashes with cloud light-bleed)
- *   3. Viewport mask — soft-edged hole revealing the board
+ * SOTA approach: overlapping radial gradient blobs + drifting animation.
+ * No tiled textures — zero tiling artifacts by design.
  *
- * All cloud textures are generated procedurally at startup (no external assets).
+ * Renders behind the battlefield:
+ *   1. Atmospheric base fill
+ *   2. 25+ large soft radial gradient blobs (cloud masses)
+ *   3. Explosion glows with light bleed into cloud layer
+ *   4. Viewport mask — soft-edged hole revealing the board
  */
 
 (function initFogBackground() {
@@ -14,101 +16,63 @@
   if (!canvas) return;
   var ctx = canvas.getContext('2d');
 
-  // ── Procedural Perlin-ish noise for cloud textures ──────────
-  // Generates a tileable greyscale noise field using value noise + FBM octaves.
+  // ── Cloud blob config ──────────────────────────────
+  var blobs = [];
+  var NUM_BLOBS = 28;
 
-  function makePermutation(seed) {
-    var p = [];
-    for (var i = 0; i < 256; i++) p[i] = i;
-    // Fisher-Yates with seeded LCG
-    var s = seed | 0;
-    for (var i = 255; i > 0; i--) {
-      s = (s * 1664525 + 1013904223) & 0x7fffffff;
-      var j = s % (i + 1);
-      var tmp = p[i]; p[i] = p[j]; p[j] = tmp;
-    }
-    // Double the array for wrapping
-    for (var i = 0; i < 256; i++) p[i + 256] = p[i];
-    return p;
-  }
-
-  function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
-  function lerp(a, b, t) { return a + t * (b - a); }
-
-  function grad(hash, x, y) {
-    var h = hash & 3;
-    var u = h < 2 ? x : -x;
-    var v = h === 0 || h === 3 ? y : -y;
-    return u + v;
-  }
-
-  function perlin2D(perm, x, y) {
-    var X = Math.floor(x) & 255;
-    var Y = Math.floor(y) & 255;
-    var xf = x - Math.floor(x);
-    var yf = y - Math.floor(y);
-    var u = fade(xf);
-    var v = fade(yf);
-
-    var aa = perm[perm[X] + Y];
-    var ab = perm[perm[X] + Y + 1];
-    var ba = perm[perm[X + 1] + Y];
-    var bb = perm[perm[X + 1] + Y + 1];
-
-    return lerp(
-      lerp(grad(aa, xf, yf), grad(ba, xf - 1, yf), u),
-      lerp(grad(ab, xf, yf - 1), grad(bb, xf - 1, yf - 1), u),
-      v
-    );
-  }
-
-  function fbm(perm, x, y, octaves) {
-    var val = 0, amp = 0.5, freq = 1;
-    for (var i = 0; i < octaves; i++) {
-      val += amp * perlin2D(perm, x * freq, y * freq);
-      amp *= 0.5;
-      freq *= 2;
-    }
-    return val;
-  }
-
-  // ── Generate a tileable cloud texture as an offscreen canvas ──
-  function generateCloudTexture(size, scale, octaves, seed, contrast, brightness) {
-    var perm = makePermutation(seed);
-    var offscreen = document.createElement('canvas');
-    offscreen.width = size;
-    offscreen.height = size;
-    var octx = offscreen.getContext('2d');
-    var imgData = octx.createImageData(size, size);
-    var data = imgData.data;
-
-    for (var py = 0; py < size; py++) {
-      for (var px = 0; px < size; px++) {
-        var nx = px / size * scale;
-        var ny = py / size * scale;
-        var n = fbm(perm, nx, ny, octaves);
-        // Normalize from [-0.5, 0.5] to [0, 1]
-        n = (n + 0.5);
-        // Apply contrast + brightness
-        n = Math.pow(Math.max(0, Math.min(1, n)), contrast) * brightness;
-        var v = Math.max(0, Math.min(255, n * 255)) | 0;
-
-        var idx = (py * size + px) * 4;
-        data[idx] = v;
-        data[idx + 1] = v;
-        data[idx + 2] = v;
-        data[idx + 3] = v; // Alpha = luminance (brighter = more opaque cloud)
+  function initBlobs(w, h) {
+    blobs = [];
+    for (var i = 0; i < NUM_BLOBS; i++) {
+      // Distribute across the full viewport with some clustering at edges
+      var edgeBias = Math.random() < 0.6;
+      var bx, by;
+      if (edgeBias) {
+        // Push towards edges (where fog is thickest)
+        var side = Math.floor(Math.random() * 4);
+        switch (side) {
+          case 0: bx = Math.random() * 0.25; by = Math.random(); break;       // left
+          case 1: bx = 0.75 + Math.random() * 0.25; by = Math.random(); break; // right
+          case 2: bx = Math.random(); by = Math.random() * 0.25; break;       // top
+          case 3: bx = Math.random(); by = 0.75 + Math.random() * 0.25; break; // bottom
+        }
+      } else {
+        // Some blobs in the middle too (thinner fog over board)
+        bx = 0.15 + Math.random() * 0.7;
+        by = 0.15 + Math.random() * 0.7;
       }
+
+      var baseRadius = 120 + Math.random() * 350;
+
+      blobs.push({
+        x: bx * w,
+        y: by * h,
+        baseX: bx * w,
+        baseY: by * h,
+        radius: baseRadius,
+        baseRadius: baseRadius,
+        // Drift velocity
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.15,
+        // Oscillation
+        sizePhase: Math.random() * Math.PI * 2,
+        sizeSpeed: 0.003 + Math.random() * 0.005,
+        sizeAmp: 0.08 + Math.random() * 0.15,
+        alphaPhase: Math.random() * Math.PI * 2,
+        alphaSpeed: 0.002 + Math.random() * 0.004,
+        // Base opacity — edge blobs are denser
+        alpha: edgeBias ? (0.12 + Math.random() * 0.16) : (0.04 + Math.random() * 0.08),
+        // Color variation: light grey with subtle warm/cool shifts
+        colorR: 155 + Math.floor(Math.random() * 40),
+        colorG: 155 + Math.floor(Math.random() * 35),
+        colorB: 160 + Math.floor(Math.random() * 35),
+        // Parallax depth (0 = far/slow, 1 = near/fast)
+        depth: 0.02 + Math.random() * 0.06,
+        // Wrap bounds
+        wrapW: w,
+        wrapH: h
+      });
     }
-
-    octx.putImageData(imgData, 0, 0);
-    return offscreen;
   }
-
-  // ── Cloud layer config ──────────────────────────────
-  var CLOUD_SIZE = 512;
-  var cloudBase = null;     // darker, slower layer
-  var cloudDetail = null;   // lighter, wispy layer
 
   // ── Explosion hotspots ──────────────────────────────
   var explosions = [];
@@ -116,16 +80,15 @@
 
   function initExplosions(w, h) {
     explosions = [];
-    // Place hotspots in the fog (edges/corners, away from board center)
     var positions = [
-      { x: 0.08, y: 0.1  },
-      { x: 0.92, y: 0.08 },
-      { x: 0.05, y: 0.55 },
-      { x: 0.95, y: 0.5  },
-      { x: 0.1,  y: 0.9  },
-      { x: 0.88, y: 0.92 },
-      { x: 0.5,  y: 0.04 },
-      { x: 0.5,  y: 0.96 }
+      { x: 0.06, y: 0.08 },
+      { x: 0.94, y: 0.06 },
+      { x: 0.04, y: 0.55 },
+      { x: 0.96, y: 0.5  },
+      { x: 0.08, y: 0.92 },
+      { x: 0.9,  y: 0.94 },
+      { x: 0.45, y: 0.03 },
+      { x: 0.55, y: 0.97 }
     ];
 
     for (var i = 0; i < NUM_EXPLOSIONS; i++) {
@@ -134,13 +97,16 @@
         x: p.x * w,
         y: p.y * h,
         phase: 'dormant',
-        timer: Math.random() * 300 + 60, // stagger initial delays
+        timer: 60 + Math.random() * 300,
         flashAlpha: 0,
         glowAlpha: 0,
-        radius: 60 + Math.random() * 80,
-        maxFlash: 0.6 + Math.random() * 0.4
+        radius: 50 + Math.random() * 70,
+        maxFlash: 0.5 + Math.random() * 0.5
       });
     }
+
+    // Expose for fog-fg.js spark spawning
+    window._fogExplosions = explosions;
   }
 
   // ── Board pan tracking ──────────────────────────────
@@ -163,10 +129,6 @@
     var bfW = bf.clientWidth;
     var bfH = bf.clientHeight;
 
-    // Board is 720x528 in SVG coords, rendered at scale within battlefield-inner
-    // battlefield-inner uses transform-origin: center
-    // The SVG fills battlefield-inner which fills battlefield
-    // At scale S, centered, then offset by tx/ty:
     var renderW = bfW * pan.scale;
     var renderH = bfH * pan.scale;
     var cx = bfW / 2 + pan.tx;
@@ -176,9 +138,7 @@
       left: cx - renderW / 2,
       top: cy - renderH / 2,
       width: renderW,
-      height: renderH,
-      cx: cx,
-      cy: cy
+      height: renderH
     };
   }
 
@@ -186,88 +146,79 @@
   function resize() {
     canvas.width = canvas.parentElement.clientWidth;
     canvas.height = canvas.parentElement.clientHeight;
+    initBlobs(canvas.width, canvas.height);
     initExplosions(canvas.width, canvas.height);
   }
 
-  // ── Init textures ──────────────────────────────────
-  function initTextures() {
-    // Base: darker, lower-detail — broad cloud masses
-    cloudBase = generateCloudTexture(CLOUD_SIZE, 4, 5, 42, 1.2, 0.9);
-    // Detail: lighter, wispier — fine structure
-    cloudDetail = generateCloudTexture(CLOUD_SIZE, 6, 7, 137, 0.8, 0.7);
-  }
+  // ── Draw cloud blobs ───────────────────────────────
+  function drawBlobs(pan, time) {
+    for (var i = 0; i < blobs.length; i++) {
+      var b = blobs[i];
 
-  // ── Draw tiled cloud layer with scroll offset ──────
-  function drawCloudLayer(tex, offsetX, offsetY, alpha, tint) {
-    if (!tex) return;
+      // Drift
+      b.x += b.vx;
+      b.y += b.vy;
 
-    ctx.save();
-    ctx.globalAlpha = alpha;
+      // Gentle return drift (so blobs don't wander too far)
+      var driftX = b.x - b.baseX;
+      var driftY = b.y - b.baseY;
+      b.vx -= driftX * 0.0001;
+      b.vy -= driftY * 0.0001;
 
-    var w = tex.width;
-    var h = tex.height;
+      // Oscillation
+      b.sizePhase += b.sizeSpeed;
+      b.alphaPhase += b.alphaSpeed;
+      var sizeMultiplier = 1 + b.sizeAmp * Math.sin(b.sizePhase);
+      var alphaMultiplier = 0.7 + 0.3 * Math.sin(b.alphaPhase);
 
-    // Wrap offsets
-    var ox = ((offsetX % w) + w) % w;
-    var oy = ((offsetY % h) + h) % h;
+      var r = b.radius * sizeMultiplier;
+      var a = b.alpha * alphaMultiplier;
 
-    // Need to tile to cover the canvas
-    var tilesX = Math.ceil(canvas.width / w) + 2;
-    var tilesY = Math.ceil(canvas.height / h) + 2;
-    var startX = -ox;
-    var startY = -oy;
+      // Apply parallax
+      var px = b.x + pan.tx * b.depth;
+      var py = b.y + pan.ty * b.depth;
 
-    // Apply tint via composite
-    if (tint) {
-      // Draw cloud texture, then tint overlay
-      for (var ty = 0; ty < tilesY; ty++) {
-        for (var tx = 0; tx < tilesX; tx++) {
-          ctx.drawImage(tex, startX + tx * w, startY + ty * h);
-        }
-      }
-    } else {
-      for (var ty = 0; ty < tilesY; ty++) {
-        for (var tx = 0; tx < tilesX; tx++) {
-          ctx.drawImage(tex, startX + tx * w, startY + ty * h);
-        }
-      }
+      // Draw soft radial gradient blob
+      var grad = ctx.createRadialGradient(px, py, 0, px, py, r);
+      grad.addColorStop(0, 'rgba(' + b.colorR + ',' + b.colorG + ',' + b.colorB + ',' + a + ')');
+      grad.addColorStop(0.4, 'rgba(' + b.colorR + ',' + b.colorG + ',' + b.colorB + ',' + (a * 0.6) + ')');
+      grad.addColorStop(0.7, 'rgba(' + b.colorR + ',' + b.colorG + ',' + b.colorB + ',' + (a * 0.2) + ')');
+      grad.addColorStop(1, 'rgba(' + b.colorR + ',' + b.colorG + ',' + b.colorB + ',0)');
+
+      ctx.fillStyle = grad;
+      ctx.fillRect(px - r, py - r, r * 2, r * 2);
     }
-    ctx.restore();
   }
 
-  // ── Update + draw explosion hotspots ───────────────
-  function updateExplosions(dt) {
+  // ── Update + draw explosions ───────────────────────
+  function updateExplosions() {
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i];
-      ex.timer -= dt;
+      ex.timer -= 1;
 
       switch (ex.phase) {
         case 'dormant':
-          ex.flashAlpha = 0;
-          ex.glowAlpha *= 0.97; // fade any residual glow
+          ex.flashAlpha *= 0.95;
+          ex.glowAlpha *= 0.97;
           if (ex.timer <= 0) {
             ex.phase = 'flash';
-            ex.timer = 8 + Math.random() * 6; // flash duration (frames)
-            ex.flashAlpha = 0;
+            ex.timer = 6 + Math.random() * 8;
           }
           break;
-
         case 'flash':
-          // Rapid ramp up
-          ex.flashAlpha = Math.min(ex.maxFlash, ex.flashAlpha + ex.maxFlash / 4);
-          ex.glowAlpha = ex.flashAlpha * 0.8;
+          ex.flashAlpha = Math.min(ex.maxFlash, ex.flashAlpha + ex.maxFlash / 3);
+          ex.glowAlpha = ex.flashAlpha * 0.7;
           if (ex.timer <= 0) {
             ex.phase = 'afterglow';
-            ex.timer = 30 + Math.random() * 20; // afterglow duration
+            ex.timer = 25 + Math.random() * 25;
           }
           break;
-
         case 'afterglow':
-          ex.flashAlpha *= 0.92;
-          ex.glowAlpha *= 0.96;
+          ex.flashAlpha *= 0.9;
+          ex.glowAlpha *= 0.95;
           if (ex.timer <= 0) {
             ex.phase = 'dormant';
-            ex.timer = 120 + Math.random() * 240; // wait 2-6 seconds at 60fps
+            ex.timer = 100 + Math.random() * 280;
           }
           break;
       }
@@ -277,33 +228,34 @@
   function drawExplosions(pan) {
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i];
-      if (ex.flashAlpha < 0.01 && ex.glowAlpha < 0.01) continue;
+      if (ex.flashAlpha < 0.005 && ex.glowAlpha < 0.005) continue;
 
       var px = ex.x + pan.tx * 0.03;
       var py = ex.y + pan.ty * 0.03;
 
-      // Outer orange glow (light bleeding into clouds)
-      if (ex.glowAlpha > 0.01) {
-        var glowR = ex.radius * 2.5;
+      // Wide orange glow bleeding into clouds
+      if (ex.glowAlpha > 0.005) {
+        var glowR = ex.radius * 3;
         var glowGrad = ctx.createRadialGradient(px, py, 0, px, py, glowR);
-        glowGrad.addColorStop(0, 'rgba(255,140,30,' + (ex.glowAlpha * 0.4) + ')');
-        glowGrad.addColorStop(0.3, 'rgba(255,100,20,' + (ex.glowAlpha * 0.15) + ')');
-        glowGrad.addColorStop(1, 'rgba(139,37,0,0)');
+        glowGrad.addColorStop(0, 'rgba(255,150,40,' + (ex.glowAlpha * 0.5) + ')');
+        glowGrad.addColorStop(0.25, 'rgba(255,110,25,' + (ex.glowAlpha * 0.25) + ')');
+        glowGrad.addColorStop(0.6, 'rgba(200,60,10,' + (ex.glowAlpha * 0.08) + ')');
+        glowGrad.addColorStop(1, 'rgba(120,30,5,0)');
         ctx.fillStyle = glowGrad;
         ctx.fillRect(px - glowR, py - glowR, glowR * 2, glowR * 2);
       }
 
-      // Core flash (bright yellow-white)
-      if (ex.flashAlpha > 0.02) {
+      // Core flash
+      if (ex.flashAlpha > 0.01) {
         ctx.save();
         ctx.globalCompositeOperation = 'lighter';
 
-        var coreR = ex.radius * 0.8;
+        var coreR = ex.radius * 0.7;
         var coreGrad = ctx.createRadialGradient(px, py, 0, px, py, coreR);
-        coreGrad.addColorStop(0, 'rgba(255,248,220,' + (ex.flashAlpha * 0.9) + ')');
-        coreGrad.addColorStop(0.25, 'rgba(255,200,80,' + (ex.flashAlpha * 0.6) + ')');
-        coreGrad.addColorStop(0.6, 'rgba(255,120,30,' + (ex.flashAlpha * 0.2) + ')');
-        coreGrad.addColorStop(1, 'rgba(200,60,10,0)');
+        coreGrad.addColorStop(0, 'rgba(255,250,225,' + (ex.flashAlpha * 0.85) + ')');
+        coreGrad.addColorStop(0.2, 'rgba(255,210,100,' + (ex.flashAlpha * 0.6) + ')');
+        coreGrad.addColorStop(0.5, 'rgba(255,130,40,' + (ex.flashAlpha * 0.25) + ')');
+        coreGrad.addColorStop(1, 'rgba(180,50,10,0)');
         ctx.fillStyle = coreGrad;
         ctx.beginPath();
         ctx.arc(px, py, coreR, 0, Math.PI * 2);
@@ -314,7 +266,7 @@
     }
   }
 
-  // ── Draw viewport mask (soft-edged hole for the board) ──
+  // ── Viewport mask ──────────────────────────────────
   function drawViewportMask() {
     var rect = getBoardRect();
     if (!rect) return;
@@ -322,107 +274,105 @@
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
 
-    // Multi-layered soft mask for a natural feathered edge
-    var feather = 120; // px of feathering
+    var feather = 100;
 
-    // Inner fully-transparent area (board is fully visible here)
-    var innerL = rect.left + feather * 0.4;
-    var innerT = rect.top + feather * 0.4;
-    var innerW = rect.width - feather * 0.8;
-    var innerH = rect.height - feather * 0.8;
-
-    // Draw multiple gradient passes for smooth feathering
-    // Horizontal gradients
-    var gradL = ctx.createLinearGradient(rect.left - feather * 0.3, 0, rect.left + feather * 0.8, 0);
-    gradL.addColorStop(0, 'rgba(0,0,0,0)');
-    gradL.addColorStop(1, 'rgba(0,0,0,1)');
-
-    var gradR = ctx.createLinearGradient(rect.left + rect.width + feather * 0.3, 0, rect.left + rect.width - feather * 0.8, 0);
-    gradR.addColorStop(0, 'rgba(0,0,0,0)');
-    gradR.addColorStop(1, 'rgba(0,0,0,1)');
-
-    var gradT = ctx.createLinearGradient(0, rect.top - feather * 0.3, 0, rect.top + feather * 0.8);
-    gradT.addColorStop(0, 'rgba(0,0,0,0)');
-    gradT.addColorStop(1, 'rgba(0,0,0,1)');
-
-    var gradB = ctx.createLinearGradient(0, rect.top + rect.height + feather * 0.3, 0, rect.top + rect.height - feather * 0.8);
-    gradB.addColorStop(0, 'rgba(0,0,0,0)');
-    gradB.addColorStop(1, 'rgba(0,0,0,1)');
-
-    // Central solid erase
+    // Core clear area (slightly inset from board edges)
+    var inset = feather * 0.35;
     ctx.fillStyle = 'rgba(0,0,0,1)';
-    ctx.fillRect(innerL, innerT, innerW, innerH);
+    ctx.fillRect(rect.left + inset, rect.top + inset,
+                 rect.width - inset * 2, rect.height - inset * 2);
 
-    // Feathered edges
-    // Left
-    ctx.fillStyle = gradL;
-    ctx.fillRect(rect.left - feather * 0.3, innerT, feather * 1.1 + (innerL - rect.left), innerH);
-    // Right
-    ctx.fillStyle = gradR;
-    ctx.fillRect(innerL + innerW - feather * 0.2, innerT, feather * 1.3, innerH);
-    // Top
-    ctx.fillStyle = gradT;
-    ctx.fillRect(rect.left - feather * 0.3, rect.top - feather * 0.3, rect.width + feather * 0.6, feather * 1.1 + (innerT - rect.top));
-    // Bottom
-    ctx.fillStyle = gradB;
-    ctx.fillRect(rect.left - feather * 0.3, innerT + innerH - feather * 0.2, rect.width + feather * 0.6, feather * 1.3);
+    // Feathered edges using linear gradients
+    // Left edge
+    var gL = ctx.createLinearGradient(rect.left - feather * 0.2, 0, rect.left + inset + 10, 0);
+    gL.addColorStop(0, 'rgba(0,0,0,0)');
+    gL.addColorStop(0.3, 'rgba(0,0,0,0.3)');
+    gL.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = gL;
+    ctx.fillRect(rect.left - feather * 0.2, rect.top + inset,
+                 inset + feather * 0.2 + 10, rect.height - inset * 2);
 
-    // Corner radial gradients (blend the corners smoothly)
+    // Right edge
+    var gR = ctx.createLinearGradient(rect.left + rect.width + feather * 0.2, 0,
+                                      rect.left + rect.width - inset - 10, 0);
+    gR.addColorStop(0, 'rgba(0,0,0,0)');
+    gR.addColorStop(0.3, 'rgba(0,0,0,0.3)');
+    gR.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = gR;
+    ctx.fillRect(rect.left + rect.width - inset - 10, rect.top + inset,
+                 inset + feather * 0.2 + 10, rect.height - inset * 2);
+
+    // Top edge
+    var gT = ctx.createLinearGradient(0, rect.top - feather * 0.2, 0, rect.top + inset + 10);
+    gT.addColorStop(0, 'rgba(0,0,0,0)');
+    gT.addColorStop(0.3, 'rgba(0,0,0,0.3)');
+    gT.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = gT;
+    ctx.fillRect(rect.left + inset, rect.top - feather * 0.2,
+                 rect.width - inset * 2, inset + feather * 0.2 + 10);
+
+    // Bottom edge
+    var gB = ctx.createLinearGradient(0, rect.top + rect.height + feather * 0.2,
+                                      0, rect.top + rect.height - inset - 10);
+    gB.addColorStop(0, 'rgba(0,0,0,0)');
+    gB.addColorStop(0.3, 'rgba(0,0,0,0.3)');
+    gB.addColorStop(1, 'rgba(0,0,0,1)');
+    ctx.fillStyle = gB;
+    ctx.fillRect(rect.left + inset, rect.top + rect.height - inset - 10,
+                 rect.width - inset * 2, inset + feather * 0.2 + 10);
+
+    // Corner feathers (radial gradients for smooth corners)
     var corners = [
-      { x: innerL, y: innerT },                        // top-left
-      { x: innerL + innerW, y: innerT },                // top-right
-      { x: innerL, y: innerT + innerH },                // bottom-left
-      { x: innerL + innerW, y: innerT + innerH }        // bottom-right
+      [rect.left + inset, rect.top + inset],
+      [rect.left + rect.width - inset, rect.top + inset],
+      [rect.left + inset, rect.top + rect.height - inset],
+      [rect.left + rect.width - inset, rect.top + rect.height - inset]
     ];
-
-    for (var c = 0; c < corners.length; c++) {
-      var cr = feather * 0.9;
-      var cGrad = ctx.createRadialGradient(corners[c].x, corners[c].y, 0, corners[c].x, corners[c].y, cr);
-      cGrad.addColorStop(0, 'rgba(0,0,0,1)');
-      cGrad.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = cGrad;
-      ctx.fillRect(corners[c].x - cr, corners[c].y - cr, cr * 2, cr * 2);
+    var cornerR = feather * 0.7;
+    for (var c = 0; c < 4; c++) {
+      var cg = ctx.createRadialGradient(
+        corners[c][0], corners[c][1], 0,
+        corners[c][0], corners[c][1], cornerR
+      );
+      cg.addColorStop(0, 'rgba(0,0,0,1)');
+      cg.addColorStop(0.5, 'rgba(0,0,0,0.5)');
+      cg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = cg;
+      ctx.fillRect(corners[c][0] - cornerR, corners[c][1] - cornerR,
+                   cornerR * 2, cornerR * 2);
     }
 
     ctx.restore();
   }
 
   // ── Main draw loop ─────────────────────────────────
-  var scrollTime = 0;
+  var time = 0;
 
   function draw() {
-    scrollTime += 1;
-
+    time++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     var pan = getBoardPan();
 
     // 1. Dark atmospheric base
-    ctx.fillStyle = '#1a1a20';
+    var baseBg = ctx.createRadialGradient(
+      canvas.width * 0.5, canvas.height * 0.5, 0,
+      canvas.width * 0.5, canvas.height * 0.5, canvas.width * 0.7
+    );
+    baseBg.addColorStop(0, '#2a2a30');
+    baseBg.addColorStop(0.5, '#222228');
+    baseBg.addColorStop(1, '#1a1a20');
+    ctx.fillStyle = baseBg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Base cloud layer — slow drift, darker
-    var baseOx = scrollTime * 0.25 + pan.tx * 0.03;
-    var baseOy = scrollTime * 0.12 + pan.ty * 0.03;
-    drawCloudLayer(cloudBase, baseOx, baseOy, 0.22, false);
+    // 2. Cloud blobs
+    drawBlobs(pan, time);
 
-    // 3. Detail cloud layer — different angle/speed, lighter
-    var detOx = scrollTime * 0.4 * Math.cos(0.52) + pan.tx * 0.06;
-    var detOy = scrollTime * 0.4 * Math.sin(0.52) + pan.ty * 0.06;
-    drawCloudLayer(cloudDetail, detOx, detOy, 0.15, false);
-
-    // 4. Grey fog tint over the clouds
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-atop';
-    ctx.fillStyle = 'rgba(160,160,170,0.55)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-
-    // 5. Explosion glows (drawn BEFORE mask so they show in fog)
-    updateExplosions(1);
+    // 3. Explosions
+    updateExplosions();
     drawExplosions(pan);
 
-    // 6. Viewport mask — cut a soft hole for the board
+    // 4. Viewport mask
     drawViewportMask();
 
     requestAnimationFrame(draw);
@@ -431,10 +381,5 @@
   // ── Init ───────────────────────────────────────────
   window.addEventListener('resize', resize);
   resize();
-  initTextures();
-
-  // Expose explosion state for fog-fg.js spark spawning
-  window._fogExplosions = explosions;
-
   requestAnimationFrame(draw);
 })();

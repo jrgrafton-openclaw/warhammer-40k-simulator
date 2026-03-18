@@ -118,13 +118,14 @@ simState.units = [
 
   defs.appendChild(gridPat);
 
-  // Dark board surface rect — covers the full viewBox area
+  // Board surface — semi-transparent so fog shows through.
+  // No opaque background rect (fog-bg.js provides the atmosphere).
   var boardBg = document.createElementNS(NS, 'rect');
   boardBg.setAttribute('x', '0');
   boardBg.setAttribute('y', '0');
   boardBg.setAttribute('width', '720');
   boardBg.setAttribute('height', '528');
-  boardBg.setAttribute('fill', 'rgba(8,14,22,0.88)');
+  boardBg.setAttribute('fill', 'rgba(8,14,22,0.6)');
   terrainSvg.insertBefore(boardBg, terrainSvg.firstChild);
 
   // Grid overlay rect — same area, uses the grid pattern
@@ -135,7 +136,6 @@ simState.units = [
   gridRect.setAttribute('height', '528');
   gridRect.setAttribute('fill', 'url(#board-grid)');
   gridRect.setAttribute('pointer-events', 'none');
-  // Insert after background but before deployment zones and terrain
   boardBg.after(gridRect);
 })();
 
