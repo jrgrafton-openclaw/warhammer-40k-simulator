@@ -298,53 +298,8 @@ initBoard({ initialScale: 0.5 });
 initBattleControls();
 initModelInteraction();
 
-// ── Pan limits — using transform-origin: center ──
-// 
-// KEY INSIGHT: transform-origin is CENTER, not top-left.
-// This means translate(0,0) scale(0.5) = board centered, at half size.
-// tx/ty is the offset FROM the centered position.
-// So: centered = tx:0, ty:0. Pan limits = |tx| ≤ max, |ty| ≤ max.
-//
-// Using direct event listeners, NOT MutationObserver (which caused stuck states).
-//
-(function addPanLimits() {
-  var bf = document.getElementById('battlefield');
-  var inner = document.getElementById('battlefield-inner');
-  if (!bf || !inner) return;
-
-  function clampTransform() {
-    var t = inner.style.transform || '';
-    var match = t.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)\s*scale\(\s*([-\d.]+)\s*\)/);
-    if (!match) return;
-
-    var curTx = parseFloat(match[1]);
-    var curTy = parseFloat(match[2]);
-    var curScale = parseFloat(match[3]);
-
-    var bfW = bf.clientWidth;
-    var bfH = bf.clientHeight;
-
-    // Board renders at bfW*scale x bfH*scale, centered in viewport.
-    // Allow panning so board edge can reach viewport center (50% of rendered size).
-    var maxPanX = Math.max(0, (bfW * curScale) * 0.4);
-    var maxPanY = Math.max(0, (bfH * curScale) * 0.4);
-
-    var clampedTx = Math.max(-maxPanX, Math.min(maxPanX, curTx));
-    var clampedTy = Math.max(-maxPanY, Math.min(maxPanY, curTy));
-
-    if (Math.abs(clampedTx - curTx) > 0.5 || Math.abs(clampedTy - curTy) > 0.5) {
-      inner.style.transform = 'translate(' + clampedTx + 'px,' + clampedTy + 'px) scale(' + curScale + ')';
-    }
-  }
-
-  // Run AFTER svg-renderer's handlers (bubbling phase)
-  document.addEventListener('mousemove', clampTransform, false);
-  document.addEventListener('mouseup', clampTransform, false);
-  bf.addEventListener('wheel', function() {
-    // Delay slightly so svg-renderer's wheel handler runs first
-    requestAnimationFrame(clampTransform);
-  }, false);
-})();
+// ── Pan limits ──
+// Clamping now handled inside camera.js applyTx() — single source of truth.
 
 // ── Set initial camera pan to show staging + deployment zone ──
 // Use setCamera() so camera.js internal state (tx/ty/scale) stays in sync
