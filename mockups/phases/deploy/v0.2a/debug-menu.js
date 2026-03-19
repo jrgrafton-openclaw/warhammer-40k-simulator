@@ -368,7 +368,7 @@
   sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
     state.offboardSoftness = v; applyOffboard(); save(state);
   });
-  sliderRow(zoneBody, 'Glow Brightness', 0, 200, 5, state.offboardGlowBrightness, '%', function(v) {
+  sliderRow(zoneBody, 'Glow Brightness', 0, 500, 10, state.offboardGlowBrightness, '%', function(v) {
     state.offboardGlowBrightness = v; applyOffboard(); save(state);
   });
 
@@ -676,6 +676,17 @@
         }
         // Edge softness (gradient radius)
         grad.setAttribute('r', state.offboardSoftness + '%');
+      }
+      // Glow brightness — apply drop-shadow to each zone rect (always visible, not just during drag)
+      var glowScale = (state.offboardGlowBrightness || 100) / 100;
+      var b1 = Math.round(14 * glowScale);
+      var b2 = Math.round(32 * glowScale);
+      var a1 = Math.min(1, 0.6 * glowScale).toFixed(2);
+      var a2 = Math.min(1, 0.35 * glowScale).toFixed(2);
+      if (glowScale > 0) {
+        rect.style.filter = 'drop-shadow(0 0 ' + b1 + 'px rgba(' + zi.color + ',' + a1 + ')) drop-shadow(0 0 ' + b2 + 'px rgba(' + zi.color + ',' + a2 + '))';
+      } else {
+        rect.style.filter = 'none';
       }
     });
   }
