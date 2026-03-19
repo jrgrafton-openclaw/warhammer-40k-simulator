@@ -9,14 +9,16 @@
   // ── Defaults ──────────────────────────────────────────
   var defaults = {
     bgColor: '#000000',
-    fog1On: true, fog1Opacity: 1.0, fog1Speed: 20,
-    fog2On: true, fog2Opacity: 1.0, fog2Speed: 15,
-    fog3On: true, fog3Opacity: 1.0, fog3Speed: 11,
-    vigTOn: true, vigTDepth: 160, vigTOpacity: 0.95,
-    vigBOn: true, vigBDepth: 160, vigBOpacity: 0.95,
-    vigLOn: true, vigLDepth: 160, vigLOpacity: 0.95,
-    vigROn: true, vigRDepth: 160, vigROpacity: 0.95,
+    fogParallax: 0.35,
+    fog1On: true, fog1Opacity: 1.0, fog1Speed: 3,
+    fog2On: true, fog2Opacity: 1.0, fog2Speed: 4,
+    fog3On: true, fog3Opacity: 1.0, fog3Speed: 5.5,
+    vigTOn: true, vigTDepth: 200, vigTOpacity: 0.95,
+    vigBOn: true, vigBDepth: 200, vigBOpacity: 0.95,
+    vigLOn: true, vigLDepth: 200, vigLOpacity: 0.95,
+    vigROn: true, vigRDepth: 200, vigROpacity: 0.95,
     vigLock: true,
+    vigNoiseScale: 40,
     groundStyle: 'gradient',
     gridOn: true, gridOpacity: 1.0, gridWidth: 5000, gridHeight: 5000,
     gridMinorOpacity: 0.025, gridMajorOpacity: 0.055,
@@ -235,6 +237,10 @@
   // ══════════════════════════════════════════════════════
   var fogBody = section('FOG LAYERS');
 
+  sliderRow(fogBody, 'Parallax', 0, 1, 0.01, state.fogParallax, '', function(v) {
+    state.fogParallax = v; window._fogParallax = v; save(state);
+  });
+
   var fogLayers = [
     { key: '1', el: 'foglayer_01', onKey: 'fog1On', opKey: 'fog1Opacity', spKey: 'fog1Speed' },
     { key: '2', el: 'foglayer_02', onKey: 'fog2On', opKey: 'fog2Opacity', spKey: 'fog2Speed' },
@@ -249,7 +255,7 @@
     sliderRow(fogBody, 'Opacity', 0, 1, 0.01, state[fl.opKey], '', function(v) {
       state[fl.opKey] = v; applyFog(); save(state);
     });
-    sliderRow(fogBody, 'Speed', 3, 60, 1, state[fl.spKey], 's', function(v) {
+    sliderRow(fogBody, 'Speed', 1, 20, 0.5, state[fl.spKey], 'x', function(v) {
       state[fl.spKey] = v; applyFog(); save(state);
     });
   });
@@ -262,6 +268,11 @@
   // Lock toggle
   toggleRow(vigBody, 'Lock All Sides', state.vigLock, function(on) {
     state.vigLock = on; save(state);
+  });
+
+  // Noise displacement scale
+  sliderRow(vigBody, 'Noise Scale', 0, 100, 1, state.vigNoiseScale, 'px', function(v) {
+    state.vigNoiseScale = v; applyVignette(); save(state);
   });
 
   var vigSides = [
@@ -400,19 +411,19 @@
   }
 
   function applyFog() {
+    // Set parallax global
+    window._fogParallax = state.fogParallax;
+
     fogLayers.forEach(function(fl) {
       var el = document.getElementById(fl.el);
       if (!el) return;
       el.style.display = state[fl.onKey] ? '' : 'none';
-      // Set opacity multiplier — caps the animation's peak
-      el.style.opacity = state[fl.opKey];
-      // Modify scroll animation speed
-      var scrollName = fl.key === '1' ? 'fog_scroll_slow' :
-                       fl.key === '2' ? 'fog_scroll_med' : 'fog_scroll_fast';
-      var opName = fl.key === '1' ? 'fog_opacity_01' :
-                   fl.key === '2' ? 'fog_opacity_02' : 'fog_opacity_03';
+      // Use CSS filter opacity — multiplies with animated opacity (Issue 6)
+      el.style.filter = 'opacity(' + state[fl.opKey] + ')';
+      // Speed slider = speed factor; duration = 60/speed (Issue 4)
       var opDuration = fl.key === '1' ? '14s' : fl.key === '2' ? '18s' : '12s';
-      el.style.animationDuration = opDuration + ', ' + state[fl.spKey] + 's';
+      var scrollDuration = Math.max(1, 60 / state[fl.spKey]);
+      el.style.animationDuration = opDuration + ', ' + scrollDuration + 's';
     });
   }
 
@@ -446,22 +457,32 @@
       // Visibility
       rect.style.display = state[vs.onKey] ? '' : 'none';
 
-      // Depth — adjust width for L/R, height for T/B
+      // Depth — positioned at GROUND TEXTURE boundary (-180,-132,1080,792)
       var depth = state[vs.dKey];
       if (vs.axis === 'w') {
         rect.setAttribute('width', String(depth));
-        // Reposition right side to play area boundary
-        if (vs.rectId === 'vig-rect-r') {
-          rect.setAttribute('x', String(720 - depth));
+        rect.setAttribute('y', '-132');
+        rect.setAttribute('height', '792');
+        if (vs.rectId === 'vig-rect-l') {
+          rect.setAttribute('x', '-180');
+        } else if (vs.rectId === 'vig-rect-r') {
+          rect.setAttribute('x', String(1080 - depth));
         }
       } else {
         rect.setAttribute('height', String(depth));
-        // Reposition bottom to play area boundary
-        if (vs.rectId === 'vig-rect-b') {
-          rect.setAttribute('y', String(528 - depth));
+        rect.setAttribute('x', '-180');
+        rect.setAttribute('width', '1080');
+        if (vs.rectId === 'vig-rect-t') {
+          rect.setAttribute('y', '-132');
+        } else if (vs.rectId === 'vig-rect-b') {
+          rect.setAttribute('y', String(792 - 132 - depth));
         }
       }
     });
+
+    // Update noise displacement scale
+    var dm = document.querySelector('#vig-noise feDisplacementMap');
+    if (dm) dm.setAttribute('scale', String(state.vigNoiseScale));
   }
 
   function applyGrid() {
