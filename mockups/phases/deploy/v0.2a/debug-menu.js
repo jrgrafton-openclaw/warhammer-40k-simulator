@@ -12,12 +12,15 @@
     fog1On: true, fog1Opacity: 1.0, fog1Speed: 20,
     fog2On: true, fog2Opacity: 1.0, fog2Speed: 15,
     fog3On: true, fog3Opacity: 1.0, fog3Speed: 11,
-    vigTOn: true, vigTDepth: 400, vigTOpacity: 0.95,
-    vigBOn: true, vigBDepth: 400, vigBOpacity: 0.95,
-    vigLOn: true, vigLDepth: 400, vigLOpacity: 0.95,
-    vigROn: true, vigRDepth: 400, vigROpacity: 0.95,
+    vigTOn: true, vigTDepth: 160, vigTOpacity: 0.95,
+    vigBOn: true, vigBDepth: 160, vigBOpacity: 0.95,
+    vigLOn: true, vigLDepth: 160, vigLOpacity: 0.95,
+    vigROn: true, vigRDepth: 160, vigROpacity: 0.95,
     vigColor: '#000000',
+    gridOn: true, gridOpacity: 1.0, gridWidth: 2160, gridHeight: 1584,
+    gridMinorOpacity: 0.025, gridMajorOpacity: 0.055,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
+    zoneDeployment: true,
     fxOn: true, fxIntensity: 5, fxSpeed: 1.0,
     wispsOn: true
   };
@@ -149,6 +152,30 @@
   });
 
   // ══════════════════════════════════════════════════════
+  // GRID SECTION
+  // ══════════════════════════════════════════════════════
+  var gridBody = section('GRID');
+
+  toggleRow(gridBody, 'Visible', state.gridOn, function(on) {
+    state.gridOn = on; applyGrid(); save(state);
+  });
+  sliderRow(gridBody, 'Opacity', 0, 1, 0.01, state.gridOpacity, '', function(v) {
+    state.gridOpacity = v; applyGrid(); save(state);
+  });
+  sliderRow(gridBody, 'Width', 100, 4000, 10, state.gridWidth, 'px', function(v) {
+    state.gridWidth = v; applyGrid(); save(state);
+  });
+  sliderRow(gridBody, 'Height', 100, 3000, 10, state.gridHeight, 'px', function(v) {
+    state.gridHeight = v; applyGrid(); save(state);
+  });
+  sliderRow(gridBody, 'Minor Line Opacity', 0, 0.2, 0.005, state.gridMinorOpacity, '', function(v) {
+    state.gridMinorOpacity = v; applyGrid(); save(state);
+  });
+  sliderRow(gridBody, 'Major Line Opacity', 0, 0.2, 0.005, state.gridMajorOpacity, '', function(v) {
+    state.gridMajorOpacity = v; applyGrid(); save(state);
+  });
+
+  // ══════════════════════════════════════════════════════
   // FOG LAYERS SECTION
   // ══════════════════════════════════════════════════════
   var fogBody = section('FOG LAYERS');
@@ -206,6 +233,9 @@
   // ══════════════════════════════════════════════════════
   var zoneBody = section('ZONES');
 
+  toggleRow(zoneBody, 'Deployment Zones', state.zoneDeployment, function(on) {
+    state.zoneDeployment = on; applyZones(); save(state);
+  });
   toggleRow(zoneBody, 'Staging', state.zoneStaging, function(on) {
     state.zoneStaging = on; applyZones(); save(state);
   });
@@ -260,6 +290,10 @@
   // ══════════════════════════════════════════════════════
 
   function applyBg() {
+    // SVG board surface rect
+    var surface = document.getElementById('board-surface');
+    if (surface) surface.setAttribute('fill', state.bgColor);
+    // CSS backgrounds
     var bf = document.getElementById('battlefield');
     if (bf) bf.style.background = state.bgColor;
     document.body.style.background = state.bgColor;
@@ -307,21 +341,50 @@
       var depth = state[vs.dKey];
       if (vs.axis === 'w') {
         rect.setAttribute('width', String(depth));
-        // Reposition right side
+        // Reposition right side to play area boundary
         if (vs.rectId === 'vig-rect-r') {
-          rect.setAttribute('x', String(720 + 720 - depth));
+          rect.setAttribute('x', String(720 - depth));
         }
       } else {
         rect.setAttribute('height', String(depth));
-        // Reposition bottom
+        // Reposition bottom to play area boundary
         if (vs.rectId === 'vig-rect-b') {
-          rect.setAttribute('y', String(528 + 528 - depth));
+          rect.setAttribute('y', String(528 - depth));
         }
       }
     });
   }
 
+  function applyGrid() {
+    var gridRect = document.getElementById('board-grid-rect');
+    if (gridRect) {
+      gridRect.style.display = state.gridOn ? '' : 'none';
+      gridRect.style.opacity = state.gridOpacity;
+      gridRect.setAttribute('width', String(state.gridWidth));
+      gridRect.setAttribute('height', String(state.gridHeight));
+    }
+    // Update grid pattern line opacities
+    var pat = document.getElementById('board-grid');
+    if (pat) {
+      var minors = pat.querySelectorAll('line[data-grid="minor"]');
+      var majors = pat.querySelectorAll('line[data-grid="major"]');
+      for (var i = 0; i < minors.length; i++) {
+        minors[i].setAttribute('stroke', 'rgba(201,163,82,' + state.gridMinorOpacity + ')');
+      }
+      for (var j = 0; j < majors.length; j++) {
+        majors[j].setAttribute('stroke', 'rgba(201,163,82,' + state.gridMajorOpacity + ')');
+      }
+    }
+  }
+
   function applyZones() {
+    // Deployment zones
+    var deployClasses = ['deploy-zone-bg', 'deploy-zone-border', 'deploy-zone-label',
+      'deploy-zone-sublabel', 'nml-zone-bg', 'nml-label'];
+    deployClasses.forEach(function(cls) {
+      setDisplay(document.querySelectorAll('.' + cls), state.zoneDeployment);
+    });
+
     // Staging
     var stagingBgs = document.querySelectorAll('.staging-zone-bg');
     var stagingLabels = document.querySelectorAll('.offboard-zone-label:not(.ds-label):not(.reserves-label)');
@@ -360,6 +423,7 @@
 
   // ── Apply all on load ─────────────────────────────────
   applyBg();
+  applyGrid();
   applyFog();
   applyVignette();
   applyZones();
