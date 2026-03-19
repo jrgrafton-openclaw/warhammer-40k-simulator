@@ -158,11 +158,11 @@ simState.units = [
       '<line x1="0" y1="0" x2="0" y2="60" stroke="#0a0e14" stroke-width="1.5"/>' +
     '</pattern>';
 
-  // ── Ground texture groups (50% larger, centered on play area) ──
+  // ── Ground texture groups (100% larger, centered on play area) ──
   var groundStyles = [
-    { id: 'ground-gradient', innerHTML: '<rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-depth)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#slab-pat)" opacity="0.15"/>' },
-    { id: 'ground-warm', innerHTML: '<rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-warm)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-warm-tint)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#slab-pat)" opacity="0.1"/>' },
-    { id: 'ground-dual', innerHTML: '<rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-depth)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-imp-pool)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-ork-pool)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#slab-pat)" opacity="0.08"/>' }
+    { id: 'ground-gradient', innerHTML: '<rect x="-360" y="-264" width="1440" height="1056" fill="url(#grd-depth)"/><rect x="-360" y="-264" width="1440" height="1056" fill="url(#slab-pat)" opacity="0.15"/>' },
+    { id: 'ground-warm', innerHTML: '<rect x="-360" y="-264" width="1440" height="1056" fill="url(#grd-warm)"/><rect x="-360" y="-264" width="1440" height="1056" fill="url(#grd-warm-tint)"/><rect x="-360" y="-264" width="1440" height="1056" fill="url(#slab-pat)" opacity="0.1"/>' },
+    { id: 'ground-dual', innerHTML: '<rect x="-360" y="-264" width="1440" height="1056" fill="url(#grd-depth)"/><rect x="-360" y="-264" width="1440" height="1056" fill="url(#grd-imp-pool)"/><rect x="-360" y="-264" width="1440" height="1056" fill="url(#grd-ork-pool)"/><rect x="-360" y="-264" width="1440" height="1056" fill="url(#slab-pat)" opacity="0.08"/>' }
   ];
 
   // Insert ground groups after gridRect but before the first zone element
@@ -226,12 +226,12 @@ simState.units = [
   vigGroup.setAttribute('pointer-events', 'none');
   vigGroup.setAttribute('filter', 'url(#vig-noise)');
 
-  // Vignette rects at GROUND TEXTURE boundary (-180,-132,1080,792)
+  // Vignette rects at GROUND TEXTURE boundary (-360,-264,1440,1056)
   [
-    { gradId: 'vig-l', rectId: 'vig-rect-l', x: -180, y: -132, w: DEPTH, h: 792 },
-    { gradId: 'vig-r', rectId: 'vig-rect-r', x: 1080 - DEPTH, y: -132, w: DEPTH, h: 792 },
-    { gradId: 'vig-t', rectId: 'vig-rect-t', x: -180, y: -132, w: 1080, h: DEPTH },
-    { gradId: 'vig-b', rectId: 'vig-rect-b', x: -180, y: 792 - 132 - DEPTH, w: 1080, h: DEPTH }
+    { gradId: 'vig-l', rectId: 'vig-rect-l', x: -360, y: -264, w: DEPTH, h: 1056 },
+    { gradId: 'vig-r', rectId: 'vig-rect-r', x: 1080 - DEPTH, y: -264, w: DEPTH, h: 1056 },
+    { gradId: 'vig-t', rectId: 'vig-rect-t', x: -360, y: -264, w: 1440, h: DEPTH },
+    { gradId: 'vig-b', rectId: 'vig-rect-b', x: -360, y: 1056 - 264 - DEPTH, w: 1440, h: DEPTH }
   ].forEach(function(s) {
     var r = document.createElementNS(NS, 'rect');
     r.setAttribute('id', s.rectId);

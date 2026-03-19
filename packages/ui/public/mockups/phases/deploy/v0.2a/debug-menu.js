@@ -18,8 +18,9 @@
     vigLOn: true, vigLDepth: 200, vigLOpacity: 0.95,
     vigROn: true, vigRDepth: 200, vigROpacity: 0.95,
     vigLock: true,
-    vigNoiseScale: 40,
+    vigNoiseScale: 0,
     groundStyle: 'gradient',
+    groundWidth: 1440, groundHeight: 1056,
     gridOn: true, gridOpacity: 1.0, gridWidth: 5000, gridHeight: 5000,
     gridMinorOpacity: 0.025, gridMajorOpacity: 0.055,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
@@ -207,6 +208,13 @@
     row.appendChild(sel);
     groundBody.appendChild(row);
   })();
+
+  sliderRow(groundBody, 'Width', 720, 3000, 10, state.groundWidth, 'px', function(v) {
+    state.groundWidth = v; applyGround(); save(state);
+  });
+  sliderRow(groundBody, 'Height', 528, 2000, 10, state.groundHeight, 'px', function(v) {
+    state.groundHeight = v; applyGround(); save(state);
+  });
 
   // ══════════════════════════════════════════════════════
   // GRID SECTION
@@ -438,9 +446,32 @@
       var active = document.getElementById(map[state.groundStyle]);
       if (active) active.style.display = '';
     }
+    // Resize all ground rects to match current ground dimensions
+    var gw = state.groundWidth;
+    var gh = state.groundHeight;
+    var gx = 360 - gw / 2;
+    var gy = 264 - gh / 2;
+    ['ground-gradient', 'ground-warm', 'ground-dual'].forEach(function(id) {
+      var g = document.getElementById(id);
+      if (!g) return;
+      var rects = g.querySelectorAll('rect');
+      rects.forEach(function(r) {
+        r.setAttribute('x', String(gx));
+        r.setAttribute('y', String(gy));
+        r.setAttribute('width', String(gw));
+        r.setAttribute('height', String(gh));
+      });
+    });
+    applyVignette();
   }
 
   function applyVignette() {
+    // Compute ground bounds from current dimensions
+    var gw = state.groundWidth || 1440;
+    var gh = state.groundHeight || 1056;
+    var gx = 360 - gw / 2;
+    var gy = 264 - gh / 2;
+
     vigSides.forEach(function(vs) {
       // Set first stop opacity
       var grad = document.getElementById(vs.gradId);
@@ -457,32 +488,40 @@
       // Visibility
       rect.style.display = state[vs.onKey] ? '' : 'none';
 
-      // Depth — positioned at GROUND TEXTURE boundary (-180,-132,1080,792)
+      // Depth — positioned at ground texture boundary
       var depth = state[vs.dKey];
       if (vs.axis === 'w') {
         rect.setAttribute('width', String(depth));
-        rect.setAttribute('y', '-132');
-        rect.setAttribute('height', '792');
+        rect.setAttribute('y', String(gy));
+        rect.setAttribute('height', String(gh));
         if (vs.rectId === 'vig-rect-l') {
-          rect.setAttribute('x', '-180');
+          rect.setAttribute('x', String(gx));
         } else if (vs.rectId === 'vig-rect-r') {
-          rect.setAttribute('x', String(1080 - depth));
+          rect.setAttribute('x', String(gx + gw - depth));
         }
       } else {
         rect.setAttribute('height', String(depth));
-        rect.setAttribute('x', '-180');
-        rect.setAttribute('width', '1080');
+        rect.setAttribute('x', String(gx));
+        rect.setAttribute('width', String(gw));
         if (vs.rectId === 'vig-rect-t') {
-          rect.setAttribute('y', '-132');
+          rect.setAttribute('y', String(gy));
         } else if (vs.rectId === 'vig-rect-b') {
-          rect.setAttribute('y', String(792 - 132 - depth));
+          rect.setAttribute('y', String(gy + gh - depth));
         }
       }
     });
 
-    // Update noise displacement scale
-    var dm = document.querySelector('#vig-noise feDisplacementMap');
-    if (dm) dm.setAttribute('scale', String(state.vigNoiseScale));
+    // Noise displacement: remove filter when scale is 0 to avoid grey artifacts
+    var vigGroup = document.querySelector('#bf-svg-vignette g');
+    if (vigGroup) {
+      if (state.vigNoiseScale > 0) {
+        vigGroup.setAttribute('filter', 'url(#vig-noise)');
+        var dm = document.querySelector('#vig-noise feDisplacementMap');
+        if (dm) dm.setAttribute('scale', String(state.vigNoiseScale));
+      } else {
+        vigGroup.removeAttribute('filter');
+      }
+    }
   }
 
   function applyGrid() {
