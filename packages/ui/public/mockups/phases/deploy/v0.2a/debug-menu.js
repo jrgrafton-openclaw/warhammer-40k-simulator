@@ -17,7 +17,7 @@
     vigLOn: true, vigLDepth: 160, vigLOpacity: 0.95,
     vigROn: true, vigRDepth: 160, vigROpacity: 0.95,
     vigColor: '#000000',
-    gridOn: true, gridOpacity: 1.0, gridWidth: 2160, gridHeight: 1584,
+    gridOn: true, gridOpacity: 1.0, gridWidth: 5000, gridHeight: 5000,
     gridMinorOpacity: 0.025, gridMajorOpacity: 0.055,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
     zoneDeployment: true,
@@ -39,21 +39,41 @@
 
   var state = load();
 
+  // ── Collapsed sections state ───────────────────────────
+  var COLLAPSE_KEY = 'wh40k-debug-v02a-collapsed';
+  function loadCollapsed() {
+    try {
+      var raw = localStorage.getItem(COLLAPSE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch(e) { /* ignore */ }
+    return {};
+  }
+  function saveCollapsed(obj) {
+    try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(obj)); } catch(e) { /* ignore */ }
+  }
+  var collapsedState = loadCollapsed();
+
   // ── Build DOM ─────────────────────────────────────────
   var menu = document.createElement('div');
   menu.className = 'debug-menu';
 
-  // Title
-  menu.innerHTML = '<div class="dbg-title"><span>DEBUG MENU</span><span class="dbg-title-key">D</span></div>';
+  // Title + Reset button
+  menu.innerHTML = '<div class="dbg-title"><span>DEBUG MENU</span><div class="dbg-title-right"><button class="dbg-reset-btn" id="dbg-reset">RESET</button><span class="dbg-title-key">D</span></div></div>';
 
   // Helper: create section
   function section(title) {
     var sec = document.createElement('div');
-    sec.className = 'dbg-section collapsed';
+    sec.className = 'dbg-section';
+    // Restore collapsed state from localStorage (default: expanded)
+    if (collapsedState[title]) sec.classList.add('collapsed');
     var hdr = document.createElement('div');
     hdr.className = 'dbg-section-hdr';
     hdr.innerHTML = '<span>' + title + '</span><span class="dbg-chev">▾</span>';
-    hdr.addEventListener('click', function() { sec.classList.toggle('collapsed'); });
+    hdr.addEventListener('click', function() {
+      sec.classList.toggle('collapsed');
+      collapsedState[title] = sec.classList.contains('collapsed');
+      saveCollapsed(collapsedState);
+    });
     sec.appendChild(hdr);
     var body = document.createElement('div');
     body.className = 'dbg-section-body';
@@ -162,10 +182,10 @@
   sliderRow(gridBody, 'Opacity', 0, 1, 0.01, state.gridOpacity, '', function(v) {
     state.gridOpacity = v; applyGrid(); save(state);
   });
-  sliderRow(gridBody, 'Width', 100, 4000, 10, state.gridWidth, 'px', function(v) {
+  sliderRow(gridBody, 'Width', 100, 8000, 50, state.gridWidth, 'px', function(v) {
     state.gridWidth = v; applyGrid(); save(state);
   });
-  sliderRow(gridBody, 'Height', 100, 3000, 10, state.gridHeight, 'px', function(v) {
+  sliderRow(gridBody, 'Height', 100, 8000, 50, state.gridHeight, 'px', function(v) {
     state.gridHeight = v; applyGrid(); save(state);
   });
   sliderRow(gridBody, 'Minor Line Opacity', 0, 0.2, 0.005, state.gridMinorOpacity, '', function(v) {
@@ -279,10 +299,16 @@
   // ── Toggle with 'D' key ───────────────────────────────
   document.addEventListener('keydown', function(e) {
     if (e.key === 'd' || e.key === 'D') {
-      // Don't toggle if user is typing in an input
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       menu.classList.toggle('visible');
     }
+  });
+
+  // ── Reset button ──────────────────────────────────────
+  document.getElementById('dbg-reset').addEventListener('click', function() {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(COLLAPSE_KEY);
+    location.reload();
   });
 
   // ══════════════════════════════════════════════════════
@@ -357,11 +383,25 @@
 
   function applyGrid() {
     var gridRect = document.getElementById('board-grid-rect');
+    var boardSurface = document.getElementById('board-surface');
+    // Center origin: battlefield midpoint is (360, 264)
+    var cx = 360, cy = 264;
     if (gridRect) {
       gridRect.style.display = state.gridOn ? '' : 'none';
       gridRect.style.opacity = state.gridOpacity;
+      gridRect.setAttribute('x', String(cx - state.gridWidth / 2));
+      gridRect.setAttribute('y', String(cy - state.gridHeight / 2));
       gridRect.setAttribute('width', String(state.gridWidth));
       gridRect.setAttribute('height', String(state.gridHeight));
+    }
+    // Also resize board surface to match
+    if (boardSurface) {
+      var surfW = Math.max(state.gridWidth, 5000);
+      var surfH = Math.max(state.gridHeight, 5000);
+      boardSurface.setAttribute('x', String(cx - surfW / 2));
+      boardSurface.setAttribute('y', String(cy - surfH / 2));
+      boardSurface.setAttribute('width', String(surfW));
+      boardSurface.setAttribute('height', String(surfH));
     }
     // Update grid pattern line opacities
     var pat = document.getElementById('board-grid');
