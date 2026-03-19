@@ -10,7 +10,7 @@
   right: 8px;
   z-index: 10000;
   width: 272px;
-  max-height: 90vh;
+  max-height: 50vh;
   overflow-y: auto;
   background: rgba(8,12,16,0.95);
   border: 1px solid rgba(0,212,255,0.2);
