@@ -11,10 +11,23 @@ var scale = 0.5;
 var tx = 0;
 var ty = 0;
 
-// ── Apply Transform ────────────────────────────────────
+// ── Apply Transform (with clamping) ────────────────────
 export function applyTx() {
   var inner = document.getElementById('battlefield-inner');
-  if (inner) inner.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+  var bf    = document.getElementById('battlefield');
+  if (!inner) return;
+
+  // Clamp tx/ty to pan limits before writing transform
+  if (bf) {
+    var bfW = bf.clientWidth;
+    var bfH = bf.clientHeight;
+    var maxPanX = Math.max(0, (bfW * scale) * 0.4);
+    var maxPanY = Math.max(0, (bfH * scale) * 0.4);
+    tx = Math.max(-maxPanX, Math.min(maxPanX, tx));
+    ty = Math.max(-maxPanY, Math.min(maxPanY, ty));
+  }
+
+  inner.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
 }
 
 // ── Camera access ──────────────────────────────────────
@@ -65,9 +78,11 @@ export function initBoard(opts) {
   bf.addEventListener('wheel', function(e) {
     e.preventDefault();
     if (activeRangeTypes.size > 0) hideRangeCircles();
-    inner.classList.add('zoom-easing');
-    clearTimeout(zoomEaseTimer);
-    zoomEaseTimer = setTimeout(function(){ inner.classList.remove('zoom-easing'); }, 220);
+    if (!isDragging) {
+      inner.classList.add('zoom-easing');
+      clearTimeout(zoomEaseTimer);
+      zoomEaseTimer = setTimeout(function(){ inner.classList.remove('zoom-easing'); }, 220);
+    }
     var zoomFactor = 1 + ((window.__zoomSensitivity || 5) / 50); // 5 → 1.1, 10 → 1.2
     scale = Math.min(3, Math.max(.35, scale * (e.deltaY>0 ? 1/zoomFactor : zoomFactor)));
     applyTx();
