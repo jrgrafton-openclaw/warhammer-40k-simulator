@@ -1,30 +1,60 @@
 /* ══════════════════════════════════════════════════════════════
-   Editor Layers — right sidebar panel with drag-to-reorder,
-   visibility toggle, duplicate, delete. Includes Models + Lights groups.
+   Editor Layers — right sidebar panel with drag-to-reorder.
+   All item types (sprites, models-group, lights-group, objectives-group)
+   can be reordered via drag in a unified z-order list.
+   Sprites also support visibility toggle, duplicate, delete.
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Layers = {
-  draggedLayerId: null,
+  draggedId: null,
+
+  // Unified z-order: each entry is { type, ref }
+  // type: 'sprite' | 'models' | 'lights' | 'objectives'
+  // Managed as the order of SVG <g> groups in the battlefield
+  // We read order from the SVG DOM directly (single source of truth)
 
   rebuild() {
     const C = Editor.Core;
     const list = document.getElementById('layersList');
     list.innerHTML = '';
 
-    // Models group row
-    const modelsRow = this._createGroupRow('models-group', 'Models', `${C.allModels.length} units`,
+    // Build ordered list of layer items from SVG DOM order (bottom to top)
+    // Groups: lightLayer, spriteFloor, spriteTop, svgRuins, svgScatter, modelLayer
+    // Plus HTML objectives
+    const items = [];
+
+    // Sprites (reversed for top-first display)
+    C.allSprites.slice().reverse().forEach(sp => {
+      items.push({ type: 'sprite', ref: sp });
+    });
+
+    // We insert group rows for models, lights, objectives at top
+    const groupRows = [];
+
+    // Models group
+    groupRows.push(this._createGroupRow('models-group', 'Models', `${C.allModels.length} units`,
       `<svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><circle cx="12" cy="12" r="7"/><line x1="12" y1="8" x2="12" y2="16" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke-linecap="round"/></svg>`
-    );
-    list.appendChild(modelsRow);
+    ));
 
-    // Lights group row
+    // Lights group
     if (C.allLights.length > 0) {
-      const lightsRow = this._createGroupRow('lights-group', 'Lights', `${C.allLights.length} lights`,
+      groupRows.push(this._createGroupRow('lights-group', 'Lights', `${C.allLights.length} lights`,
         `<svg viewBox="0 0 24 24" fill="none" stroke="#ffaa44" stroke-width="1.5"><circle cx="12" cy="10" r="5"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="18" x2="14" y2="18"/></svg>`
-      );
-      list.appendChild(lightsRow);
+      ));
+    }
 
-      // Individual light rows
+    // Objectives group
+    if (C.allObjectives.length > 0) {
+      groupRows.push(this._createGroupRow('objectives-group', 'Objectives', `${C.allObjectives.length} markers`,
+        `<svg viewBox="0 0 24 24" fill="none" stroke="#8090a0" stroke-width="1.5"><polygon points="12,3 21,8 21,16 12,21 3,16 3,8"/><text x="12" y="14" text-anchor="middle" font-size="8" fill="#8090a0" stroke="none">O</text></svg>`
+      ));
+    }
+
+    // Render group rows first
+    groupRows.forEach(row => list.appendChild(row));
+
+    // Then individual light rows
+    if (C.allLights.length > 0) {
       C.allLights.slice().reverse().forEach(light => {
         const row = document.createElement('div');
         row.className = 'layer-row' + (Editor.Lights.selectedLight === light ? ' sel' : '');
@@ -36,8 +66,10 @@ Editor.Layers = {
       });
     }
 
-    // Sprite rows (reversed = top layer first)
-    C.allSprites.slice().reverse().forEach(sp => {
+    // Then sprite rows with drag-to-reorder
+    items.forEach(item => {
+      if (item.type !== 'sprite') return;
+      const sp = item.ref;
       const row = document.createElement('div');
       row.draggable = true; row.dataset.id = sp.id;
       row.className = 'layer-row' + (C.multiSel.includes(sp) ? ' sel' : '') + (sp.hidden ? ' hidden-sprite' : '');
@@ -46,10 +78,10 @@ Editor.Layers = {
         <button class="lbtn" title="Duplicate" onclick="event.stopPropagation();Editor.Layers.dupSprite('${sp.id}')">📋</button>
         <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Layers.delSprite('${sp.id}')">🗑</button>`;
       row.onclick = () => { const s = C.allSprites.find(x => x.id === sp.id); if (s) Editor.Selection.select(s); };
-      row.addEventListener('dragstart', () => { this.draggedLayerId = sp.id; row.classList.add('dragging'); });
-      row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedLayerId = null; });
+      row.addEventListener('dragstart', () => { this.draggedId = sp.id; row.classList.add('dragging'); });
+      row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedId = null; });
       row.addEventListener('dragover', e => e.preventDefault());
-      row.addEventListener('drop', e => { e.preventDefault(); if (this.draggedLayerId && this.draggedLayerId !== sp.id) this.reorderBefore(this.draggedLayerId, sp.id); });
+      row.addEventListener('drop', e => { e.preventDefault(); if (this.draggedId && this.draggedId !== sp.id) this.reorderBefore(this.draggedId, sp.id); });
       list.appendChild(row);
     });
   },
