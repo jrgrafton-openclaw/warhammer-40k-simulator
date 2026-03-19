@@ -25,7 +25,7 @@
     gridMinorOpacity: 0.025, gridMajorOpacity: 0.055, gridAboveGround: false,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
     zoneDeployment: true,
-    fxOn: true, fxIntensity: 5, fxSpeed: 1.0,
+    fxOn: true, fxIntensity: 5, fxSpeed: 1.0, fxOpacity: 0.5,
     wispsOn: true
   };
 
@@ -369,6 +369,9 @@
   sliderRow(fxBody, 'Speed', 0.5, 3.0, 0.1, state.fxSpeed, 'x', function(v) {
     state.fxSpeed = v; applyFx(); save(state);
   });
+  sliderRow(fxBody, 'Opacity', 0, 1, 0.01, state.fxOpacity, '', function(v) {
+    state.fxOpacity = v; window._fogFxOpacity = v; save(state);
+  });
 
   // ══════════════════════════════════════════════════════
   // WISPS / DEBRIS SECTION
@@ -620,6 +623,7 @@
     window._fogWispsEnabled = state.wispsOn;
     window._fogExplosionCount = state.fxIntensity;
     window._fogFxSpeedMult = state.fxSpeed;
+    window._fogFxOpacity = state.fxOpacity;
   }
 
   // ── Apply all on load ─────────────────────────────────
