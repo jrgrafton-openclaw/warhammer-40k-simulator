@@ -351,30 +351,42 @@
 <script src="fog-fx.js?v=20260318-edge11"></script>
 <script type="module" src="scene.js?v=20260318-edge11"></script>
 <script src="debug-menu.js?v=20260318-edge11"></script>
-<!-- Fog parallax — reads board pan, offsets fog wrapper -->
+<!-- Fog world-space compensation — offsets background-position + background-size to track camera -->
 <script>
-(function initFogParallax() {
-  var fogwrap = document.querySelector('.fogwrapper');
+(function initFogCompensation() {
   var inner = document.getElementById('battlefield-inner');
-  if (!fogwrap || !inner) return;
+  if (!inner) return;
 
-  function updateParallax() {
+  var imageEls = document.querySelectorAll('.fogwrapper .image01, .fogwrapper .image02');
+  if (!imageEls.length) return;
+
+  function update() {
     var style = inner.style.transform || '';
     var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
     var scaleMatch = style.match(/scale\(\s*([-\d.]+)\s*\)/);
-    if (match) {
-      var parallax = window._fogParallax !== undefined ? window._fogParallax : 0.35;
-      var scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-      var tx = (parseFloat(match[1]) * parallax) / Math.max(scale, 0.1);
-      var ty = (parseFloat(match[2]) * parallax) / Math.max(scale, 0.1);
-      var maxShift = 150;
-      tx = Math.max(-maxShift, Math.min(maxShift, tx));
-      ty = Math.max(-maxShift, Math.min(maxShift, ty));
-      fogwrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+
+    var camTx = match ? parseFloat(match[1]) : 0;
+    var camTy = match ? parseFloat(match[2]) : 0;
+    var camScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+
+    // Parallax factor: 1.0 = full world tracking, 0 = screen-fixed
+    var parallax = window._fogParallax !== undefined ? window._fogParallax : 1.0;
+
+    // Fog grain scales with zoom (world-consistent, re-tiled at native res)
+    var bgSize = (100 * camScale) + '%';
+
+    // Offset background to track camera pan (1:1, no clamp)
+    var bgPosX = (camTx * parallax) + 'px';
+    var bgPosY = (camTy * parallax) + 'px';
+
+    for (var i = 0; i < imageEls.length; i++) {
+      imageEls[i].style.backgroundSize = bgSize;
+      imageEls[i].style.backgroundPosition = bgPosX + ' ' + bgPosY;
     }
-    requestAnimationFrame(updateParallax);
+
+    requestAnimationFrame(update);
   }
-  requestAnimationFrame(updateParallax);
+  requestAnimationFrame(update);
 })();
 </script>
 </body>

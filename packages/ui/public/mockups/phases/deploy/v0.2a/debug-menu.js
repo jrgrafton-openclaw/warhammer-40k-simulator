@@ -9,7 +9,7 @@
   // ── Defaults ──────────────────────────────────────────
   var defaults = {
     bgColor: '#000000',
-    fogParallax: 0.35,
+    fogParallax: 1.0,
     fog1On: true, fog1Opacity: 1.0, fog1Speed: 3,
     fog2On: true, fog2Opacity: 1.0, fog2Speed: 4,
     fog3On: true, fog3Opacity: 1.0, fog3Speed: 5.5,
