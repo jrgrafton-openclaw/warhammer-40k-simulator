@@ -29,20 +29,17 @@
 
 /* ── Off-board SVG zones (staging / deep strike / reserves) ── */
 .offboard-zone {
-  fill: rgba(0,212,255,0.03);
-  stroke: rgba(0,212,255,0.2);
+  /* fill/stroke managed by JS (scene.js + debug-menu.js) */
   stroke-width: 1.5;
   stroke-dasharray: 8 4;
   vector-effect: non-scaling-stroke;
   pointer-events: none;
 }
 .offboard-zone.ds-zone-bg {
-  fill: rgba(255,170,0,0.03);
-  stroke: rgba(255,170,0,0.2);
+  /* fill/stroke managed by JS */
 }
 .offboard-zone.reserves-zone-bg {
-  fill: rgba(186,126,255,0.03);
-  stroke: rgba(186,126,255,0.2);
+  /* fill/stroke managed by JS */
 }
 
 .offboard-zone-label {
@@ -124,9 +121,7 @@
 /* ── Zone highlight on drag ── */
 .deploy-zone-bg.zone-active.imp-zone { fill: rgba(0,212,255,0.14); transition: fill 0.2s; }
 .deploy-zone-bg.zone-active.ork-zone { fill: rgba(255,64,32,0.14); transition: fill 0.2s; }
-.offboard-zone.zone-active.staging-zone-bg { fill: rgba(0,212,255,0.08); stroke: rgba(0,212,255,0.4); transition: fill 0.2s, stroke 0.2s; }
-.offboard-zone.zone-active.ds-zone-bg { fill: rgba(255,170,0,0.08); stroke: rgba(255,170,0,0.4); transition: fill 0.2s, stroke 0.2s; }
-.offboard-zone.zone-active.reserves-zone-bg { fill: rgba(186,126,255,0.08); stroke: rgba(186,126,255,0.4); transition: fill 0.2s, stroke 0.2s; }
+/* zone-active highlights handled by deployment.js inline styles */
 
 /* ── Deployment complete — hide deployment zone shading + staging only ── */
 /* DS and Reserves zones PERSIST (units enter play later) */
