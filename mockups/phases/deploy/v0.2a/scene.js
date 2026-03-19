@@ -122,23 +122,25 @@ simState.units = [
 
   defs.appendChild(gridPat);
 
-  // Board surface — extended 100% on each side for edgeless feel
+  // Board surface — massive to cover any zoom/pan combination
+  // Centered on the battlefield midpoint (360, 264)
+  var SURFACE_SIZE = 5000;
   var boardBg = document.createElementNS(NS, 'rect');
   boardBg.setAttribute('id', 'board-surface');
-  boardBg.setAttribute('x', '-720');
-  boardBg.setAttribute('y', '-528');
-  boardBg.setAttribute('width', '2160');
-  boardBg.setAttribute('height', '1584');
+  boardBg.setAttribute('x', String(360 - SURFACE_SIZE / 2));
+  boardBg.setAttribute('y', String(264 - SURFACE_SIZE / 2));
+  boardBg.setAttribute('width', String(SURFACE_SIZE));
+  boardBg.setAttribute('height', String(SURFACE_SIZE));
   boardBg.setAttribute('fill', '#080e16');
   terrainSvg.insertBefore(boardBg, terrainSvg.firstChild);
 
-  // Grid overlay rect — extended to match board surface
+  // Grid overlay rect — originates from battlefield center, same size
   var gridRect = document.createElementNS(NS, 'rect');
   gridRect.setAttribute('id', 'board-grid-rect');
-  gridRect.setAttribute('x', '-720');
-  gridRect.setAttribute('y', '-528');
-  gridRect.setAttribute('width', '2160');
-  gridRect.setAttribute('height', '1584');
+  gridRect.setAttribute('x', String(360 - SURFACE_SIZE / 2));
+  gridRect.setAttribute('y', String(264 - SURFACE_SIZE / 2));
+  gridRect.setAttribute('width', String(SURFACE_SIZE));
+  gridRect.setAttribute('height', String(SURFACE_SIZE));
   gridRect.setAttribute('fill', 'url(#board-grid)');
   gridRect.setAttribute('pointer-events', 'none');
   boardBg.after(gridRect);
