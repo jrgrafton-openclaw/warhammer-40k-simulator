@@ -46,7 +46,7 @@
   // Helper: create section
   function section(title) {
     var sec = document.createElement('div');
-    sec.className = 'dbg-section';
+    sec.className = 'dbg-section collapsed';
     var hdr = document.createElement('div');
     hdr.className = 'dbg-section-hdr';
     hdr.innerHTML = '<span>' + title + '</span><span class="dbg-chev">▾</span>';
