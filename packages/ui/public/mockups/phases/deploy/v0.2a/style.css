@@ -12,7 +12,7 @@
 }
 #roster { grid-column: 1; }
 #battlefield { grid-column: 2; overflow: hidden; position: relative; }
-#bf-svg-terrain, #bf-svg, #bf-svg-vignette { overflow: visible; }
+#bf-svg-terrain, #bf-svg, #bf-svg-vignette, #bf-svg-drag { overflow: visible; }
 
 /* Fog layers + effects are in fog-layers.css */
 /* Board surface and grid are now SVG rects inside #bf-svg-terrain

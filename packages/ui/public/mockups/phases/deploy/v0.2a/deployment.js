@@ -198,6 +198,11 @@ function finishPlacement() {
   if (btnConfirm) btnConfirm.disabled = true;
   if (btnCancel) btnCancel.disabled = true;
   highlightZones(false);
+  // Clear drag overlay (unit returns to normal layers via renderModels rebuild)
+  var dragHulls = document.getElementById('drag-hulls');
+  var dragModels = document.getElementById('drag-models');
+  if (dragHulls) dragHulls.innerHTML = '';
+  if (dragModels) dragModels.innerHTML = '';
   renderModels();  // callbacks.afterRender → _updateDeployWallCollisions()
   updateUI();
 }
@@ -356,6 +361,38 @@ function highlightZones(active) {
   if (stagingZone) stagingZone.classList.toggle('zone-active', active);
   if (dsZone) dsZone.classList.toggle('zone-active', active);
   if (reservesZone) reservesZone.classList.toggle('zone-active', active);
+}
+
+// ── Drag SVG reparenting — lift dragged unit above vignette ──
+function reparentDraggedUnit() {
+  var uid = deployState.placingUnit;
+  var dragHulls = document.getElementById('drag-hulls');
+  var dragModels = document.getElementById('drag-models');
+  if (!dragHulls || !dragModels) return;
+
+  // Clear drag layers
+  dragHulls.innerHTML = '';
+  dragModels.innerHTML = '';
+
+  if (!uid || !simState.drag) return;
+
+  // Move hull path(s) for this unit
+  var layerHulls = document.getElementById('layer-hulls');
+  if (layerHulls) {
+    var hulls = layerHulls.querySelectorAll('path[data-unit-id="' + uid + '"]');
+    for (var i = 0; i < hulls.length; i++) {
+      dragHulls.appendChild(hulls[i]);
+    }
+  }
+
+  // Move model <g> elements for this unit
+  var layerModels = document.getElementById('layer-models');
+  if (layerModels) {
+    var models = layerModels.querySelectorAll('g[data-unit-id="' + uid + '"]');
+    for (var j = 0; j < models.length; j++) {
+      dragModels.appendChild(models[j]);
+    }
+  }
 }
 
 // ── Drag interceptor — block enemy + non-placing drags ───
@@ -991,6 +1028,8 @@ export function initDeployment() {
     _updateDeployWallCollisions();
     // Redraw range rings so they follow the unit during drag
     _redrawActiveRangeRings();
+    // Reparent dragged unit's SVG elements above the vignette
+    reparentDraggedUnit();
   };
 
   // Wire up UI
