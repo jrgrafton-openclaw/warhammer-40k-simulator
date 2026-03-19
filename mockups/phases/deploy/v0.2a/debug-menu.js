@@ -675,12 +675,6 @@
         grad.setAttribute('r', state.offboardSoftness + '%');
       }
     });
-    // Zone vignette overlays — edge softness controls opacity
-    var zoneVignettes = document.querySelectorAll('.zone-vignette');
-    var vigOpacity = state.offboardSoftness / 100; // 55% → 0.55
-    zoneVignettes.forEach(function(v) {
-      v.setAttribute('opacity', String(vigOpacity));
-    });
     // Glow brightness — dynamically update zone-active drop-shadow via injected <style>
     var glowScale = (state.offboardGlowBrightness || 100) / 100;
     window.__zoneGlowBrightness = glowScale;

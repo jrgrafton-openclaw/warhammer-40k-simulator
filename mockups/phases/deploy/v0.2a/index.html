@@ -245,29 +245,6 @@
         <g id="layer-range-rings"></g>
         <g id="layer-hulls"></g>
         <g id="layer-models"></g>
-        <!-- Zone vignette overlays: above models so they appear under shadow -->
-        <defs>
-          <radialGradient id="vig-zone-staging" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="black" stop-opacity="0"/>
-            <stop offset="50%" stop-color="black" stop-opacity="0"/>
-            <stop offset="100%" stop-color="black" stop-opacity="0.65"/>
-          </radialGradient>
-          <radialGradient id="vig-zone-ds" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="black" stop-opacity="0"/>
-            <stop offset="50%" stop-color="black" stop-opacity="0"/>
-            <stop offset="100%" stop-color="black" stop-opacity="0.65"/>
-          </radialGradient>
-          <radialGradient id="vig-zone-reserves" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="black" stop-opacity="0"/>
-            <stop offset="50%" stop-color="black" stop-opacity="0"/>
-            <stop offset="100%" stop-color="black" stop-opacity="0.65"/>
-          </radialGradient>
-        </defs>
-        <g id="layer-zone-vignettes" pointer-events="none">
-          <rect class="zone-vignette staging-vig" x="-540" y="20" width="250" height="488" rx="4" fill="url(#vig-zone-staging)" opacity="0.55"/>
-          <rect class="zone-vignette ds-vig" x="-270" y="20" width="250" height="230" rx="4" fill="url(#vig-zone-ds)" opacity="0.55"/>
-          <rect class="zone-vignette reserves-vig" x="-270" y="278" width="250" height="230" rx="4" fill="url(#vig-zone-reserves)" opacity="0.55"/>
-        </g>
         <g id="layer-move-rulers"></g>
       </svg>
 
