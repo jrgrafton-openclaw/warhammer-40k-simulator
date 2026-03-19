@@ -545,11 +545,20 @@
   }
 
   // ── Apply all on load ─────────────────────────────────
-  applyBg();
-  applyGround();
-  applyGrid();
-  applyFog();
-  applyVignette();
-  applyZones();
-  applyFx();
+  // scene.js is type="module" (deferred) — SVG elements don't exist yet.
+  // Wait for window.load which fires after all modules have executed.
+  function applyAll() {
+    applyBg();
+    applyGround();
+    applyGrid();
+    applyFog();
+    applyVignette();
+    applyZones();
+    applyFx();
+  }
+  if (document.readyState === 'complete') {
+    applyAll();
+  } else {
+    window.addEventListener('load', applyAll);
+  }
 })();
