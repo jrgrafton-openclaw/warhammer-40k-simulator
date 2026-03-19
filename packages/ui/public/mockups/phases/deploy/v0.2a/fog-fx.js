@@ -134,8 +134,8 @@
       { coreR:255,coreG:235,coreB:220, glowR:255,glowG:160,glowB:80 },
       { coreR:255,coreG:180,coreB:120, glowR:200,glowG:60,glowB:10 }
     ];
-    for (var i = 0; i < Math.min(count, positions.length); i++) {
-      var p = positions[i]; var c = colorPresets[i];
+    for (var i = 0; i < count; i++) {
+      var p = positions[i % positions.length]; var c = colorPresets[i % colorPresets.length];
       explosions.push({
         x: p.x * w, y: p.y * h, phase:'dormant',
         timer: 120 + Math.random() * 400, flashAlpha: 0, glowAlpha: 0,
@@ -169,7 +169,9 @@
   function drawExplosions(pan) {
     var explosionOpacity = window._fogFxOpacity !== undefined ? window._fogFxOpacity : 0.5;
     for (var i = 0; i < explosions.length; i++) {
-      var ex = explosions[i]; var c = ex.colors;
+      var ex = explosions[i];
+      if (!ex || !ex.colors) continue;
+      var c = ex.colors;
       var fa = ex.flashAlpha * explosionOpacity;
       var ga = ex.glowAlpha * explosionOpacity;
       if (fa < 0.005 && ga < 0.005) continue;
