@@ -106,67 +106,88 @@
     canvas.height = canvas.parentElement.clientHeight;
     initWisps(canvas.width, canvas.height);
     initDebris(canvas.width, canvas.height);
-    initExplosions(canvas.width, canvas.height);
   }
 
-  // ── Self-contained explosion hotspots ────────────────
+  // ── Random-spawn explosion system ───────────────────
   var explosions = [];
+  var MAX_EXPLOSIONS = 20;
 
-  function initExplosions(w, h) {
-    explosions = [];
-    var count = window._fogExplosionCount || 5;
-    var positions = [
-      { x: 0.07, y: 0.1  },
-      { x: 0.93, y: 0.08 },
-      { x: 0.04, y: 0.88 },
-      { x: 0.92, y: 0.9  },
-      { x: 0.5,  y: 0.04 },
-      { x: 0.2,  y: 0.5  },
-      { x: 0.8,  y: 0.5  },
-      { x: 0.35, y: 0.15 },
-      { x: 0.65, y: 0.85 },
-      { x: 0.15, y: 0.7  }
-    ];
-    var colorPresets = [
+  function randomExplosionColor() {
+    var presets = [
       { coreR:255,coreG:245,coreB:200, glowR:255,glowG:180,glowB:60 },
       { coreR:255,coreG:220,coreB:160, glowR:255,glowG:120,glowB:30 },
       { coreR:255,coreG:200,coreB:140, glowR:220,glowG:80,glowB:15 },
       { coreR:255,coreG:235,coreB:220, glowR:255,glowG:160,glowB:80 },
       { coreR:255,coreG:180,coreB:120, glowR:200,glowG:60,glowB:10 }
     ];
-    for (var i = 0; i < count; i++) {
-      var p = positions[i % positions.length]; var c = colorPresets[i % colorPresets.length];
-      explosions.push({
-        x: p.x * w, y: p.y * h, phase:'dormant',
-        timer: 120 + Math.random() * 400, flashAlpha: 0, glowAlpha: 0,
-        radius: 25 + Math.random() * 20, maxFlash: 0.15 + Math.random() * 0.15, colors: c
-      });
-    }
+    return presets[Math.floor(Math.random() * presets.length)];
+  }
+
+  function trySpawnExplosion() {
+    if (explosions.length >= MAX_EXPLOSIONS) return;
+
+    var x = Math.random() * canvas.width;
+    var y = Math.random() * canvas.height;
+
+    // Convert screen coords to SVG coords to check safe zones
+    var inner = document.getElementById('battlefield-inner');
+    var style = inner ? inner.style.transform : '';
+    var scaleMatch = style.match(/scale\(([-\d.]+)\)/);
+    var translateMatch = style.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+    var scale = scaleMatch ? parseFloat(scaleMatch[1]) : 0.5;
+    var tx = translateMatch ? parseFloat(translateMatch[1]) : 0;
+    var ty = translateMatch ? parseFloat(translateMatch[2]) : 0;
+
+    var bfW = canvas.width;
+    var bfH = canvas.height;
+    var svgX = (x - bfW/2 - tx) / scale + 360;
+    var svgY = (y - bfH/2 - ty) / scale + 264;
+
+    // Reject if inside any safe zone
+    var safeZones = [
+      {x:0, y:0, w:720, h:528},
+      {x:-540, y:20, w:250, h:488},
+      {x:-270, y:20, w:250, h:230},
+      {x:-270, y:278, w:250, h:230}
+    ];
+    var inSafe = safeZones.some(function(z) {
+      return svgX >= z.x && svgX <= z.x+z.w && svgY >= z.y && svgY <= z.y+z.h;
+    });
+    if (inSafe) return;
+
+    explosions.push({
+      x: x, y: y,
+      phase: 'flash',
+      timer: 3 + Math.random() * 4,
+      flashAlpha: 0,
+      glowAlpha: 0,
+      radius: 20 + Math.random() * 30,
+      maxFlash: 0.15 + Math.random() * 0.15,
+      colors: randomExplosionColor()
+    });
   }
 
   function updateExplosions() {
-    var speedMult = window._fogFxSpeedMult || 1.0;
-    for (var i = 0; i < explosions.length; i++) {
-      var ex = explosions[i]; ex.timer -= speedMult;
+    var speedMult = window._fogFxSpeedMult || 0.5;
+    for (var i = explosions.length - 1; i >= 0; i--) {
+      var ex = explosions[i];
+      ex.timer -= speedMult;
       switch (ex.phase) {
-        case 'dormant':
-          ex.flashAlpha *= 0.94; ex.glowAlpha *= 0.96;
-          if (ex.timer <= 0) { ex.phase = 'flash'; ex.timer = 3 + Math.random() * 4; }
-          break;
         case 'flash':
           ex.flashAlpha = Math.min(ex.maxFlash, ex.flashAlpha + ex.maxFlash / 2);
           ex.glowAlpha = ex.flashAlpha * 0.6;
-          if (ex.timer <= 0) { ex.phase = 'afterglow'; ex.timer = 25 + Math.random() * 25; }
+          if (ex.timer <= 0) { ex.phase = 'afterglow'; ex.timer = 40 + Math.random() * 40; }
           break;
         case 'afterglow':
-          ex.flashAlpha *= 0.88; ex.glowAlpha *= 0.94;
-          if (ex.timer <= 0) { ex.phase = 'dormant'; ex.timer = 300 + Math.random() * 420; }
+          ex.flashAlpha *= 0.94;
+          ex.glowAlpha *= 0.96;
+          if (ex.timer <= 0 || ex.flashAlpha < 0.001) { explosions.splice(i, 1); }
           break;
       }
     }
   }
 
-  function drawExplosions(pan) {
+  function drawExplosions() {
     var explosionOpacity = window._fogFxOpacity !== undefined ? window._fogFxOpacity : 0.5;
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i];
@@ -175,7 +196,7 @@
       var fa = ex.flashAlpha * explosionOpacity;
       var ga = ex.glowAlpha * explosionOpacity;
       if (fa < 0.005 && ga < 0.005) continue;
-      var px = ex.x + pan.tx * 0.03, py = ex.y + pan.ty * 0.03;
+      var px = ex.x, py = ex.y;
       if (ga > 0.005) {
         var gr = ex.radius * 2.5;
         var gg = ctx.createRadialGradient(px,py,0,px,py,gr);
@@ -198,17 +219,12 @@
   }
 
   // ── Track explosion flashes for spark spawning ──────
-  var lastFlashState = {};
-
   function checkExplosions() {
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i];
-      var wasFlashing = lastFlashState[i] || false;
-      var isFlashing = ex.phase === 'flash' && ex.flashAlpha > 0.3;
-      if (isFlashing && !wasFlashing) {
+      if (ex.phase === 'flash' && ex.flashAlpha > 0.1) {
         spawnSparks(ex.x, ex.y);
       }
-      lastFlashState[i] = isFlashing;
     }
   }
 
@@ -224,9 +240,14 @@
 
     var pan = getBoardPan();
 
+    // Spawn explosions randomly
+    var freq = window._fogFxFrequency !== undefined ? window._fogFxFrequency : 0.5;
+    var chance = freq / 60;
+    if (Math.random() < chance) trySpawnExplosion();
+
     updateExplosions();
     checkExplosions();
-    drawExplosions(pan);
+    drawExplosions();
 
     // ── 1. Foreground wisps (drifting gradient ellipses) ──
     for (var w = 0; w < (window._fogWispsEnabled === false ? 0 : wisps.length); w++) {

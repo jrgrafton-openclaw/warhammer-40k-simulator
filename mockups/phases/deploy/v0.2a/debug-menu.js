@@ -25,7 +25,7 @@
     gridMinorOpacity: 0.025, gridMajorOpacity: 0.055, gridAboveGround: false,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
     zoneDeployment: true,
-    fxOn: true, fxIntensity: 5, fxSpeed: 1.0, fxOpacity: 0.5,
+    fxOn: true, fxFrequency: 0.5, fxSpeed: 0.5, fxOpacity: 0.5,
     wispsOn: true,
     offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
   };
@@ -376,10 +376,10 @@
   toggleRow(fxBody, 'Enabled', state.fxOn, function(on) {
     state.fxOn = on; applyFx(); save(state);
   });
-  sliderRow(fxBody, 'Intensity', 1, 10, 1, state.fxIntensity, '', function(v) {
-    state.fxIntensity = v; applyFx(); save(state);
+  sliderRow(fxBody, 'Frequency', 0, 5, 0.1, state.fxFrequency, 'x', function(v) {
+    state.fxFrequency = v; applyFx(); save(state);
   });
-  sliderRow(fxBody, 'Speed', 0.5, 3.0, 0.1, state.fxSpeed, 'x', function(v) {
+  sliderRow(fxBody, 'Speed', 0.05, 2, 0.05, state.fxSpeed, 'x', function(v) {
     state.fxSpeed = v; applyFx(); save(state);
   });
   sliderRow(fxBody, 'Opacity', 0, 1, 0.01, state.fxOpacity, '', function(v) {
@@ -640,13 +640,13 @@
     zoneInfo.forEach(function(zi) {
       var rect = document.querySelector('.' + zi.cls);
       if (!rect) return;
-      // Borders
+      // Borders — use style to override any CSS
       if (state.offboardBorders) {
-        rect.setAttribute('stroke', 'rgba(' + zi.color + ',0.2)');
-        rect.setAttribute('stroke-width', '1.5');
-        rect.setAttribute('stroke-dasharray', '8 4');
+        rect.style.stroke = 'rgba(' + zi.color + ',0.2)';
+        rect.style.strokeWidth = '1.5';
+        rect.style.strokeDasharray = '8 4';
       } else {
-        rect.setAttribute('stroke', 'none');
+        rect.style.stroke = 'none';
       }
       // Gradient fill opacity (first stop)
       var grad = document.getElementById(zi.gradId);
@@ -664,7 +664,7 @@
   function applyFx() {
     window._fogFxEnabled = state.fxOn;
     window._fogWispsEnabled = state.wispsOn;
-    window._fogExplosionCount = state.fxIntensity;
+    window._fogFxFrequency = state.fxFrequency;
     window._fogFxSpeedMult = state.fxSpeed;
     window._fogFxOpacity = state.fxOpacity;
   }
