@@ -36,7 +36,7 @@
   width: 50%;
   height: 100%;
   background-repeat: repeat;
-  background-size: 100%; /* Base size — JS multiplies by zoom scale */
+  background-size: cover;
   background-position: 0 0; /* JS sets this to track camera pan */
 }
 
