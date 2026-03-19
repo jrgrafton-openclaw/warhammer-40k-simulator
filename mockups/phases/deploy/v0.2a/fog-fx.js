@@ -29,11 +29,14 @@
   // ── Board pan ───────────────────────────────────────
   function getBoardPan() {
     var inner = document.getElementById('battlefield-inner');
-    if (!inner) return { tx: 0, ty: 0 };
+    if (!inner) return { tx: 0, ty: 0, scale: 1 };
     var style = inner.style.transform || '';
     var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
-    if (match) return { tx: parseFloat(match[1]), ty: parseFloat(match[2]) };
-    return { tx: 0, ty: 0 };
+    var scaleMatch = style.match(/scale\(\s*([-\d.]+)\s*\)/);
+    var tx = match ? parseFloat(match[1]) : 0;
+    var ty = match ? parseFloat(match[2]) : 0;
+    var scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
+    return { tx: tx, ty: ty, scale: scale };
   }
 
   // ── Init wisps ──────────────────────────────────────
@@ -283,8 +286,8 @@
         wi.x = -wi.radiusX - 50;
       }
 
-      var wx = wi.x + pan.tx * wi.depth;
-      var wy = wi.y + pan.ty * wi.depth;
+      var wx = wi.x + pan.tx;
+      var wy = wi.y + pan.ty;
       var wAlpha = wi.alpha * (0.6 + 0.4 * Math.sin(wi.phase));
 
       ctx.save();
@@ -320,8 +323,8 @@
       if (db.y > canvas.height + 10) db.y = -10;
       if (db.y < -10) db.y = canvas.height + 10;
 
-      var dx = db.x + pan.tx * 0.08;
-      var dy = db.y + pan.ty * 0.08;
+      var dx = db.x + pan.tx;
+      var dy = db.y + pan.ty;
 
       if (db.isEmber) {
         db.emberPhase += 0.04;
@@ -364,8 +367,8 @@
 
       if (sp.life <= 0) { sparks.splice(s, 1); continue; }
 
-      var spx = sp.x + pan.tx * 0.08;
-      var spy = sp.y + pan.ty * 0.08;
+      var spx = sp.x + pan.tx;
+      var spy = sp.y + pan.ty;
 
       // Color: white → yellow → orange → red
       var r, g, b;
