@@ -22,7 +22,7 @@
     groundStyle: 'gradient',
     groundWidth: 1440, groundHeight: 1056,
     gridOn: true, gridOpacity: 1.0, gridWidth: 5000, gridHeight: 5000,
-    gridMinorOpacity: 0.025, gridMajorOpacity: 0.055,
+    gridMinorOpacity: 0.025, gridMajorOpacity: 0.055, gridAboveGround: false,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
     zoneDeployment: true,
     fxOn: true, fxIntensity: 5, fxSpeed: 1.0,
@@ -239,6 +239,9 @@
   sliderRow(gridBody, 'Major Line Opacity', 0, 0.2, 0.005, state.gridMajorOpacity, '', function(v) {
     state.gridMajorOpacity = v; applyGrid(); save(state);
   });
+  toggleRow(gridBody, 'Above Ground', state.gridAboveGround, function(on) {
+    state.gridAboveGround = on; applyGrid(); save(state);
+  });
 
   // ══════════════════════════════════════════════════════
   // FOG LAYERS SECTION
@@ -263,7 +266,7 @@
     sliderRow(fogBody, 'Opacity', 0, 1, 0.01, state[fl.opKey], '', function(v) {
       state[fl.opKey] = v; applyFog(); save(state);
     });
-    sliderRow(fogBody, 'Speed', 1, 20, 0.5, state[fl.spKey], 'x', function(v) {
+    sliderRow(fogBody, 'Speed', 1, 10, 0.5, state[fl.spKey], 'x', function(v) {
       state[fl.spKey] = v; applyFog(); save(state);
     });
   });
@@ -545,6 +548,21 @@
       boardSurface.setAttribute('y', String(cy - surfH / 2));
       boardSurface.setAttribute('width', String(surfW));
       boardSurface.setAttribute('height', String(surfH));
+    }
+    // Reorder grid relative to ground layers
+    var terrainSvg = document.getElementById('bf-svg-terrain');
+    if (terrainSvg && gridRect) {
+      if (state.gridAboveGround) {
+        var groundDual = document.getElementById('ground-dual');
+        if (groundDual && groundDual.nextSibling) {
+          terrainSvg.insertBefore(gridRect, groundDual.nextSibling);
+        }
+      } else {
+        var boardSurface = document.getElementById('board-surface');
+        if (boardSurface) {
+          boardSurface.after(gridRect);
+        }
+      }
     }
     // Update grid pattern line opacities
     var pat = document.getElementById('board-grid');

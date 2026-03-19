@@ -245,6 +245,20 @@ simState.units = [
   // Append vignette SVG to battlefield-inner (same parent as other SVGs)
   var bfInner = document.getElementById('battlefield-inner');
   if (bfInner) bfInner.appendChild(vigSvg);
+
+  // ── Drag overlay SVG — models reparented here during drag to render above vignette ──
+  var dragSvg = document.createElementNS(NS, 'svg');
+  dragSvg.setAttribute('id', 'bf-svg-drag');
+  dragSvg.setAttribute('viewBox', '0 0 720 528');
+  dragSvg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  dragSvg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9;overflow:visible;';
+  var dragHulls = document.createElementNS(NS, 'g');
+  dragHulls.setAttribute('id', 'drag-hulls');
+  dragSvg.appendChild(dragHulls);
+  var dragModels = document.createElementNS(NS, 'g');
+  dragModels.setAttribute('id', 'drag-models');
+  dragSvg.appendChild(dragModels);
+  bfInner.appendChild(dragSvg);
 })();
 
 // ── Initialise shared modules ────────────────────────────
