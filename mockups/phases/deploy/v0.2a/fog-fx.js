@@ -154,8 +154,9 @@
     });
     if (inSafe) return;
 
+    // Store in SVG (world) coordinates so explosions move with pan/zoom
     explosions.push({
-      x: x, y: y,
+      svgX: svgX, svgY: svgY,
       phase: 'flash',
       timer: 3 + Math.random() * 4,
       flashAlpha: 0,
@@ -189,6 +190,10 @@
 
   function drawExplosions() {
     var explosionOpacity = window._fogFxOpacity !== undefined ? window._fogFxOpacity : 0.5;
+    // Get current SVG→screen transform for world-space explosions
+    var svgEl = document.getElementById('bf-svg-terrain');
+    var ctm = svgEl ? svgEl.getScreenCTM() : null;
+    var bfRect = canvas.getBoundingClientRect();
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i];
       if (!ex || !ex.colors) continue;
@@ -196,7 +201,14 @@
       var fa = ex.flashAlpha * explosionOpacity;
       var ga = ex.glowAlpha * explosionOpacity;
       if (fa < 0.005 && ga < 0.005) continue;
-      var px = ex.x, py = ex.y;
+      // Convert SVG (world) coords to screen coords each frame
+      var px, py;
+      if (ctm) {
+        px = ctm.a * ex.svgX + ctm.c * ex.svgY + ctm.e - bfRect.left;
+        py = ctm.b * ex.svgX + ctm.d * ex.svgY + ctm.f - bfRect.top;
+      } else {
+        px = ex.svgX; py = ex.svgY;
+      }
       if (ga > 0.005) {
         var gr = ex.radius * 2.5;
         var gg = ctx.createRadialGradient(px,py,0,px,py,gr);
@@ -223,7 +235,16 @@
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i];
       if (ex.phase === 'flash' && ex.flashAlpha > 0.1 && !ex.hasSpawnedSparks) {
-        spawnSparks(ex.x, ex.y);
+        // Convert SVG coords to screen for spark spawning
+        var svgEl2 = document.getElementById('bf-svg-terrain');
+        var ctm2 = svgEl2 ? svgEl2.getScreenCTM() : null;
+        var bfR2 = canvas.getBoundingClientRect();
+        var sx = ex.svgX, sy = ex.svgY;
+        if (ctm2) {
+          sx = ctm2.a * ex.svgX + ctm2.c * ex.svgY + ctm2.e - bfR2.left;
+          sy = ctm2.b * ex.svgX + ctm2.d * ex.svgY + ctm2.f - bfR2.top;
+        }
+        spawnSparks(sx, sy);
         ex.hasSpawnedSparks = true;
       }
     }
@@ -331,14 +352,15 @@
 
     // ── 3. Spark particles ────────────────────────────
     var sparkOpacity = window._fogFxSparkOpacity !== undefined ? window._fogFxSparkOpacity : 0.3;
+    var sparkSpeedMult = window._fogFxSparkSpeed || 1.0;
     for (var s = sparks.length - 1; s >= 0; s--) {
       var sp = sparks[s];
-      sp.x += sp.vx;
-      sp.y += sp.vy;
+      sp.x += sp.vx * sparkSpeedMult;
+      sp.y += sp.vy * sparkSpeedMult;
       sp.vy += sp.gravity;
       sp.vx *= 0.99;
       sp.vy *= 0.99;
-      sp.life -= sp.decay;
+      sp.life -= sp.decay * sparkSpeedMult;
 
       if (sp.life <= 0) { sparks.splice(s, 1); continue; }
 
