@@ -368,6 +368,9 @@
   sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
     state.offboardSoftness = v; applyOffboard(); save(state);
   });
+  sliderRow(zoneBody, 'Glow Brightness', 0, 200, 5, state.offboardGlowBrightness, '%', function(v) {
+    state.offboardGlowBrightness = v; applyOffboard(); save(state);
+  });
 
   // ══════════════════════════════════════════════════════
   // EXPLOSIONS SECTION
