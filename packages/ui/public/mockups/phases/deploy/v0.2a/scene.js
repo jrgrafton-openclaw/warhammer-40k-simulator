@@ -158,11 +158,11 @@ simState.units = [
       '<line x1="0" y1="0" x2="0" y2="60" stroke="#0a0e14" stroke-width="1.5"/>' +
     '</pattern>';
 
-  // ── Ground texture groups (720x528 play area) ──
+  // ── Ground texture groups (50% larger, centered on play area) ──
   var groundStyles = [
-    { id: 'ground-gradient', innerHTML: '<rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.15"/>' },
-    { id: 'ground-warm', innerHTML: '<rect width="720" height="528" fill="url(#grd-warm)"/><rect width="720" height="528" fill="url(#grd-warm-tint)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.1"/>' },
-    { id: 'ground-dual', innerHTML: '<rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#grd-imp-pool)"/><rect width="720" height="528" fill="url(#grd-ork-pool)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.08"/>' }
+    { id: 'ground-gradient', innerHTML: '<rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-depth)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#slab-pat)" opacity="0.15"/>' },
+    { id: 'ground-warm', innerHTML: '<rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-warm)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-warm-tint)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#slab-pat)" opacity="0.1"/>' },
+    { id: 'ground-dual', innerHTML: '<rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-depth)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-imp-pool)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#grd-ork-pool)"/><rect x="-180" y="-132" width="1080" height="792" fill="url(#slab-pat)" opacity="0.08"/>' }
   ];
 
   // Insert ground groups after gridRect but before the first zone element
@@ -181,9 +181,19 @@ simState.units = [
   });
 
   // ── Edge vignette — fade board edges to pure black ──
+  // Vignettes rendered in a SEPARATE SVG at z-index:8 (above objectives/units)
   var vigColor = '#000000';
 
-  var DEPTH = 160; // default vignette depth at play area boundary
+  var DEPTH = 200; // default vignette depth at ground texture boundary
+
+  var vigSvg = document.createElementNS(NS, 'svg');
+  vigSvg.setAttribute('id', 'bf-svg-vignette');
+  vigSvg.setAttribute('viewBox', '0 0 720 528');
+  vigSvg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  vigSvg.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:8;overflow:visible;';
+
+  var vigDefs = document.createElementNS(NS, 'defs');
+  vigSvg.appendChild(vigDefs);
 
   var gradDefs = [
     { id: 'vig-l', x1: '0', y1: '0', x2: '1', y2: '0' },
@@ -199,18 +209,29 @@ simState.units = [
     lg.innerHTML = '<stop offset="0%" stop-color="' + vigColor + '" stop-opacity="0.95"/>' +
       '<stop offset="35%" stop-color="' + vigColor + '" stop-opacity="0.4"/>' +
       '<stop offset="100%" stop-color="' + vigColor + '" stop-opacity="0"/>';
-    defs.appendChild(lg);
+    vigDefs.appendChild(lg);
   });
+
+  // Organic vignette noise filter (feTurbulence displacement)
+  var vigFilter = document.createElementNS(NS, 'filter');
+  vigFilter.setAttribute('id', 'vig-noise');
+  vigFilter.setAttribute('x', '-20%');
+  vigFilter.setAttribute('y', '-20%');
+  vigFilter.setAttribute('width', '140%');
+  vigFilter.setAttribute('height', '140%');
+  vigFilter.innerHTML = '<feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="3" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="40" xChannelSelector="R" yChannelSelector="G"/>';
+  vigDefs.appendChild(vigFilter);
 
   var vigGroup = document.createElementNS(NS, 'g');
   vigGroup.setAttribute('pointer-events', 'none');
+  vigGroup.setAttribute('filter', 'url(#vig-noise)');
 
-  // Vignette rects at PLAY AREA boundary (0,0,720,528)
+  // Vignette rects at GROUND TEXTURE boundary (-180,-132,1080,792)
   [
-    { gradId: 'vig-l', rectId: 'vig-rect-l', x: 0, y: 0, w: DEPTH, h: 528 },
-    { gradId: 'vig-r', rectId: 'vig-rect-r', x: 720 - DEPTH, y: 0, w: DEPTH, h: 528 },
-    { gradId: 'vig-t', rectId: 'vig-rect-t', x: 0, y: 0, w: 720, h: DEPTH },
-    { gradId: 'vig-b', rectId: 'vig-rect-b', x: 0, y: 528 - DEPTH, w: 720, h: DEPTH }
+    { gradId: 'vig-l', rectId: 'vig-rect-l', x: -180, y: -132, w: DEPTH, h: 792 },
+    { gradId: 'vig-r', rectId: 'vig-rect-r', x: 1080 - DEPTH, y: -132, w: DEPTH, h: 792 },
+    { gradId: 'vig-t', rectId: 'vig-rect-t', x: -180, y: -132, w: 1080, h: DEPTH },
+    { gradId: 'vig-b', rectId: 'vig-rect-b', x: -180, y: 792 - 132 - DEPTH, w: 1080, h: DEPTH }
   ].forEach(function(s) {
     var r = document.createElementNS(NS, 'rect');
     r.setAttribute('id', s.rectId);
@@ -219,7 +240,11 @@ simState.units = [
     r.setAttribute('fill', 'url(#' + s.gradId + ')');
     vigGroup.appendChild(r);
   });
-  terrainSvg.appendChild(vigGroup);
+  vigSvg.appendChild(vigGroup);
+
+  // Append vignette SVG to battlefield-inner (same parent as other SVGs)
+  var bfInner = document.getElementById('battlefield-inner');
+  if (bfInner) bfInner.appendChild(vigSvg);
 })();
 
 // ── Initialise shared modules ────────────────────────────
