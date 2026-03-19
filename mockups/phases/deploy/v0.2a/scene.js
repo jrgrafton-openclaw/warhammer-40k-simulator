@@ -145,6 +145,41 @@ simState.units = [
   gridRect.setAttribute('pointer-events', 'none');
   boardBg.after(gridRect);
 
+  // ── Ground texture defs ──
+  defs.innerHTML += '<radialGradient id="grd-depth" cx="50%" cy="45%" r="65%"><stop offset="0%" stop-color="#0e1822"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>' +
+    '<radialGradient id="grd-warm" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#14181e"/><stop offset="50%" stop-color="#0c1018"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>' +
+    '<radialGradient id="grd-warm-tint" cx="50%" cy="40%" r="50%"><stop offset="0%" stop-color="rgba(40,30,15,0.06)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>' +
+    '<radialGradient id="grd-imp-pool" cx="22%" cy="50%" r="35%"><stop offset="0%" stop-color="rgba(0,80,120,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>' +
+    '<radialGradient id="grd-ork-pool" cx="78%" cy="50%" r="35%"><stop offset="0%" stop-color="rgba(120,30,10,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>' +
+    '<pattern id="slab-pat" width="60" height="60" patternUnits="userSpaceOnUse">' +
+      '<rect width="60" height="60" fill="#0b1018"/>' +
+      '<rect x="1" y="1" width="58" height="58" fill="#0d1420" rx="1"/>' +
+      '<line x1="0" y1="0" x2="60" y2="0" stroke="#0a0e14" stroke-width="1.5"/>' +
+      '<line x1="0" y1="0" x2="0" y2="60" stroke="#0a0e14" stroke-width="1.5"/>' +
+    '</pattern>';
+
+  // ── Ground texture groups (720x528 play area) ──
+  var groundStyles = [
+    { id: 'ground-gradient', innerHTML: '<rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.15"/>' },
+    { id: 'ground-warm', innerHTML: '<rect width="720" height="528" fill="url(#grd-warm)"/><rect width="720" height="528" fill="url(#grd-warm-tint)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.1"/>' },
+    { id: 'ground-dual', innerHTML: '<rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#grd-imp-pool)"/><rect width="720" height="528" fill="url(#grd-ork-pool)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.08"/>' }
+  ];
+
+  // Insert ground groups after gridRect but before the first zone element
+  var firstZone = terrainSvg.querySelector('.offboard-zone, .staging-zone-bg');
+  groundStyles.forEach(function(gs) {
+    var g = document.createElementNS(NS, 'g');
+    g.setAttribute('id', gs.id);
+    g.setAttribute('pointer-events', 'none');
+    g.innerHTML = gs.innerHTML;
+    g.style.display = gs.id === 'ground-gradient' ? '' : 'none';
+    if (firstZone) {
+      terrainSvg.insertBefore(g, firstZone);
+    } else {
+      terrainSvg.appendChild(g);
+    }
+  });
+
   // ── Edge vignette — fade board edges to pure black ──
   var vigColor = '#000000';
 

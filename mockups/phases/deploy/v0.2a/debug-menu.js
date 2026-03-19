@@ -16,7 +16,8 @@
     vigBOn: true, vigBDepth: 160, vigBOpacity: 0.95,
     vigLOn: true, vigLDepth: 160, vigLOpacity: 0.95,
     vigROn: true, vigRDepth: 160, vigROpacity: 0.95,
-    vigColor: '#000000',
+    vigLock: true,
+    groundStyle: 'gradient',
     gridOn: true, gridOpacity: 1.0, gridWidth: 5000, gridHeight: 5000,
     gridMinorOpacity: 0.025, gridMajorOpacity: 0.055,
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
@@ -172,6 +173,40 @@
   });
 
   // ══════════════════════════════════════════════════════
+  // GROUND SECTION
+  // ══════════════════════════════════════════════════════
+  var groundBody = section('GROUND');
+
+  (function() {
+    var row = document.createElement('div');
+    row.className = 'dbg-row';
+    var lbl = document.createElement('span');
+    lbl.className = 'dbg-row-label';
+    lbl.textContent = 'Style';
+    var sel = document.createElement('select');
+    sel.className = 'dbg-select';
+    var opts = [
+      { value: 'none', text: 'None' },
+      { value: 'gradient', text: 'Gradient Depth' },
+      { value: 'warm', text: 'Warm Core' },
+      { value: 'dual', text: 'Dual Light Pools' }
+    ];
+    opts.forEach(function(o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.text;
+      if (o.value === state.groundStyle) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function() {
+      state.groundStyle = sel.value; applyGround(); save(state);
+    });
+    row.appendChild(lbl);
+    row.appendChild(sel);
+    groundBody.appendChild(row);
+  })();
+
+  // ══════════════════════════════════════════════════════
   // GRID SECTION
   // ══════════════════════════════════════════════════════
   var gridBody = section('GRID');
@@ -224,8 +259,9 @@
   // ══════════════════════════════════════════════════════
   var vigBody = section('VIGNETTE');
 
-  colorRow(vigBody, 'Color (all sides)', state.vigColor, function(v) {
-    state.vigColor = v; applyVignette(); save(state);
+  // Lock toggle
+  toggleRow(vigBody, 'Lock All Sides', state.vigLock, function(on) {
+    state.vigLock = on; save(state);
   });
 
   var vigSides = [
@@ -235,17 +271,45 @@
     { label: 'Right', onKey: 'vigROn', dKey: 'vigRDepth', oKey: 'vigROpacity', rectId: 'vig-rect-r', gradId: 'vig-r', axis: 'w' }
   ];
 
+  // Track sliders for lock sync
+  var vigSliders = {};
+
   vigSides.forEach(function(vs) {
     subLabel(vigBody, vs.label);
     toggleRow(vigBody, 'Visible', state[vs.onKey], function(on) {
       state[vs.onKey] = on; applyVignette(); save(state);
     });
-    sliderRow(vigBody, 'Depth', 0, 800, 10, state[vs.dKey], 'px', function(v) {
-      state[vs.dKey] = v; applyVignette(); save(state);
+    var dSlider = sliderRow(vigBody, 'Depth', 0, 800, 10, state[vs.dKey], 'px', function(v) {
+      state[vs.dKey] = v;
+      if (state.vigLock) {
+        vigSides.forEach(function(other) {
+          if (other.dKey !== vs.dKey) {
+            state[other.dKey] = v;
+            vigSliders[other.dKey].value = v;
+            var valSpan = vigSliders[other.dKey].nextElementSibling;
+            if (valSpan) valSpan.textContent = Math.round(v) + 'px';
+          }
+        });
+      }
+      applyVignette(); save(state);
     });
-    sliderRow(vigBody, 'Opacity', 0, 1, 0.01, state[vs.oKey], '', function(v) {
-      state[vs.oKey] = v; applyVignette(); save(state);
+    vigSliders[vs.dKey] = dSlider;
+
+    var oSlider = sliderRow(vigBody, 'Opacity', 0, 1, 0.01, state[vs.oKey], '', function(v) {
+      state[vs.oKey] = v;
+      if (state.vigLock) {
+        vigSides.forEach(function(other) {
+          if (other.oKey !== vs.oKey) {
+            state[other.oKey] = v;
+            vigSliders[other.oKey].value = v;
+            var valSpan = vigSliders[other.oKey].nextElementSibling;
+            if (valSpan) valSpan.textContent = v.toFixed(2);
+          }
+        });
+      }
+      applyVignette(); save(state);
     });
+    vigSliders[vs.oKey] = oSlider;
   });
 
   // ══════════════════════════════════════════════════════
@@ -323,6 +387,16 @@
     var bf = document.getElementById('battlefield');
     if (bf) bf.style.background = state.bgColor;
     document.body.style.background = state.bgColor;
+    // Sync vignette gradient colors to match background
+    ['vig-l','vig-r','vig-t','vig-b'].forEach(function(id) {
+      var grad = document.getElementById(id);
+      if (grad) {
+        var stops = grad.querySelectorAll('stop');
+        for (var i = 0; i < stops.length; i++) {
+          stops[i].setAttribute('stop-color', state.bgColor);
+        }
+      }
+    });
   }
 
   function applyFog() {
@@ -342,16 +416,25 @@
     });
   }
 
+  function applyGround() {
+    var ids = ['ground-gradient', 'ground-warm', 'ground-dual'];
+    var map = { gradient: 'ground-gradient', warm: 'ground-warm', dual: 'ground-dual' };
+    ids.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    if (state.groundStyle !== 'none' && map[state.groundStyle]) {
+      var active = document.getElementById(map[state.groundStyle]);
+      if (active) active.style.display = '';
+    }
+  }
+
   function applyVignette() {
-    // Update gradient stop colors
     vigSides.forEach(function(vs) {
+      // Set first stop opacity
       var grad = document.getElementById(vs.gradId);
       if (grad) {
         var stops = grad.querySelectorAll('stop');
-        for (var i = 0; i < stops.length; i++) {
-          stops[i].setAttribute('stop-color', state.vigColor);
-        }
-        // Set first stop opacity
         if (stops.length > 0) {
           stops[0].setAttribute('stop-opacity', String(state[vs.oKey]));
         }
@@ -463,6 +546,7 @@
 
   // ── Apply all on load ─────────────────────────────────
   applyBg();
+  applyGround();
   applyGrid();
   applyFog();
   applyVignette();

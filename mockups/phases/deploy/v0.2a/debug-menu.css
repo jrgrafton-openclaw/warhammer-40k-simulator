@@ -198,6 +198,28 @@
 .dbg-color::-webkit-color-swatch-wrapper { padding: 0; }
 .dbg-color::-webkit-color-swatch { border: none; border-radius: 1px; }
 
+/* ── Dropdown select ── */
+.dbg-select {
+  -webkit-appearance: none;
+  appearance: none;
+  background: rgba(8,12,16,0.9);
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,212,255,0.2);
+  border-radius: 2px;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 20px 3px 6px;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 2px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='rgba(0,212,255,0.4)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+}
+.dbg-select:focus { outline: none; border-color: rgba(0,212,255,0.5); }
+.dbg-select option { background: #0c1018; color: rgba(255,255,255,0.7); }
+
 /* ── Sub-section label (e.g. "Layer 1") ── */
 .dbg-sub-label {
   font-size: 9px;
