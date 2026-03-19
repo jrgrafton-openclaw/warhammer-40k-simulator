@@ -351,33 +351,22 @@
 <script src="fog-fx.js?v=20260318-edge11"></script>
 <script type="module" src="scene.js?v=20260318-edge11"></script>
 <script src="debug-menu.js?v=20260318-edge11"></script>
-<!-- Fog world-space compensation — offsets background-position + background-size to track camera -->
+<!-- Fog world-space compensation — translate fogwrapper to track camera pan -->
 <script>
 (function initFogCompensation() {
+  var fogwrap = document.querySelector('.fogwrapper');
   var inner = document.getElementById('battlefield-inner');
-  if (!inner) return;
-
-  var imageEls = document.querySelectorAll('.fogwrapper .image01, .fogwrapper .image02');
-  if (!imageEls.length) return;
+  if (!fogwrap || !inner) return;
 
   function update() {
     var style = inner.style.transform || '';
     var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
-    var scaleMatch = style.match(/scale\(\s*([-\d.]+)\s*\)/);
 
-    var camTx = match ? parseFloat(match[1]) : 0;
-    var camTy = match ? parseFloat(match[2]) : 0;
-
-    // Parallax factor: 1.0 = full world tracking, 0 = screen-fixed
-    var parallax = window._fogParallax !== undefined ? window._fogParallax : 1.0;
-
-    // Offset background to track camera pan (1:1, no clamp)
-    // background-size stays at CSS 'cover' — no zoom scaling to avoid tile seams
-    var bgPosX = (camTx * parallax) + 'px';
-    var bgPosY = (camTy * parallax) + 'px';
-
-    for (var i = 0; i < imageEls.length; i++) {
-      imageEls[i].style.backgroundPosition = bgPosX + ' ' + bgPosY;
+    if (match) {
+      var parallax = window._fogParallax !== undefined ? window._fogParallax : 1.0;
+      var tx = parseFloat(match[1]) * parallax;
+      var ty = parseFloat(match[2]) * parallax;
+      fogwrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     }
 
     requestAnimationFrame(update);

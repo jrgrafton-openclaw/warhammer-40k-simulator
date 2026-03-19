@@ -12,13 +12,12 @@
    Parallax via JS keeps it connected to the board. */
 .fogwrapper {
   position: absolute;
-  inset: -25% -25% -25% -25%; /* Extend beyond viewport */
+  inset: -100% -100% -100% -100%; /* Large enough to cover viewport at max zoom (3x) + max pan */
   z-index: 5;
   overflow: hidden;
   pointer-events: none;
   filter: blur(2px) saturate(1.15) sepia(0.1);
-  /* No will-change:transform — fog stays in screen space,
-     only background-position/size are updated by JS */
+  will-change: transform;
 }
 
 /* ── Individual fog layers ── */
@@ -37,7 +36,7 @@
   height: 100%;
   background-repeat: repeat;
   background-size: cover;
-  background-position: 0 0; /* JS sets this to track camera pan */
+  background-position: center;
 }
 
 /* PNG fog textures */
