@@ -3,14 +3,14 @@
  * Defines army, inits shared modules, handles phase transitions.
  */
 
-import { R32, R40, simState, callbacks } from '../shared/state/store.js';
-import { buildCard, initAllTooltips, setGetRangeInches } from '../shared/state/units.js';
-import { mapData } from '../shared/state/terrain-data.js';
-import { renderTerrain } from '../shared/world/terrain.js';
-import { buildTerrainAABBs } from '../shared/world/collision.js';
+import { R32, R40, simState, callbacks } from '../../shared/state/store.js';
+import { buildCard, initAllTooltips, setGetRangeInches } from '../../shared/state/units.js';
+import { mapData } from '../../shared/state/terrain-data.js';
+import { renderTerrain } from '../../shared/world/terrain.js';
+import { buildTerrainAABBs } from '../../shared/world/collision.js';
 import { selectUnit as baseSelectUnit, initBoard, initBattleControls,
-         initModelInteraction, getRangeInches, renderModels, setCamera } from '../shared/world/svg-renderer.js';
-import '../shared/world/world-api.js';
+         initModelInteraction, getRangeInches, renderModels, setCamera } from '../../shared/world/svg-renderer.js';
+import '../../shared/world/world-api.js';
 
 import { setTransitionCallback, nextPhase } from './phase-machine.js';
 import { initDeploy, cleanupDeploy } from './scenes/scene-deploy.js';

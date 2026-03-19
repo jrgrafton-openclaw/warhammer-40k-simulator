@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WH40K Simulator — v0.2a · Edgeless Debug</title>
+  <title>WH40K Simulator — v0.4 · Deployment Phase</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
   <!-- Component CSS (shared split) -->
@@ -18,9 +18,7 @@
   <link rel="stylesheet" href="../../../shared/components/fx.css">
   <link rel="stylesheet" href="../../../shared/components/battlefield.css">
   <link rel="stylesheet" href="../../../shared/components/phase-states.css">
-  <link rel="stylesheet" href="style.css?v=20260318-edge9">
-  <link rel="stylesheet" href="fog-layers.css?v=20260318-edge9">
-  <link rel="stylesheet" href="debug-menu.css?v=20260318-edge9">
+  <link rel="stylesheet" href="style.css?v=20260314-deploy5">
 </head>
 <body>
 <div id="app">
@@ -137,15 +135,6 @@
   <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
   <main id="battlefield">
 
-    <!-- Fog layers (CSS-animated, textures applied by fog-gen.js) -->
-    <div class="fogwrapper">
-      <div id="foglayer_01"><div class="image01"></div><div class="image02"></div></div>
-      <div id="foglayer_02"><div class="image01"></div><div class="image02"></div></div>
-      <div id="foglayer_03"><div class="image01"></div><div class="image02"></div></div>
-    </div>
-
-    <!-- No viewport mask — fog is BEHIND the board, board occludes naturally -->
-
     <a class="backlink" href="../../../index.html#deploy" title="Back to mockup archive">← Mockups</a>
 
     <!-- VP / Score Bar -->
@@ -172,7 +161,7 @@
       </div>
     </div>
 
-    <div class="deploy-badge">v0.2a · EDGELESS DEBUG</div>
+    <div class="deploy-badge">v0.4 · DEPLOYMENT</div>
 
     <!-- Invalid zone banner -->
     <div id="zone-warning" class="zone-warning">OUTSIDE DEPLOYMENT ZONE</div>
@@ -249,9 +238,6 @@
       </svg>
 
     </div><!-- /battlefield-inner -->
-
-    <!-- Effects canvas (explosions, sparks, debris) -->
-    <canvas id="fog-fx"></canvas>
 
     <!-- Unit Card -->
     <div id="unit-card">
@@ -348,34 +334,6 @@
 
 <!-- D3 for hull calculation -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
-<script src="fog-fx.js?v=20260318-edge9"></script>
-<script type="module" src="scene.js?v=20260318-edge9"></script>
-<script src="debug-menu.js?v=20260318-edge9"></script>
-<!-- Fog parallax — reads board pan, offsets fog wrapper -->
-<script>
-(function initFogParallax() {
-  var fogwrap = document.querySelector('.fogwrapper');
-  var inner = document.getElementById('battlefield-inner');
-  if (!fogwrap || !inner) return;
-
-  function updateParallax() {
-    var style = inner.style.transform || '';
-    var match = style.match(/translate\(\s*([-\d.]+)px\s*,\s*([-\d.]+)px\s*\)/);
-    var scaleMatch = style.match(/scale\(\s*([-\d.]+)\s*\)/);
-    if (match) {
-      var parallax = window._fogParallax !== undefined ? window._fogParallax : 0.35;
-      var scale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
-      var tx = (parseFloat(match[1]) * parallax) / Math.max(scale, 0.1);
-      var ty = (parseFloat(match[2]) * parallax) / Math.max(scale, 0.1);
-      var maxShift = 150;
-      tx = Math.max(-maxShift, Math.min(maxShift, tx));
-      ty = Math.max(-maxShift, Math.min(maxShift, ty));
-      fogwrap.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
-    }
-    requestAnimationFrame(updateParallax);
-  }
-  requestAnimationFrame(updateParallax);
-})();
-</script>
+<script type="module" src="scene.js?v=20260314-deploy5"></script>
 </body>
 </html>

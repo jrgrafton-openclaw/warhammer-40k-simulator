@@ -3,11 +3,11 @@
  * Exports initShoot() and cleanupShoot() for the integrated app.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js';
-import { clearRangeRings } from '../../shared/world/range-rings.js';
-import { initShooting, cleanupShooting } from '../../phases/shoot/v0.9/shooting.js';
-import { mapData } from '../../shared/state/terrain-data.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { selectUnit as baseSelectUnit } from '../../../shared/world/svg-renderer.js';
+import { clearRangeRings } from '../../../shared/world/range-rings.js';
+import { initShooting, cleanupShooting } from '../../../phases/shoot/v0.9/shooting.js';
+import { mapData } from '../../../shared/state/terrain-data.js';
 
 // ── Build LoS blockers from terrain ruin footprints ──────
 function buildLosBlockers() {

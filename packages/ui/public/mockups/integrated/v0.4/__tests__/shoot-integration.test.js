@@ -66,13 +66,13 @@ describe('Phase Machine', () => {
 // ─── 2. Shooting.js Cleanup Tests ───────────────────────────
 
 // Mock all shared module dependencies that shooting.js imports
-vi.mock('../../shared/state/store.js', () => ({
+vi.mock('../../../shared/state/store.js', () => ({
   simState: { units: [], drag: null },
   PX_PER_INCH: 16,
   callbacks: { selectUnit: null, afterRender: null },
 }));
 
-vi.mock('../../shared/state/units.js', () => ({
+vi.mock('../../../shared/state/units.js', () => ({
   UNITS: {},
   KW_RULES: {},
   wgState: {},
@@ -81,29 +81,29 @@ vi.mock('../../shared/state/units.js', () => ({
   hideTip: vi.fn(),
 }));
 
-vi.mock('../../shared/world/svg-renderer.js', () => ({
+vi.mock('../../../shared/world/svg-renderer.js', () => ({
   selectUnit: vi.fn(),
   renderModels: vi.fn(),
 }));
 
-vi.mock('../../shared/lib/coord-helpers.js', () => ({
+vi.mock('../../../shared/lib/coord-helpers.js', () => ({
   center: vi.fn(() => ({ x: 0, y: 0 })),
   projectileAnchor: vi.fn(() => ({ x: 0, y: 0, valid: true })),
   getModelRadius: vi.fn(() => 8),
 }));
 
-vi.mock('../../shared/world/range-rings.js', () => ({
+vi.mock('../../../shared/world/range-rings.js', () => ({
   drawPerModelRangeRings: vi.fn(),
   clearRangeRings: vi.fn(),
 }));
 
-vi.mock('../../shared/audio/sfx.js', () => ({
+vi.mock('../../../shared/audio/sfx.js', () => ({
   playDiceRoll: vi.fn(),
   playWeaponFire: vi.fn(),
   playSaveFailed: vi.fn(),
 }));
 
-vi.mock('../../shared/state/terrain-data.js', () => ({
+vi.mock('../../../shared/state/terrain-data.js', () => ({
   mapData: { terrain: [] },
 }));
 
@@ -132,20 +132,20 @@ describe('Shooting.js', () => {
   });
 
   it('initShooting and cleanupShooting are exported functions', async () => {
-    const mod = await import('../../phases/shoot/v0.9/shooting.js');
+    const mod = await import('../../../phases/shoot/v0.9/shooting.js');
     expect(typeof mod.initShooting).toBe('function');
     expect(typeof mod.cleanupShooting).toBe('function');
   });
 
   it('cleanupShooting() can be called without errors when no shoot phase is active', async () => {
-    const mod = await import('../../phases/shoot/v0.9/shooting.js');
+    const mod = await import('../../../phases/shoot/v0.9/shooting.js');
     // Should not throw even without prior initShooting
     expect(() => mod.cleanupShooting()).not.toThrow();
   });
 
   it('after cleanupShooting(), callbacks.selectUnit is null', async () => {
-    const { callbacks } = await import('../../shared/state/store.js');
-    const mod = await import('../../phases/shoot/v0.9/shooting.js');
+    const { callbacks } = await import('../../../shared/state/store.js');
+    const mod = await import('../../../phases/shoot/v0.9/shooting.js');
 
     // Init sets callbacks.selectUnit
     mod.initShooting();

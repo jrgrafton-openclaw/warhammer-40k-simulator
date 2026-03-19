@@ -4,7 +4,7 @@
  * move validation overlay.
  */
 
-import { callbacks } from '../shared/state/store.js';
+import { callbacks } from '../../shared/state/store.js';
 
 // ── State ────────────────────────────────────────────────
 var _collisionGridVisible = false;
@@ -138,9 +138,9 @@ export function stopMoveValidationLoop() {
 
 function _renderMoveValidation() {
   if (!window.__debugMoveValidation) return;
-  import('../phases/move/v0.23/movement.js').then(function(mod) {
+  import('../../phases/move/v0.23/movement.js').then(function(mod) {
     if (!mod.debugMoveValidation) return;
-    import('../shared/state/store.js').then(function(storeModule) {
+    import('../../shared/state/store.js').then(function(storeModule) {
       var uid = storeModule.currentUnit;
       if (!uid) { _clearMoveOverlayLabels(); return; }
       var result = mod.debugMoveValidation(uid);

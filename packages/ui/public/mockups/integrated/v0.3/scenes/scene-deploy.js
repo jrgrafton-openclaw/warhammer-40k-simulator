@@ -3,9 +3,9 @@
  * Registers with scene-registry for declarative transitions.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { initDeployment, cleanupDeployment } from '../../phases/deploy/v0.4/deployment.js';
-import { setCamera } from '../../shared/world/svg-renderer.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { initDeployment, cleanupDeployment } from '../../../phases/deploy/v0.4/deployment.js';
+import { setCamera } from '../../../shared/world/svg-renderer.js';
 import { registerScene, transitionTo } from '../scene-registry.js';
 
 function initDeploy() {

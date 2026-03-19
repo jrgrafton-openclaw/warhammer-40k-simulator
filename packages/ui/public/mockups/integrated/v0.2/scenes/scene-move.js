@@ -3,8 +3,8 @@
  * Exports initMove() and cleanupMove() for the integrated app.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { initMovement, cleanupMovement } from '../../phases/move/v0.23/movement.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { initMovement, cleanupMovement } from '../../../phases/move/v0.23/movement.js';
 
 export function initMove() {
   initMovement();

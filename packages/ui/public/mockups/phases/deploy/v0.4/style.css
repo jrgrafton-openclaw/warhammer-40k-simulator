@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
-   v0.5a Deployment Phase — Drop Shadows + Space Background
-   Based on v0.4. Adds: animated space bg, terrain drop shadows.
+   v0.4 Deployment Phase — SVG Tabletop Extension
+   Standard 2-column layout (roster + battlefield).
+   Staging/DS/Reserves are SVG zones on an extended canvas.
    All shared styles are in ../../../shared/components/*.css
 ══════════════════════════════════════════════════════════════ */
 
@@ -11,29 +12,8 @@
   height: 100vh;
 }
 #roster { grid-column: 1; }
-#battlefield { grid-column: 2; overflow: hidden; position: relative; }
+#battlefield { grid-column: 2; overflow: hidden; }
 #bf-svg-terrain, #bf-svg { overflow: visible; }
-
-/* ── Animated space background canvas ── */
-/* v0.1b: Space bg hidden — board IS the viewport */
-#space-bg {
-  display: none;
-}
-/* Board surface and grid are now SVG rects inside #bf-svg-terrain
-   (in SVG coordinate space — matches deployment zones exactly).
-   Remove the CSS background and grid pseudo-element. */
-#battlefield-inner {
-  background: transparent !important;
-}
-#battlefield-inner::before {
-  display: none !important;
-}
-
-/* v0.1b: battlefield background matches the board surface color
-   so the board appears to extend infinitely */
-#battlefield {
-  background: #080e16 !important;
-}
 
 /* ── Off-board SVG zones (staging / deep strike / reserves) ── */
 .offboard-zone {
@@ -165,7 +145,6 @@
   color: var(--text-dis); padding: 3px 8px;
   border: 1px solid rgba(0,212,255,.06);
 }
-.deploy-badge::after { content: ' · VIEWPORT WINDOW'; }
 
 /* ── Deploy status label in action bar ── */
 #deploy-status-label {

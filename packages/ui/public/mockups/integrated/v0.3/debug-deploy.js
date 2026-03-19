@@ -3,9 +3,9 @@
  * Extracted from debug.js to keep files under 300 lines.
  */
 
-import { simState } from '../shared/state/store.js';
-import { renderModels } from '../shared/world/svg-renderer.js';
-import { selectUnit as baseSelectUnit } from '../shared/world/svg-renderer.js';
+import { simState } from '../../shared/state/store.js';
+import { renderModels } from '../../shared/world/svg-renderer.js';
+import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js';
 
 // ── Constants (must match deployment.js) ─────────────────
 var IMP_ZONE = { xMin: 0, xMax: 240, yMin: 0, yMax: 528 };
