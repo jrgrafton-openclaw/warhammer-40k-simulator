@@ -525,6 +525,35 @@ function _updateDeployWallCollisions() {
   if (banner) banner.style.display = anyCollision ? 'block' : 'none';
 }
 
+// ── Unit centroid (average of all model positions) ───────
+function _getUnitCentroid(unit) {
+  var sx = 0, sy = 0;
+  for (var i = 0; i < unit.models.length; i++) {
+    sx += unit.models[i].x;
+    sy += unit.models[i].y;
+  }
+  return { x: sx / unit.models.length, y: sy / unit.models.length };
+}
+
+// ── Find nearest zone for a point in a gap between zones ─
+function _nearestZoneForPoint(x, y) {
+  var zones = [
+    { name: 'staging',  zone: STAGING_ZONE },
+    { name: 'ds',       zone: DS_ZONE },
+    { name: 'reserves', zone: RESERVES_ZONE },
+    { name: 'imp',      zone: IMP_ZONE }
+  ];
+  var best = 'imp', bestDist = Infinity;
+  for (var i = 0; i < zones.length; i++) {
+    var z = zones[i].zone;
+    var cx = Math.max(z.xMin, Math.min(z.xMax, x));
+    var cy = Math.max(z.yMin, Math.min(z.yMax, y));
+    var d = Math.hypot(x - cx, y - cy);
+    if (d < bestDist) { bestDist = d; best = zones[i].name; }
+  }
+  return best;
+}
+
 // ── Auto-confirm on mouseup — detect zone + confirm/snap-back ──
 function _deployMouseupHandler() {
   if (deployState.locked) return;
@@ -537,11 +566,16 @@ function _deployMouseupHandler() {
   var unit = simState.units.find(function(u) { return u.id === uid; });
   if (!unit) return;
 
-  var anchor = getAnchorPos(unit);
-  var zone = detectZone(anchor.x, anchor.y);
+  // Use unit centroid (not first model) for zone detection
+  var centroid = _getUnitCentroid(unit);
+  var zone = detectZone(centroid.x, centroid.y);
 
-  if (zone === 'imp' || zone === 'nml' || zone === 'ork' || zone === 'none') {
-    // Clamp all models into the imp deployment zone (nearest legal position)
+  // If centroid is between zones (in a gap), snap to nearest zone
+  if (zone === 'none') {
+    zone = _nearestZoneForPoint(centroid.x, centroid.y);
+  }
+
+  if (zone === 'imp' || zone === 'nml' || zone === 'ork') {
     _clampToZone(unit, IMP_ZONE);
     deployState.deployedUnits.add(uid);
     unit.deployed = true;
@@ -550,26 +584,27 @@ function _deployMouseupHandler() {
     checkDeploymentComplete();
 
   } else if (zone === 'ds') {
+    _clampToZone(unit, DS_ZONE);
     deployState.deepStrikeUnits.add(uid);
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
 
   } else if (zone === 'reserves') {
+    _clampToZone(unit, RESERVES_ZONE);
     deployState.reserveUnits.add(uid);
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
 
   } else if (zone === 'staging') {
-    // Return to staging
+    _clampToZone(unit, STAGING_ZONE);
     unit.deployed = false;
     deployState.placingUnit = null;
     finishPlacement();
     checkDeploymentComplete();
 
   } else {
-    // Fallback: clamp to imp zone
     _clampToZone(unit, IMP_ZONE);
     deployState.deployedUnits.add(uid);
     unit.deployed = true;

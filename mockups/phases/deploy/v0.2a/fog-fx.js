@@ -139,7 +139,7 @@
       explosions.push({
         x: p.x * w, y: p.y * h, phase:'dormant',
         timer: 120 + Math.random() * 400, flashAlpha: 0, glowAlpha: 0,
-        radius: 25 + Math.random() * 20, maxFlash: 0.4 + Math.random() * 0.35, colors: c
+        radius: 25 + Math.random() * 20, maxFlash: 0.15 + Math.random() * 0.15, colors: c
       });
     }
   }
@@ -167,24 +167,27 @@
   }
 
   function drawExplosions(pan) {
+    var explosionOpacity = window._fogFxOpacity !== undefined ? window._fogFxOpacity : 0.5;
     for (var i = 0; i < explosions.length; i++) {
       var ex = explosions[i]; var c = ex.colors;
-      if (ex.flashAlpha < 0.005 && ex.glowAlpha < 0.005) continue;
+      var fa = ex.flashAlpha * explosionOpacity;
+      var ga = ex.glowAlpha * explosionOpacity;
+      if (fa < 0.005 && ga < 0.005) continue;
       var px = ex.x + pan.tx * 0.03, py = ex.y + pan.ty * 0.03;
-      if (ex.glowAlpha > 0.005) {
+      if (ga > 0.005) {
         var gr = ex.radius * 2.5;
         var gg = ctx.createRadialGradient(px,py,0,px,py,gr);
-        gg.addColorStop(0,'rgba('+c.glowR+','+c.glowG+','+c.glowB+','+(ex.glowAlpha*0.4)+')');
-        gg.addColorStop(0.3,'rgba('+c.glowR+','+c.glowG+','+c.glowB+','+(ex.glowAlpha*0.15)+')');
+        gg.addColorStop(0,'rgba('+c.glowR+','+c.glowG+','+c.glowB+','+(ga*0.4)+')');
+        gg.addColorStop(0.3,'rgba('+c.glowR+','+c.glowG+','+c.glowB+','+(ga*0.15)+')');
         gg.addColorStop(1,'rgba('+c.glowR+','+Math.max(0,c.glowG-30)+','+Math.max(0,c.glowB-20)+',0)');
         ctx.fillStyle = gg; ctx.fillRect(px-gr,py-gr,gr*2,gr*2);
       }
-      if (ex.flashAlpha > 0.01) {
+      if (fa > 0.01) {
         ctx.save(); ctx.globalCompositeOperation = 'lighter';
         var cr = ex.radius * 0.6;
         var cg = ctx.createRadialGradient(px,py,0,px,py,cr);
-        cg.addColorStop(0,'rgba('+c.coreR+','+c.coreG+','+c.coreB+','+(ex.flashAlpha*0.8)+')');
-        cg.addColorStop(0.3,'rgba('+c.glowR+','+c.glowG+','+c.glowB+','+(ex.flashAlpha*0.4)+')');
+        cg.addColorStop(0,'rgba('+c.coreR+','+c.coreG+','+c.coreB+','+(fa*0.8)+')');
+        cg.addColorStop(0.3,'rgba('+c.glowR+','+c.glowG+','+c.glowB+','+(fa*0.4)+')');
         cg.addColorStop(1,'rgba('+c.glowR+','+Math.max(0,c.glowG-40)+','+Math.max(0,c.glowB-30)+',0)');
         ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(px,py,cr,0,Math.PI*2); ctx.fill();
         ctx.restore();
