@@ -28,7 +28,9 @@
     fxOn: true, fxFrequency: 0.5, fxSpeed: 0.5, fxOpacity: 0.5,
     sparksOn: true, sparkOpacity: 0.3, sparkFrequency: 8, sparkSpeed: 1.0,
     wispsOn: true,
-    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
+    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55,
+    offboardBrightnessInactive: 100,
+    offboardBrightnessActive: 220
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -368,6 +370,12 @@
   sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
     state.offboardSoftness = v; applyOffboard(); save(state);
   });
+  sliderRow(zoneBody, 'Brightness (inactive)', 0, 300, 5, state.offboardBrightnessInactive, '%', function(v) {
+    state.offboardBrightnessInactive = v; applyOffboard(); save(state);
+  });
+  sliderRow(zoneBody, 'Brightness (active / dragging)', 0, 300, 5, state.offboardBrightnessActive, '%', function(v) {
+    state.offboardBrightnessActive = v; applyOffboard(); save(state);
+  });
 
   // ══════════════════════════════════════════════════════
   // EXPLOSIONS SECTION
@@ -649,14 +657,28 @@
 
   function applyOffboard() {
     var zoneInfo = [
-      { cls: 'staging-zone-bg', gradId: 'zone-staging-grad', color: '0,212,255' },
-      { cls: 'ds-zone-bg', gradId: 'zone-ds-grad', color: '255,170,0' },
-      { cls: 'reserves-zone-bg', gradId: 'zone-reserves-grad', color: '186,126,255' }
+      { cls: 'staging-zone-bg', gradId: 'zone-staging-grad', activeGradId: 'zone-staging-grad-active', color: '0,212,255' },
+      { cls: 'ds-zone-bg', gradId: 'zone-ds-grad', activeGradId: 'zone-ds-grad-active', color: '255,170,0' },
+      { cls: 'reserves-zone-bg', gradId: 'zone-reserves-grad', activeGradId: 'zone-reserves-grad-active', color: '186,126,255' }
     ];
+    var stopCurve = [1, 0.92, 0.8, 0.62, 0.42, 0.24, 0.1, 0];
+
+    function applyStops(grad, baseOpacity) {
+      if (!grad) return;
+      var stops = grad.querySelectorAll('stop');
+      for (var i = 0; i < stops.length; i++) {
+        var scale = stopCurve[i] != null ? stopCurve[i] : 0;
+        stops[i].setAttribute('stop-opacity', String((baseOpacity * scale).toFixed(4)));
+      }
+      grad.setAttribute('r', state.offboardSoftness + '%');
+    }
+
+    var inactiveOpacity = Math.min(0.24, state.offboardFillOpacity * ((state.offboardBrightnessInactive || 100) / 100));
+    var activeOpacity = Math.min(0.24, state.offboardFillOpacity * ((state.offboardBrightnessActive || 100) / 100));
+
     zoneInfo.forEach(function(zi) {
       var rect = document.querySelector('.' + zi.cls);
       if (!rect) return;
-      // Borders — use style to override any CSS
       if (state.offboardBorders) {
         rect.style.stroke = 'rgba(' + zi.color + ',0.2)';
         rect.style.strokeWidth = '1.5';
@@ -664,17 +686,24 @@
       } else {
         rect.style.stroke = 'none';
       }
-      // Gradient fill opacity (first stop)
-      var grad = document.getElementById(zi.gradId);
-      if (grad) {
-        var stops = grad.querySelectorAll('stop');
-        if (stops.length > 0) {
-          stops[0].setAttribute('stop-opacity', String(state.offboardFillOpacity));
-        }
-        // Edge softness (gradient radius)
-        grad.setAttribute('r', state.offboardSoftness + '%');
-      }
+      rect.style.filter = 'none';
+      applyStops(document.getElementById(zi.gradId), inactiveOpacity);
+      applyStops(document.getElementById(zi.activeGradId), activeOpacity);
     });
+
+    var fillStyle = document.getElementById('offboard-fill-override');
+    if (!fillStyle) {
+      fillStyle = document.createElement('style');
+      fillStyle.id = 'offboard-fill-override';
+      document.head.appendChild(fillStyle);
+    }
+    fillStyle.textContent =
+      '.offboard-zone.staging-zone-bg{fill:url(#zone-staging-grad)!important;}' +
+      '.offboard-zone.ds-zone-bg{fill:url(#zone-ds-grad)!important;}' +
+      '.offboard-zone.reserves-zone-bg{fill:url(#zone-reserves-grad)!important;}' +
+      '.offboard-zone.zone-active.staging-zone-bg{fill:url(#zone-staging-grad-active)!important;}' +
+      '.offboard-zone.zone-active.ds-zone-bg{fill:url(#zone-ds-grad-active)!important;}' +
+      '.offboard-zone.zone-active.reserves-zone-bg{fill:url(#zone-reserves-grad-active)!important;}';
   }
 
   function applyFx() {

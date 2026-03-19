@@ -181,9 +181,24 @@ simState.units = [
   });
 
   // ── Off-board zone radial gradients ──
-  defs.innerHTML += '<radialGradient id="zone-staging-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(0,212,255)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(0,212,255)" stop-opacity="0"/></radialGradient>' +
-    '<radialGradient id="zone-ds-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(255,170,0)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(255,170,0)" stop-opacity="0"/></radialGradient>' +
-    '<radialGradient id="zone-reserves-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(186,126,255)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(186,126,255)" stop-opacity="0"/></radialGradient>';
+  function zoneGradientMarkup(id, color) {
+    return '<radialGradient id="' + id + '" cx="50%" cy="50%" r="55%">' +
+      '<stop offset="0%" stop-color="rgb(' + color + ')" stop-opacity="0.040"/>' +
+      '<stop offset="12%" stop-color="rgb(' + color + ')" stop-opacity="0.0368"/>' +
+      '<stop offset="24%" stop-color="rgb(' + color + ')" stop-opacity="0.0320"/>' +
+      '<stop offset="38%" stop-color="rgb(' + color + ')" stop-opacity="0.0248"/>' +
+      '<stop offset="54%" stop-color="rgb(' + color + ')" stop-opacity="0.0168"/>' +
+      '<stop offset="72%" stop-color="rgb(' + color + ')" stop-opacity="0.0096"/>' +
+      '<stop offset="88%" stop-color="rgb(' + color + ')" stop-opacity="0.0040"/>' +
+      '<stop offset="100%" stop-color="rgb(' + color + ')" stop-opacity="0"/>' +
+      '</radialGradient>';
+  }
+  defs.innerHTML += zoneGradientMarkup('zone-staging-grad', '0,212,255') +
+    zoneGradientMarkup('zone-staging-grad-active', '0,212,255') +
+    zoneGradientMarkup('zone-ds-grad', '255,170,0') +
+    zoneGradientMarkup('zone-ds-grad-active', '255,170,0') +
+    zoneGradientMarkup('zone-reserves-grad', '186,126,255') +
+    zoneGradientMarkup('zone-reserves-grad-active', '186,126,255');
 
   // Apply radial gradient fills and remove dashed borders on off-board zones
   var zoneMap = [
