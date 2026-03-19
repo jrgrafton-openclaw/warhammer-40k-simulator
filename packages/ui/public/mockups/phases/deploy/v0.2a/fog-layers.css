@@ -1,0 +1,114 @@
+/* ══════════════════════════════════════════════════════════════
+   Fog Layer Animation v0.6e — Fog SURROUNDS the battlefield
+   Fog sits ABOVE the board with CSS mask revealing the board center.
+   The mask makes fog transparent over the board = "surrounding" effect.
+   Parallax via JS on fogwrapper transform.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Fog wrapper — covers entire scene, no mask ── */
+/* No oval mask. Fog covers everything — over the dark board it reads
+   as warzone smoke/haze; over the dark margins it's dense fog.
+   The fog texture's own transparency creates natural variation.
+   Parallax via JS keeps it connected to the board. */
+.fogwrapper {
+  position: absolute;
+  inset: -25% -25% -25% -25%; /* Extend beyond viewport for parallax room */
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+  filter: blur(2px) saturate(1.15) sepia(0.1);
+  will-change: transform;
+}
+
+/* ── Individual fog layers ── */
+#foglayer_01, #foglayer_02, #foglayer_03 {
+  position: absolute;
+  width: 200%;
+  height: 100%;
+}
+
+/* ── Fog image tiles ── */
+#foglayer_01 .image01, #foglayer_01 .image02,
+#foglayer_02 .image01, #foglayer_02 .image02,
+#foglayer_03 .image01, #foglayer_03 .image02 {
+  float: left;
+  width: 50%;
+  height: 100%;
+  background-repeat: repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+/* PNG fog textures */
+#foglayer_01 .image01, #foglayer_01 .image02 {
+  background-image: url('fog1.png');
+}
+#foglayer_02 .image01, #foglayer_02 .image02 {
+  background-image: url('fog2.png');
+}
+#foglayer_03 .image01, #foglayer_03 .image02 {
+  background-image: url('fog1.png');
+}
+
+/* ── Layer 1: Dense base — slow + high opacity ── */
+#foglayer_01 {
+  animation: fog_opacity_01 14s linear infinite, fog_scroll_slow 20s linear infinite;
+}
+
+/* ── Layer 2: Medium wisps — medium speed ── */
+#foglayer_02 {
+  animation: fog_opacity_02 18s linear infinite, fog_scroll_med 15s linear infinite;
+}
+
+/* ── Layer 3: Fine detail — fastest ── */
+#foglayer_03 {
+  animation: fog_opacity_03 12s linear infinite, fog_scroll_fast 11s linear infinite;
+}
+
+/* ── Scroll animations (different speeds for depth) ── */
+@keyframes fog_scroll_slow {
+  0%   { left: 0; }
+  100% { left: -100%; }
+}
+@keyframes fog_scroll_med {
+  0%   { left: 0; }
+  100% { left: -100%; }
+}
+@keyframes fog_scroll_fast {
+  0%   { left: 0; }
+  100% { left: -100%; }
+}
+
+/* ── Opacity breathing — moderate so board visible through smoke ── */
+@keyframes fog_opacity_01 {
+  0%   { opacity: 0.12; }
+  22%  { opacity: 0.35; }
+  40%  { opacity: 0.20; }
+  58%  { opacity: 0.30; }
+  80%  { opacity: 0.15; }
+  100% { opacity: 0.12; }
+}
+
+@keyframes fog_opacity_02 {
+  0%   { opacity: 0.30; }
+  25%  { opacity: 0.15; }
+  50%  { opacity: 0.10; }
+  80%  { opacity: 0.25; }
+  100% { opacity: 0.30; }
+}
+
+@keyframes fog_opacity_03 {
+  0%   { opacity: 0.35; }
+  27%  { opacity: 0.12; }
+  52%  { opacity: 0.28; }
+  68%  { opacity: 0.15; }
+  100% { opacity: 0.35; }
+}
+
+/* ── Effects canvas (explosions, sparks, debris) ── */
+#fog-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
