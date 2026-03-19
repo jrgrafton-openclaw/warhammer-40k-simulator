@@ -180,6 +180,36 @@ simState.units = [
     }
   });
 
+  // ── Off-board zone radial gradients ──
+  defs.innerHTML += '<radialGradient id="zone-staging-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(0,212,255)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(0,212,255)" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="zone-ds-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(255,170,0)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(255,170,0)" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="zone-reserves-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(186,126,255)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(186,126,255)" stop-opacity="0"/></radialGradient>';
+
+  // Apply radial gradient fills and remove dashed borders on off-board zones
+  var zoneMap = [
+    { cls: 'staging-zone-bg', grad: 'zone-staging-grad' },
+    { cls: 'ds-zone-bg', grad: 'zone-ds-grad' },
+    { cls: 'reserves-zone-bg', grad: 'zone-reserves-grad' }
+  ];
+  zoneMap.forEach(function(zm) {
+    var rect = terrainSvg.querySelector('.' + zm.cls);
+    if (!rect) return;
+    rect.setAttribute('fill', 'url(#' + zm.grad + ')');
+    rect.setAttribute('stroke', 'none');
+    // Add slab pattern overlay
+    var overlay = document.createElementNS(NS, 'rect');
+    overlay.setAttribute('x', rect.getAttribute('x'));
+    overlay.setAttribute('y', rect.getAttribute('y'));
+    overlay.setAttribute('width', rect.getAttribute('width'));
+    overlay.setAttribute('height', rect.getAttribute('height'));
+    overlay.setAttribute('rx', rect.getAttribute('rx') || '0');
+    overlay.setAttribute('fill', 'url(#slab-pat)');
+    overlay.setAttribute('opacity', '0.03');
+    overlay.setAttribute('pointer-events', 'none');
+    overlay.classList.add('offboard-zone-slab');
+    rect.after(overlay);
+  });
+
   // ── Edge vignette — fade board edges to pure black ──
   // Vignettes rendered in a SEPARATE SVG at z-index:8 (above objectives/units)
   var vigColor = '#000000';

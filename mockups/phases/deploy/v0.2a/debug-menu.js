@@ -26,7 +26,8 @@
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
     zoneDeployment: true,
     fxOn: true, fxIntensity: 5, fxSpeed: 1.0, fxOpacity: 0.5,
-    wispsOn: true
+    wispsOn: true,
+    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -138,6 +139,7 @@
     if (unit === 'px') return Math.round(v) + 'px';
     if (unit === 's') return v.toFixed(0) + 's';
     if (unit === 'x') return v.toFixed(1) + 'x';
+    if (unit === '%') return Math.round(v) + '%';
     return v.toFixed(2);
   }
 
@@ -353,6 +355,17 @@
   });
   toggleRow(zoneBody, 'Board Edge Separator', state.zoneSeparator, function(on) {
     state.zoneSeparator = on; applyZones(); save(state);
+  });
+
+  subLabel(zoneBody, 'OFF-BOARD STYLE');
+  toggleRow(zoneBody, 'Borders', state.offboardBorders, function(on) {
+    state.offboardBorders = on; applyOffboard(); save(state);
+  });
+  sliderRow(zoneBody, 'Fill Opacity', 0, 0.15, 0.005, state.offboardFillOpacity, '', function(v) {
+    state.offboardFillOpacity = v; applyOffboard(); save(state);
+  });
+  sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
+    state.offboardSoftness = v; applyOffboard(); save(state);
   });
 
   // ══════════════════════════════════════════════════════
@@ -618,6 +631,36 @@
     }
   }
 
+  function applyOffboard() {
+    var zoneInfo = [
+      { cls: 'staging-zone-bg', gradId: 'zone-staging-grad', color: '0,212,255' },
+      { cls: 'ds-zone-bg', gradId: 'zone-ds-grad', color: '255,170,0' },
+      { cls: 'reserves-zone-bg', gradId: 'zone-reserves-grad', color: '186,126,255' }
+    ];
+    zoneInfo.forEach(function(zi) {
+      var rect = document.querySelector('.' + zi.cls);
+      if (!rect) return;
+      // Borders
+      if (state.offboardBorders) {
+        rect.setAttribute('stroke', 'rgba(' + zi.color + ',0.2)');
+        rect.setAttribute('stroke-width', '1.5');
+        rect.setAttribute('stroke-dasharray', '8 4');
+      } else {
+        rect.setAttribute('stroke', 'none');
+      }
+      // Gradient fill opacity (first stop)
+      var grad = document.getElementById(zi.gradId);
+      if (grad) {
+        var stops = grad.querySelectorAll('stop');
+        if (stops.length > 0) {
+          stops[0].setAttribute('stop-opacity', String(state.offboardFillOpacity));
+        }
+        // Edge softness (gradient radius)
+        grad.setAttribute('r', state.offboardSoftness + '%');
+      }
+    });
+  }
+
   function applyFx() {
     window._fogFxEnabled = state.fxOn;
     window._fogWispsEnabled = state.wispsOn;
@@ -636,6 +679,7 @@
     applyFog();
     applyVignette();
     applyZones();
+    applyOffboard();
     applyFx();
   }
   if (document.readyState === 'complete') {

@@ -617,12 +617,16 @@ function _deployMouseupHandler() {
 // ── Clamp unit into a zone (nearest legal position) ─────
 // ── Clamp unit into zone as a GROUP (preserve relative layout) ─
 function _clampToZone(unit, zone) {
-  // Find the minimum shift to bring ALL models inside the zone
+  // 10px inward padding so centroids land comfortably inside the zone
+  var PAD = 10;
+  var padZone = { xMin: zone.xMin + PAD, xMax: zone.xMax - PAD,
+                  yMin: zone.yMin + PAD, yMax: zone.yMax - PAD };
+  // Find the minimum shift to bring ALL models inside the padded zone
   var needRight = 0, needLeft = 0, needDown = 0, needUp = 0;
   unit.models.forEach(function(m) {
     var r = m.shape === 'rect' ? Math.max(m.w, m.h) / 2 : m.r;
-    var minX = zone.xMin + r, maxX = zone.xMax - r;
-    var minY = zone.yMin + r, maxY = zone.yMax - r;
+    var minX = padZone.xMin + r, maxX = padZone.xMax - r;
+    var minY = padZone.yMin + r, maxY = padZone.yMax - r;
     if (m.x < minX) needRight = Math.max(needRight, minX - m.x);
     if (m.x > maxX) needLeft  = Math.max(needLeft,  m.x - maxX);
     if (m.y < minY) needDown  = Math.max(needDown,  minY - m.y);
