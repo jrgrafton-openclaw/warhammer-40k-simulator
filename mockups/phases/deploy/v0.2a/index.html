@@ -367,20 +367,16 @@
 
     var camTx = match ? parseFloat(match[1]) : 0;
     var camTy = match ? parseFloat(match[2]) : 0;
-    var camScale = scaleMatch ? parseFloat(scaleMatch[1]) : 1;
 
     // Parallax factor: 1.0 = full world tracking, 0 = screen-fixed
     var parallax = window._fogParallax !== undefined ? window._fogParallax : 1.0;
 
-    // Fog grain scales with zoom (world-consistent, re-tiled at native res)
-    var bgSize = (100 * camScale) + '%';
-
     // Offset background to track camera pan (1:1, no clamp)
+    // background-size stays at CSS 'cover' — no zoom scaling to avoid tile seams
     var bgPosX = (camTx * parallax) + 'px';
     var bgPosY = (camTy * parallax) + 'px';
 
     for (var i = 0; i < imageEls.length; i++) {
-      imageEls[i].style.backgroundSize = bgSize;
       imageEls[i].style.backgroundPosition = bgPosX + ' ' + bgPosY;
     }
 
