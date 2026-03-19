@@ -32,7 +32,7 @@ Editor.Objectives = {
       const hex = document.createElement('div');
       hex.className = 'obj-hex-wrap neutral';
       hex.style.cssText = `left:${pos.leftPct}%;top:${pos.topPct}%`;
-      hex.innerHTML = `<svg class="obj-svg" viewBox="0 0 84 97" width="84" height="97">
+      hex.innerHTML = `<svg class="obj-svg" viewBox="0 0 84 97" width="52" height="60">
         <polygon class="obj-bg" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
         <polygon class="obj-ring" points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5"/>
         <text x="42" y="44" class="obj-n">${num}</text>
