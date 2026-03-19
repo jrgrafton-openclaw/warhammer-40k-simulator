@@ -166,3 +166,9 @@
 @keyframes shake-err { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)} }
 .shake-error { animation: shake-err 0.4s ease; }
 .camera-transition #battlefield-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+
+/* ── Objective size overrides (match terrain-experiments/v0.16) ── */
+.obj-hex-wrap { width: 52px !important; height: 60px !important; }
+.obj-hex-wrap .obj-n { font-size: 14px !important; }
+.obj-hex-wrap .obj-l { font-size: 5px !important; letter-spacing: 1.8px !important; }
+.obj-area-ring { width: 8% !important; }
