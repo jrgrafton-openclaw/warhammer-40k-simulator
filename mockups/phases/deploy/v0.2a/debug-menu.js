@@ -675,23 +675,6 @@
         grad.setAttribute('r', state.offboardSoftness + '%');
       }
     });
-    // Glow brightness — dynamically update zone-active drop-shadow via injected <style>
-    var glowScale = (state.offboardGlowBrightness || 100) / 100;
-    window.__zoneGlowBrightness = glowScale;
-    var glowStyle = document.getElementById('zone-glow-override');
-    if (!glowStyle) {
-      glowStyle = document.createElement('style');
-      glowStyle.id = 'zone-glow-override';
-      document.head.appendChild(glowStyle);
-    }
-    var b1 = Math.round(12 * glowScale);
-    var b2 = Math.round(28 * glowScale);
-    var a1 = Math.min(1, 0.5 * glowScale).toFixed(2);
-    var a2 = Math.min(1, 0.3 * glowScale).toFixed(2);
-    glowStyle.textContent =
-      '.offboard-zone.zone-active.staging-zone-bg{filter:drop-shadow(0 0 '+b1+'px rgba(0,212,255,'+a1+')) drop-shadow(0 0 '+b2+'px rgba(0,212,255,'+a2+'))!important;}' +
-      '.offboard-zone.zone-active.ds-zone-bg{filter:drop-shadow(0 0 '+b1+'px rgba(255,170,0,'+a1+')) drop-shadow(0 0 '+b2+'px rgba(255,170,0,'+a2+'))!important;}' +
-      '.offboard-zone.zone-active.reserves-zone-bg{filter:drop-shadow(0 0 '+b1+'px rgba(186,126,255,'+a1+')) drop-shadow(0 0 '+b2+'px rgba(186,126,255,'+a2+'))!important;}';
   }
 
   function applyFx() {
