@@ -32,7 +32,7 @@ describe('Camera state synchronization', () => {
   });
 
   it('setCamera() updates internal state AND DOM transform', async () => {
-    const { setCamera, getCamera, applyTx } = await import('../../shared/world/svg-renderer.js');
+    const { setCamera, getCamera, applyTx } = await import('../../../shared/world/svg-renderer.js');
 
     // Set camera to deployment offset
     setCamera(350, 0, 0.5);
@@ -49,7 +49,7 @@ describe('Camera state synchronization', () => {
   });
 
   it('applyTx() after setCamera() preserves the offset (no snap to center)', async () => {
-    const { setCamera, getCamera, applyTx } = await import('../../shared/world/svg-renderer.js');
+    const { setCamera, getCamera, applyTx } = await import('../../../shared/world/svg-renderer.js');
 
     // Simulate: app.js sets initial deployment camera
     setCamera(350, 0, 0.5);
@@ -67,7 +67,7 @@ describe('Camera state synchronization', () => {
   });
 
   it('setCamera(0, 0, 0.5) moves to center (phase transition)', async () => {
-    const { setCamera, getCamera } = await import('../../shared/world/svg-renderer.js');
+    const { setCamera, getCamera } = await import('../../../shared/world/svg-renderer.js');
 
     // Start at deployment offset
     setCamera(350, 0, 0.5);
@@ -83,7 +83,7 @@ describe('Camera state synchronization', () => {
   });
 
   it('partial setCamera() only updates provided values', async () => {
-    const { setCamera, getCamera } = await import('../../shared/world/svg-renderer.js');
+    const { setCamera, getCamera } = await import('../../../shared/world/svg-renderer.js');
 
     setCamera(100, 50, 0.8);
     setCamera(200, undefined, undefined);

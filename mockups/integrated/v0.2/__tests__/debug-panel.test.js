@@ -28,7 +28,7 @@ function resetMockUnits() {
 var mockSimState = { units: [], drag: null };
 var mockCallbacks = { selectUnit: null, afterRender: null };
 
-vi.mock('../../shared/state/store.js', () => ({
+vi.mock('../../../shared/state/store.js', () => ({
   get simState() { return mockSimState; },
   callbacks: mockCallbacks,
   PX_PER_INCH: 16,
@@ -37,7 +37,7 @@ vi.mock('../../shared/state/store.js', () => ({
   setCurrentUnit: vi.fn(),
 }));
 
-vi.mock('../../shared/world/svg-renderer.js', () => ({
+vi.mock('../../../shared/world/svg-renderer.js', () => ({
   selectUnit: vi.fn(),
   renderModels: vi.fn(),
   setCamera: vi.fn(),

@@ -3,8 +3,8 @@
  * Registers with scene-registry for declarative transitions.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { initFight, cleanupFight } from '../../phases/fight/v0.1/fight.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { initFight, cleanupFight } from '../../../phases/fight/v0.1/fight.js';
 import { registerScene } from '../scene-registry.js';
 
 function initFightScene() {

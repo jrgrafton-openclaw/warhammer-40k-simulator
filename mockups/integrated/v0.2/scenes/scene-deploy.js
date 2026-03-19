@@ -3,8 +3,8 @@
  * Exports initDeploy() and cleanupDeploy() for the integrated app.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { initDeployment, cleanupDeployment } from '../../phases/deploy/v0.4/deployment.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { initDeployment, cleanupDeployment } from '../../../phases/deploy/v0.4/deployment.js';
 
 export function initDeploy() {
   initDeployment();

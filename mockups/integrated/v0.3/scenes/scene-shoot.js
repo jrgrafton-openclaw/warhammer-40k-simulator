@@ -3,11 +3,11 @@
  * Registers with scene-registry for declarative transitions.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js';
-import { clearRangeRings } from '../../shared/world/range-rings.js';
-import { initShooting, cleanupShooting } from '../../phases/shoot/v0.9/shooting.js';
-import { mapData } from '../../shared/state/terrain-data.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { selectUnit as baseSelectUnit } from '../../../shared/world/svg-renderer.js';
+import { clearRangeRings } from '../../../shared/world/range-rings.js';
+import { initShooting, cleanupShooting } from '../../../phases/shoot/v0.9/shooting.js';
+import { mapData } from '../../../shared/state/terrain-data.js';
 import { registerScene } from '../scene-registry.js';
 import * as phaseState from '../phase-state.js';
 

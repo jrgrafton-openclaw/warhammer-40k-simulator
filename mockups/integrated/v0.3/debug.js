@@ -4,7 +4,7 @@
  * debug-overlays.js (collision grid, ruin footprints, LoS, move validation).
  */
 
-import { simState, callbacks } from '../shared/state/store.js';
+import { simState, callbacks } from '../../shared/state/store.js';
 import { getCurrentPhase, transitionTo } from './scene-registry.js';
 import { autoDeploy, positionUnitsForPhase } from './debug-deploy.js';
 import { toggleCollisionGrid, toggleRuinFootprints, toggleModelsInRuins,

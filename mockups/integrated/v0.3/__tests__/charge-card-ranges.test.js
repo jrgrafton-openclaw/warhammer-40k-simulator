@@ -16,7 +16,7 @@ function setupDOM() {
 }
 
 // Stub modules before importing
-vi.mock('../../shared/state/store.js', () => ({
+vi.mock('../../../shared/state/store.js', () => ({
   simState: {
     units: [
       { id: 'u1', faction: 'imp', models: [{ id: 'm1', x: 100, y: 100, r: 10 }] },
@@ -25,22 +25,22 @@ vi.mock('../../shared/state/store.js', () => ({
   PX_PER_INCH: 12,
 }));
 
-vi.mock('../../shared/state/units.js', () => ({
+vi.mock('../../../shared/state/units.js', () => ({
   UNITS: {
     u1: { M: 6 },
   },
 }));
 
-vi.mock('../../shared/world/collision.js', () => ({
+vi.mock('../../../shared/world/collision.js', () => ({
   resolveTerrainCollision: (cx, cy) => ({ x: cx, y: cy }),
 }));
 
-vi.mock('../../shared/lib/coord-helpers.js', () => ({
+vi.mock('../../../shared/lib/coord-helpers.js', () => ({
   center: (u) => ({ x: u.models[0].x, y: u.models[0].y }),
   getModelRadius: (m) => m.r || 10,
 }));
 
-vi.mock('../../shared/world/range-rings.js', () => ({
+vi.mock('../../../shared/world/range-rings.js', () => ({
   drawPerModelRangeRings: vi.fn(),
   clearRangeRings: vi.fn(),
 }));
@@ -54,15 +54,15 @@ describe('updateCardRanges', () => {
     setupDOM();
 
     // Re-mock to get fresh fn refs
-    vi.doMock('../../shared/world/range-rings.js', () => ({
+    vi.doMock('../../../shared/world/range-rings.js', () => ({
       drawPerModelRangeRings: vi.fn(),
       clearRangeRings: vi.fn(),
     }));
 
-    const helpers = await import('../../phases/charge/v0.1/charge-helpers.js');
+    const helpers = await import('../../../phases/charge/v0.1/charge-helpers.js');
     updateCardRanges = helpers.updateCardRanges;
 
-    const rings = await import('../../shared/world/range-rings.js');
+    const rings = await import('../../../shared/world/range-rings.js');
     drawPerModelRangeRings = rings.drawPerModelRangeRings;
   });
 

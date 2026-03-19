@@ -3,9 +3,9 @@
  * Registers with scene-registry for declarative transitions.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js';
-import { initGameEnd, cleanupGameEnd } from '../../phases/game-end/v0.2/game-end.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { selectUnit as baseSelectUnit } from '../../../shared/world/svg-renderer.js';
+import { initGameEnd, cleanupGameEnd } from '../../../phases/game-end/v0.2/game-end.js';
 import { registerScene } from '../scene-registry.js';
 
 function initGameEndScene() {

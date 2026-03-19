@@ -30,7 +30,7 @@ var mockSimState = {
 };
 var mockCallbacks = { selectUnit: null, afterRender: null };
 
-vi.mock('../../shared/state/store.js', () => ({
+vi.mock('../../../shared/state/store.js', () => ({
   get simState() { return mockSimState; },
   callbacks: mockCallbacks,
   PX_PER_INCH: 16,
@@ -38,13 +38,13 @@ vi.mock('../../shared/state/store.js', () => ({
   R40: 10,
 }));
 
-vi.mock('../../shared/world/svg-renderer.js', () => ({
+vi.mock('../../../shared/world/svg-renderer.js', () => ({
   selectUnit: vi.fn(),
   renderModels: vi.fn(),
   setCamera: vi.fn(),
 }));
 
-vi.mock('../../shared/state/terrain-data.js', () => ({
+vi.mock('../../../shared/state/terrain-data.js', () => ({
   mapData: { terrain: [] },
 }));
 
@@ -75,7 +75,7 @@ describe('Game End Phase', () => {
   });
 
   it('initGameEnd creates the overlay elements', async () => {
-    const { initGameEnd } = await import('../../phases/game-end/v0.2/game-end.js');
+    const { initGameEnd } = await import('../../../phases/game-end/v0.2/game-end.js');
     initGameEnd();
 
     var backdrop = document.getElementById('game-end-backdrop');
@@ -98,7 +98,7 @@ describe('Game End Phase', () => {
   });
 
   it('cleanupGameEnd removes the overlay elements', async () => {
-    const { initGameEnd, cleanupGameEnd } = await import('../../phases/game-end/v0.2/game-end.js');
+    const { initGameEnd, cleanupGameEnd } = await import('../../../phases/game-end/v0.2/game-end.js');
     initGameEnd();
 
     expect(document.getElementById('game-end-backdrop')).not.toBeNull();
@@ -111,14 +111,14 @@ describe('Game End Phase', () => {
   });
 
   it('countModels returns correct counts per faction', async () => {
-    const { countModels } = await import('../../phases/game-end/v0.2/game-end.js');
+    const { countModels } = await import('../../../phases/game-end/v0.2/game-end.js');
 
     expect(countModels('imp')).toBe(4); // 3 intercessors + 1 lieutenant
     expect(countModels('ork')).toBe(3); // 2 boyz + 1 boss
   });
 
   it('initGameEnd displays correct model counts in overlay', async () => {
-    const { initGameEnd } = await import('../../phases/game-end/v0.2/game-end.js');
+    const { initGameEnd } = await import('../../../phases/game-end/v0.2/game-end.js');
     initGameEnd();
 
     var content = document.getElementById('game-end-content');
@@ -133,7 +133,7 @@ describe('Game End Phase', () => {
   });
 
   it('initGameEnd blocks dragging', async () => {
-    const { initGameEnd } = await import('../../phases/game-end/v0.2/game-end.js');
+    const { initGameEnd } = await import('../../../phases/game-end/v0.2/game-end.js');
     initGameEnd();
 
     // Trying to set drag to a truthy value should be blocked

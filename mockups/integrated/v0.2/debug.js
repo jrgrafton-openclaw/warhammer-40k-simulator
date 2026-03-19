@@ -3,9 +3,9 @@
  * Provides auto-deploy, phase-skip, and state display.
  */
 
-import { simState, callbacks } from '../shared/state/store.js';
-import { selectUnit as baseSelectUnit, renderModels, setCamera } from '../shared/world/svg-renderer.js';
-import { mapData } from '../shared/state/terrain-data.js';
+import { simState, callbacks } from '../../shared/state/store.js';
+import { selectUnit as baseSelectUnit, renderModels, setCamera } from '../../shared/world/svg-renderer.js';
+import { mapData } from '../../shared/state/terrain-data.js';
 import { currentPhase, nextPhase, setTransitionCallback } from './phase-machine.js';
 
 // ── Constants (must match deployment.js) ─────────────────

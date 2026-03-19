@@ -23,8 +23,8 @@
  */
 
 import { bus } from './game-bus.js';
-import { selectUnit as baseSelectUnit } from '../shared/world/svg-renderer.js';
-import { callbacks } from '../shared/state/store.js';
+import { selectUnit as baseSelectUnit } from '../../shared/world/svg-renderer.js';
+import { callbacks } from '../../shared/state/store.js';
 
 var scenes = {};
 var _currentPhase = null;
@@ -191,7 +191,7 @@ export function transitionTo(toPhase, opts) {
     if (inner) {
       inner.style.transition = 'transform 0.6s ease';
       // Import dynamically to avoid circular dependency
-      import('../shared/world/svg-renderer.js').then(function(mod) {
+      import('../../shared/world/svg-renderer.js').then(function(mod) {
         mod.setCamera(0, 0, 0.5);
         setTimeout(function() { inner.style.transition = ''; }, 700);
       });

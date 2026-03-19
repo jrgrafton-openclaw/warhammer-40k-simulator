@@ -3,8 +3,8 @@
  * Registers with scene-registry for declarative transitions.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { initCharge, cleanupCharge } from '../../phases/charge/v0.1/charge.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { initCharge, cleanupCharge } from '../../../phases/charge/v0.1/charge.js';
 import { registerScene } from '../scene-registry.js';
 
 function initChargeScene() {

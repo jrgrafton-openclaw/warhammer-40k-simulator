@@ -3,8 +3,8 @@
  * Registers with scene-registry for declarative transitions.
  */
 
-import { simState, callbacks } from '../../shared/state/store.js';
-import { initMovement, cleanupMovement } from '../../phases/move/v0.23/movement.js';
+import { simState, callbacks } from '../../../shared/state/store.js';
+import { initMovement, cleanupMovement } from '../../../phases/move/v0.23/movement.js';
 import { registerScene } from '../scene-registry.js';
 
 function initMove() {
