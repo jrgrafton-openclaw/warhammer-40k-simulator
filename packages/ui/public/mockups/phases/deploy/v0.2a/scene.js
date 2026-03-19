@@ -91,6 +91,7 @@ simState.units = [
     lineH.setAttribute('x2', '60'); lineH.setAttribute('y2', String(i));
     lineH.setAttribute('stroke', 'rgba(201,163,82,0.025)');
     lineH.setAttribute('stroke-width', '0.5');
+    lineH.setAttribute('data-grid', 'minor');
     gridPat.appendChild(lineH);
 
     var lineV = document.createElementNS(NS, 'line');
@@ -98,6 +99,7 @@ simState.units = [
     lineV.setAttribute('x2', String(i)); lineV.setAttribute('y2', '60');
     lineV.setAttribute('stroke', 'rgba(201,163,82,0.025)');
     lineV.setAttribute('stroke-width', '0.5');
+    lineV.setAttribute('data-grid', 'minor');
     gridPat.appendChild(lineV);
   }
 
@@ -107,6 +109,7 @@ simState.units = [
   majorH.setAttribute('x2', '60'); majorH.setAttribute('y2', '0');
   majorH.setAttribute('stroke', 'rgba(201,163,82,0.055)');
   majorH.setAttribute('stroke-width', '0.5');
+  majorH.setAttribute('data-grid', 'major');
   gridPat.appendChild(majorH);
 
   var majorV = document.createElementNS(NS, 'line');
@@ -114,12 +117,14 @@ simState.units = [
   majorV.setAttribute('x2', '0'); majorV.setAttribute('y2', '60');
   majorV.setAttribute('stroke', 'rgba(201,163,82,0.055)');
   majorV.setAttribute('stroke-width', '0.5');
+  majorV.setAttribute('data-grid', 'major');
   gridPat.appendChild(majorV);
 
   defs.appendChild(gridPat);
 
   // Board surface — extended 100% on each side for edgeless feel
   var boardBg = document.createElementNS(NS, 'rect');
+  boardBg.setAttribute('id', 'board-surface');
   boardBg.setAttribute('x', '-720');
   boardBg.setAttribute('y', '-528');
   boardBg.setAttribute('width', '2160');
@@ -129,6 +134,7 @@ simState.units = [
 
   // Grid overlay rect — extended to match board surface
   var gridRect = document.createElementNS(NS, 'rect');
+  gridRect.setAttribute('id', 'board-grid-rect');
   gridRect.setAttribute('x', '-720');
   gridRect.setAttribute('y', '-528');
   gridRect.setAttribute('width', '2160');
@@ -140,7 +146,7 @@ simState.units = [
   // ── Edge vignette — fade board edges to pure black ──
   var vigColor = '#000000';
 
-  var DEPTH = 400; // default vignette depth for extended board
+  var DEPTH = 160; // default vignette depth at play area boundary
 
   var gradDefs = [
     { id: 'vig-l', x1: '0', y1: '0', x2: '1', y2: '0' },
@@ -162,12 +168,12 @@ simState.units = [
   var vigGroup = document.createElementNS(NS, 'g');
   vigGroup.setAttribute('pointer-events', 'none');
 
-  // Vignette rects repositioned to cover the EXTENDED board
+  // Vignette rects at PLAY AREA boundary (0,0,720,528)
   [
-    { gradId: 'vig-l', rectId: 'vig-rect-l', x: -720, y: -528, w: DEPTH, h: 1584 },
-    { gradId: 'vig-r', rectId: 'vig-rect-r', x: 720 + 720 - DEPTH, y: -528, w: DEPTH, h: 1584 },
-    { gradId: 'vig-t', rectId: 'vig-rect-t', x: -720, y: -528, w: 2160, h: DEPTH },
-    { gradId: 'vig-b', rectId: 'vig-rect-b', x: -720, y: 528 + 528 - DEPTH, w: 2160, h: DEPTH }
+    { gradId: 'vig-l', rectId: 'vig-rect-l', x: 0, y: 0, w: DEPTH, h: 528 },
+    { gradId: 'vig-r', rectId: 'vig-rect-r', x: 720 - DEPTH, y: 0, w: DEPTH, h: 528 },
+    { gradId: 'vig-t', rectId: 'vig-rect-t', x: 0, y: 0, w: 720, h: DEPTH },
+    { gradId: 'vig-b', rectId: 'vig-rect-b', x: 0, y: 528 - DEPTH, w: 720, h: DEPTH }
   ].forEach(function(s) {
     var r = document.createElementNS(NS, 'rect');
     r.setAttribute('id', s.rectId);

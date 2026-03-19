@@ -6,11 +6,12 @@
 .debug-menu {
   display: none;
   position: fixed;
-  top: 8px;
+  top: 50%;
   right: 8px;
+  transform: translateY(-50%);
   z-index: 10000;
   width: 272px;
-  max-height: 50vh;
+  max-height: 65vh;
   overflow-y: auto;
   background: rgba(8,12,16,0.95);
   border: 1px solid rgba(0,212,255,0.2);
