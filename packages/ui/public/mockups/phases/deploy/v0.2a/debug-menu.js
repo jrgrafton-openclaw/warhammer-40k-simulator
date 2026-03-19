@@ -26,7 +26,7 @@
     zoneStaging: true, zoneDS: true, zoneReserves: true, zoneSeparator: true,
     zoneDeployment: true,
     fxOn: true, fxFrequency: 0.5, fxSpeed: 0.5, fxOpacity: 0.5,
-    sparksOn: true, sparkOpacity: 0.3, sparkCount: 8,
+    sparksOn: true, sparkOpacity: 0.3, sparkFrequency: 8, sparkSpeed: 1.0,
     wispsOn: true,
     offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
   };
@@ -396,8 +396,11 @@
   sliderRow(fxBody, 'Opacity', 0, 1, 0.01, state.sparkOpacity, '', function(v) {
     state.sparkOpacity = v; applyFx(); save(state);
   });
-  sliderRow(fxBody, 'Count', 1, 20, 1, state.sparkCount, '', function(v) {
-    state.sparkCount = v; applyFx(); save(state);
+  sliderRow(fxBody, 'Frequency', 1, 20, 1, state.sparkFrequency, '', function(v) {
+    state.sparkFrequency = v; applyFx(); save(state);
+  });
+  sliderRow(fxBody, 'Speed', 0.5, 3, 0.1, state.sparkSpeed, 'x', function(v) {
+    state.sparkSpeed = v; applyFx(); save(state);
   });
 
   // WISPS / DEBRIS SECTION
@@ -680,7 +683,8 @@
     window._fogFxFrequency = state.fxFrequency;
     window._fogFxSparksEnabled = state.sparksOn;
     window._fogFxSparkOpacity = state.sparkOpacity;
-    window._fogFxSparkCount = state.sparkCount;
+    window._fogFxSparkCount = state.sparkFrequency;
+    window._fogFxSparkSpeed = state.sparkSpeed;
     window._fogFxSpeedMult = state.fxSpeed;
     window._fogFxOpacity = state.fxOpacity;
   }
