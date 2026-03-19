@@ -20,8 +20,8 @@ Editor.Core = {
   sid: 0,  // sprite id counter
   clipboardSprites: [],
 
-  // Image paths resolve relative to the parent directory (sprites live in terrain-experiments/)
-  spriteBasePath: '../',
+  // Image paths resolve to img/ subdirectory
+  spriteBasePath: 'img/',
 
   init() {
     this.svg = document.getElementById('battlefield');
