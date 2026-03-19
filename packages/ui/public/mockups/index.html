@@ -213,17 +213,19 @@
       </div>
 
       <div class="card-grid featured">
-        <a class="card latest" href="terrain-experiments/0.16a-editor.html">
+        <a class="card latest" href="terrain-experiments/v0.16/index.html">
           <span class="card-badge badge-latest">LATEST</span>
-          <div class="card-version">v0.16a</div>
+          <div class="card-version">v0.16</div>
           <div class="card-codename">TERRAIN SPRITE EDITOR</div>
-          <div class="card-title">Drag-drop sprite editor &middot; SVG + image compositing &middot; Layer management</div>
+          <div class="card-title">Multi-file architecture &middot; Undo &middot; Point lights &middot; Command-phase objectives</div>
           <ul class="card-features">
-            <li>Drag-and-drop sprite placement on SVG battlefield</li>
-            <li>Multiple background options (image + SVG gradients)</li>
-            <li>Floor/roof layer separation with opacity controls</li>
+            <li>Refactored to 9 focused JS modules (~100 lines each)</li>
+            <li>Ctrl/Cmd+Z undo (50 entries) &middot; Arrow key movement</li>
+            <li>Draggable point lights (color, radius, intensity)</li>
+            <li>Exact command-phase objective markers (draggable)</li>
+            <li>Models always draggable &middot; Models + Lights in layers panel</li>
             <li>Multi-select, rotate, resize, copy/paste, layer reordering</li>
-            <li>LocalStorage persistence of layout</li>
+            <li>LocalStorage persistence of full layout state</li>
           </ul>
           <span class="card-link">Open &rarr;</span>
         </a>
