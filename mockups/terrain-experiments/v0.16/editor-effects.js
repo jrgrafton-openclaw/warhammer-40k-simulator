@@ -1,137 +1,242 @@
 /* ══════════════════════════════════════════════════════════════
    Editor Effects — Sprite grounding: drop shadow, feathered
-   edges, colour grading applied to spriteFloor / spriteTop
+   edges, colour grading. All composed in SVG filter pipeline.
+   Per-sprite shadow multiplier via shadowMul (0–1).
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Effects = {
-  // Current state
+  // Global state
   shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55 },
   feather: { on: false, radius: 10 },
-  grade: { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
+  grade:   { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
 
-  // ── Initialise: build SVG filters + apply defaults ──
+  // Filter cache: key = quantised params string → filter id
+  _filterCache: {},
+  _filterId: 0,
+  _ready: false,
+
   init() {
-    this._buildFilters();
-    this.applyShadow();
-    this.applyFeather();
-    this.applyGrade();
+    this._ready = true;
+    this.rebuildAll();
   },
 
-  // ── Build SVG filter definitions ──
-  _buildFilters() {
+  // ── Rebuild all sprite filters ──
+  rebuildAll() {
+    const sprites = Editor.Core.allSprites;
+    sprites.forEach(sp => this._applyToSprite(sp));
+  },
+
+  // ── Apply correct filter to a single sprite ──
+  _applyToSprite(sp) {
+    const mul = sp.shadowMul != null ? sp.shadowMul : 1.0;
+    const filterId = this._getOrCreateFilter(mul);
+    if (filterId) {
+      sp.el.setAttribute('filter', `url(#${filterId})`);
+    } else {
+      sp.el.removeAttribute('filter');
+    }
+    // Remove any lingering CSS filter
+    sp.el.style.filter = '';
+  },
+
+  // ── Get or create a filter for given shadow multiplier ──
+  _getOrCreateFilter(rawMul) {
+    // Quantise multiplier to nearest 0.1 to limit filter count
+    const mul = Math.round((rawMul || 0) * 10) / 10;
+
+    const hasShadow = this.shadow.on && mul > 0;
+    const hasFeather = this.feather.on;
+    const hasGrade = this.grade.on;
+
+    if (!hasShadow && !hasFeather && !hasGrade) return null;
+
+    // Build cache key from all active params
+    const key = [
+      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul}` : '',
+      hasFeather ? `f${this.feather.radius}` : '',
+      hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : ''
+    ].join('|');
+
+    if (this._filterCache[key]) return this._filterCache[key];
+
+    const id = `spFx${this._filterId++}`;
+    this._buildFilter(id, hasShadow, hasFeather, hasGrade, mul);
+    this._filterCache[key] = id;
+    return id;
+  },
+
+  // ── Build a combined SVG filter ──
+  _buildFilter(id, hasShadow, hasFeather, hasGrade, shadowMul) {
     const NS = Editor.Core.NS;
     const defs = Editor.Core.svg.querySelector('defs');
 
-    // --- Drop-shadow filter ---
-    const sf = document.createElementNS(NS, 'filter');
-    sf.id = 'spriteDropShadow';
-    // Extra filter region so shadow isn't clipped
-    sf.setAttribute('x', '-20%'); sf.setAttribute('y', '-20%');
-    sf.setAttribute('width', '140%'); sf.setAttribute('height', '140%');
-    sf.setAttribute('color-interpolation-filters', 'sRGB');
+    const f = document.createElementNS(NS, 'filter');
+    f.id = id;
+    f.setAttribute('x', '-25%'); f.setAttribute('y', '-25%');
+    f.setAttribute('width', '150%'); f.setAttribute('height', '150%');
+    f.setAttribute('color-interpolation-filters', 'sRGB');
 
-    const ds = document.createElementNS(NS, 'feDropShadow');
-    ds.id = 'fxShadowKernel';
-    ds.setAttribute('dx', this.shadow.dx);
-    ds.setAttribute('dy', this.shadow.dy);
-    ds.setAttribute('stdDeviation', this.shadow.blur);
-    ds.setAttribute('flood-color', '#000');
-    ds.setAttribute('flood-opacity', this.shadow.opacity);
-    sf.appendChild(ds);
-    defs.appendChild(sf);
+    let currentInput = 'SourceGraphic';
 
-    // --- Feathered-edges filter ---
-    // Erodes the alpha channel so edges fade out smoothly
-    const ff = document.createElementNS(NS, 'filter');
-    ff.id = 'spriteFeather';
-    ff.setAttribute('x', '-5%'); ff.setAttribute('y', '-5%');
-    ff.setAttribute('width', '110%'); ff.setAttribute('height', '110%');
-    ff.setAttribute('color-interpolation-filters', 'sRGB');
+    // ── Step 1: Feathered edges (erode alpha + blur → soft mask) ──
+    if (hasFeather) {
+      const toAlpha = document.createElementNS(NS, 'feColorMatrix');
+      toAlpha.setAttribute('in', 'SourceAlpha');
+      toAlpha.setAttribute('type', 'matrix');
+      toAlpha.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0');
+      toAlpha.setAttribute('result', 'alpha');
+      f.appendChild(toAlpha);
 
-    // 1. Extract alpha → blur it
-    const toAlpha = document.createElementNS(NS, 'feColorMatrix');
-    toAlpha.setAttribute('in', 'SourceAlpha');
-    toAlpha.setAttribute('type', 'matrix');
-    toAlpha.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0');
-    toAlpha.setAttribute('result', 'alpha');
-    ff.appendChild(toAlpha);
+      const erode = document.createElementNS(NS, 'feMorphology');
+      erode.setAttribute('in', 'alpha');
+      erode.setAttribute('operator', 'erode');
+      erode.setAttribute('radius', this.feather.radius);
+      erode.setAttribute('result', 'eroded');
+      f.appendChild(erode);
 
-    // 2. Erode-like effect: invert + blur + threshold via feComponentTransfer
-    const morphErode = document.createElementNS(NS, 'feMorphology');
-    morphErode.id = 'fxFeatherErode';
-    morphErode.setAttribute('in', 'alpha');
-    morphErode.setAttribute('operator', 'erode');
-    morphErode.setAttribute('radius', this.feather.radius);
-    morphErode.setAttribute('result', 'eroded');
-    ff.appendChild(morphErode);
+      const blur = document.createElementNS(NS, 'feGaussianBlur');
+      blur.setAttribute('in', 'eroded');
+      blur.setAttribute('stdDeviation', this.feather.radius);
+      blur.setAttribute('result', 'softAlpha');
+      f.appendChild(blur);
 
-    const blurEdge = document.createElementNS(NS, 'feGaussianBlur');
-    blurEdge.id = 'fxFeatherBlur';
-    blurEdge.setAttribute('in', 'eroded');
-    blurEdge.setAttribute('stdDeviation', this.feather.radius);
-    blurEdge.setAttribute('result', 'softAlpha');
-    ff.appendChild(blurEdge);
+      const comp = document.createElementNS(NS, 'feComposite');
+      comp.setAttribute('in', 'SourceGraphic');
+      comp.setAttribute('in2', 'softAlpha');
+      comp.setAttribute('operator', 'in');
+      comp.setAttribute('result', 'feathered');
+      f.appendChild(comp);
 
-    // 3. Composite original colour with eroded alpha
-    const comp = document.createElementNS(NS, 'feComposite');
-    comp.setAttribute('in', 'SourceGraphic');
-    comp.setAttribute('in2', 'softAlpha');
-    comp.setAttribute('operator', 'in');
-    ff.appendChild(comp);
-
-    defs.appendChild(ff);
-  },
-
-  // ── Drop shadow ──
-  applyShadow() {
-    const layers = ['spriteFloor', 'spriteTop'];
-    layers.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      if (this.shadow.on) {
-        // If feather is also on, we use a combined filter
-        this._syncFilter(el);
-      } else {
-        this._syncFilter(el);
-      }
-    });
-  },
-
-  setShadowParam(param, value) {
-    this.shadow[param] = value;
-    const k = document.getElementById('fxShadowKernel');
-    if (k) {
-      k.setAttribute('dx', this.shadow.dx);
-      k.setAttribute('dy', this.shadow.dy);
-      k.setAttribute('stdDeviation', this.shadow.blur);
-      k.setAttribute('flood-opacity', this.shadow.opacity);
+      currentInput = 'feathered';
     }
+
+    // ── Step 2: Color grading via feColorMatrix ──
+    if (hasGrade) {
+      // Build a combined matrix: brightness × saturation × sepia
+      const matrix = this._gradeMatrix(this.grade.brightness, this.grade.saturation, this.grade.sepia);
+      const cm = document.createElementNS(NS, 'feColorMatrix');
+      cm.setAttribute('in', currentInput);
+      cm.setAttribute('type', 'matrix');
+      cm.setAttribute('values', matrix);
+      cm.setAttribute('result', 'graded');
+      f.appendChild(cm);
+      currentInput = 'graded';
+    }
+
+    // ── Step 3: Drop shadow ──
+    if (hasShadow) {
+      const effOpacity = this.shadow.opacity * shadowMul;
+      const effBlur = this.shadow.blur * shadowMul;
+
+      // Extract alpha from current result
+      const sa = document.createElementNS(NS, 'feColorMatrix');
+      sa.setAttribute('in', currentInput);
+      sa.setAttribute('type', 'matrix');
+      sa.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0');
+      sa.setAttribute('result', 'spriteAlpha');
+      f.appendChild(sa);
+
+      const off = document.createElementNS(NS, 'feOffset');
+      off.setAttribute('in', 'spriteAlpha');
+      off.setAttribute('dx', this.shadow.dx);
+      off.setAttribute('dy', this.shadow.dy);
+      off.setAttribute('result', 'offAlpha');
+      f.appendChild(off);
+
+      const sblur = document.createElementNS(NS, 'feGaussianBlur');
+      sblur.setAttribute('in', 'offAlpha');
+      sblur.setAttribute('stdDeviation', effBlur);
+      sblur.setAttribute('result', 'blurAlpha');
+      f.appendChild(sblur);
+
+      const flood = document.createElementNS(NS, 'feFlood');
+      flood.setAttribute('flood-color', '#000');
+      flood.setAttribute('flood-opacity', effOpacity);
+      flood.setAttribute('result', 'shadowColor');
+      f.appendChild(flood);
+
+      const compShadow = document.createElementNS(NS, 'feComposite');
+      compShadow.setAttribute('in', 'shadowColor');
+      compShadow.setAttribute('in2', 'blurAlpha');
+      compShadow.setAttribute('operator', 'in');
+      compShadow.setAttribute('result', 'shadow');
+      f.appendChild(compShadow);
+
+      // Merge: shadow behind sprite
+      const merge = document.createElementNS(NS, 'feMerge');
+      const mn1 = document.createElementNS(NS, 'feMergeNode');
+      mn1.setAttribute('in', 'shadow');
+      const mn2 = document.createElementNS(NS, 'feMergeNode');
+      mn2.setAttribute('in', currentInput);
+      merge.appendChild(mn1);
+      merge.appendChild(mn2);
+      f.appendChild(merge);
+    }
+
+    defs.appendChild(f);
   },
 
+  // ── Color grading matrix: brightness × saturation × sepia ──
+  _gradeMatrix(b, s, sep) {
+    // Start with identity, apply brightness (scale RGB)
+    // Then saturation (lerp towards luminance)
+    // Then sepia tint
+
+    // Luminance weights
+    const lr = 0.2126, lg = 0.7152, lb = 0.0722;
+
+    // Saturation matrix (applied after brightness)
+    const sr = (1 - s) * lr, sg = (1 - s) * lg, sb = (1 - s) * lb;
+    const m = [
+      (sr + s) * b, sg * b,       sb * b,       0, 0,
+      sr * b,       (sg + s) * b, sb * b,       0, 0,
+      sr * b,       sg * b,       (sb + s) * b, 0, 0,
+      0,            0,            0,            1, 0
+    ];
+
+    // Apply sepia as a lerp towards sepia tone
+    if (sep > 0) {
+      // Sepia target matrix
+      const sp = [
+        0.393, 0.769, 0.189, 0, 0,
+        0.349, 0.686, 0.168, 0, 0,
+        0.272, 0.534, 0.131, 0, 0,
+        0,     0,     0,     1, 0
+      ];
+      for (let i = 0; i < 20; i++) {
+        m[i] = m[i] * (1 - sep) + sp[i] * sep * b;
+      }
+      // Fix alpha row
+      m[15] = 0; m[16] = 0; m[17] = 0; m[18] = 1; m[19] = 0;
+    }
+
+    return m.map(v => v.toFixed(4)).join(' ');
+  },
+
+  // ── Flush filter cache and rebuild ──
+  _flush() {
+    // Remove old generated filters from defs
+    const defs = Editor.Core.svg.querySelector('defs');
+    Object.values(this._filterCache).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+    this._filterCache = {};
+    this.rebuildAll();
+  },
+
+  // ── Global toggle/set handlers ──
   toggleShadow(btn) {
     this.shadow.on = !this.shadow.on;
     btn.classList.toggle('on', this.shadow.on);
     const ctrl = document.getElementById('fxShadowControls');
     if (ctrl) ctrl.style.display = this.shadow.on ? '' : 'none';
-    this.applyShadow();
+    this._flush();
   },
 
-  // ── Feathered edges ──
-  applyFeather() {
-    const layers = ['spriteFloor', 'spriteTop'];
-    layers.forEach(id => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      this._syncFilter(el);
-    });
-  },
-
-  setFeatherRadius(val) {
-    this.feather.radius = val;
-    const erode = document.getElementById('fxFeatherErode');
-    const blur = document.getElementById('fxFeatherBlur');
-    if (erode) erode.setAttribute('radius', val);
-    if (blur) blur.setAttribute('stdDeviation', val);
+  setShadowParam(param, value) {
+    this.shadow[param] = value;
+    this._flush();
   },
 
   toggleFeather(btn) {
@@ -139,33 +244,12 @@ Editor.Effects = {
     btn.classList.toggle('on', this.feather.on);
     const ctrl = document.getElementById('fxFeatherControls');
     if (ctrl) ctrl.style.display = this.feather.on ? '' : 'none';
-    this.applyFeather();
+    this._flush();
   },
 
-  // ── Colour grading ──
-  applyGrade() {
-    const layers = ['spriteFloor', 'spriteTop'];
-    const css = this.grade.on
-      ? `brightness(${this.grade.brightness}) saturate(${this.grade.saturation}) sepia(${this.grade.sepia})`
-      : '';
-    layers.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.filter = css;
-    });
-    // CSS filter + SVG filter can coexist (CSS filter on style, SVG filter on attribute)
-    // Actually CSS filter overrides SVG filter attribute on the same element in some browsers.
-    // So we'll apply the grade via an SVG feColorMatrix instead, combined with shadow/feather.
-    // For now, keep it simple: use CSS filter for grade (works in all modern browsers when
-    // the SVG filter is applied as url()). Actually — let's combine everything into the
-    // SVG filter pipeline to avoid conflicts.
-    // UPDATE: CSS `style.filter` on an SVG <g> applies *after* the SVG `filter` attribute.
-    // So this actually works: SVG filter=url(#shadow) for shadow, CSS filter for colour grade.
-    // Let's keep it this way — it's simpler and works.
-  },
-
-  setGradeParam(param, value) {
-    this.grade[param] = value;
-    this.applyGrade();
+  setFeatherRadius(val) {
+    this.feather.radius = val;
+    this._flush();
   },
 
   toggleGrade(btn) {
@@ -173,112 +257,21 @@ Editor.Effects = {
     btn.classList.toggle('on', this.grade.on);
     const ctrl = document.getElementById('fxGradeControls');
     if (ctrl) ctrl.style.display = this.grade.on ? '' : 'none';
-    this.applyGrade();
+    this._flush();
   },
 
-  // ── Sync SVG filter attribute (shadow ± feather) ──
-  _syncFilter(el) {
-    if (this.shadow.on && this.feather.on) {
-      // Both — chain: can't easily combine two SVG filters via attribute,
-      // so wrap in a parent <g> or just pick shadow (more impactful).
-      // Simple approach: apply shadow filter (most impactful), feather via separate wrapper.
-      // Better: create a combined filter dynamically.
-      this._buildCombinedFilter();
-      el.setAttribute('filter', 'url(#spriteCombined)');
-    } else if (this.shadow.on) {
-      el.setAttribute('filter', 'url(#spriteDropShadow)');
-    } else if (this.feather.on) {
-      el.setAttribute('filter', 'url(#spriteFeather)');
-    } else {
-      el.removeAttribute('filter');
-    }
+  setGradeParam(param, value) {
+    this.grade[param] = value;
+    this._flush();
   },
 
-  _buildCombinedFilter() {
-    const NS = Editor.Core.NS;
-    const defs = Editor.Core.svg.querySelector('defs');
-    let existing = document.getElementById('spriteCombined');
-    if (existing) existing.remove();
-
-    const f = document.createElementNS(NS, 'filter');
-    f.id = 'spriteCombined';
-    f.setAttribute('x', '-20%'); f.setAttribute('y', '-20%');
-    f.setAttribute('width', '140%'); f.setAttribute('height', '140%');
-    f.setAttribute('color-interpolation-filters', 'sRGB');
-
-    // Step 1: Feather the edges
-    const toAlpha = document.createElementNS(NS, 'feColorMatrix');
-    toAlpha.setAttribute('in', 'SourceAlpha');
-    toAlpha.setAttribute('type', 'matrix');
-    toAlpha.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0');
-    toAlpha.setAttribute('result', 'alpha');
-    f.appendChild(toAlpha);
-
-    const erode = document.createElementNS(NS, 'feMorphology');
-    erode.setAttribute('in', 'alpha');
-    erode.setAttribute('operator', 'erode');
-    erode.setAttribute('radius', this.feather.radius);
-    erode.setAttribute('result', 'eroded');
-    f.appendChild(erode);
-
-    const blur = document.createElementNS(NS, 'feGaussianBlur');
-    blur.setAttribute('in', 'eroded');
-    blur.setAttribute('stdDeviation', this.feather.radius);
-    blur.setAttribute('result', 'softAlpha');
-    f.appendChild(blur);
-
-    const compFeather = document.createElementNS(NS, 'feComposite');
-    compFeather.setAttribute('in', 'SourceGraphic');
-    compFeather.setAttribute('in2', 'softAlpha');
-    compFeather.setAttribute('operator', 'in');
-    compFeather.setAttribute('result', 'feathered');
-    f.appendChild(compFeather);
-
-    // Step 2: Drop shadow on the feathered result
-    // Create shadow from feathered alpha
-    const shadowAlpha = document.createElementNS(NS, 'feColorMatrix');
-    shadowAlpha.setAttribute('in', 'feathered');
-    shadowAlpha.setAttribute('type', 'matrix');
-    shadowAlpha.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0');
-    shadowAlpha.setAttribute('result', 'fAlpha');
-    f.appendChild(shadowAlpha);
-
-    const shadowOffset = document.createElementNS(NS, 'feOffset');
-    shadowOffset.setAttribute('in', 'fAlpha');
-    shadowOffset.setAttribute('dx', this.shadow.dx);
-    shadowOffset.setAttribute('dy', this.shadow.dy);
-    shadowOffset.setAttribute('result', 'offsetAlpha');
-    f.appendChild(shadowOffset);
-
-    const shadowBlur = document.createElementNS(NS, 'feGaussianBlur');
-    shadowBlur.setAttribute('in', 'offsetAlpha');
-    shadowBlur.setAttribute('stdDeviation', this.shadow.blur);
-    shadowBlur.setAttribute('result', 'blurredShadow');
-    f.appendChild(shadowBlur);
-
-    const floodBlack = document.createElementNS(NS, 'feFlood');
-    floodBlack.setAttribute('flood-color', '#000');
-    floodBlack.setAttribute('flood-opacity', this.shadow.opacity);
-    floodBlack.setAttribute('result', 'shadowColor');
-    f.appendChild(floodBlack);
-
-    const compShadowColor = document.createElementNS(NS, 'feComposite');
-    compShadowColor.setAttribute('in', 'shadowColor');
-    compShadowColor.setAttribute('in2', 'blurredShadow');
-    compShadowColor.setAttribute('operator', 'in');
-    compShadowColor.setAttribute('result', 'shadow');
-    f.appendChild(compShadowColor);
-
-    // Merge: shadow behind feathered
-    const merge = document.createElementNS(NS, 'feMerge');
-    const mn1 = document.createElementNS(NS, 'feMergeNode');
-    mn1.setAttribute('in', 'shadow');
-    const mn2 = document.createElementNS(NS, 'feMergeNode');
-    mn2.setAttribute('in', 'feathered');
-    merge.appendChild(mn1);
-    merge.appendChild(mn2);
-    f.appendChild(merge);
-
-    defs.appendChild(f);
+  // ── Per-sprite shadow multiplier ──
+  setSpriteShadowMul(spriteId, val) {
+    const sp = Editor.Core.allSprites.find(s => s.id === spriteId);
+    if (!sp) return;
+    sp.shadowMul = val;
+    this._applyToSprite(sp);
+    Editor.Core.updateDebug();
+    Editor.Persistence.save();
   }
 };

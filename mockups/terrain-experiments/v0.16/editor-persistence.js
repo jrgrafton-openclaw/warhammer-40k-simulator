@@ -15,7 +15,8 @@ Editor.Persistence = {
         layer: s.originalLayer || s.layer, hidden: s.hidden,
         flipX: s.flipX || false, flipY: s.flipY || false,
         groupId: s.groupId || null, originalLayer: s.originalLayer || null,
-        cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0
+        cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
+        shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
       })),
       models: C.allModels.map(m => m.kind === 'circle'
         ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
@@ -65,6 +66,7 @@ Editor.Persistence = {
           if (s.cropL || s.cropT || s.cropR || s.cropB) {
             sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
           }
+          sp.shadowMul = s.shadowMul != null ? s.shadowMul : 1.0;
         });
       }
 
