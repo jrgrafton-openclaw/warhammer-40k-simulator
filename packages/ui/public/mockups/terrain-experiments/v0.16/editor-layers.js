@@ -60,12 +60,15 @@ Editor.Layers = {
         : this._createSpriteRow(item, C);
 
       const itemId = this._itemId(item);
-      row.draggable = true;
+      const isObjectivesGroup = item.type === 'group' && item.groupId === 'objectives-group';
+      row.draggable = !isObjectivesGroup; // Objectives is HTML overlay, always on top
       row.dataset.layerId = itemId;
 
-      row.addEventListener('dragstart', () => {
-        this.draggedId = itemId; row.classList.add('dragging');
-      });
+      if (!isObjectivesGroup) {
+        row.addEventListener('dragstart', () => {
+          this.draggedId = itemId; row.classList.add('dragging');
+        });
+      }
       row.addEventListener('dragend', () => {
         row.classList.remove('dragging'); this.draggedId = null;
       });
@@ -173,38 +176,52 @@ Editor.Layers = {
       return;
     }
 
-    // Case 3: Group on anything → move the group's SVG <g> in DOM
-    if (dragIsGroup && dragItem.svgEl) {
-      const targetSvgRef = targetIsGroup
-        ? targetItem.svgEl
-        : targetItem.svgEl.parentNode; // sprite's container <g>
-
-      if (!targetSvgRef) { Editor.Persistence.save(); this.rebuild(); return; }
-
-      // Insert dragged group just before the target's SVG element
-      // (before in DOM = behind in z-order = below in visual stack)
-      svg.insertBefore(dragItem.svgEl, targetSvgRef);
-
-      // Ensure selUI stays last
+    // Helper: ensure selUI and dragRect stay last in SVG
+    const _fixTrailingEls = () => {
       const selUI = document.getElementById('selUI');
       const dragRect = document.getElementById('dragRect');
       if (selUI) svg.appendChild(selUI);
       if (dragRect) svg.appendChild(dragRect);
+    };
+
+    // Case 3: Group on anything → move the group's SVG <g> in DOM
+    if (dragIsGroup && dragItem.svgEl) {
+      // If target is the objectives group (HTML, no SVG element),
+      // "above objectives" = top of z-order = last before selUI
+      if (!targetItem.svgEl) {
+        _fixTrailingEls();
+        const selUI = document.getElementById('selUI');
+        svg.insertBefore(dragItem.svgEl, selUI);
+        Editor.Persistence.save(); this.rebuild();
+        return;
+      }
+
+      const targetSvgRef = targetIsGroup
+        ? targetItem.svgEl
+        : targetItem.svgEl.parentNode; // sprite's container <g>
+
+      // Insert dragged group just before the target's SVG element
+      // (before in DOM = behind in z-order = below in visual stack)
+      svg.insertBefore(dragItem.svgEl, targetSvgRef);
+      _fixTrailingEls();
 
       Editor.Persistence.save(); this.rebuild();
       return;
     }
 
-    // Case 4: Sprite on group → move sprite's container before the group
-    if (!dragIsGroup && targetIsGroup && targetItem.svgEl) {
+    // Case 4: Sprite on group → move sprite's container relative to the group
+    if (!dragIsGroup && targetIsGroup) {
       const spriteContainer = dragItem.svgEl.parentNode;
-      svg.insertBefore(spriteContainer, targetItem.svgEl);
 
-      // Ensure selUI stays last
-      const selUI = document.getElementById('selUI');
-      const dragRect = document.getElementById('dragRect');
-      if (selUI) svg.appendChild(selUI);
-      if (dragRect) svg.appendChild(dragRect);
+      if (!targetItem.svgEl) {
+        // Target is objectives (HTML) → move sprite container to top of SVG z-order
+        _fixTrailingEls();
+        const selUI = document.getElementById('selUI');
+        svg.insertBefore(spriteContainer, selUI);
+      } else {
+        svg.insertBefore(spriteContainer, targetItem.svgEl);
+        _fixTrailingEls();
+      }
 
       Editor.Persistence.save(); this.rebuild();
     }
