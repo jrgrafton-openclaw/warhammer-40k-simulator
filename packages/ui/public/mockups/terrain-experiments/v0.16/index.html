@@ -4,7 +4,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/tokens/colors.css">
 <link rel="stylesheet" href="../../shared/components/battlefield.css">
-<link rel="stylesheet" href="editor.css?v=20260320i">
+<link rel="stylesheet" href="editor.css?v=20260320j">
 </head><body>
 <div class="main">
 <div class="sidebar left">
@@ -32,6 +32,7 @@
     <button class="tbtn on" onclick="Editor.Core.tgl(this,'deployZones')">Deploy</button>
     <button class="tbtn on" onclick="Editor.Core.tgl(this,'modelLayer')">Models</button>
     <button class="tbtn on" onclick="Editor.Core.tglMulti(this,['objectiveRings','objectiveHexes'])">Obj</button>
+    <button class="tbtn on" onclick="Editor.Core.tgl(this,'lightLayer')">Lights</button>
   </div>
   <h3>SVG Ruins Opacity</h3>
   <div class="bg-row">
@@ -166,18 +167,18 @@
 </div>
 </div>
 
-<script src="editor-core.js?v=20260320i"></script>
-<script src="editor-undo.js?v=20260320i"></script>
-<script src="editor-models.js?v=20260320i"></script>
-<script src="editor-sprites.js?v=20260320i"></script>
-<script src="editor-objectives.js?v=20260320i"></script>
-<script src="editor-lights.js?v=20260320i"></script>
-<script src="editor-groups.js?v=20260320i"></script>
-<script src="editor-crop.js?v=20260320i"></script>
-<script src="editor-zoom.js?v=20260320i"></script>
-<script src="editor-shortcuts.js?v=20260320i"></script>
-<script src="editor-selection.js?v=20260320i"></script>
-<script src="editor-layers.js?v=20260320i"></script>
-<script src="editor-persistence.js?v=20260320i"></script>
+<script src="editor-core.js?v=20260320j"></script>
+<script src="editor-undo.js?v=20260320j"></script>
+<script src="editor-models.js?v=20260320j"></script>
+<script src="editor-sprites.js?v=20260320j"></script>
+<script src="editor-objectives.js?v=20260320j"></script>
+<script src="editor-lights.js?v=20260320j"></script>
+<script src="editor-groups.js?v=20260320j"></script>
+<script src="editor-crop.js?v=20260320j"></script>
+<script src="editor-zoom.js?v=20260320j"></script>
+<script src="editor-shortcuts.js?v=20260320j"></script>
+<script src="editor-selection.js?v=20260320j"></script>
+<script src="editor-layers.js?v=20260320j"></script>
+<script src="editor-persistence.js?v=20260320j"></script>
 <script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Zoom.init();</script>
 </body></html>

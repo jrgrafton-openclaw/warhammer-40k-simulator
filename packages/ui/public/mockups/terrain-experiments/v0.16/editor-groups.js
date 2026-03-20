@@ -66,6 +66,16 @@ Editor.Groups = {
     return group;
   },
 
+  /* ── Rename group ── */
+  rename(groupId, newName) {
+    const C = Editor.Core;
+    const group = C.groups.find(g => g.id === groupId);
+    if (!group) return;
+    group.name = newName;
+    Editor.Persistence.save();
+    Editor.Layers.rebuild();
+  },
+
   /* ── Set group opacity ── */
   setOpacity(groupId, opacity) {
     const C = Editor.Core;
