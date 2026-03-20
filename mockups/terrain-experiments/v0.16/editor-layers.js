@@ -73,11 +73,15 @@ Editor.Layers = {
         row = this._createCustomGroupRow(item, C);
         list.appendChild(row);
         this._setupDrag(row, this._itemId(item), zItems);
-        // Show child sprites
+        // Show child sprites (in DOM order = z-order)
         const gId = item.groupId;
-        const childSprites = C.allSprites.filter(s => s.groupId === gId);
+        const gEl = document.getElementById(gId);
+        const childSprites = gEl
+          ? Array.from(gEl.children).map(el => C.allSprites.find(s => s.el === el)).filter(Boolean).reverse()
+          : C.allSprites.filter(s => s.groupId === gId);
         childSprites.forEach(sp => {
           const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
+          this._setupGroupChildDrag(child, sp, gId);
           list.appendChild(child);
         });
       } else {
@@ -308,6 +312,72 @@ Editor.Layers = {
       _fixTrailingEls();
       Editor.Persistence.save(); this.rebuild();
     }
+  },
+
+  /* ── Drag reorder within a custom group ── */
+  _setupGroupChildDrag(row, sp, groupId) {
+    row.draggable = true;
+    row.dataset.groupChildId = sp.id;
+    row.dataset.groupId = groupId;
+
+    row.addEventListener('dragstart', e => {
+      e.stopPropagation();
+      this._dragGroupChild = sp.id;
+      this._dragGroupId = groupId;
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      this._dragGroupChild = null;
+      this._dragGroupId = null;
+    });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!this._dragGroupChild || this._dragGroupId !== groupId) return;
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      row.classList.toggle('drop-above', e.clientY < mid);
+      row.classList.toggle('drop-below', e.clientY >= mid);
+    });
+    row.addEventListener('dragleave', () => {
+      row.classList.remove('drop-above', 'drop-below');
+    });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      row.classList.remove('drop-above', 'drop-below');
+      if (!this._dragGroupChild || this._dragGroupChild === sp.id) return;
+      if (this._dragGroupId !== groupId) return;
+
+      const C = Editor.Core;
+      const srcSp = C.allSprites.find(s => s.id === this._dragGroupChild);
+      if (!srcSp) return;
+
+      Editor.Undo.push();
+      const gEl = document.getElementById(groupId);
+      if (!gEl) return;
+
+      // Display is reversed (top of list = last in DOM = front),
+      // so "drop above" in the UI = insert after in DOM
+      const rect = row.getBoundingClientRect();
+      const dropAbove = e.clientY < rect.top + rect.height / 2;
+
+      if (dropAbove) {
+        // UI above = in front = after in DOM
+        if (sp.el.nextElementSibling) {
+          gEl.insertBefore(srcSp.el, sp.el.nextElementSibling);
+        } else {
+          gEl.appendChild(srcSp.el);
+        }
+      } else {
+        // UI below = behind = before in DOM
+        gEl.insertBefore(srcSp.el, sp.el);
+      }
+
+      Editor.Persistence.save();
+      this.rebuild();
+    });
   },
 
   reorderBefore(srcId, targetId) {
