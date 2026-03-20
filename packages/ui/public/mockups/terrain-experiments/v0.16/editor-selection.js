@@ -132,12 +132,14 @@ Editor.Selection = {
     const r = document.createElementNS(NS, 'rect');
     r.setAttribute('x', minX-3); r.setAttribute('y', minY-3); r.setAttribute('width', maxX-minX+6); r.setAttribute('height', maxY-minY+6);
     r.setAttribute('fill', 'none'); r.setAttribute('stroke', '#00d4ff'); r.setAttribute('stroke-dasharray', '6,3'); r.setAttribute('stroke-width', '1.5');
+    r.style.pointerEvents = 'none'; // Let clicks pass through to sprites
     C.selUI.appendChild(r);
 
     C.multiSel.forEach(s => {
       const h = document.createElementNS(NS, 'rect');
       h.setAttribute('x', s.x); h.setAttribute('y', s.y); h.setAttribute('width', s.w); h.setAttribute('height', s.h);
       h.setAttribute('fill', 'rgba(0,212,255,0.05)'); h.setAttribute('stroke', '#00d4ff'); h.setAttribute('stroke-width', '0.5'); h.setAttribute('stroke-dasharray', '3,2');
+      h.style.pointerEvents = 'none'; // Let clicks pass through to actual sprites
       if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${s.x+s.w/2},${s.y+s.h/2})`);
       C.selUI.appendChild(h);
     });
@@ -411,17 +413,19 @@ Editor.Selection = {
       this.drawSelectionUI(); C.updateDebug(); Editor.Persistence.save();
     }
 
-    // Z-order (sprites are direct SVG children)
+    // Z-order (sprites are direct SVG children, may be inside crop wrapper)
     if (e.key === '=' || e.key === '+') {
-      const parent = C.selected.el.parentNode;
-      const next = C.selected.el.nextElementSibling;
-      if (next && next.id !== 'selUI' && next.id !== 'dragRect') parent.insertBefore(next, C.selected.el);
+      const el = C.selected._clipWrap || C.selected.el;
+      const parent = el.parentNode;
+      const next = el.nextElementSibling;
+      if (next && next.id !== 'selUI' && next.id !== 'dragRect') parent.insertBefore(next, el);
       Editor.Persistence.save(); Editor.Layers.rebuild();
     }
     if (e.key === '-') {
-      const parent = C.selected.el.parentNode;
-      const prev = C.selected.el.previousElementSibling;
-      if (prev) parent.insertBefore(C.selected.el, prev);
+      const el = C.selected._clipWrap || C.selected.el;
+      const parent = el.parentNode;
+      const prev = el.previousElementSibling;
+      if (prev) parent.insertBefore(el, prev);
       Editor.Persistence.save(); Editor.Layers.rebuild();
     }
 

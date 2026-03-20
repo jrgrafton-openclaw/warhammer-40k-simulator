@@ -47,9 +47,15 @@ Editor.Layers = {
       } else if (el.id && el.id.startsWith('group-')) {
         items.push({ type: 'custom-group', groupId: el.id, svgEl: el });
       } else {
-        // Individual sprite (direct SVG child)
-        const sp = C.allSprites.find(s => s.el === el);
-        if (sp) items.push({ type: 'sprite', ref: sp, svgEl: el });
+        // Individual sprite (direct SVG child, or inside a crop wrapper <g>)
+        let sp = C.allSprites.find(s => s.el === el);
+        if (sp) {
+          items.push({ type: 'sprite', ref: sp, svgEl: el });
+        } else if (el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
+          // Crop wrapper <g> — find the sprite inside
+          sp = C.allSprites.find(s => s._clipWrap === el);
+          if (sp) items.push({ type: 'sprite', ref: sp, svgEl: el });
+        }
       }
     });
 
@@ -118,7 +124,14 @@ Editor.Layers = {
         const gId = item.groupId;
         const gEl = document.getElementById(gId);
         const childSprites = gEl
-          ? Array.from(gEl.children).map(el => C.allSprites.find(s => s.el === el)).filter(Boolean).reverse()
+          ? Array.from(gEl.children).map(el => {
+              // Direct match or inside a crop wrapper <g>
+              let sp = C.allSprites.find(s => s.el === el);
+              if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
+                sp = C.allSprites.find(s => s._clipWrap === el);
+              }
+              return sp;
+            }).filter(Boolean).reverse()
           : C.allSprites.filter(s => s.groupId === gId);
         childSprites.forEach(sp => {
           const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
@@ -274,19 +287,25 @@ Editor.Layers = {
 
     // Double-click to rename
     const nameEl = row.querySelector('.group-name');
+    // Prevent drag from starting when clicking on the name (allows dblclick to register)
+    nameEl.addEventListener('mousedown', e => { e.stopPropagation(); });
     nameEl.addEventListener('dblclick', e => {
       e.stopPropagation();
       const input = document.createElement('input');
       input.type = 'text'; input.value = name;
       input.className = 'group-rename-input';
       input.style.cssText = 'width:100%;background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff;border-radius:2px;font-size:9px;padding:1px 3px;outline:none;';
+      // Disable row dragging while editing
+      row.draggable = false;
       nameEl.replaceWith(input);
       input.focus(); input.select();
       const commit = () => {
+        row.draggable = true;
         const newName = input.value.trim() || name;
         Editor.Groups.rename(gId, newName);
       };
       input.addEventListener('blur', commit);
+      input.addEventListener('mousedown', ev => ev.stopPropagation());
       input.addEventListener('keydown', ev => {
         if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
         if (ev.key === 'Escape') { input.value = name; input.blur(); }
@@ -303,7 +322,9 @@ Editor.Layers = {
     });
     row.addEventListener('dragleave', () => { row.classList.remove('drop-above'); });
     row.addEventListener('drop', e => {
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation(); // Prevent _setupDrag's drop handler from also firing
       row.classList.remove('drop-above');
       if (this.draggedId && !this.draggedId.startsWith('group-')) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
@@ -357,14 +378,33 @@ Editor.Layers = {
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
 
-    const dragItem = zItems.find(z => this._itemId(z) === draggedId);
+    let dragItem = zItems.find(z => this._itemId(z) === draggedId);
     const targetItem = zItems.find(z => this._itemId(z) === targetId);
-    if (!dragItem || !targetItem) return;
+    if (!targetItem) return;
+
+    // Handle sprites being dragged out of a group (not in zItems as direct SVG children)
+    if (!dragItem) {
+      const sp = C.allSprites.find(s => s.id === draggedId);
+      if (!sp || !sp.groupId) return;
+      // Remove from current group
+      Editor.Undo.push();
+      const oldGroupEl = document.getElementById(sp.groupId);
+      const elToMove = sp._clipWrap || sp.el;
+      if (oldGroupEl) oldGroupEl.removeChild(elToMove);
+      delete sp.groupId;
+      svg.insertBefore(elToMove, targetItem.svgEl);
+      const _fix = () => {
+        const selUI = document.getElementById('selUI');
+        const dragRect = document.getElementById('dragRect');
+        if (selUI) svg.appendChild(selUI);
+        if (dragRect) svg.appendChild(dragRect);
+      };
+      _fix();
+      Editor.Persistence.save(); this.rebuild();
+      return;
+    }
 
     Editor.Undo.push();
-
-    const dragIsGroup = dragItem.type === 'group' || dragItem.type === 'custom-group';
-    const targetIsGroup = targetItem.type === 'group' || targetItem.type === 'custom-group';
 
     const _fixTrailingEls = () => {
       const selUI = document.getElementById('selUI');
@@ -391,12 +431,14 @@ Editor.Layers = {
       e.stopPropagation();
       this._dragGroupChild = sp.id;
       this._dragGroupId = groupId;
+      this.draggedId = sp.id; // Also set draggedId so cross-group/out-of-group drops work
       row.classList.add('dragging');
     });
     row.addEventListener('dragend', () => {
       row.classList.remove('dragging');
       this._dragGroupChild = null;
       this._dragGroupId = null;
+      this.draggedId = null;
     });
     row.addEventListener('dragover', e => {
       e.preventDefault();

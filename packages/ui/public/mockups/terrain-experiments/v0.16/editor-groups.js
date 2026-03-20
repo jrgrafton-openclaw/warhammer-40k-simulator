@@ -33,7 +33,10 @@ Editor.Groups = {
     const svgChildren = Array.from(svg.children);
     for (let i = svgChildren.length - 1; i >= 0; i--) {
       const child = svgChildren[i];
-      if (sprites.some(s => s.el.parentNode === child || s.el === child)) {
+      if (sprites.some(s => {
+        const el = s._clipWrap || s.el;
+        return el.parentNode === child || el === child;
+      })) {
         insertRef = child.nextElementSibling;
         break;
       }
@@ -41,13 +44,12 @@ Editor.Groups = {
     if (insertRef) svg.insertBefore(g, insertRef);
     else svg.appendChild(g);
 
-    // Move sprites into the group <g>
+    // Move sprites into the group <g> (handle crop wrappers)
     sprites.forEach(sp => {
-      sp.el.parentNode.removeChild(sp.el);
-      g.appendChild(sp.el);
+      const elToMove = sp._clipWrap || sp.el;
+      elToMove.parentNode.removeChild(elToMove);
+      g.appendChild(elToMove);
       sp.groupId = id;
-      
-      
     });
 
     // Ensure selUI and dragRect stay last
@@ -73,17 +75,22 @@ Editor.Groups = {
     if (!gEl || !sp) return;
     Editor.Undo.push();
 
+    // The element to move may be wrapped in a crop <g>
+    const elToMove = sp._clipWrap || sp.el;
+
     // Remove from current group if in one
-    if (sp.groupId) {
-      // Just move out, don't delete the old group
+    if (sp.groupId && sp.groupId !== groupId) {
+      const oldGroupEl = document.getElementById(sp.groupId);
+      if (oldGroupEl && elToMove.parentNode === oldGroupEl) {
+        oldGroupEl.removeChild(elToMove);
+      }
     }
 
     // Move sprite into the group <g>
-    sp.el.parentNode.removeChild(sp.el);
-    gEl.appendChild(sp.el);
+    if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
+    gEl.appendChild(elToMove);
     
     sp.groupId = groupId;
-    
 
     Editor.Selection.deselect();
     Editor.Persistence.save();
@@ -121,12 +128,13 @@ Editor.Groups = {
     const gEl = document.getElementById(groupId);
     if (!gEl) return;
 
-    // Move sprites back to being direct SVG children (insert before selUI)
+    // Move sprites back to being direct SVG children at the group's current position
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
-    const selUI = document.getElementById('selUI');
+    const insertRef = gEl.nextElementSibling; // insert where the group was
     sprites.forEach(sp => {
-      gEl.removeChild(sp.el);
-      svg.insertBefore(sp.el, selUI);
+      const elToMove = sp._clipWrap || sp.el;
+      gEl.removeChild(elToMove);
+      svg.insertBefore(elToMove, insertRef);
       delete sp.groupId;
     });
 
@@ -149,7 +157,8 @@ Editor.Groups = {
 
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
     sprites.forEach(sp => {
-      sp.el.remove();
+      if (sp._clipWrap) sp._clipWrap.remove();
+      else sp.el.remove();
       C.allSprites = C.allSprites.filter(s => s !== sp);
     });
 
@@ -187,13 +196,13 @@ Editor.Groups = {
       if (num >= this.gid) this.gid = num + 1;
     });
 
-    // Move sprites into their groups
+    // Move sprites into their groups (handle crop wrappers)
     C.allSprites.forEach(sp => {
       if (sp.groupId && document.getElementById(sp.groupId)) {
         const gEl = document.getElementById(sp.groupId);
-        sp.el.parentNode.removeChild(sp.el);
-        gEl.appendChild(sp.el);
-        // sprite stays in the group DOM
+        const elToMove = sp._clipWrap || sp.el;
+        if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
+        gEl.appendChild(elToMove);
       }
     });
 
