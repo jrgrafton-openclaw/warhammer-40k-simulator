@@ -213,11 +213,33 @@ Editor.Layers = {
     const row = document.createElement('div');
     row.className = 'layer-row group-row custom-group-row';
     row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
-      <div style="flex:1;min-width:0"><div class="lname">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}" title="Double-click to rename">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
       <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)">
       <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>
       <button class="lbtn" title="Delete group + sprites" onclick="event.stopPropagation();Editor.Groups.deleteGroup('${gId}')">🗑</button>
       <span class="drag-hint" title="Drag to reorder">⠿</span>`;
+
+    // Double-click to rename
+    const nameEl = row.querySelector('.group-name');
+    nameEl.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      const input = document.createElement('input');
+      input.type = 'text'; input.value = name;
+      input.className = 'group-rename-input';
+      input.style.cssText = 'width:100%;background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff;border-radius:2px;font-size:9px;padding:1px 3px;outline:none;';
+      nameEl.replaceWith(input);
+      input.focus(); input.select();
+      const commit = () => {
+        const newName = input.value.trim() || name;
+        Editor.Groups.rename(gId, newName);
+      };
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+        if (ev.key === 'Escape') { input.value = name; input.blur(); }
+        ev.stopPropagation();
+      });
+    });
 
     row.onclick = e => {
       if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint')) return;
