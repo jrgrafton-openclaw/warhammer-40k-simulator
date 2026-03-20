@@ -4,7 +4,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/tokens/colors.css">
 <link rel="stylesheet" href="../../shared/components/battlefield.css">
-<link rel="stylesheet" href="editor.css?v=20260320c">
+<link rel="stylesheet" href="editor.css?v=20260320d">
 </head><body>
 <div class="main">
 <div class="sidebar left">
@@ -31,7 +31,7 @@
     <button class="tbtn on" onclick="Editor.Core.tgl(this,'svgScatter')">SVG Scatter</button>
     <button class="tbtn on" onclick="Editor.Core.tgl(this,'deployZones')">Deploy</button>
     <button class="tbtn on" onclick="Editor.Core.tgl(this,'modelLayer')">Models</button>
-    <button class="tbtn on" onclick="Editor.Core.tgl(this,'objectives')">Obj</button>
+    <button class="tbtn on" onclick="Editor.Core.tglMulti(this,['objectiveRings','objectiveHexes'])">Obj</button>
   </div>
   <h3>SVG Ruins Opacity</h3>
   <div class="bg-row">
@@ -50,7 +50,7 @@
 </div>
 <div class="canvas-wrap">
   <div class="map-wrapper" id="mapWrap">
-    <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528" width="1024" height="751">
+    <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid meet">
       <defs>
         <radialGradient id="mg-fill" cx="38%" cy="32%" r="62%"><stop offset="0%" stop-color="#0a1020"/><stop offset="60%" stop-color="#060c14"/><stop offset="100%" stop-color="#030609"/></radialGradient>
         <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -136,7 +136,8 @@
         <g transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"><path d="M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
         <g transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"><path d="M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
       </g>
-      <g id="objectiveLayer"></g>
+      <g id="objectiveRings"></g>
+      <g id="objectiveHexes"></g>
       <g id="modelLayer"></g>
       <g id="selUI" style="display:none"></g>
       <rect id="dragRect" class="sel-rect" style="display:none"/>
@@ -147,7 +148,7 @@
 <div class="sidebar right">
   <div class="layers-panel">
     <h3>Layers</h3>
-    <div class="layer-note">Drag rows to reorder. Cmd/Ctrl+C copies, Cmd/Ctrl+V pastes.</div>
+    <div class="layer-note">Drag rows to reorder. ⌘C/V copy/paste. ⌘G group.</div>
     <div id="layersList"></div>
   </div>
   <div class="shortcuts-row" style="margin-top:8px;display:flex;gap:4px">
@@ -165,16 +166,18 @@
 </div>
 </div>
 
-<script src="editor-core.js?v=20260320c"></script>
-<script src="editor-undo.js?v=20260320c"></script>
-<script src="editor-models.js?v=20260320c"></script>
-<script src="editor-sprites.js?v=20260320c"></script>
-<script src="editor-objectives.js?v=20260320c"></script>
-<script src="editor-lights.js?v=20260320c"></script>
-<script src="editor-zoom.js?v=20260320c"></script>
-<script src="editor-shortcuts.js?v=20260320c"></script>
-<script src="editor-selection.js?v=20260320c"></script>
-<script src="editor-layers.js?v=20260320c"></script>
-<script src="editor-persistence.js?v=20260320c"></script>
+<script src="editor-core.js?v=20260320d"></script>
+<script src="editor-undo.js?v=20260320d"></script>
+<script src="editor-models.js?v=20260320d"></script>
+<script src="editor-sprites.js?v=20260320d"></script>
+<script src="editor-objectives.js?v=20260320d"></script>
+<script src="editor-lights.js?v=20260320d"></script>
+<script src="editor-groups.js?v=20260320d"></script>
+<script src="editor-crop.js?v=20260320d"></script>
+<script src="editor-zoom.js?v=20260320d"></script>
+<script src="editor-shortcuts.js?v=20260320d"></script>
+<script src="editor-selection.js?v=20260320d"></script>
+<script src="editor-layers.js?v=20260320d"></script>
+<script src="editor-persistence.js?v=20260320d"></script>
 <script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Zoom.init();</script>
 </body></html>

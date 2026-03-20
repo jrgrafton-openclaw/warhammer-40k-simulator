@@ -30,9 +30,9 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 .toggle-row{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0}
 
 /* ── Canvas area ── */
-.canvas-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:8px}
-.map-wrapper{position:relative;display:inline-block}
-#battlefield{display:block;background:#030609;border:1px solid #1a2a3a;border-radius:4px}
+.canvas-wrap{flex:1;display:flex;overflow:hidden;position:relative}
+.map-wrapper{position:relative;width:100%;height:100%}
+#battlefield{display:block;width:100%;height:100%;background:#030609}
 
 /* ── Bottom bar ── */
 .config-panel{border-top:1px solid #1a2a3a;padding-top:8px;margin-top:8px}
@@ -62,6 +62,12 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 .layer-row.drop-above{border-top:2px solid #00d4ff}
 .layer-row.drop-below{border-bottom:2px solid #00d4ff}
 .layer-row .drag-hint{color:#304050;font-size:10px;cursor:grab;user-select:none;padding:0 2px}
+.layer-row.child-row{padding-left:20px;background:#080e16}
+.layer-row.child-row:hover{background:#0e1828}
+.layer-row .child-icon{width:24px;text-align:center;flex-shrink:0;font-size:12px}
+.expand-toggle{font-size:8px;margin-right:4px;color:#607080}
+.group-opacity{width:40px;height:12px;accent-color:#00d4ff}
+.layer-row.custom-group-row .lname{color:#00d4ff}
 .layer-row .group-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .layer-row .group-icon svg{width:16px;height:16px}
 
