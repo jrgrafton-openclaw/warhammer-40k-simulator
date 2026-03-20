@@ -26,12 +26,22 @@ Editor.Layers = {
     // Skip old containers and background elements
     const skipIds = new Set(['selUI', 'dragRect', 'deployZones', 'bgImg',
       'svgGroundGradient', 'svgGroundWarm', 'svgGroundDual', 'svgGroundHaze',
-      'svgGroundConcrete', 'svgGroundTactical', 'spriteFloor', 'spriteTop', 'cropOverlay']);
+      'svgGroundConcrete', 'svgGroundTactical', 'cropOverlay']);
+    // Legacy container IDs — scan their children for sprites placed by old code
+    const legacyContainers = new Set(['spriteFloor', 'spriteTop']);
 
     Array.from(svg.children).forEach(el => {
       if (!el.id && el.tagName === 'rect' && !el.classList.contains('sel-rect')) return; // bg rect
       if (!el.id && el.tagName === 'defs') return;
       if (skipIds.has(el.id)) return;
+      if (legacyContainers.has(el.id)) {
+        // Scan children of old spriteFloor/spriteTop for sprites (backward compat)
+        Array.from(el.children).forEach(child => {
+          const sp = C.allSprites.find(s => s.el === child);
+          if (sp) items.push({ type: 'sprite', ref: sp, svgEl: child });
+        });
+        return;
+      }
       if (groupMeta[el.id]) {
         items.push({ type: 'group', groupId: el.id, svgEl: el, meta: groupMeta[el.id] });
       } else if (el.id && el.id.startsWith('group-')) {

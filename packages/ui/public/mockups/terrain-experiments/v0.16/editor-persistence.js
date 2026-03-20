@@ -105,6 +105,19 @@ Editor.Persistence = {
         });
       }
 
+      // Migrate any sprites still in old containers to be direct SVG children
+      const svgEl = document.getElementById('battlefield');
+      const selUIEl = document.getElementById('selUI');
+      ['spriteFloor', 'spriteTop'].forEach(cid => {
+        const container = document.getElementById(cid);
+        if (container) {
+          Array.from(container.children).forEach(child => {
+            container.removeChild(child);
+            svgEl.insertBefore(child, selUIEl);
+          });
+        }
+      });
+
       // Re-apply crop clips
       Editor.Crop.reapplyAll();
 
