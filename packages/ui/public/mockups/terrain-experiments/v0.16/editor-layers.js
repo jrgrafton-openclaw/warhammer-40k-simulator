@@ -216,7 +216,7 @@ Editor.Layers = {
     row.className = 'layer-row group-row custom-group-row';
     row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
       <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}" title="Double-click to rename">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
-      <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)">
+      <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)" onmousedown="event.stopPropagation();this.parentElement.draggable=false" onmouseup="this.parentElement.draggable=true">
       <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>
       <button class="lbtn" title="Delete group + sprites" onclick="event.stopPropagation();Editor.Groups.deleteGroup('${gId}')">🗑</button>
       <span class="drag-hint" title="Drag to reorder">⠿</span>`;
@@ -243,9 +243,27 @@ Editor.Layers = {
       });
     });
 
+    // Accept sprite drops to add to this group
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      if (this.draggedId && !this.draggedId.startsWith('group-')) {
+        row.classList.add('drop-above');
+      }
+    });
+    row.addEventListener('dragleave', () => { row.classList.remove('drop-above'); });
+    row.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      row.classList.remove('drop-above');
+      if (this.draggedId && !this.draggedId.startsWith('group-')) {
+        const sp = C.allSprites.find(s => s.id === this.draggedId);
+        if (sp && sp.groupId !== gId) {
+          Editor.Groups.addToGroup(gId, sp);
+        }
+      }
+    });
+
     row.onclick = e => {
       if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-name')) return;
-      // Select all sprites in group
       const sprites = C.allSprites.filter(s => s.groupId === gId);
       if (sprites.length) {
         C.multiSel = sprites;

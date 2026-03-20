@@ -66,6 +66,31 @@ Editor.Groups = {
     return group;
   },
 
+  /* ── Add a sprite to an existing group ── */
+  addToGroup(groupId, sp) {
+    const C = Editor.Core;
+    const gEl = document.getElementById(groupId);
+    if (!gEl || !sp) return;
+    Editor.Undo.push();
+
+    // Remove from current group if in one
+    if (sp.groupId) {
+      // Just move out, don't delete the old group
+    }
+
+    // Move sprite into the group <g>
+    sp.el.parentNode.removeChild(sp.el);
+    gEl.appendChild(sp.el);
+    sp.originalLayer = sp.originalLayer || sp.layer;
+    sp.groupId = groupId;
+    sp.layer = groupId;
+
+    Editor.Selection.deselect();
+    Editor.Persistence.save();
+    Editor.Layers.rebuild();
+    C.updateDebug();
+  },
+
   /* ── Rename group ── */
   rename(groupId, newName) {
     const C = Editor.Core;
