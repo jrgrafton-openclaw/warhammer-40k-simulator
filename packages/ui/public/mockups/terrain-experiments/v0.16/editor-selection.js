@@ -142,6 +142,31 @@ Editor.Selection = {
       C.selUI.appendChild(h);
     });
 
+    // Corner resize handles for multi-select
+    [[minX, minY, 'nw'], [maxX, minY, 'ne'], [minX, maxY, 'sw'], [maxX, maxY, 'se']].forEach(([hx, hy, pos]) => {
+      const h = document.createElementNS(NS, 'rect');
+      h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = pos + '-resize';
+      h.onmousedown = e => { e.stopPropagation(); this.startResizeMulti(e, pos, minX, minY, maxX, maxY); };
+      C.selUI.appendChild(h);
+    });
+
+    // Edge midpoint resize handles for multi-select
+    const midHandles = [
+      [(minX+maxX)/2, minY, 'n', 10, 4, 'ns-resize'],
+      [(minX+maxX)/2, maxY, 's', 10, 4, 'ns-resize'],
+      [minX, (minY+maxY)/2, 'w', 4, 10, 'ew-resize'],
+      [maxX, (minY+maxY)/2, 'e', 4, 10, 'ew-resize'],
+    ];
+    midHandles.forEach(([hx, hy, pos, hw, hh, cursor]) => {
+      const h = document.createElementNS(NS, 'rect');
+      h.setAttribute('x', hx-hw/2); h.setAttribute('y', hy-hh/2);
+      h.setAttribute('width', hw); h.setAttribute('height', hh);
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = cursor;
+      h.onmousedown = e => { e.stopPropagation(); this.startResizeMulti(e, pos, minX, minY, maxX, maxY); };
+      C.selUI.appendChild(h);
+    });
+
     // Multi-rotate handle
     const cx = (minX+maxX)/2;
     const rh = document.createElementNS(NS, 'circle');
@@ -174,6 +199,60 @@ Editor.Selection = {
     } else {
       C.multiSel = [sp]; this.startMove(e, sp);
     }
+  },
+
+  // ── Multi-resize (proportional scale from bounding box edge/corner) ──
+  startResizeMulti(e, handle, bMinX, bMinY, bMaxX, bMaxY) {
+    const C = Editor.Core;
+    if (C.multiSel.length <= 1) return;
+    e.preventDefault();
+    Editor.Undo.push();
+
+    const bW = bMaxX - bMinX, bH = bMaxY - bMinY;
+    const p0 = C.svgPt(e.clientX, e.clientY);
+
+    // Store original state for each sprite (relative to bounding box)
+    const starts = C.multiSel.map(s => ({
+      s,
+      relX: (s.x - bMinX) / (bW || 1),
+      relY: (s.y - bMinY) / (bH || 1),
+      relW: s.w / (bW || 1),
+      relH: s.h / (bH || 1),
+    }));
+
+    const mv = e2 => {
+      const p = C.svgPt(e2.clientX, e2.clientY);
+      const dx = p.x - p0.x, dy = p.y - p0.y;
+
+      // Calculate new bounding box based on which handle is dragged
+      let nMinX = bMinX, nMinY = bMinY, nMaxX = bMaxX, nMaxY = bMaxY;
+      if (handle.includes('e')) nMaxX = Math.max(bMinX + 20, bMaxX + dx);
+      if (handle.includes('w')) nMinX = Math.min(bMaxX - 20, bMinX + dx);
+      if (handle.includes('s')) nMaxY = Math.max(bMinY + 20, bMaxY + dy);
+      if (handle.includes('n')) nMinY = Math.min(bMaxY - 20, bMinY + dy);
+
+      const nW = nMaxX - nMinX, nH = nMaxY - nMinY;
+
+      // Scale all sprites proportionally within new bounds
+      starts.forEach(({ s, relX, relY, relW, relH }) => {
+        s.x = nMinX + relX * nW;
+        s.y = nMinY + relY * nH;
+        s.w = Math.max(5, relW * nW);
+        s.h = Math.max(5, relH * nH);
+        Editor.Sprites.apply(s);
+      });
+
+      this.drawSelectionUI();
+      C.updateDebug();
+    };
+
+    const up = () => {
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', up);
+      Editor.Persistence.save();
+    };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
   },
 
   // ── Multi-rotate ──
