@@ -191,8 +191,10 @@ Editor.Layers = {
     const row = document.createElement('div');
     const isSelected = Editor.Lights.selectedLight === l;
     row.className = 'layer-row child-row' + (isSelected ? ' sel' : '');
+    const hidden = l.el.style.display === 'none';
     row.innerHTML = `<div class="child-icon" style="color:${l.color}">💡</div>
-      <div style="flex:1;min-width:0"><div class="lname">Light ${l.color}</div><div class="lmeta">${Math.round(l.x)},${Math.round(l.y)} · r${l.radius}</div></div>
+      <div style="flex:1;min-width:0"><div class="lname"${hidden ? ' style="opacity:0.4"' : ''}>Light ${l.color}</div><div class="lmeta">${Math.round(l.x)},${Math.round(l.y)} · r${l.radius}</div></div>
+      <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleLightVis('${l.id}')">${hidden ? '🔇' : '👁'}</button>
       <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Lights.removeLight('${l.id}')">🗑</button>`;
     row.onclick = e => {
       if (e.target.closest('.lbtn')) return;
@@ -242,7 +244,7 @@ Editor.Layers = {
     });
 
     row.onclick = e => {
-      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint')) return;
+      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-name')) return;
       // Select all sprites in group
       const sprites = C.allSprites.filter(s => s.groupId === gId);
       if (sprites.length) {
@@ -417,6 +419,14 @@ Editor.Layers = {
     const idx = C.allSprites.indexOf(target);
     C.allSprites.splice(idx, 0, src);
     Editor.Persistence.save(); this.rebuild();
+  },
+
+  toggleLightVis(id) {
+    const C = Editor.Core;
+    const l = C.allLights.find(x => x.id === id); if (!l) return;
+    const hidden = l.el.style.display === 'none';
+    l.el.style.display = hidden ? '' : 'none';
+    this.rebuild();
   },
 
   toggleVis(id) {
