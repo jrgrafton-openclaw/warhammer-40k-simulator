@@ -29,6 +29,14 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 .tbtn.on{border-color:#00d4ff;color:#00d4ff}
 .toggle-row{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0}
 
+/* ── Effects controls ── */
+.fx-section{margin:4px 0 8px}
+.fx-controls{margin:6px 0 2px;padding:6px;background:#0a0e18;border:1px solid #1a2a3a;border-radius:4px}
+.fx-controls label{display:flex;align-items:center;gap:4px;margin:3px 0;color:#8090a0;font-size:9px}
+.fx-controls input[type="range"]{flex:1;accent-color:#00d4ff;height:14px}
+.fx-lbl{width:68px;flex-shrink:0;font-size:9px;color:#607080}
+.fx-val{width:32px;text-align:right;font-size:9px;color:#4f6476}
+
 /* ── Canvas area ── */
 .canvas-wrap{flex:1;display:flex;overflow:hidden;position:relative}
 .map-wrapper{position:relative;width:100%;height:100%}
