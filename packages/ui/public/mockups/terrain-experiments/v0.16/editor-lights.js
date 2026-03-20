@@ -50,14 +50,39 @@ Editor.Lights = {
   },
 
   selectLight(light) {
+    // Remove previous selection ring
+    if (this.selectedLight) this.removeSelectionRing(this.selectedLight);
     this.selectedLight = light;
+    this.applySelectionRing(light);
     this.refreshControls();
     document.getElementById('lightCtrl').style.display = '';
   },
 
   deselectLight() {
+    if (this.selectedLight) this.removeSelectionRing(this.selectedLight);
     this.selectedLight = null;
     document.getElementById('lightCtrl').style.display = 'none';
+  },
+
+  applySelectionRing(light) {
+    // Only show ring if this light is selected
+    if (light !== this.selectedLight) return;
+    this.removeSelectionRing(light);
+    const NS = Editor.Core.NS;
+    const ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', light.x); ring.setAttribute('cy', light.y);
+    ring.setAttribute('r', light.radius);
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', '#00d4ff');
+    ring.setAttribute('stroke-width', '1.5');
+    ring.setAttribute('stroke-dasharray', '4,3');
+    ring.classList.add('light-sel-ring');
+    light.el.appendChild(ring);
+    light.selRing = ring;
+  },
+
+  removeSelectionRing(light) {
+    if (light.selRing) { light.selRing.remove(); light.selRing = null; }
   },
 
   refreshControls() {
@@ -94,16 +119,9 @@ Editor.Lights = {
     circle.setAttribute('r', radius); circle.setAttribute('fill', `url(#${gradId})`);
     g.appendChild(circle);
 
-    // Small center indicator
-    const dot = document.createElementNS(NS, 'circle');
-    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', 4);
-    dot.setAttribute('fill', color); dot.setAttribute('opacity', '0.8');
-    dot.setAttribute('stroke', '#fff'); dot.setAttribute('stroke-width', '1');
-    g.appendChild(dot);
-
     document.getElementById('lightLayer').appendChild(g);
 
-    const light = { id, x, y, color, radius, intensity, el: g, circle, dot, grad, gradId };
+    const light = { id, x, y, color, radius, intensity, el: g, circle, grad, gradId };
     C.allLights.push(light);
 
     g.onmousedown = e => { e.stopPropagation(); this.selectLight(light); this.startDrag(e, light); };
@@ -115,8 +133,7 @@ Editor.Lights = {
   applyLight(l) {
     l.circle.setAttribute('cx', l.x); l.circle.setAttribute('cy', l.y);
     l.circle.setAttribute('r', l.radius);
-    l.dot.setAttribute('cx', l.x); l.dot.setAttribute('cy', l.y);
-    l.dot.setAttribute('fill', l.color);
+    this.applySelectionRing(l);
     // Update gradient
     l.grad.innerHTML = `<stop offset="0%" stop-color="${l.color}" stop-opacity="${l.intensity}"/>
       <stop offset="70%" stop-color="${l.color}" stop-opacity="${l.intensity * 0.3}"/>
