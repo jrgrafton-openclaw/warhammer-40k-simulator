@@ -227,17 +227,26 @@ Editor.Selection = {
       return;
     }
 
-    if (e.key === 'Escape') { this.deselect(); return; }
-    if (!C.selected) return;
+    if (e.key === 'Escape') { this.deselect(); Editor.Lights.deselectLight(); return; }
 
-    // Delete
+    // Delete (sprites or selected light)
     if (e.key === 'Delete' || e.key === 'Backspace') {
-      Editor.Undo.push();
-      const toDelete = C.multiSel.length > 1 ? C.multiSel : [C.selected];
-      toDelete.forEach(s => { s.el.remove(); C.allSprites = C.allSprites.filter(x => x !== s); });
-      this.deselect(); C.updateDebug(); Editor.Persistence.save(); Editor.Layers.rebuild();
-      e.preventDefault();
+      if (Editor.Lights.selectedLight) {
+        Editor.Undo.push();
+        Editor.Lights.removeLight(Editor.Lights.selectedLight.id);
+        Editor.Persistence.save(); Editor.Layers.rebuild();
+        e.preventDefault(); return;
+      }
+      if (C.selected) {
+        Editor.Undo.push();
+        const toDelete = C.multiSel.length > 1 ? C.multiSel : [C.selected];
+        toDelete.forEach(s => { s.el.remove(); C.allSprites = C.allSprites.filter(x => x !== s); });
+        this.deselect(); C.updateDebug(); Editor.Persistence.save(); Editor.Layers.rebuild();
+        e.preventDefault(); return;
+      }
     }
+
+    if (!C.selected) return;
 
     // Duplicate
     if (e.key === 'd') {
