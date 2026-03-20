@@ -31,10 +31,39 @@ Editor.Layers = {
     // We insert group rows for models, lights, objectives at top
     const groupRows = [];
 
-    // Models group
+    // Models group header
     groupRows.push(this._createGroupRow('models-group', 'Models', `${C.allModels.length} units`,
       `<svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><circle cx="12" cy="12" r="7"/><line x1="12" y1="8" x2="12" y2="16" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke-linecap="round"/></svg>`
     ));
+
+    // Individual model rows (collapsible under group)
+    this._modelRows = [];
+    C.allModels.forEach((m, i) => {
+      const isImp = m.s === '#0088aa';
+      const color = isImp ? '#0088aa' : '#aa2810';
+      const faction = isImp ? 'IMP' : 'ORK';
+      const kind = m.kind === 'rect' ? 'Vehicle' : (m.iconType === 'star' ? 'Character' : m.iconType === 'diamond' ? 'Heavy' : 'Infantry');
+      const row = document.createElement('div');
+      row.className = 'layer-row layer-child';
+      row.draggable = true;
+      row.dataset.modelIdx = String(i);
+      row.innerHTML = `<div class="group-icon" style="width:18px;height:18px"><svg viewBox="0 0 24 24" fill="${color}" fill-opacity="0.3" stroke="${color}" stroke-width="2">${m.kind === 'rect' ? '<rect x="4" y="7" width="16" height="10" rx="2"/>' : '<circle cx="12" cy="12" r="7"/>'}</svg></div>
+        <div style="flex:1;min-width:0"><div class="lname" style="color:${color}">${faction} ${kind} ${i+1}</div><div class="lmeta">${Math.round(m.x)},${Math.round(m.y)}</div></div>`;
+      row.style.cursor = 'grab';
+      row.draggable = false;
+      // Mousedown → drag model on canvas (like thumb drag)
+      row.addEventListener('mousedown', e => {
+        e.preventDefault(); e.stopPropagation();
+        // Flash highlight
+        if (m.base) {
+          const origStroke = m.base.getAttribute('stroke-width');
+          m.base.setAttribute('stroke-width', '3'); m.base.setAttribute('stroke', '#00d4ff');
+          setTimeout(() => { m.base.setAttribute('stroke-width', origStroke || '1.5'); m.base.setAttribute('stroke', m.s); }, 600);
+        }
+        this._startLayerDragModel(e, m);
+      });
+      this._modelRows.push(row);
+    });
 
     // Lights group
     if (C.allLights.length > 0) {
@@ -43,15 +72,48 @@ Editor.Layers = {
       ));
     }
 
-    // Objectives group
+    // Objectives group header + individual rows
+    this._objectiveRows = [];
     if (C.allObjectives.length > 0) {
       groupRows.push(this._createGroupRow('objectives-group', 'Objectives', `${C.allObjectives.length} markers`,
         `<svg viewBox="0 0 24 24" fill="none" stroke="#8090a0" stroke-width="1.5"><polygon points="12,3 21,8 21,16 12,21 3,16 3,8"/><text x="12" y="14" text-anchor="middle" font-size="8" fill="#8090a0" stroke="none">O</text></svg>`
       ));
+
+      C.allObjectives.forEach((obj, i) => {
+        const num = String(i + 1).padStart(2, '0');
+        const row = document.createElement('div');
+        row.className = 'layer-row layer-child';
+        row.draggable = true;
+        row.dataset.objIdx = String(i);
+        row.innerHTML = `<div class="group-icon" style="width:18px;height:18px"><svg viewBox="0 0 84 97" fill="none"><polygon points="42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5" fill="rgba(128,144,160,0.15)" stroke="#8090a0" stroke-width="4"/><text x="42" y="58" text-anchor="middle" font-size="30" fill="#8090a0" font-weight="700">${num}</text></svg></div>
+          <div style="flex:1;min-width:0"><div class="lname" style="color:#8090a0">Objective ${num}</div><div class="lmeta">${Math.round(obj.leftPct)}%, ${Math.round(obj.topPct)}%</div></div>`;
+        row.style.cursor = 'grab';
+        row.draggable = false;
+        // Mousedown → drag objective on canvas
+        row.addEventListener('mousedown', e => {
+          e.preventDefault(); e.stopPropagation();
+          if (obj.hexEl) {
+            obj.hexEl.style.filter = 'brightness(2)';
+            setTimeout(() => { obj.hexEl.style.filter = ''; }, 600);
+          }
+          this._startLayerDragObjective(e, obj);
+        });
+        this._objectiveRows.push(row);
+      });
     }
 
-    // Render group rows first
-    groupRows.forEach(row => list.appendChild(row));
+    // Render group rows with their children
+    groupRows.forEach(row => {
+      list.appendChild(row);
+      // Insert model children after models group
+      if (row.dataset.groupId === 'models-group' && this._modelRows) {
+        this._modelRows.forEach(mr => list.appendChild(mr));
+      }
+      // Insert objective children after objectives group
+      if (row.dataset.groupId === 'objectives-group' && this._objectiveRows) {
+        this._objectiveRows.forEach(or => list.appendChild(or));
+      }
+    });
 
     // Then individual light rows
     if (C.allLights.length > 0) {
@@ -117,6 +179,58 @@ Editor.Layers = {
   dupSprite(id) {
     const s = Editor.Core.allSprites.find(x => x.id === id);
     if (s) { Editor.Undo.push(); Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layer); this.rebuild(); }
+  },
+
+  // ── Drag model from layer row to reposition on canvas ──
+  _startLayerDragModel(e, m) {
+    const C = Editor.Core;
+    Editor.Undo.push();
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false;
+
+    const mv = e2 => {
+      if (!moved && (Math.abs(e2.clientX - startX) > 3 || Math.abs(e2.clientY - startY) > 3)) moved = true;
+      if (!moved) return;
+      const p = C.svgPt(e2.clientX, e2.clientY);
+      m.x = p.x; m.y = p.y;
+      Editor.Models.applyModel(m);
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', up);
+      if (moved) { Editor.Persistence.save(); this.rebuild(); }
+    };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
+  },
+
+  // ── Drag objective from layer row to reposition on canvas ──
+  _startLayerDragObjective(e, obj) {
+    Editor.Undo.push();
+    const container = document.getElementById('mapWrap');
+    const startX = e.clientX, startY = e.clientY;
+    let moved = false;
+
+    const mv = e2 => {
+      if (!moved && (Math.abs(e2.clientX - startX) > 3 || Math.abs(e2.clientY - startY) > 3)) moved = true;
+      if (!moved) return;
+      const rect = container.getBoundingClientRect();
+      const x = ((e2.clientX - rect.left) / rect.width * 100);
+      const y = ((e2.clientY - rect.top) / rect.height * 100);
+      obj.leftPct = Math.max(0, Math.min(100, x));
+      obj.topPct = Math.max(0, Math.min(100, y));
+      obj.ringEl.style.left = obj.leftPct + '%';
+      obj.ringEl.style.top = obj.topPct + '%';
+      obj.hexEl.style.left = obj.leftPct + '%';
+      obj.hexEl.style.top = obj.topPct + '%';
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', up);
+      if (moved) { Editor.Persistence.save(); this.rebuild(); }
+    };
+    document.addEventListener('mousemove', mv);
+    document.addEventListener('mouseup', up);
   },
 
   delSprite(id) {
