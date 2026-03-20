@@ -16,10 +16,12 @@ Editor.Layers = {
     const items = [];
 
     const groupMeta = {
-      modelLayer:      { name: 'Models',    icon: 'models' },
-      lightLayer:      { name: 'Lights',    icon: 'lights' },
-      objectiveRings:  { name: 'Obj Rings', icon: 'obj-rings' },
-      objectiveHexes:  { name: 'Obj Hexes', icon: 'obj-hexes' }
+      modelLayer:      { name: 'Models',      icon: 'models' },
+      lightLayer:      { name: 'Lights',      icon: 'lights' },
+      objectiveRings:  { name: 'Obj Rings',   icon: 'obj-rings' },
+      objectiveHexes:  { name: 'Obj Hexes',   icon: 'obj-hexes' },
+      svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
+      svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
     };
     const spriteContainers = new Set(['spriteFloor', 'spriteTop']);
 
@@ -146,6 +148,16 @@ Editor.Layers = {
       count = C.allObjectives.length;
       meta = `${count} hex${count !== 1 ? 'es' : ''}`;
       iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#8090a0" stroke-width="1.5"><polygon points="12,3 21,8 21,16 12,21 3,16 3,8"/><text x="12" y="14" text-anchor="middle" font-size="8" fill="#8090a0" stroke="none">O</text></svg>`;
+    } else if (item.groupId === 'svgRuins') {
+      const el = document.getElementById('svgRuins');
+      count = el ? el.children.length : 0;
+      meta = `${count} ruin${count !== 1 ? 's' : ''}`;
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#6a7272" stroke-width="1.5"><rect x="4" y="8" width="16" height="12" rx="1"/><rect x="6" y="4" width="4" height="4"/><rect x="14" y="6" width="4" height="2"/></svg>`;
+    } else if (item.groupId === 'svgScatter') {
+      const el = document.getElementById('svgScatter');
+      count = el ? el.children.length : 0;
+      meta = `${count} piece${count !== 1 ? 's' : ''}`;
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#3a3018" stroke-width="1.5"><rect x="6" y="6" width="5" height="8" rx="1"/><rect x="14" y="10" width="4" height="6" rx="1"/></svg>`;
     } else {
       count = 0; meta = ''; iconSvg = '';
     }
@@ -339,9 +351,20 @@ Editor.Layers = {
     };
 
     if (dragIsGroup) {
-      const targetSvgRef = targetIsGroup
-        ? targetItem.svgEl
-        : targetItem.svgEl.parentNode;
+      // Resolve target to a top-level SVG child
+      let targetSvgRef;
+      if (targetIsGroup) {
+        targetSvgRef = targetItem.svgEl;
+      } else {
+        // Target is a sprite — use its container as reference
+        targetSvgRef = targetItem.svgEl.parentNode;
+      }
+      // Display is reversed: top of panel = front (last in DOM)
+      // "drop above" in UI = after in DOM = in front visually
+      // insertBefore puts dragged BEHIND target, so use nextSibling for "above"
+      // Since the drop indicator already resolved, just insert before the target
+      if (targetSvgRef === dragItem.svgEl) { _fixTrailingEls(); return; }
+      // If target is after dragged in DOM, insert after target; otherwise before
       svg.insertBefore(dragItem.svgEl, targetSvgRef);
       _fixTrailingEls();
       Editor.Persistence.save(); this.rebuild();
@@ -350,6 +373,7 @@ Editor.Layers = {
 
     if (!dragIsGroup && targetIsGroup) {
       const spriteContainer = dragItem.svgEl.parentNode;
+      if (spriteContainer === targetItem.svgEl) { return; }
       svg.insertBefore(spriteContainer, targetItem.svgEl);
       _fixTrailingEls();
       Editor.Persistence.save(); this.rebuild();

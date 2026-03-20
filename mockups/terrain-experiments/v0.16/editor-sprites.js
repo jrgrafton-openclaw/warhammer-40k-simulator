@@ -95,13 +95,12 @@ Editor.Sprites = {
     const o = { x: sp.x, y: sp.y, w: sp.w, h: sp.h }, ar = o.w / o.h;
     const p0 = C.svgPt(e.clientX, e.clientY);
     const rad = -(sp.rot || 0) * Math.PI / 180;
-    const fxSign = sp.flipX ? -1 : 1;
-    const fySign = sp.flipY ? -1 : 1;
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY), gdx = p.x - p0.x, gdy = p.y - p0.y;
-      // Rotate global deltas into sprite-local space, then account for flip
-      const dx = (gdx * Math.cos(rad) - gdy * Math.sin(rad)) * fxSign;
-      const dy = (gdx * Math.sin(rad) + gdy * Math.cos(rad)) * fySign;
+      // Rotate global deltas into sprite-local space
+      // Note: flip doesn't affect resize — it mirrors content within the same bbox
+      const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
+      const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
       if (e2.shiftKey) {
         const d = Math.abs(dx) > Math.abs(dy) ? dx : dy * ar;
         if (corner.includes('e')) sp.w = Math.max(20, o.w + d);
