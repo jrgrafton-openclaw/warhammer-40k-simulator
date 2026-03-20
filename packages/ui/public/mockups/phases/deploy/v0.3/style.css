@@ -168,7 +168,10 @@
 .camera-transition #battlefield-inner { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 
 /* ── Objective size overrides (match terrain-experiments/v0.16) ── */
+/* Reference: 1024px container, no transform → 8% = 82px ring, 52×60 hex.
+   Deploy: 1478px container + scale(0.5) → % ring is too big vs fixed-px hex.
+   Fix: use fixed 82px ring to match the reference ring-to-hex ratio exactly. */
 .obj-hex-wrap { width: 52px !important; height: 60px !important; }
 .obj-hex-wrap .obj-n { font-size: 14px !important; }
 .obj-hex-wrap .obj-l { font-size: 5px !important; letter-spacing: 1.8px !important; }
-.obj-area-ring { width: 8% !important; }
+.obj-area-ring { width: 82px !important; }
