@@ -180,11 +180,12 @@ simState.units = [
     }
   });
 
-  // ── Off-board zone radial gradients (zone color fills) ──
+  // ── Off-board zone radial gradients ──
   defs.innerHTML += '<radialGradient id="zone-staging-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(0,212,255)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(0,212,255)" stop-opacity="0"/></radialGradient>' +
     '<radialGradient id="zone-ds-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(255,170,0)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(255,170,0)" stop-opacity="0"/></radialGradient>' +
     '<radialGradient id="zone-reserves-grad" cx="50%" cy="50%" r="55%"><stop offset="0%" stop-color="rgb(186,126,255)" stop-opacity="0.04"/><stop offset="100%" stop-color="rgb(186,126,255)" stop-opacity="0"/></radialGradient>';
 
+  // Apply radial gradient fills and remove dashed borders on off-board zones
   var zoneMap = [
     { cls: 'staging-zone-bg', grad: 'zone-staging-grad' },
     { cls: 'ds-zone-bg', grad: 'zone-ds-grad' },
@@ -195,6 +196,18 @@ simState.units = [
     if (!rect) return;
     rect.setAttribute('fill', 'url(#' + zm.grad + ')');
     rect.setAttribute('stroke', 'none');
+    // Add slab pattern overlay
+    var overlay = document.createElementNS(NS, 'rect');
+    overlay.setAttribute('x', rect.getAttribute('x'));
+    overlay.setAttribute('y', rect.getAttribute('y'));
+    overlay.setAttribute('width', rect.getAttribute('width'));
+    overlay.setAttribute('height', rect.getAttribute('height'));
+    overlay.setAttribute('rx', rect.getAttribute('rx') || '0');
+    overlay.setAttribute('fill', 'url(#slab-pat)');
+    overlay.setAttribute('opacity', '0.03');
+    overlay.setAttribute('pointer-events', 'none');
+    overlay.classList.add('offboard-zone-slab');
+    rect.after(overlay);
   });
 
   // ── Edge vignette — fade board edges to pure black ──
@@ -259,52 +272,6 @@ simState.units = [
   });
   vigSvg.appendChild(vigGroup);
 
-  // ── Zone vignettes — 4 linear gradients per off-board zone (black, like board vignettes) ──
-  var zoneVigInfo = [
-    { key: 'staging', x: -540, y: 20, w: 250, h: 488 },
-    { key: 'ds',      x: -270, y: 20, w: 250, h: 230 },
-    { key: 'reserves',x: -270, y: 278, w: 250, h: 230 }
-  ];
-  var ZONE_VIG_DEPTH = 80;
-  var ZONE_VIG_OPACITY = 0.95;
-  zoneVigInfo.forEach(function(zi) {
-    var dirs = [
-      { suffix: '-l', x1: '0', y1: '0', x2: '1', y2: '0' },
-      { suffix: '-r', x1: '1', y1: '0', x2: '0', y2: '0' },
-      { suffix: '-t', x1: '0', y1: '0', x2: '0', y2: '1' },
-      { suffix: '-b', x1: '0', y1: '1', x2: '0', y2: '0' }
-    ];
-    dirs.forEach(function(d) {
-      var lg = document.createElementNS(NS, 'linearGradient');
-      lg.setAttribute('id', 'zvig-' + zi.key + d.suffix);
-      lg.setAttribute('x1', d.x1); lg.setAttribute('y1', d.y1);
-      lg.setAttribute('x2', d.x2); lg.setAttribute('y2', d.y2);
-      lg.innerHTML =
-        '<stop offset="0%" stop-color="' + vigColor + '" stop-opacity="' + ZONE_VIG_OPACITY + '"/>' +
-        '<stop offset="35%" stop-color="' + vigColor + '" stop-opacity="0.4"/>' +
-        '<stop offset="100%" stop-color="' + vigColor + '" stop-opacity="0"/>';
-      vigDefs.appendChild(lg);
-    });
-    var sides = [
-      { suffix: '-l', x: zi.x, y: zi.y, w: ZONE_VIG_DEPTH, h: zi.h },
-      { suffix: '-r', x: zi.x + zi.w - ZONE_VIG_DEPTH, y: zi.y, w: ZONE_VIG_DEPTH, h: zi.h },
-      { suffix: '-t', x: zi.x, y: zi.y, w: zi.w, h: ZONE_VIG_DEPTH },
-      { suffix: '-b', x: zi.x, y: zi.y + zi.h - ZONE_VIG_DEPTH, w: zi.w, h: ZONE_VIG_DEPTH }
-    ];
-    sides.forEach(function(s) {
-      var r = document.createElementNS(NS, 'rect');
-      r.setAttribute('id', 'zvig-rect-' + zi.key + s.suffix);
-      r.setAttribute('x', String(s.x));
-      r.setAttribute('y', String(s.y));
-      r.setAttribute('width', String(s.w));
-      r.setAttribute('height', String(s.h));
-      r.setAttribute('fill', 'url(#zvig-' + zi.key + s.suffix + ')');
-      r.setAttribute('pointer-events', 'none');
-      r.classList.add('zone-vig-rect');
-      vigSvg.appendChild(r);
-    });
-  });
-
   // Append vignette SVG to battlefield-inner (same parent as other SVGs)
   var bfInner = document.getElementById('battlefield-inner');
   if (bfInner) bfInner.appendChild(vigSvg);
@@ -327,7 +294,7 @@ simState.units = [
 // ── Initialise shared modules ────────────────────────────
 renderTerrain();
 initAllTooltips();
-initBoard({ initialScale: 0.47 });
+initBoard();  // MIN_ZOOM computed dynamically from viewport
 initBattleControls();
 initModelInteraction();
 
@@ -338,7 +305,7 @@ initModelInteraction();
 // Use setCamera() so camera.js internal state (tx/ty/scale) stays in sync
 // with the DOM. Writing inner.style.transform directly causes a desync —
 // camera.js thinks tx=0 and the first drag snaps to centre.
-setCamera(0, 0, 0.47);
+// Initial camera set by initBoard() — centres on content midpoint at MIN_ZOOM
 
 // ── Build terrain collision AABBs ────────────────────────
 var svgEl = document.getElementById('bf-svg');
