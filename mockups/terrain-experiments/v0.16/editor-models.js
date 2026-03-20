@@ -4,6 +4,9 @@
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Models = {
+  mid: 0,
+  selectedModel: null,
+
   init() {
     // Default model positions (v0.5a layout)
     // Imperium
@@ -44,7 +47,8 @@ Editor.Models = {
     c.setAttribute('stroke-width', '1.5'); c.setAttribute('filter', f); g.appendChild(c);
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
-    const m = { kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig };
+    const id = 'm' + (this.mid++);
+    const m = { id, kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig };
     C.allModels.push(m);
     this.applyModel(m);
     g.onmousedown = e => this.startMove(e, m);
@@ -60,15 +64,49 @@ Editor.Models = {
     r.setAttribute('stroke-width', '1.5'); r.setAttribute('filter', f); g.appendChild(r);
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('color', '#006688'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
-    const m = { kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig };
+    const id = 'm' + (this.mid++);
+    const m = { id, kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig };
     C.allModels.push(m);
     this.applyModel(m);
     g.onmousedown = e => this.startMove(e, m);
     return m;
   },
 
+  selectModel(m) {
+    this.deselectModel();
+    this.selectedModel = m;
+    m.el.style.filter = 'drop-shadow(0 0 4px #00d4ff)';
+    Editor.Selection.deselect();
+    Editor.Lights.deselectLight();
+    Editor.Layers.rebuild();
+  },
+
+  deselectModel() {
+    if (this.selectedModel) {
+      this.selectedModel.el.style.filter = '';
+      // Restore original filter
+      const f = this.selectedModel.f;
+      if (f) this.selectedModel.base.setAttribute('filter', f);
+      this.selectedModel = null;
+    }
+  },
+
+  removeModel(id) {
+    const C = Editor.Core;
+    const idx = C.allModels.findIndex(m => m.id === id);
+    if (idx === -1) return;
+    Editor.Undo.push();
+    const m = C.allModels[idx];
+    m.el.remove();
+    C.allModels.splice(idx, 1);
+    if (this.selectedModel === m) this.deselectModel();
+    Editor.Persistence.save();
+    Editor.Layers.rebuild();
+  },
+
   startMove(e, m) {
     e.stopPropagation(); e.preventDefault();
+    this.selectModel(m);
     const C = Editor.Core;
     Editor.Undo.push();
     const p0 = C.svgPt(e.clientX, e.clientY), ox = p0.x - m.x, oy = p0.y - m.y;

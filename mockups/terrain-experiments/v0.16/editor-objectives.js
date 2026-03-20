@@ -1,20 +1,15 @@
 /* ══════════════════════════════════════════════════════════════
-   Editor Objectives — SVG hex markers + area rings inside the
-   battlefield SVG so they participate in SVG z-order.
-   Fixed positions matching deploy v0.2a (not draggable).
+   Editor Objectives — SVG hex markers + area rings in separate layers.
+   Rings in #objectiveRings, hexes in #objectiveHexes for independent z-ordering.
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Objectives = {
-  // SVG viewBox dimensions (must match battlefield SVG)
   VB_W: 720,
   VB_H: 528,
-  // Ring radius in SVG units (CSS was 12.5% of container width / 2)
   RING_R: 45,
-  // Hex marker dimensions in SVG units (CSS was 5.7% width, 84:97 aspect)
   HEX_W: 42,
   HEX_H: 48.5,
 
-  // Fixed 5-objective layout matching deploy v0.2a exactly
   positions: [
     { idx: 0, leftPct: 50,    topPct: 13.64 },
     { idx: 1, leftPct: 16.67, topPct: 50 },
@@ -29,11 +24,10 @@ Editor.Objectives = {
 
   init() {
     const C = Editor.Core;
-    const layer = document.getElementById('objectiveLayer');
-    layer.innerHTML = '';
+    document.getElementById('objectiveRings').innerHTML = '';
+    document.getElementById('objectiveHexes').innerHTML = '';
     C.allObjectives = [];
 
-    // Also clear the HTML objectives container if it exists (legacy)
     const htmlContainer = document.getElementById('objectives');
     if (htmlContainer) htmlContainer.innerHTML = '';
 
@@ -44,27 +38,31 @@ Editor.Objectives = {
 
   _addObjective(idx, leftPct, topPct) {
     const C = Editor.Core;
-    const layer = document.getElementById('objectiveLayer');
+    const ringsLayer = document.getElementById('objectiveRings');
+    const hexesLayer = document.getElementById('objectiveHexes');
     const num = String(idx + 1).padStart(2, '0');
     const { x, y } = this._pctToSvg(leftPct, topPct);
     const ns = 'http://www.w3.org/2000/svg';
 
-    // Group for this objective (not draggable)
-    const g = document.createElementNS(ns, 'g');
-    g.setAttribute('transform', `translate(${x},${y})`);
-    g.style.pointerEvents = 'none';
+    // Ring in its own layer
+    const ringG = document.createElementNS(ns, 'g');
+    ringG.setAttribute('transform', `translate(${x},${y})`);
+    ringG.style.pointerEvents = 'none';
 
-    // Area ring — matches v0.2a CSS: border: 1.5px dashed
-    // CSS "dashed" renders as roughly 3:1 dash:gap ratio at the stroke width
     const ring = document.createElementNS(ns, 'circle');
     ring.setAttribute('r', String(this.RING_R));
     ring.setAttribute('fill', 'rgba(8,16,8,.1)');
     ring.setAttribute('stroke', 'rgba(74,96,128,.5)');
     ring.setAttribute('stroke-width', '1.5');
     ring.setAttribute('stroke-dasharray', '4,3');
-    g.appendChild(ring);
+    ringG.appendChild(ring);
+    ringsLayer.appendChild(ringG);
 
-    // Hex marker as nested <svg> for its own viewBox
+    // Hex marker in its own layer
+    const hexG = document.createElementNS(ns, 'g');
+    hexG.setAttribute('transform', `translate(${x},${y})`);
+    hexG.style.pointerEvents = 'none';
+
     const hexSvg = document.createElementNS(ns, 'svg');
     hexSvg.setAttribute('viewBox', '0 0 84 97');
     hexSvg.setAttribute('width', String(this.HEX_W));
@@ -111,15 +109,14 @@ Editor.Objectives = {
     lblText.textContent = 'OBJ';
     hexSvg.appendChild(lblText);
 
-    g.appendChild(hexSvg);
-    layer.appendChild(g);
+    hexG.appendChild(hexSvg);
+    hexesLayer.appendChild(hexG);
 
-    const obj = { idx, leftPct, topPct, groupEl: g, ringEl: ring };
+    const obj = { idx, leftPct, topPct, ringEl: ringG, hexEl: hexG };
     C.allObjectives.push(obj);
     return obj;
   },
 
-  // Fixed positions — restorePositions is a no-op now
   restorePositions() {},
 
   serialize() {

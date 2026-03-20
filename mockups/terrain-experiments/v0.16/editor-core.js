@@ -28,11 +28,13 @@ Editor.Core = {
     this.svg = document.getElementById('battlefield');
     this.selUI = document.getElementById('selUI');
     this.debug = document.getElementById('debug');
+    this.groups = [];
 
     // Populate thumbnail grids
     this.populateThumbs();
 
     // Init sub-modules
+    Editor.Groups.init();
     Editor.Models.init();
     Editor.Objectives.init();
     Editor.Selection.init();
@@ -53,6 +55,12 @@ Editor.Core = {
     btn.classList.toggle('on');
     const el = document.getElementById(id);
     if (el) el.style.display = btn.classList.contains('on') ? '' : 'none';
+  },
+
+  tglMulti(btn, ids) {
+    btn.classList.toggle('on');
+    const show = btn.classList.contains('on');
+    ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; });
   },
 
   // ── Background switcher ──
@@ -94,7 +102,7 @@ Editor.Core = {
 
   // ── Layer name → z-index mapping ──
   layerIndex(layerName) {
-    const order = ['lightLayer','spriteFloor','spriteTop','svgRuins','svgScatter','modelLayer'];
+    const order = ['lightLayer','spriteFloor','spriteTop','svgRuins','svgScatter','objectiveRings','objectiveHexes','modelLayer'];
     const idx = order.indexOf(layerName);
     return idx >= 0 ? idx : -1;
   },
@@ -106,8 +114,10 @@ Editor.Core = {
       sprites: this.allSprites.map(s => ({
         id: s.id, file: s.file, x: Math.round(s.x), y: Math.round(s.y),
         w: Math.round(s.w), h: Math.round(s.h), rot: s.rot,
-        layer: this.layerIndex(s.layer), layerName: s.layer, hidden: s.hidden || false,
-        flipX: s.flipX || false, flipY: s.flipY || false
+        layer: this.layerIndex(s.originalLayer || s.layer), layerName: s.originalLayer || s.layer,
+        hidden: s.hidden || false, flipX: s.flipX || false, flipY: s.flipY || false,
+        groupId: s.groupId || null,
+        crop: (s.cropL || s.cropT || s.cropR || s.cropB) ? { l: +(s.cropL||0).toFixed(3), t: +(s.cropT||0).toFixed(3), r: +(s.cropR||0).toFixed(3), b: +(s.cropB||0).toFixed(3) } : null
       })),
       models: this.allModels.map(m => m.kind === 'circle'
         ? { kind: m.kind, x: Math.round(m.x), y: Math.round(m.y), r: m.r, stroke: m.s, icon: m.iconType }
@@ -115,6 +125,10 @@ Editor.Core = {
       lights: this.allLights.map(l => ({
         id: l.id, x: Math.round(l.x), y: Math.round(l.y),
         color: l.color, radius: l.radius, intensity: l.intensity
+      })),
+      groups: (this.groups || []).map(g => ({
+        id: g.id, name: g.name, opacity: g.opacity,
+        spriteIds: this.allSprites.filter(s => s.groupId === g.id).map(s => s.id)
       })),
       objectives: (this.allObjectives || []).map(o => ({
         idx: o.idx, leftPct: +o.leftPct.toFixed(2), topPct: +o.topPct.toFixed(2)

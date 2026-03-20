@@ -28,7 +28,9 @@
     fxOn: true, fxFrequency: 0.5, fxSpeed: 0.5, fxOpacity: 0.5,
     sparksOn: true, sparkOpacity: 0.3, sparkFrequency: 8, sparkSpeed: 1.0,
     wispsOn: true,
-    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
+    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55,
+    offboardBrightnessInactive: 100, offboardBrightnessActive: 220,
+    zoneVigDepth: 80, zoneVigOpacity: 0.95
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -434,6 +436,19 @@
   });
   sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
     state.offboardSoftness = v; applyOffboard(); save(state);
+  });
+  sliderRow(zoneBody, 'Brightness (inactive)', 0, 300, 5, state.offboardBrightnessInactive, '%', function(v) {
+    state.offboardBrightnessInactive = v; applyOffboard(); save(state);
+  });
+  sliderRow(zoneBody, 'Brightness (active)', 0, 300, 5, state.offboardBrightnessActive, '%', function(v) {
+    state.offboardBrightnessActive = v; applyOffboard(); save(state);
+  });
+  subLabel(zoneBody, 'ZONE VIGNETTES');
+  sliderRow(zoneBody, 'Depth', 0, 200, 5, state.zoneVigDepth, 'px', function(v) {
+    state.zoneVigDepth = v; applyZoneVignettes(); save(state);
+  });
+  sliderRow(zoneBody, 'Opacity', 0, 1, 0.01, state.zoneVigOpacity, '', function(v) {
+    state.zoneVigOpacity = v; applyZoneVignettes(); save(state);
   });
 
   // ══════════════════════════════════════════════════════

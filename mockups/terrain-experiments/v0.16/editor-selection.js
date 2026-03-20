@@ -210,6 +210,23 @@ Editor.Selection = {
     // Undo: Ctrl/Cmd+Z
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); Editor.Undo.pop(); return; }
 
+    // Group/Ungroup: Ctrl/Cmd+G
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'g') {
+      e.preventDefault();
+      if (C.multiSel.length >= 2) {
+        // If all selected are in the same group, ungroup
+        const gid = C.multiSel[0].groupId;
+        if (gid && C.multiSel.every(s => s.groupId === gid)) {
+          Editor.Groups.ungroup(gid);
+        } else {
+          Editor.Groups.createGroup(C.multiSel);
+        }
+      } else if (C.selected && C.selected.groupId) {
+        Editor.Groups.ungroup(C.selected.groupId);
+      }
+      return;
+    }
+
     // Copy (sprites or lights)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
       if (C.multiSel.length) {
@@ -245,7 +262,14 @@ Editor.Selection = {
       return;
     }
 
-    if (e.key === 'Escape') { this.deselect(); Editor.Lights.deselectLight(); return; }
+    // Crop mode keys
+    if (Editor.Crop.active) {
+      if (e.key === 'Enter') { e.preventDefault(); Editor.Crop.confirm(); return; }
+      if (e.key === 'Escape') { Editor.Crop.cancel(); return; }
+      return; // Block other keys while cropping
+    }
+
+    if (e.key === 'Escape') { this.deselect(); Editor.Lights.deselectLight(); Editor.Models.deselectModel(); return; }
 
     // Toggle light center indicators
     if (e.key === 'l' || e.key === 'L') { Editor.Lights.toggleCenters(); return; }
@@ -280,6 +304,12 @@ Editor.Selection = {
       Editor.Undo.push();
       C.multiSel = (C.multiSel.length ? C.multiSel : [C.selected]).map(s => Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layer, true));
       C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Layers.rebuild();
+    }
+
+    // Crop
+    if (e.key === 'c' && !e.metaKey && !e.ctrlKey) {
+      if (C.selected && C.multiSel.length <= 1) { Editor.Crop.enter(C.selected); }
+      return;
     }
 
     // Flip

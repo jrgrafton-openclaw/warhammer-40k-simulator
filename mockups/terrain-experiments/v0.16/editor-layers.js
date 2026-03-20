@@ -1,42 +1,44 @@
 /* ══════════════════════════════════════════════════════════════
    Editor Layers — right sidebar panel with drag-to-reorder.
-   All item types (sprites, models-group, lights-group, objectives-group)
-   can be reordered via drag in a unified z-order list.
-   Groups (Models, Lights, Objectives) move as whole units.
-   Sprites support visibility toggle, duplicate, delete.
+   All item types (sprites, models-group, lights-group, obj-rings, obj-hexes,
+   custom groups) can be reordered via drag in a unified z-order list.
+   Models and Lights groups are expandable to show individual items.
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Layers = {
   draggedId: null,
+  expandedGroups: { modelLayer: false, lightLayer: false },
 
   /* ── Build the unified z-order list from SVG DOM ── */
   _buildZOrder() {
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
-    const items = []; // bottom-to-top (SVG DOM order)
+    const items = [];
 
-    // Walk SVG children, expand sprite containers, collect groups
     const groupMeta = {
-      modelLayer:     { name: 'Models',     icon: 'models' },
-      lightLayer:     { name: 'Lights',     icon: 'lights' },
-      objectiveLayer: { name: 'Objectives', icon: 'objectives' }
+      modelLayer:      { name: 'Models',    icon: 'models' },
+      lightLayer:      { name: 'Lights',    icon: 'lights' },
+      objectiveRings:  { name: 'Obj Rings', icon: 'obj-rings' },
+      objectiveHexes:  { name: 'Obj Hexes', icon: 'obj-hexes' }
     };
     const spriteContainers = new Set(['spriteFloor', 'spriteTop']);
 
+    // Also recognize custom group <g> elements
     Array.from(svg.children).forEach(el => {
       if (groupMeta[el.id]) {
         items.push({ type: 'group', groupId: el.id, svgEl: el, meta: groupMeta[el.id] });
       } else if (spriteContainers.has(el.id)) {
-        // Expand individual sprites (DOM order = bottom to top)
         Array.from(el.children).forEach(sprEl => {
           const sp = C.allSprites.find(s => s.el === sprEl);
           if (sp) items.push({ type: 'sprite', ref: sp, svgEl: sprEl, parentId: el.id });
         });
+      } else if (el.id && el.id.startsWith('group-')) {
+        // Custom sprite group
+        items.push({ type: 'custom-group', groupId: el.id, svgEl: el });
       }
-      // Skip backgrounds, deployZones, svgRuins, svgScatter, selUI, dragRect
     });
 
-    return items; // bottom-to-top
+    return items;
   },
 
   /* ── Render the layers panel ── */
@@ -46,55 +48,83 @@ Editor.Layers = {
     list.innerHTML = '';
 
     const zItems = this._buildZOrder();
-    // Reverse for display: top of list = visually in front (last in SVG DOM)
     const displayItems = zItems.slice().reverse();
 
     displayItems.forEach(item => {
-      const row = item.type === 'group'
-        ? this._createGroupRow(item, C)
-        : this._createSpriteRow(item, C);
+      let row;
+      if (item.type === 'group') {
+        row = this._createGroupRow(item, C);
+        list.appendChild(row);
+        this._setupDrag(row, this._itemId(item), zItems);
 
-      const itemId = this._itemId(item);
-      row.draggable = true;
-      row.dataset.layerId = itemId;
-
-      row.addEventListener('dragstart', () => {
-        this.draggedId = itemId; row.classList.add('dragging');
-      });
-      row.addEventListener('dragend', () => {
-        row.classList.remove('dragging'); this.draggedId = null;
-      });
-      row.addEventListener('dragover', e => {
-        e.preventDefault();
-        // Visual drop indicator
-        const rect = row.getBoundingClientRect();
-        const mid = rect.top + rect.height / 2;
-        row.classList.toggle('drop-above', e.clientY < mid);
-        row.classList.toggle('drop-below', e.clientY >= mid);
-      });
-      row.addEventListener('dragleave', () => {
-        row.classList.remove('drop-above', 'drop-below');
-      });
-      row.addEventListener('drop', e => {
-        e.preventDefault();
-        row.classList.remove('drop-above', 'drop-below');
-        if (this.draggedId && this.draggedId !== itemId) {
-          this._handleDrop(this.draggedId, itemId, zItems);
+        // Expandable children for models and lights
+        if (item.groupId === 'modelLayer' && this.expandedGroups.modelLayer) {
+          C.allModels.forEach(m => {
+            const child = this._createModelChildRow(m, C);
+            list.appendChild(child);
+          });
+        } else if (item.groupId === 'lightLayer' && this.expandedGroups.lightLayer) {
+          C.allLights.forEach(l => {
+            const child = this._createLightChildRow(l, C);
+            list.appendChild(child);
+          });
         }
-      });
+      } else if (item.type === 'custom-group') {
+        row = this._createCustomGroupRow(item, C);
+        list.appendChild(row);
+        this._setupDrag(row, this._itemId(item), zItems);
+        // Show child sprites
+        const gId = item.groupId;
+        const childSprites = C.allSprites.filter(s => s.groupId === gId);
+        childSprites.forEach(sp => {
+          const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
+          list.appendChild(child);
+        });
+      } else {
+        // Ungrouped sprite
+        if (!item.ref.groupId) {
+          row = this._createSpriteRow(item, C, false);
+          list.appendChild(row);
+          this._setupDrag(row, this._itemId(item), zItems);
+        }
+      }
+    });
+  },
 
-      list.appendChild(row);
+  _setupDrag(row, itemId, zItems) {
+    row.draggable = true;
+    row.dataset.layerId = itemId;
+    row.addEventListener('dragstart', () => { this.draggedId = itemId; row.classList.add('dragging'); });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedId = null; });
+    row.addEventListener('dragover', e => {
+      e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      row.classList.toggle('drop-above', e.clientY < mid);
+      row.classList.toggle('drop-below', e.clientY >= mid);
+    });
+    row.addEventListener('dragleave', () => { row.classList.remove('drop-above', 'drop-below'); });
+    row.addEventListener('drop', e => {
+      e.preventDefault();
+      row.classList.remove('drop-above', 'drop-below');
+      if (this.draggedId && this.draggedId !== itemId) {
+        this._handleDrop(this.draggedId, itemId, zItems);
+      }
     });
   },
 
   _itemId(item) {
-    return item.type === 'group' ? item.groupId : item.ref.id;
+    if (item.type === 'group') return item.groupId;
+    if (item.type === 'custom-group') return item.groupId;
+    return item.ref.id;
   },
 
-  /* ── Create a group summary row ── */
+  /* ── Create a built-in group row (Models, Lights, Obj) ── */
   _createGroupRow(item, C) {
     const g = item.meta;
     let count, meta, iconSvg;
+    const expandable = item.groupId === 'modelLayer' || item.groupId === 'lightLayer';
+    const expanded = expandable && this.expandedGroups[item.groupId];
 
     if (item.groupId === 'modelLayer') {
       count = C.allModels.length;
@@ -104,9 +134,13 @@ Editor.Layers = {
       count = C.allLights.length;
       meta = `${count} light${count !== 1 ? 's' : ''}`;
       iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#ffaa44" stroke-width="1.5"><circle cx="12" cy="10" r="5"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="18" x2="14" y2="18"/></svg>`;
-    } else if (item.groupId === 'objectiveLayer') {
+    } else if (item.groupId === 'objectiveRings') {
       count = C.allObjectives.length;
-      meta = `${count} marker${count !== 1 ? 's' : ''}`;
+      meta = `${count} ring${count !== 1 ? 's' : ''}`;
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#8090a0" stroke-width="1.5"><circle cx="12" cy="12" r="8" stroke-dasharray="3,2"/></svg>`;
+    } else if (item.groupId === 'objectiveHexes') {
+      count = C.allObjectives.length;
+      meta = `${count} hex${count !== 1 ? 'es' : ''}`;
       iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#8090a0" stroke-width="1.5"><polygon points="12,3 21,8 21,16 12,21 3,16 3,8"/><text x="12" y="14" text-anchor="middle" font-size="8" fill="#8090a0" stroke="none">O</text></svg>`;
     } else {
       count = 0; meta = ''; iconSvg = '';
@@ -114,17 +148,93 @@ Editor.Layers = {
 
     const row = document.createElement('div');
     row.className = 'layer-row group-row';
+    const expandIcon = expandable ? `<span class="expand-toggle">${expanded ? '▾' : '▸'}</span>` : '';
     row.innerHTML = `<div class="group-icon">${iconSvg}</div>
-      <div style="flex:1;min-width:0"><div class="lname">${g.name}</div><div class="lmeta">${meta}</div></div>
+      <div style="flex:1;min-width:0"><div class="lname">${expandIcon}${g.name}</div><div class="lmeta">${meta}</div></div>
       <span class="drag-hint" title="Drag to reorder z-level">⠿</span>`;
+
+    if (expandable) {
+      row.style.cursor = 'pointer';
+      row.onclick = e => {
+        if (e.target.closest('.drag-hint')) return;
+        this.expandedGroups[item.groupId] = !this.expandedGroups[item.groupId];
+        this.rebuild();
+      };
+    }
+
+    return row;
+  },
+
+  /* ── Individual model child row ── */
+  _createModelChildRow(m, C) {
+    const row = document.createElement('div');
+    const isSelected = Editor.Models.selectedModel === m;
+    const faction = m.s === '#0088aa' ? 'imp' : 'ork';
+    const color = m.s === '#0088aa' ? '#0088aa' : '#aa2810';
+    row.className = 'layer-row child-row' + (isSelected ? ' sel' : '');
+    row.innerHTML = `<div class="child-icon" style="color:${color}">●</div>
+      <div style="flex:1;min-width:0"><div class="lname">${m.kind} (${faction}${m.iconType ? ' · ' + m.iconType : ''})</div><div class="lmeta">${Math.round(m.x)},${Math.round(m.y)}</div></div>
+      <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Models.removeModel('${m.id}')">🗑</button>`;
+    row.onclick = e => {
+      if (e.target.closest('.lbtn')) return;
+      Editor.Models.selectModel(m);
+    };
+    return row;
+  },
+
+  /* ── Individual light child row ── */
+  _createLightChildRow(l, C) {
+    const row = document.createElement('div');
+    const isSelected = Editor.Lights.selectedLight === l;
+    row.className = 'layer-row child-row' + (isSelected ? ' sel' : '');
+    row.innerHTML = `<div class="child-icon" style="color:${l.color}">💡</div>
+      <div style="flex:1;min-width:0"><div class="lname">Light ${l.color}</div><div class="lmeta">${Math.round(l.x)},${Math.round(l.y)} · r${l.radius}</div></div>
+      <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Lights.removeLight('${l.id}')">🗑</button>`;
+    row.onclick = e => {
+      if (e.target.closest('.lbtn')) return;
+      Editor.Lights.selectLight(l);
+      Editor.Layers.rebuild();
+    };
+    return row;
+  },
+
+  /* ── Custom sprite group row ── */
+  _createCustomGroupRow(item, C) {
+    const gId = item.groupId;
+    const group = (C.groups || []).find(g => g.id === gId);
+    const name = group ? group.name : gId;
+    const opacity = group ? Math.round(group.opacity * 100) : 100;
+    const childCount = C.allSprites.filter(s => s.groupId === gId).length;
+
+    const row = document.createElement('div');
+    row.className = 'layer-row group-row custom-group-row';
+    row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
+      <div style="flex:1;min-width:0"><div class="lname">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)">
+      <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>
+      <button class="lbtn" title="Delete group + sprites" onclick="event.stopPropagation();Editor.Groups.deleteGroup('${gId}')">🗑</button>
+      <span class="drag-hint" title="Drag to reorder">⠿</span>`;
+
+    row.onclick = e => {
+      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint')) return;
+      // Select all sprites in group
+      const sprites = C.allSprites.filter(s => s.groupId === gId);
+      if (sprites.length) {
+        C.multiSel = sprites;
+        C.selected = sprites[0];
+        Editor.Selection.drawSelectionUI();
+        this.rebuild();
+      }
+    };
+
     return row;
   },
 
   /* ── Create an individual sprite row ── */
-  _createSpriteRow(item, C) {
+  _createSpriteRow(item, C, indented) {
     const sp = item.ref;
     const row = document.createElement('div');
-    row.className = 'layer-row' + (C.multiSel.includes(sp) ? ' sel' : '') + (sp.hidden ? ' hidden-sprite' : '');
+    row.className = 'layer-row' + (C.multiSel.includes(sp) ? ' sel' : '') + (sp.hidden ? ' hidden-sprite' : '') + (indented ? ' child-row' : '');
     row.innerHTML = `<img src="${C.spriteBasePath}${sp.file}">
       <div style="flex:1;min-width:0"><div class="lname">${sp.file.replace(/\.(png|jpg)/, '')}</div><div class="lmeta">${sp.layer === 'spriteTop' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div></div>
       <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleVis('${sp.id}')">${sp.hidden ? '🔇' : '👁'}</button>
@@ -139,24 +249,21 @@ Editor.Layers = {
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
 
-    // Find items in the z-order list (bottom-to-top order)
     const dragItem = zItems.find(z => this._itemId(z) === draggedId);
     const targetItem = zItems.find(z => this._itemId(z) === targetId);
     if (!dragItem || !targetItem) return;
 
     Editor.Undo.push();
 
-    const dragIsGroup = dragItem.type === 'group';
-    const targetIsGroup = targetItem.type === 'group';
+    const dragIsGroup = dragItem.type === 'group' || dragItem.type === 'custom-group';
+    const targetIsGroup = targetItem.type === 'group' || targetItem.type === 'custom-group';
 
-    // Case 1: Sprite on sprite, same container → reorder within
     if (!dragIsGroup && !targetIsGroup &&
         dragItem.svgEl.parentNode === targetItem.svgEl.parentNode) {
       this.reorderBefore(dragItem.ref.id, targetItem.ref.id);
       return;
     }
 
-    // Case 2: Sprite on sprite, different container → move sprite to other container + layer
     if (!dragIsGroup && !targetIsGroup &&
         dragItem.svgEl.parentNode !== targetItem.svgEl.parentNode) {
       const src = dragItem.ref;
@@ -170,7 +277,6 @@ Editor.Layers = {
       return;
     }
 
-    // Helper: ensure selUI and dragRect stay last in SVG
     const _fixTrailingEls = () => {
       const selUI = document.getElementById('selUI');
       const dragRect = document.getElementById('dragRect');
@@ -178,32 +284,24 @@ Editor.Layers = {
       if (dragRect) svg.appendChild(dragRect);
     };
 
-    // Case 3: Group on anything → move the group's SVG <g> in DOM
     if (dragIsGroup) {
       const targetSvgRef = targetIsGroup
         ? targetItem.svgEl
-        : targetItem.svgEl.parentNode; // sprite's container <g>
-
-      // Insert dragged group just before the target's SVG element
-      // (before in DOM = behind in z-order = below in visual stack)
+        : targetItem.svgEl.parentNode;
       svg.insertBefore(dragItem.svgEl, targetSvgRef);
       _fixTrailingEls();
-
       Editor.Persistence.save(); this.rebuild();
       return;
     }
 
-    // Case 4: Sprite on group → move sprite's container relative to the group
     if (!dragIsGroup && targetIsGroup) {
       const spriteContainer = dragItem.svgEl.parentNode;
       svg.insertBefore(spriteContainer, targetItem.svgEl);
       _fixTrailingEls();
-
       Editor.Persistence.save(); this.rebuild();
     }
   },
 
-  /* ── Sprite-to-sprite reorder within same container ── */
   reorderBefore(srcId, targetId) {
     const C = Editor.Core;
     const src = C.allSprites.find(s => s.id === srcId);
