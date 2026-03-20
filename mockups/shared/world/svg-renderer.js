@@ -4,7 +4,7 @@
  */
 
 // ── Re-exports from sub-modules ────────────────────────
-export { applyTx, getCamera, setCamera, resetCamera, initBoard } from './camera.js';
+export { applyTx, getCamera, setCamera, resetCamera, initBoard, setRubberBand } from './camera.js';
 export { ICON_TYPES, getIconType, ensureSVGDefs, renderModels,
          getCurvedHullPath, checkCohesion, resolveOverlaps } from './model-renderer.js';
 

@@ -28,9 +28,7 @@
     fxOn: true, fxFrequency: 0.5, fxSpeed: 0.5, fxOpacity: 0.5,
     sparksOn: true, sparkOpacity: 0.3, sparkFrequency: 8, sparkSpeed: 1.0,
     wispsOn: true,
-    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55,
-    offboardBrightnessInactive: 100, offboardBrightnessActive: 220,
-    zoneVigDepth: 80, zoneVigOpacity: 0.95
+    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -195,8 +193,49 @@
       'Content:   [' + (c.left||0) + ', ' + (c.right||0) + '] × [' + (c.top||0) + ', ' + (c.bottom||0) + ']';
   }
 
-  // Update after modules load
-  window.addEventListener('load', function() { setTimeout(updateCamInfo, 100); });
+  // Rubber-band controls
+  subLabel(camBody, 'RUBBER BAND');
+
+  var rbDefaults = { enabled: true, stretch: 0.30, dampen: 200, duration: 400 };
+  var RB_KEY = 'wh40k-debug-v02a-rb';
+  function loadRB() {
+    try { var r = localStorage.getItem(RB_KEY); if (r) return Object.assign({}, rbDefaults, JSON.parse(r)); } catch(e) {}
+    return Object.assign({}, rbDefaults);
+  }
+  function saveRB(s) { try { localStorage.setItem(RB_KEY, JSON.stringify(s)); } catch(e) {} }
+  var rbState = loadRB();
+
+  function applyRB() {
+    if (typeof window.__setRubberBand === 'function') {
+      window.__setRubberBand(rbState);
+    } else if (window.__rubberBand) {
+      // Fallback: write directly
+      Object.assign(window.__rubberBand, rbState);
+    }
+  }
+
+  toggleRow(camBody, 'Enabled', rbState.enabled, function(on) {
+    rbState.enabled = on; saveRB(rbState); applyRB();
+  });
+  sliderRow(camBody, 'Stretch', 0.05, 0.8, 0.05, rbState.stretch, '', function(v) {
+    rbState.stretch = v; saveRB(rbState); applyRB();
+  });
+  sliderRow(camBody, 'Dampening', 50, 500, 10, rbState.dampen, 'px', function(v) {
+    rbState.dampen = v; saveRB(rbState); applyRB();
+  });
+  sliderRow(camBody, 'Bounce Duration', 100, 800, 50, rbState.duration, 'px', function(v) {
+    rbState.duration = v; saveRB(rbState); applyRB();
+  });
+
+  // Wire up after modules load
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      updateCamInfo();
+      // Wire setRubberBand from camera.js module
+      // camera.js exports setRubberBand — we import it via a global bridge
+      applyRB();
+    }, 100);
+  });
 
   // ══════════════════════════════════════════════════════
   // BACKGROUND SECTION
@@ -395,19 +434,6 @@
   });
   sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
     state.offboardSoftness = v; applyOffboard(); save(state);
-  });
-  sliderRow(zoneBody, 'Brightness (inactive)', 0, 300, 5, state.offboardBrightnessInactive, '%', function(v) {
-    state.offboardBrightnessInactive = v; applyOffboard(); save(state);
-  });
-  sliderRow(zoneBody, 'Brightness (active)', 0, 300, 5, state.offboardBrightnessActive, '%', function(v) {
-    state.offboardBrightnessActive = v; applyOffboard(); save(state);
-  });
-  subLabel(zoneBody, 'ZONE VIGNETTES');
-  sliderRow(zoneBody, 'Depth', 0, 200, 5, state.zoneVigDepth, 'px', function(v) {
-    state.zoneVigDepth = v; applyZoneVignettes(); save(state);
-  });
-  sliderRow(zoneBody, 'Opacity', 0, 1, 0.01, state.zoneVigOpacity, '', function(v) {
-    state.zoneVigOpacity = v; applyZoneVignettes(); save(state);
   });
 
   // ══════════════════════════════════════════════════════
@@ -690,16 +716,14 @@
 
   function applyOffboard() {
     var zoneInfo = [
-      { cls: 'staging-zone-bg', gradId: 'zone-staging-grad', activeGradId: 'zone-staging-grad-active', color: '0,212,255' },
-      { cls: 'ds-zone-bg', gradId: 'zone-ds-grad', activeGradId: 'zone-ds-grad-active', color: '255,170,0' },
-      { cls: 'reserves-zone-bg', gradId: 'zone-reserves-grad', activeGradId: 'zone-reserves-grad-active', color: '186,126,255' }
+      { cls: 'staging-zone-bg', gradId: 'zone-staging-grad', color: '0,212,255' },
+      { cls: 'ds-zone-bg', gradId: 'zone-ds-grad', color: '255,170,0' },
+      { cls: 'reserves-zone-bg', gradId: 'zone-reserves-grad', color: '186,126,255' }
     ];
-    var inactiveOpacity = Math.min(0.24, state.offboardFillOpacity * ((state.offboardBrightnessInactive || 100) / 100));
-    var activeOpacity = Math.min(0.24, state.offboardFillOpacity * ((state.offboardBrightnessActive || 100) / 100));
-
     zoneInfo.forEach(function(zi) {
       var rect = document.querySelector('.' + zi.cls);
       if (!rect) return;
+      // Borders — use style to override any CSS
       if (state.offboardBorders) {
         rect.style.stroke = 'rgba(' + zi.color + ',0.2)';
         rect.style.strokeWidth = '1.5';
@@ -707,64 +731,16 @@
       } else {
         rect.style.stroke = 'none';
       }
-      // Update inactive gradient
+      // Gradient fill opacity (first stop)
       var grad = document.getElementById(zi.gradId);
       if (grad) {
         var stops = grad.querySelectorAll('stop');
-        if (stops.length > 0) stops[0].setAttribute('stop-opacity', String(inactiveOpacity));
+        if (stops.length > 0) {
+          stops[0].setAttribute('stop-opacity', String(state.offboardFillOpacity));
+        }
+        // Edge softness (gradient radius)
         grad.setAttribute('r', state.offboardSoftness + '%');
       }
-      // Update active gradient
-      var aGrad = document.getElementById(zi.activeGradId);
-      if (aGrad) {
-        var aStops = aGrad.querySelectorAll('stop');
-        if (aStops.length > 0) aStops[0].setAttribute('stop-opacity', String(activeOpacity));
-        aGrad.setAttribute('r', state.offboardSoftness + '%');
-      }
-    });
-    // CSS swap: inactive fill by default, active fill on .zone-active
-    var fillStyle = document.getElementById('offboard-fill-override');
-    if (!fillStyle) {
-      fillStyle = document.createElement('style');
-      fillStyle.id = 'offboard-fill-override';
-      document.head.appendChild(fillStyle);
-    }
-    fillStyle.textContent =
-      '.offboard-zone.staging-zone-bg{fill:url(#zone-staging-grad);}' +
-      '.offboard-zone.ds-zone-bg{fill:url(#zone-ds-grad);}' +
-      '.offboard-zone.reserves-zone-bg{fill:url(#zone-reserves-grad);}' +
-      '.offboard-zone.zone-active.staging-zone-bg{fill:url(#zone-staging-grad-active);}' +
-      '.offboard-zone.zone-active.ds-zone-bg{fill:url(#zone-ds-grad-active);}' +
-      '.offboard-zone.zone-active.reserves-zone-bg{fill:url(#zone-reserves-grad-active);}';
-  }
-
-  // ── Zone vignettes (black edge rects in #bf-svg-vignette) ──
-  var zoneVigKeys = ['staging', 'ds', 'reserves'];
-  var zoneVigZones = {
-    staging:  { x: -540, y: 20, w: 250, h: 488 },
-    ds:       { x: -270, y: 20, w: 250, h: 230 },
-    reserves: { x: -270, y: 278, w: 250, h: 230 }
-  };
-
-  function applyZoneVignettes() {
-    var depth = state.zoneVigDepth || 80;
-    var opacity = state.zoneVigOpacity != null ? state.zoneVigOpacity : 0.95;
-    zoneVigKeys.forEach(function(key) {
-      var z = zoneVigZones[key];
-      ['-l', '-r', '-t', '-b'].forEach(function(s) {
-        var r = document.getElementById('zvig-rect-' + key + s);
-        var g = document.getElementById('zvig-' + key + s);
-        if (!r) return;
-        if (g) {
-          var stops = g.querySelectorAll('stop');
-          if (stops.length > 0) stops[0].setAttribute('stop-opacity', String(opacity));
-          if (stops.length > 1) stops[1].setAttribute('stop-opacity', String(opacity * 0.42));
-        }
-        if (s === '-l') { r.setAttribute('x', String(z.x)); r.setAttribute('y', String(z.y)); r.setAttribute('width', String(depth)); r.setAttribute('height', String(z.h)); }
-        else if (s === '-r') { r.setAttribute('x', String(z.x + z.w - depth)); r.setAttribute('y', String(z.y)); r.setAttribute('width', String(depth)); r.setAttribute('height', String(z.h)); }
-        else if (s === '-t') { r.setAttribute('x', String(z.x)); r.setAttribute('y', String(z.y)); r.setAttribute('width', String(z.w)); r.setAttribute('height', String(depth)); }
-        else if (s === '-b') { r.setAttribute('x', String(z.x)); r.setAttribute('y', String(z.y + z.h - depth)); r.setAttribute('width', String(z.w)); r.setAttribute('height', String(depth)); }
-      });
     });
   }
 
@@ -791,7 +767,6 @@
     applyVignette();
     applyZones();
     applyOffboard();
-    applyZoneVignettes();
     applyFx();
   }
   if (document.readyState === 'complete') {
