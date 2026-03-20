@@ -11,20 +11,45 @@ var scale = 0.5;
 var tx = 0;
 var ty = 0;
 
-// ── Apply Transform (with clamping) ────────────────────
+// ── Content boundaries in SVG coordinates ──────────────
+// These define the world-space extent the user should be able to reach.
+var CONTENT_LEFT   = -560;   // staging zone left edge + margin
+var CONTENT_RIGHT  =  740;   // board right edge + margin
+var CONTENT_TOP    =  -20;   // top margin
+var CONTENT_BOTTOM =  548;   // board bottom + margin
+
+// ── Apply Transform (with content-aware clamping) ──────
 export function applyTx() {
   var inner = document.getElementById('battlefield-inner');
   var bf    = document.getElementById('battlefield');
   if (!inner) return;
 
-  // Clamp tx/ty to pan limits before writing transform
+  // Clamp tx/ty so the user can always pan to see every content edge,
+  // but no further. The reachable world extent stays constant at all zoom levels.
   if (bf) {
     var bfW = bf.clientWidth;
     var bfH = bf.clientHeight;
-    var maxPanX = Math.max(0, (bfW * scale) * 0.4);
-    var maxPanY = Math.max(0, (bfH * scale) * 0.4);
-    tx = Math.max(-maxPanX, Math.min(maxPanX, tx));
-    ty = Math.max(-maxPanY, Math.min(maxPanY, ty));
+
+    // SVG viewBox is 720×528, centered in the inner element.
+    // pxPerUnit converts SVG units → CSS pixels at the current scale.
+    var pxPerUnit = (bfW / 720) * scale;
+
+    // SVG midpoints (viewBox centre)
+    var svgMidX = 360;
+    var svgMidY = 264;
+
+    // Max positive tx = pan right enough to see leftmost content
+    var maxPositiveTx = (svgMidX - CONTENT_LEFT) * pxPerUnit - bfW / 2;
+    // Max negative tx = pan left enough to see rightmost content
+    var maxNegativeTx = (CONTENT_RIGHT - svgMidX) * pxPerUnit - bfW / 2;
+
+    // Max positive ty = pan down enough to see topmost content
+    var maxPositiveTy = (svgMidY - CONTENT_TOP) * pxPerUnit - bfH / 2;
+    // Max negative ty = pan up enough to see bottommost content
+    var maxNegativeTy = (CONTENT_BOTTOM - svgMidY) * pxPerUnit - bfH / 2;
+
+    tx = Math.max(-Math.max(0, maxNegativeTx), Math.min(Math.max(0, maxPositiveTx), tx));
+    ty = Math.max(-Math.max(0, maxNegativeTy), Math.min(Math.max(0, maxPositiveTy), ty));
   }
 
   inner.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
