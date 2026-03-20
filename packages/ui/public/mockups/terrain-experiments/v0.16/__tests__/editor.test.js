@@ -326,6 +326,118 @@ describe('Editor Layers — group child drag', () => {
   });
 });
 
+describe('Editor Effects — shadow rotation compensation', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('unrotated sprite gets original shadow dx/dy', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    // dx/dy should be the original values (3, 3 default)
+    expect(parseFloat(offset.getAttribute('dx'))).toBeCloseTo(3, 0);
+    expect(parseFloat(offset.getAttribute('dy'))).toBeCloseTo(3, 0);
+  });
+
+  it('90° rotated sprite gets counter-rotated shadow offset', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 90, 'floor', true);
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+
+    // For 90° rotation with default dx=3, dy=3:
+    // local_dx = 1 * (3*cos(-90°) + 3*sin(-90°)) = 1 * (0 + -3) = -3
+    // local_dy = 1 * (-3*sin(-90°) + 3*cos(-90°)) = 1 * (3 + 0) = 3
+    // Wait, let me recalculate. rad = -90 * PI/180 = -PI/2
+    // cos(-PI/2) ≈ 0, sin(-PI/2) ≈ -1
+    // localDx = 1 * (3*0 + 3*(-1)) = -3
+    // localDy = 1 * (-3*(-1) + 3*0) = 3
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(3, 0);
+  });
+
+  it('different rotations produce different filters', () => {
+    const sp0 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp90 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 90, 'floor', true);
+
+    Editor.Effects._applyToSprite(sp0);
+    Editor.Effects._applyToSprite(sp90);
+
+    const filter0 = sp0.el.getAttribute('filter');
+    const filter90 = sp90.el.getAttribute('filter');
+    expect(filter0).not.toBe(filter90);
+  });
+});
+
+describe('Editor Undo — shadowMul preservation', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('undo snapshot captures shadowMul', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.shadowMul = 0.3;
+
+    Editor.Undo.push();
+    const snapshot = Editor.Undo.stack[Editor.Undo.stack.length - 1];
+    const saved = snapshot.sprites.find(s => s.id === sp.id);
+    expect(saved.shadowMul).toBeCloseTo(0.3);
+  });
+
+  it('undo restores shadowMul correctly', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.shadowMul = 0.5;
+
+    // Push state with shadowMul=0.5
+    Editor.Undo.push();
+
+    // Change shadowMul
+    sp.shadowMul = 1.0;
+
+    // Undo should restore shadowMul=0.5
+    Editor.Undo.pop();
+
+    // Find the restored sprite
+    const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
+    expect(restored).toBeTruthy();
+    expect(restored.shadowMul).toBeCloseTo(0.5);
+  });
+
+  it('undo restores multiple sprites with different shadowMul values', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    sp1.shadowMul = 0.2;
+    sp2.shadowMul = 0.8;
+
+    Editor.Undo.push();
+
+    // Change both
+    sp1.shadowMul = 1.0;
+    sp2.shadowMul = 1.0;
+
+    Editor.Undo.pop();
+
+    const r1 = Editor.Core.allSprites.find(s => s.file === 'a.png');
+    const r2 = Editor.Core.allSprites.find(s => s.file === 'b.png');
+    expect(r1.shadowMul).toBeCloseTo(0.2);
+    expect(r2.shadowMul).toBeCloseTo(0.8);
+  });
+});
+
 describe('Integration — James layout JSON', () => {
   let Editor;
 

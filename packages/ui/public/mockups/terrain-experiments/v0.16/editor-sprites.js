@@ -97,6 +97,8 @@ Editor.Sprites = {
     el.setAttribute('transform', t.trim());
     // Sync crop clipPath with current position
     if (sp._clipId && Editor.Crop) Editor.Crop.updateClipPosition(sp);
+    // Re-apply filter with updated rotation (shadow direction is rotation-dependent)
+    if (Editor.Effects && Editor.Effects._ready) Editor.Effects._applyToSprite(sp);
   },
 
   // ── Resize handle ──
