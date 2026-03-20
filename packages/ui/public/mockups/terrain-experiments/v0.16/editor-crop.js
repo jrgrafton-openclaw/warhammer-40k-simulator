@@ -58,6 +58,9 @@ Editor.Crop = {
     const sp = this.sprite;
     const cx = o.x + o.w / 2, cy = o.y + o.h / 2;
 
+    // Build the full sprite transform (rotation + flip) for overlay elements
+    const t = this._spriteTransform(sp);
+
     // Dimmed area (path with hole)
     const dimPath = document.createElementNS(NS, 'path');
     const outer = `M${o.x},${o.y} L${o.x+o.w},${o.y} L${o.x+o.w},${o.y+o.h} L${o.x},${o.y+o.h}Z`;
@@ -65,7 +68,7 @@ Editor.Crop = {
     dimPath.setAttribute('d', outer + ' ' + inner);
     dimPath.setAttribute('fill', 'rgba(0,0,0,0.5)');
     dimPath.setAttribute('fill-rule', 'evenodd');
-    if (sp.rot) dimPath.setAttribute('transform', `rotate(${sp.rot},${cx},${cy})`);
+    if (t) dimPath.setAttribute('transform', t);
     this.overlayG.appendChild(dimPath);
 
     // Crop rect border
@@ -74,7 +77,7 @@ Editor.Crop = {
     border.setAttribute('width', cr.w); border.setAttribute('height', cr.h);
     border.setAttribute('fill', 'none'); border.setAttribute('stroke', '#00ff88');
     border.setAttribute('stroke-width', '1.5'); border.setAttribute('stroke-dasharray', '4,2');
-    if (sp.rot) border.setAttribute('transform', `rotate(${sp.rot},${cx},${cy})`);
+    if (t) border.setAttribute('transform', t);
     this.overlayG.appendChild(border);
 
     // Handles
@@ -92,7 +95,7 @@ Editor.Crop = {
       rect.setAttribute('x', h.x - h.w/2); rect.setAttribute('y', h.y - h.h/2);
       rect.setAttribute('width', h.w); rect.setAttribute('height', h.h);
       rect.setAttribute('fill', '#00ff88'); rect.style.cursor = h.cursor;
-      if (sp.rot) rect.setAttribute('transform', `rotate(${sp.rot},${cx},${cy})`);
+      if (t) rect.setAttribute('transform', t);
       rect.onmousedown = e => { e.stopPropagation(); this._startResize(e, h.edge); };
       this.overlayG.appendChild(rect);
     });
@@ -108,12 +111,16 @@ Editor.Crop = {
     const cr0 = { ...this.cropRect };
     const p0 = C.svgPt(e.clientX, e.clientY);
     const rad = -(this.sprite.rot || 0) * Math.PI / 180;
+    const fxSign = this.sprite.flipX ? -1 : 1;
+    const fySign = this.sprite.flipY ? -1 : 1;
 
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY);
       const gdx = p.x - p0.x, gdy = p.y - p0.y;
-      const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
-      const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
+      // Rotate into local space, then account for flip
+      // (crop overlay has flip transform, so visual drag direction is inverted)
+      const dx = (gdx * Math.cos(rad) - gdy * Math.sin(rad)) * fxSign;
+      const dy = (gdx * Math.sin(rad) + gdy * Math.cos(rad)) * fySign;
 
       const cr = { ...cr0 };
       if (edge.includes('n')) { cr.y = Math.max(o.y, Math.min(cr0.y + cr0.h - 10, cr0.y + dy)); cr.h = cr0.h - (cr.y - cr0.y); }
@@ -200,13 +207,12 @@ Editor.Crop = {
     const clipPath = document.createElementNS(NS, 'clipPath');
     clipPath.id = clipId;
     const clipRect = document.createElementNS(NS, 'rect');
+    // ClipPath operates in pre-transform space (before the element's own transform)
+    // so NO transform on the clip rect — the element's flip/rotate handles the rest
     clipRect.setAttribute('x', sp.x + sp.w * cL);
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
     clipRect.setAttribute('height', sp.h * (1 - cT - cB));
-    // Apply same rotation/flip transform so clip aligns with the visual sprite
-    const t = this._spriteTransform(sp);
-    if (t) clipRect.setAttribute('transform', t);
     clipPath.appendChild(clipRect);
     defs.appendChild(clipPath);
 
@@ -229,10 +235,8 @@ Editor.Crop = {
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
     clipRect.setAttribute('height', sp.h * (1 - cT - cB));
-    // Sync transform with current sprite rotation/flip
-    const t = this._spriteTransform(sp);
-    if (t) clipRect.setAttribute('transform', t);
-    else clipRect.removeAttribute('transform');
+    // No transform on clip rect — it operates in pre-transform space
+    clipRect.removeAttribute('transform');
   },
 
   /* ── Remove existing clip from sprite ── */
