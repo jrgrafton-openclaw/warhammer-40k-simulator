@@ -178,7 +178,7 @@ Editor.Crop = {
     Editor.Selection.drawSelectionUI();
   },
 
-  /* ── Build the same transform string that apply() uses on the sprite ── */
+  /* ── Build the full transform (rotation + flip) matching the sprite ── */
   _spriteTransform(sp) {
     const cx = sp.x + sp.w / 2, cy = sp.y + sp.h / 2;
     let t = '';
@@ -188,6 +188,13 @@ Editor.Crop = {
       t += `translate(${cx},${cy}) scale(${sx},${sy}) translate(${-cx},${-cy})`;
     }
     return t.trim();
+  },
+
+  /* ── Build rotation-only transform for the clip rect ── */
+  _clipTransform(sp) {
+    if (!sp.rot) return '';
+    const cx = sp.x + sp.w / 2, cy = sp.y + sp.h / 2;
+    return `rotate(${sp.rot},${cx},${cy})`;
   },
 
   /* ── Apply SVG clipPath to sprite ── */
@@ -207,12 +214,15 @@ Editor.Crop = {
     const clipPath = document.createElementNS(NS, 'clipPath');
     clipPath.id = clipId;
     const clipRect = document.createElementNS(NS, 'rect');
-    // ClipPath operates in pre-transform space (before the element's own transform)
-    // so NO transform on the clip rect — the element's flip/rotate handles the rest
+    // ClipPath is in the parent coordinate system (userSpaceOnUse).
+    // It needs the ROTATION transform so it rotates with the image,
+    // but NOT the flip transform (flip mirrors content within the same bbox).
     clipRect.setAttribute('x', sp.x + sp.w * cL);
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
     clipRect.setAttribute('height', sp.h * (1 - cT - cB));
+    const ct = this._clipTransform(sp);
+    if (ct) clipRect.setAttribute('transform', ct);
     clipPath.appendChild(clipRect);
     defs.appendChild(clipPath);
 
@@ -235,8 +245,10 @@ Editor.Crop = {
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
     clipRect.setAttribute('height', sp.h * (1 - cT - cB));
-    // No transform on clip rect — it operates in pre-transform space
-    clipRect.removeAttribute('transform');
+    // Sync rotation (but not flip) so clip rotates with the image
+    const ct = this._clipTransform(sp);
+    if (ct) clipRect.setAttribute('transform', ct);
+    else clipRect.removeAttribute('transform');
   },
 
   /* ── Remove existing clip from sprite ── */
