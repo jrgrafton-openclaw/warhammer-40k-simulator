@@ -213,7 +213,7 @@ Editor.Selection = {
     // Copy (sprites or lights)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
       if (C.multiSel.length) {
-        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden }));
+        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden, flipX: s.flipX, flipY: s.flipY }));
         C.clipboardLights = [];
         e.preventDefault(); return;
       }
@@ -247,6 +247,15 @@ Editor.Selection = {
 
     if (e.key === 'Escape') { this.deselect(); Editor.Lights.deselectLight(); return; }
 
+    // Toggle light center indicators
+    if (e.key === 'l' || e.key === 'L') { Editor.Lights.toggleCenters(); return; }
+
+    // Reset zoom
+    if (e.key === '0') { Editor.Zoom.reset(); return; }
+
+    // Toggle shortcuts help
+    if (e.key === '?') { Editor.Shortcuts.toggle(); return; }
+
     // Delete (sprites or selected light)
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (Editor.Lights.selectedLight) {
@@ -271,6 +280,18 @@ Editor.Selection = {
       Editor.Undo.push();
       C.multiSel = (C.multiSel.length ? C.multiSel : [C.selected]).map(s => Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layer, true));
       C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Layers.rebuild();
+    }
+
+    // Flip
+    if (e.key === 'f' || e.key === 'F') {
+      Editor.Undo.push();
+      const targets = C.multiSel.length > 1 ? C.multiSel : [C.selected];
+      targets.forEach(s => {
+        if (e.shiftKey) s.flipY = !s.flipY;
+        else s.flipX = !s.flipX;
+        Editor.Sprites.apply(s);
+      });
+      this.drawSelectionUI(); C.updateDebug(); Editor.Persistence.save();
     }
 
     // Rotate

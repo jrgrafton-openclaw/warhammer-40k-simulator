@@ -106,7 +106,8 @@ Editor.Core = {
       sprites: this.allSprites.map(s => ({
         id: s.id, file: s.file, x: Math.round(s.x), y: Math.round(s.y),
         w: Math.round(s.w), h: Math.round(s.h), rot: s.rot,
-        layer: this.layerIndex(s.layer), layerName: s.layer, hidden: s.hidden || false
+        layer: this.layerIndex(s.layer), layerName: s.layer, hidden: s.hidden || false,
+        flipX: s.flipX || false, flipY: s.flipY || false
       })),
       models: this.allModels.map(m => m.kind === 'circle'
         ? { kind: m.kind, x: Math.round(m.x), y: Math.round(m.y), r: m.r, stroke: m.s, icon: m.iconType }
