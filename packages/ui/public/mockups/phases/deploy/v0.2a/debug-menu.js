@@ -31,7 +31,7 @@
     offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55,
     offboardBrightnessInactive: 100, offboardBrightnessActive: 220,
     zoneVigDepth: 80, zoneVigOpacity: 0.95,
-    lightningOn: true, lightningMode: 'screenspace', lightningIncludeRoster: false,
+    lightningOn: true, lightningMode: 'screenspace', lightningGradientMask: true,
     lightningIntensity: 0.7, lightningFreqMin: 8, lightningFreqMax: 18,
     lightningSfxVol: 0.25, lightningBoardTint: false, lightningTintStrength: 0.15
   };
@@ -527,31 +527,31 @@
     });
     sel.addEventListener('change', function() {
       state.lightningMode = sel.value;
-      // Show/hide include-roster toggle
-      rosterRow.style.display = sel.value === 'screenspace' ? '' : 'none';
+      // Show/hide gradient mask toggle
+      gradRow.style.display = sel.value === 'screenspace' ? '' : 'none';
       applyLightning(); save(state);
     });
     row.appendChild(lbl);
     row.appendChild(sel);
     ltBody.appendChild(row);
 
-    // Include Roster toggle (only visible in screenspace mode)
-    var rosterRow = document.createElement('div');
-    rosterRow.className = 'dbg-row';
-    rosterRow.style.display = state.lightningMode === 'screenspace' ? '' : 'none';
-    var rosterLbl = document.createElement('span');
-    rosterLbl.className = 'dbg-row-label';
-    rosterLbl.textContent = 'Include Roster';
-    var rosterTog = document.createElement('div');
-    rosterTog.className = 'dbg-toggle' + (state.lightningIncludeRoster ? ' on' : '');
-    rosterTog.addEventListener('click', function() {
-      var isOn = rosterTog.classList.toggle('on');
-      state.lightningIncludeRoster = isOn;
+    // Gradient Mask toggle (only visible in screenspace mode)
+    var gradRow = document.createElement('div');
+    gradRow.className = 'dbg-row';
+    gradRow.style.display = state.lightningMode === 'screenspace' ? '' : 'none';
+    var gradLbl = document.createElement('span');
+    gradLbl.className = 'dbg-row-label';
+    gradLbl.textContent = 'Gradient Mask';
+    var gradTog = document.createElement('div');
+    gradTog.className = 'dbg-toggle' + (state.lightningGradientMask ? ' on' : '');
+    gradTog.addEventListener('click', function() {
+      var isOn = gradTog.classList.toggle('on');
+      state.lightningGradientMask = isOn;
       applyLightning(); save(state);
     });
-    rosterRow.appendChild(rosterLbl);
-    rosterRow.appendChild(rosterTog);
-    ltBody.appendChild(rosterRow);
+    gradRow.appendChild(gradLbl);
+    gradRow.appendChild(gradTog);
+    ltBody.appendChild(gradRow);
   })();
 
   sliderRow(ltBody, 'Intensity', 0, 100, 1, Math.round(state.lightningIntensity * 100), '%', function(v) {
@@ -874,7 +874,7 @@
   function applyLightning() {
     window._lightningEnabled = state.lightningOn;
     window._lightningMode = state.lightningMode;
-    window._lightningIncludeRoster = state.lightningIncludeRoster;
+    window._lightningGradientMask = state.lightningGradientMask;
     window._lightningIntensity = state.lightningIntensity;
     window._lightningFreqMin = state.lightningFreqMin * 1000;
     window._lightningFreqMax = state.lightningFreqMax * 1000;
