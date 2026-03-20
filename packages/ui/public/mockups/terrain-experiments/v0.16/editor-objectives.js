@@ -1,7 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    Editor Objectives — SVG hex markers + area rings inside the
    battlefield SVG so they participate in SVG z-order.
-   Positions stored as percentages for persistence compatibility.
+   Fixed positions matching deploy v0.2a (not draggable).
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Objectives = {
@@ -14,21 +14,17 @@ Editor.Objectives = {
   HEX_W: 42,
   HEX_H: 48.5,
 
-  // Default 5-objective layout (% positions)
-  defaultPositions: [
-    { idx: 0, leftPct: 50, topPct: 13.64 },
+  // Fixed 5-objective layout matching deploy v0.2a exactly
+  positions: [
+    { idx: 0, leftPct: 50,    topPct: 13.64 },
     { idx: 1, leftPct: 16.67, topPct: 50 },
-    { idx: 2, leftPct: 50, topPct: 50 },
+    { idx: 2, leftPct: 50,    topPct: 50 },
     { idx: 3, leftPct: 83.33, topPct: 50 },
-    { idx: 4, leftPct: 50, topPct: 86.36 }
+    { idx: 4, leftPct: 50,    topPct: 86.36 }
   ],
 
   _pctToSvg(leftPct, topPct) {
     return { x: leftPct / 100 * this.VB_W, y: topPct / 100 * this.VB_H };
-  },
-
-  _svgToPct(x, y) {
-    return { leftPct: x / this.VB_W * 100, topPct: y / this.VB_H * 100 };
   },
 
   init() {
@@ -41,7 +37,7 @@ Editor.Objectives = {
     const htmlContainer = document.getElementById('objectives');
     if (htmlContainer) htmlContainer.innerHTML = '';
 
-    this.defaultPositions.forEach((pos, i) => {
+    this.positions.forEach(pos => {
       this._addObjective(pos.idx, pos.leftPct, pos.topPct);
     });
   },
@@ -53,18 +49,19 @@ Editor.Objectives = {
     const { x, y } = this._pctToSvg(leftPct, topPct);
     const ns = 'http://www.w3.org/2000/svg';
 
-    // Group for this objective
+    // Group for this objective (not draggable)
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('transform', `translate(${x},${y})`);
-    g.style.cursor = 'grab';
+    g.style.pointerEvents = 'none';
 
-    // Area ring (dashed circle)
+    // Area ring — matches v0.2a CSS: border: 1.5px dashed
+    // CSS "dashed" renders as roughly 3:1 dash:gap ratio at the stroke width
     const ring = document.createElementNS(ns, 'circle');
     ring.setAttribute('r', String(this.RING_R));
     ring.setAttribute('fill', 'rgba(8,16,8,.1)');
     ring.setAttribute('stroke', 'rgba(74,96,128,.5)');
     ring.setAttribute('stroke-width', '1.5');
-    ring.setAttribute('stroke-dasharray', '6,4');
+    ring.setAttribute('stroke-dasharray', '4,3');
     g.appendChild(ring);
 
     // Hex marker as nested <svg> for its own viewBox
@@ -118,48 +115,12 @@ Editor.Objectives = {
     layer.appendChild(g);
 
     const obj = { idx, leftPct, topPct, groupEl: g, ringEl: ring };
-    g.addEventListener('mousedown', e => this.startDrag(e, obj));
     C.allObjectives.push(obj);
     return obj;
   },
 
-  _updatePosition(obj) {
-    const { x, y } = this._pctToSvg(obj.leftPct, obj.topPct);
-    obj.groupEl.setAttribute('transform', `translate(${x},${y})`);
-  },
-
-  startDrag(e, obj) {
-    e.stopPropagation(); e.preventDefault();
-    Editor.Undo.push();
-    const C = Editor.Core;
-
-    const mv = e2 => {
-      const p = C.svgPt(e2.clientX, e2.clientY);
-      const pct = this._svgToPct(p.x, p.y);
-      obj.leftPct = Math.max(0, Math.min(100, pct.leftPct));
-      obj.topPct = Math.max(0, Math.min(100, pct.topPct));
-      this._updatePosition(obj);
-    };
-    const up = () => {
-      document.removeEventListener('mousemove', mv);
-      document.removeEventListener('mouseup', up);
-      Editor.Persistence.save();
-    };
-    document.addEventListener('mousemove', mv);
-    document.addEventListener('mouseup', up);
-  },
-
-  restorePositions(positions) {
-    const C = Editor.Core;
-    if (!positions || !C.allObjectives.length) return;
-    positions.forEach(p => {
-      const obj = C.allObjectives[p.idx];
-      if (!obj) return;
-      obj.leftPct = p.leftPct;
-      obj.topPct = p.topPct;
-      this._updatePosition(obj);
-    });
-  },
+  // Fixed positions — restorePositions is a no-op now
+  restorePositions() {},
 
   serialize() {
     return Editor.Core.allObjectives.map(o => ({ idx: o.idx, leftPct: o.leftPct, topPct: o.topPct }));
