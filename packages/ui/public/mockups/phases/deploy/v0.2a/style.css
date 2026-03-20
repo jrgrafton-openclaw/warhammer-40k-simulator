@@ -235,12 +235,6 @@
 }
 
 /* ── Lightning FX ── */
-#lightning-vignette-flash {
-  position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  background: radial-gradient(ellipse at 50% 50%, transparent 35%, rgba(180,210,240,0.12) 75%, rgba(180,210,240,0.18) 100%);
-  opacity: 0;
-  transition: none;
-}
 #lightning-board-tint {
   position: absolute; inset: 0; z-index: 15; pointer-events: none;
   background: rgba(180,210,240,1);

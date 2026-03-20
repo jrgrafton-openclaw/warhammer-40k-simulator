@@ -1,11 +1,17 @@
 /**
  * lightning-fx.js — Vignette-edge lightning flashes for v0.2a.
  *
- * Flashes the dark vignette margins around the board (NOT the board surface).
- * Uses a CSS overlay with inverse-vignette radial gradient.
+ * Creates blue-white lightning rects INSIDE the existing vignette SVG
+ * (#bf-svg-vignette), matching the vignette rect geometry exactly.
+ * This means the flash inherits the vignette's noise filter, coordinate
+ * space, and zoom/pan transforms — it always lights up the right edges.
+ *
  * Reads config from window globals set by debug-menu.js.
  */
 (function initLightningFx() {
+  var NS = 'http://www.w3.org/2000/svg';
+  var FLASH_COLOR = '180,210,240'; // Cool blue-white
+
   // ── Config defaults (overridden by debug-menu globals) ──
   function cfg() {
     return {
@@ -19,9 +25,88 @@
     };
   }
 
-  // ── DOM refs ──
-  var flashEl = document.getElementById('lightning-vignette-flash');
-  var tintEl  = document.getElementById('lightning-board-tint');
+  // ── Lightning SVG group (created after vignette SVG exists) ──
+  var lightningGroup = null;
+  var tintEl = document.getElementById('lightning-board-tint');
+
+  function createLightningRects() {
+    var vigSvg = document.getElementById('bf-svg-vignette');
+    if (!vigSvg || lightningGroup) return;
+
+    var defs = vigSvg.querySelector('defs');
+    if (!defs) return;
+
+    // Create lightning-specific gradients (blue-white, same direction as vignette)
+    var gradDefs = [
+      { id: 'lt-grad-l', x1: '0', y1: '0', x2: '1', y2: '0' },
+      { id: 'lt-grad-r', x1: '1', y1: '0', x2: '0', y2: '0' },
+      { id: 'lt-grad-t', x1: '0', y1: '0', x2: '0', y2: '1' },
+      { id: 'lt-grad-b', x1: '0', y1: '1', x2: '0', y2: '0' }
+    ];
+    gradDefs.forEach(function(g) {
+      var lg = document.createElementNS(NS, 'linearGradient');
+      lg.setAttribute('id', g.id);
+      lg.setAttribute('x1', g.x1); lg.setAttribute('y1', g.y1);
+      lg.setAttribute('x2', g.x2); lg.setAttribute('y2', g.y2);
+      // Bright at edge, fade to transparent toward board center
+      lg.innerHTML =
+        '<stop offset="0%" stop-color="rgb(' + FLASH_COLOR + ')" stop-opacity="1"/>' +
+        '<stop offset="40%" stop-color="rgb(' + FLASH_COLOR + ')" stop-opacity="0.3"/>' +
+        '<stop offset="100%" stop-color="rgb(' + FLASH_COLOR + ')" stop-opacity="0"/>';
+      defs.appendChild(lg);
+    });
+
+    // Create a group for lightning rects — sits on top of the vignette group
+    lightningGroup = document.createElementNS(NS, 'g');
+    lightningGroup.setAttribute('id', 'lightning-group');
+    lightningGroup.setAttribute('pointer-events', 'none');
+    lightningGroup.style.opacity = '0';
+    // Apply the same noise filter as the vignette for organic edges
+    lightningGroup.setAttribute('filter', 'url(#vig-noise)');
+
+    // Read current vignette rect positions to match geometry exactly
+    var vigRects = [
+      { src: 'vig-rect-l', grad: 'lt-grad-l' },
+      { src: 'vig-rect-r', grad: 'lt-grad-r' },
+      { src: 'vig-rect-t', grad: 'lt-grad-t' },
+      { src: 'vig-rect-b', grad: 'lt-grad-b' }
+    ];
+    vigRects.forEach(function(vr) {
+      var srcRect = document.getElementById(vr.src);
+      if (!srcRect) return;
+      var r = document.createElementNS(NS, 'rect');
+      r.setAttribute('x', srcRect.getAttribute('x'));
+      r.setAttribute('y', srcRect.getAttribute('y'));
+      r.setAttribute('width', srcRect.getAttribute('width'));
+      r.setAttribute('height', srcRect.getAttribute('height'));
+      r.setAttribute('fill', 'url(#' + vr.grad + ')');
+      r.setAttribute('class', 'lt-rect');
+      lightningGroup.appendChild(r);
+    });
+
+    vigSvg.appendChild(lightningGroup);
+  }
+
+  // Sync lightning rect geometry with vignette rects (debug menu may resize them)
+  function syncGeometry() {
+    if (!lightningGroup) return;
+    var pairs = [
+      { src: 'vig-rect-l', lt: 0 },
+      { src: 'vig-rect-r', lt: 1 },
+      { src: 'vig-rect-t', lt: 2 },
+      { src: 'vig-rect-b', lt: 3 }
+    ];
+    var ltRects = lightningGroup.querySelectorAll('.lt-rect');
+    pairs.forEach(function(p) {
+      var srcRect = document.getElementById(p.src);
+      var ltRect = ltRects[p.lt];
+      if (!srcRect || !ltRect) return;
+      ltRect.setAttribute('x', srcRect.getAttribute('x'));
+      ltRect.setAttribute('y', srcRect.getAttribute('y'));
+      ltRect.setAttribute('width', srcRect.getAttribute('width'));
+      ltRect.setAttribute('height', srcRect.getAttribute('height'));
+    });
+  }
 
   // ── Thunder SFX ──
   var sfxPaths = [
@@ -44,7 +129,6 @@
     if (window._audioMuted) return;
     if (sfxClips.length === 0) return;
 
-    // Pick a clip, avoiding repeat
     var idx;
     do {
       idx = Math.floor(Math.random() * sfxClips.length);
@@ -56,93 +140,63 @@
     clip.currentTime = 0;
 
     setTimeout(function() {
-      clip.play().catch(function() { /* autoplay blocked — ignore */ });
+      clip.play().catch(function() {});
     }, delay);
   }
 
   // ── Flash animation ──
   var timerId = null;
 
-  function flash(el, peakOpacity, riseMs, holdMs, fallMs, cb) {
-    if (!el) { if (cb) cb(); return; }
-    el.style.opacity = String(peakOpacity);
-    setTimeout(function() {
-      el.style.opacity = '0';
-      if (cb) setTimeout(cb, fallMs);
-    }, riseMs + holdMs);
+  function setFlash(opacity) {
+    if (lightningGroup) lightningGroup.style.opacity = String(opacity);
+  }
+
+  function setTint(opacity) {
+    if (tintEl) tintEl.style.opacity = String(opacity);
   }
 
   function doFlash() {
     var c = cfg();
-    if (!c.enabled) return;
-    if (!flashEl) return;
+    if (!c.enabled || !lightningGroup) return;
 
-    var peak = c.intensity * 0.12;
-    var tintPeak = c.tintStrength * 0.05;
+    // Sync geometry in case debug menu changed vignette size
+    syncGeometry();
+
+    var peak = c.intensity * 0.18;
+    var tintPeak = c.boardTint ? c.tintStrength * 0.05 : 0;
 
     // Primary flash
-    flashEl.style.transition = 'opacity 40ms ease-in';
-    flashEl.style.opacity = String(peak);
-
-    // Board tint (if enabled)
-    if (c.boardTint && tintEl) {
-      tintEl.style.transition = 'opacity 40ms ease-in';
-      tintEl.style.opacity = String(tintPeak);
-    }
+    setFlash(peak);
+    setTint(tintPeak);
 
     // Thunder SFX with random delay
-    var thunderDelay = 80 + Math.floor(Math.random() * 150);
-    playThunder(thunderDelay);
+    playThunder(80 + Math.floor(Math.random() * 150));
 
     // Primary flash off after 80ms
     setTimeout(function() {
-      flashEl.style.transition = 'opacity 60ms ease-out';
-      flashEl.style.opacity = '0';
-      if (c.boardTint && tintEl) {
-        tintEl.style.transition = 'opacity 60ms ease-out';
-        tintEl.style.opacity = '0';
-      }
+      setFlash(0);
+      setTint(0);
 
-      // Secondary flash after 70ms gap
+      // Secondary flash after 70ms gap (70% intensity)
       setTimeout(function() {
-        var secondPeak = peak * 0.7;
-        var secondTint = tintPeak * 0.7;
-
-        flashEl.style.transition = 'opacity 35ms ease-in';
-        flashEl.style.opacity = String(secondPeak);
-        if (c.boardTint && tintEl) {
-          tintEl.style.transition = 'opacity 35ms ease-in';
-          tintEl.style.opacity = String(secondTint);
-        }
+        setFlash(peak * 0.7);
+        setTint(tintPeak * 0.7);
 
         setTimeout(function() {
-          flashEl.style.transition = 'opacity 80ms ease-out';
-          flashEl.style.opacity = '0';
-          if (c.boardTint && tintEl) {
-            tintEl.style.transition = 'opacity 80ms ease-out';
-            tintEl.style.opacity = '0';
-          }
+          setFlash(0);
+          setTint(0);
         }, 70);
       }, 70);
 
-      // 40% chance of a bonus flicker 400-600ms later
+      // 40% chance of bonus flicker 400-600ms later
       if (Math.random() < 0.4) {
         var flickerDelay = 400 + Math.floor(Math.random() * 200);
         setTimeout(function() {
-          var flickerPeak = peak * 0.4;
-          flashEl.style.transition = 'opacity 30ms ease-in';
-          flashEl.style.opacity = String(flickerPeak);
-          if (c.boardTint && tintEl) {
-            tintEl.style.transition = 'opacity 30ms ease-in';
-            tintEl.style.opacity = String(flickerPeak * 0.3);
-          }
+          setFlash(peak * 0.4);
+          setTint(tintPeak * 0.3);
           setTimeout(function() {
-            flashEl.style.transition = 'opacity 60ms ease-out';
-            flashEl.style.opacity = '0';
-            if (c.boardTint && tintEl) {
-              tintEl.style.transition = 'opacity 60ms ease-out';
-              tintEl.style.opacity = '0';
-            }
+            setFlash(0);
+            setTint(0);
           }, 50);
         }, flickerDelay);
       }
@@ -162,16 +216,21 @@
 
   function restart() {
     if (timerId) { clearTimeout(timerId); timerId = null; }
+    setFlash(0);
+    setTint(0);
+    // Ensure SVG rects exist
+    createLightningRects();
     var c = cfg();
     if (c.enabled) scheduleNext();
-    // Reset opacity in case we're mid-flash
-    if (flashEl) flashEl.style.opacity = '0';
-    if (tintEl) tintEl.style.opacity = '0';
   }
 
   // ── Public API ──
   window._lightningRestart = restart;
 
-  // ── Self-start ──
-  restart();
+  // ── Self-start (wait for scene.js to create vignette SVG) ──
+  if (document.readyState === 'complete') {
+    restart();
+  } else {
+    window.addEventListener('load', restart);
+  }
 })();
