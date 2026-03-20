@@ -40,7 +40,7 @@ Editor.Sprites = {
     img.dataset.id = id; img.style.cursor = 'pointer';
     document.getElementById(layer).appendChild(img);
 
-    const sp = { id, file, x, y, w, h, rot, el: img, layer, hidden: false };
+    const sp = { id, file, x, y, w, h, rot, el: img, layer, hidden: false, flipX: false, flipY: false };
     C.allSprites.push(sp);
 
     img.onmousedown = e => {
@@ -56,12 +56,18 @@ Editor.Sprites = {
     return sp;
   },
 
-  // ── Apply position/size/rotation to SVG element ──
+  // ── Apply position/size/rotation/flip to SVG element ──
   apply(sp) {
     const el = sp.el, cx = sp.x + sp.w/2, cy = sp.y + sp.h/2;
     el.setAttribute('x', sp.x); el.setAttribute('y', sp.y);
     el.setAttribute('width', sp.w); el.setAttribute('height', sp.h);
-    el.setAttribute('transform', sp.rot ? `rotate(${sp.rot},${cx},${cy})` : '');
+    let t = '';
+    if (sp.rot) t += `rotate(${sp.rot},${cx},${cy}) `;
+    if (sp.flipX || sp.flipY) {
+      const sx = sp.flipX ? -1 : 1, sy = sp.flipY ? -1 : 1;
+      t += `translate(${cx},${cy}) scale(${sx},${sy}) translate(${-cx},${-cy})`;
+    }
+    el.setAttribute('transform', t.trim());
   },
 
   // ── Resize handle ──
@@ -71,8 +77,12 @@ Editor.Sprites = {
     Editor.Undo.push();
     const o = { x: sp.x, y: sp.y, w: sp.w, h: sp.h }, ar = o.w / o.h;
     const p0 = C.svgPt(e.clientX, e.clientY);
+    const rad = -(sp.rot || 0) * Math.PI / 180;
     const mv = e2 => {
-      const p = C.svgPt(e2.clientX, e2.clientY), dx = p.x - p0.x, dy = p.y - p0.y;
+      const p = C.svgPt(e2.clientX, e2.clientY), gdx = p.x - p0.x, gdy = p.y - p0.y;
+      // Rotate global deltas into sprite-local space
+      const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
+      const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
       if (e2.shiftKey) {
         const d = Math.abs(dx) > Math.abs(dy) ? dx : dy * ar;
         if (corner.includes('e')) sp.w = Math.max(20, o.w + d);

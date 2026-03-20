@@ -150,6 +150,10 @@
     <div class="layer-note">Drag rows to reorder. Cmd/Ctrl+C copies, Cmd/Ctrl+V pastes.</div>
     <div id="layersList"></div>
   </div>
+  <div class="shortcuts-row" style="margin-top:8px;display:flex;gap:4px">
+    <button class="tbtn" onclick="Editor.Shortcuts.toggle()" style="flex:1">? Shortcuts</button>
+    <button class="tbtn" onclick="Editor.Zoom.reset()">Reset Zoom</button>
+  </div>
   <div class="config-panel">
     <h3>Scene Config</h3>
     <textarea id="debug" readonly></textarea>
@@ -161,14 +165,16 @@
 </div>
 </div>
 
-<script src="editor-core.js?v=20260320"></script>
-<script src="editor-undo.js?v=20260320"></script>
-<script src="editor-models.js?v=20260320"></script>
-<script src="editor-sprites.js?v=20260320"></script>
-<script src="editor-objectives.js?v=20260320"></script>
-<script src="editor-lights.js?v=20260320"></script>
-<script src="editor-selection.js?v=20260320b"></script>
-<script src="editor-layers.js?v=20260320"></script>
-<script src="editor-persistence.js?v=20260320"></script>
-<script>Editor.Core.init();</script>
+<script src="editor-core.js?v=20260320c"></script>
+<script src="editor-undo.js?v=20260320c"></script>
+<script src="editor-models.js?v=20260320c"></script>
+<script src="editor-sprites.js?v=20260320c"></script>
+<script src="editor-objectives.js?v=20260320c"></script>
+<script src="editor-lights.js?v=20260320c"></script>
+<script src="editor-zoom.js?v=20260320c"></script>
+<script src="editor-shortcuts.js?v=20260320c"></script>
+<script src="editor-selection.js?v=20260320c"></script>
+<script src="editor-layers.js?v=20260320c"></script>
+<script src="editor-persistence.js?v=20260320c"></script>
+<script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Zoom.init();</script>
 </body></html>

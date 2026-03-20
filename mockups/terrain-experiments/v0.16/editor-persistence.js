@@ -11,7 +11,8 @@ Editor.Persistence = {
     const ranges = document.querySelectorAll('input[type=range]');
     const data = {
       sprites: C.allSprites.map(s => ({
-        file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden
+        file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden,
+        flipX: s.flipX || false, flipY: s.flipY || false
       })),
       models: C.allModels.map(m => m.kind === 'circle'
         ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
@@ -53,6 +54,8 @@ Editor.Persistence = {
         data.sprites.forEach(s => {
           const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layer, true);
           sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
+          sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
+          if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
         });
       }
 

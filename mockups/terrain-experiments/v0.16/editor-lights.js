@@ -6,6 +6,7 @@
 Editor.Lights = {
   lid: 0,
   selectedLight: null,
+  showCenters: true,
 
   // ── Add light button (called from sidebar, injected at init) ──
   injectSidebarControls() {
@@ -119,9 +120,25 @@ Editor.Lights = {
     circle.setAttribute('r', radius); circle.setAttribute('fill', `url(#${gradId})`);
     g.appendChild(circle);
 
+    // Center indicator (dot + crosshair)
+    const centerG = document.createElementNS(NS, 'g');
+    centerG.classList.add('light-center');
+    if (!this.showCenters) centerG.style.display = 'none';
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', x); dot.setAttribute('cy', y); dot.setAttribute('r', 3);
+    dot.setAttribute('fill', '#00d4ff'); dot.setAttribute('opacity', '0.9');
+    const ch1 = document.createElementNS(NS, 'line');
+    ch1.setAttribute('x1', x-8); ch1.setAttribute('y1', y); ch1.setAttribute('x2', x+8); ch1.setAttribute('y2', y);
+    ch1.setAttribute('stroke', '#00d4ff'); ch1.setAttribute('stroke-width', '0.8'); ch1.setAttribute('opacity', '0.5');
+    const ch2 = document.createElementNS(NS, 'line');
+    ch2.setAttribute('x1', x); ch2.setAttribute('y1', y-8); ch2.setAttribute('x2', x); ch2.setAttribute('y2', y+8);
+    ch2.setAttribute('stroke', '#00d4ff'); ch2.setAttribute('stroke-width', '0.8'); ch2.setAttribute('opacity', '0.5');
+    centerG.appendChild(ch1); centerG.appendChild(ch2); centerG.appendChild(dot);
+    g.appendChild(centerG);
+
     document.getElementById('lightLayer').appendChild(g);
 
-    const light = { id, x, y, color, radius, intensity, el: g, circle, grad, gradId };
+    const light = { id, x, y, color, radius, intensity, el: g, circle, grad, gradId, centerG };
     C.allLights.push(light);
 
     g.onmousedown = e => { e.stopPropagation(); this.selectLight(light); this.startDrag(e, light); };
@@ -134,6 +151,18 @@ Editor.Lights = {
     l.circle.setAttribute('cx', l.x); l.circle.setAttribute('cy', l.y);
     l.circle.setAttribute('r', l.radius);
     this.applySelectionRing(l);
+    // Update center indicator position
+    if (l.centerG) {
+      const els = l.centerG.children;
+      // line horiz
+      els[0].setAttribute('x1', l.x-8); els[0].setAttribute('y1', l.y);
+      els[0].setAttribute('x2', l.x+8); els[0].setAttribute('y2', l.y);
+      // line vert
+      els[1].setAttribute('x1', l.x); els[1].setAttribute('y1', l.y-8);
+      els[1].setAttribute('x2', l.x); els[1].setAttribute('y2', l.y+8);
+      // dot
+      els[2].setAttribute('cx', l.x); els[2].setAttribute('cy', l.y);
+    }
     // Update gradient
     l.grad.innerHTML = `<stop offset="0%" stop-color="${l.color}" stop-opacity="${l.intensity}"/>
       <stop offset="70%" stop-color="${l.color}" stop-opacity="${l.intensity * 0.3}"/>
@@ -173,6 +202,13 @@ Editor.Lights = {
     C.allLights.forEach(l => { l.el.remove(); l.grad.remove(); });
     C.allLights = [];
     this.selectedLight = null;
+  },
+
+  toggleCenters() {
+    this.showCenters = !this.showCenters;
+    Editor.Core.allLights.forEach(l => {
+      if (l.centerG) l.centerG.style.display = this.showCenters ? '' : 'none';
+    });
   },
 
   serialize() {
