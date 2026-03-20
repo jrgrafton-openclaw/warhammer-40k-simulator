@@ -7,6 +7,7 @@ Editor.Persistence = {
 
   save() {
     const C = Editor.Core;
+    C.updateDebug();
     const ranges = document.querySelectorAll('input[type=range]');
     const data = {
       sprites: C.allSprites.map(s => ({
