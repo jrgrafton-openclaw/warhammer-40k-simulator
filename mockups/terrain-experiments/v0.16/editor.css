@@ -66,11 +66,7 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 /* ── Selection rect ── */
 .sel-rect{fill:rgba(0,212,255,0.08);stroke:#00d4ff;stroke-width:1;stroke-dasharray:4,2;pointer-events:none}
 
-/* ── Objective size override for editor (battlefield is narrower than game view) ── */
-#objectives .obj-hex-wrap { width: 52px; height: 60px; }
-#objectives .obj-hex-wrap .obj-n { font-size: 14px; }
-#objectives .obj-hex-wrap .obj-l { font-size: 5px; letter-spacing: 1.8px; }
-#objectives .obj-area-ring { width: 8%; }
+/* ── Objective markers use shared battlefield.css defaults (no editor overrides) ── */
 
 /* ── Light controls in sidebar ── */
 .light-controls{margin:6px 0;padding:6px;background:#0a0e18;border:1px solid #1a2a3a;border-radius:4px;font-size:10px}
