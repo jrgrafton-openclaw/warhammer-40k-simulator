@@ -28,7 +28,8 @@
     fxOn: true, fxFrequency: 0.5, fxSpeed: 0.5, fxOpacity: 0.5,
     sparksOn: true, sparkOpacity: 0.3, sparkFrequency: 8, sparkSpeed: 1.0,
     wispsOn: true,
-    offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55
+    offboardBorders: false,
+    zoneVigDepth: 80, zoneVigOpacity: 0.25, zoneVigActiveOpacity: 0.55
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -362,11 +363,14 @@
   toggleRow(zoneBody, 'Borders', state.offboardBorders, function(on) {
     state.offboardBorders = on; applyOffboard(); save(state);
   });
-  sliderRow(zoneBody, 'Fill Opacity', 0, 0.15, 0.005, state.offboardFillOpacity, '', function(v) {
-    state.offboardFillOpacity = v; applyOffboard(); save(state);
+  sliderRow(zoneBody, 'Vignette Depth', 0, 200, 5, state.zoneVigDepth, 'px', function(v) {
+    state.zoneVigDepth = v; applyZoneVignettes(); save(state);
   });
-  sliderRow(zoneBody, 'Edge Softness', 30, 80, 1, state.offboardSoftness, '%', function(v) {
-    state.offboardSoftness = v; applyOffboard(); save(state);
+  sliderRow(zoneBody, 'Vignette Opacity (inactive)', 0, 1, 0.01, state.zoneVigOpacity, '', function(v) {
+    state.zoneVigOpacity = v; applyZoneVignettes(); save(state);
+  });
+  sliderRow(zoneBody, 'Vignette Opacity (active)', 0, 1, 0.01, state.zoneVigActiveOpacity, '', function(v) {
+    state.zoneVigActiveOpacity = v; applyZoneVignettes(); save(state);
   });
 
   // ══════════════════════════════════════════════════════
@@ -649,14 +653,14 @@
 
   function applyOffboard() {
     var zoneInfo = [
-      { cls: 'staging-zone-bg', gradId: 'zone-staging-grad', color: '0,212,255' },
-      { cls: 'ds-zone-bg', gradId: 'zone-ds-grad', color: '255,170,0' },
-      { cls: 'reserves-zone-bg', gradId: 'zone-reserves-grad', color: '186,126,255' }
+      { cls: 'staging-zone-bg', color: '0,212,255' },
+      { cls: 'ds-zone-bg', color: '255,170,0' },
+      { cls: 'reserves-zone-bg', color: '186,126,255' }
     ];
     zoneInfo.forEach(function(zi) {
       var rect = document.querySelector('.' + zi.cls);
       if (!rect) return;
-      // Borders — use style to override any CSS
+      rect.setAttribute('fill', 'none');
       if (state.offboardBorders) {
         rect.style.stroke = 'rgba(' + zi.color + ',0.2)';
         rect.style.strokeWidth = '1.5';
@@ -664,16 +668,49 @@
       } else {
         rect.style.stroke = 'none';
       }
-      // Gradient fill opacity (first stop)
-      var grad = document.getElementById(zi.gradId);
-      if (grad) {
-        var stops = grad.querySelectorAll('stop');
-        if (stops.length > 0) {
-          stops[0].setAttribute('stop-opacity', String(state.offboardFillOpacity));
+      rect.style.filter = 'none';
+    });
+  }
+
+  // ── Zone vignettes (4 edge rects per zone in #bf-svg-vignette) ──
+  var zoneVigKeys = ['staging', 'ds', 'reserves'];
+  var zoneVigZones = {
+    staging:  { x: -540, y: 20, w: 250, h: 488 },
+    ds:       { x: -270, y: 20, w: 250, h: 230 },
+    reserves: { x: -270, y: 278, w: 250, h: 230 }
+  };
+
+  function applyZoneVignettes() {
+    var depth = state.zoneVigDepth || 80;
+    var opacity = state.zoneVigOpacity != null ? state.zoneVigOpacity : 0.25;
+    window.__zoneVigActiveOpacity = state.zoneVigActiveOpacity != null ? state.zoneVigActiveOpacity : 0.55;
+
+    zoneVigKeys.forEach(function(key) {
+      var z = zoneVigZones[key];
+      var suffixes = ['-l', '-r', '-t', '-b'];
+      suffixes.forEach(function(s) {
+        var r = document.getElementById('zvig-rect-' + key + s);
+        var g = document.getElementById('zvig-' + key + s);
+        if (!r) return;
+        if (g) {
+          var stops = g.querySelectorAll('stop');
+          if (stops.length > 0) stops[0].setAttribute('stop-opacity', String(opacity));
+          if (stops.length > 1) stops[1].setAttribute('stop-opacity', String(opacity * 0.3));
         }
-        // Edge softness (gradient radius)
-        grad.setAttribute('r', state.offboardSoftness + '%');
-      }
+        if (s === '-l') {
+          r.setAttribute('x', String(z.x)); r.setAttribute('y', String(z.y));
+          r.setAttribute('width', String(depth)); r.setAttribute('height', String(z.h));
+        } else if (s === '-r') {
+          r.setAttribute('x', String(z.x + z.w - depth)); r.setAttribute('y', String(z.y));
+          r.setAttribute('width', String(depth)); r.setAttribute('height', String(z.h));
+        } else if (s === '-t') {
+          r.setAttribute('x', String(z.x)); r.setAttribute('y', String(z.y));
+          r.setAttribute('width', String(z.w)); r.setAttribute('height', String(depth));
+        } else if (s === '-b') {
+          r.setAttribute('x', String(z.x)); r.setAttribute('y', String(z.y + z.h - depth));
+          r.setAttribute('width', String(z.w)); r.setAttribute('height', String(depth));
+        }
+      });
     });
   }
 
@@ -700,6 +737,7 @@
     applyVignette();
     applyZones();
     applyOffboard();
+    applyZoneVignettes();
     applyFx();
   }
   if (document.readyState === 'complete') {
