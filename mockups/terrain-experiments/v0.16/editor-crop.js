@@ -198,6 +198,10 @@ Editor.Crop = {
   },
 
   /* ── Apply SVG clipPath to sprite ── */
+  // The clip is applied to a wrapper <g> around the sprite's <image>,
+  // NOT directly on the <image>. This way the SVG filter (drop shadow etc.)
+  // runs on the uncropped image (natural alpha edges), and the wrapper <g>
+  // clips the combined output. Result: no hard shadow at crop boundaries.
   _applyClip(sp) {
     this._removeClip(sp);
 
@@ -214,9 +218,6 @@ Editor.Crop = {
     const clipPath = document.createElementNS(NS, 'clipPath');
     clipPath.id = clipId;
     const clipRect = document.createElementNS(NS, 'rect');
-    // ClipPath is in the parent coordinate system (userSpaceOnUse).
-    // It needs the ROTATION transform so it rotates with the image,
-    // but NOT the flip transform (flip mirrors content within the same bbox).
     clipRect.setAttribute('x', sp.x + sp.w * cL);
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
@@ -226,8 +227,17 @@ Editor.Crop = {
     clipPath.appendChild(clipRect);
     defs.appendChild(clipPath);
 
-    sp.el.setAttribute('clip-path', `url(#${clipId})`);
+    // Wrap the <image> in a <g> and apply clip to the <g>.
+    // The filter stays on the <image> so it sees uncropped alpha.
+    const parent = sp.el.parentNode;
+    const wrapper = document.createElementNS(NS, 'g');
+    wrapper.id = clipId + '-wrap';
+    wrapper.setAttribute('clip-path', `url(#${clipId})`);
+    parent.insertBefore(wrapper, sp.el);
+    wrapper.appendChild(sp.el);
+
     sp._clipId = clipId;
+    sp._clipWrap = wrapper;
 
     Editor.Sprites.apply(sp);
   },
@@ -254,6 +264,16 @@ Editor.Crop = {
   /* ── Remove existing clip from sprite ── */
   _removeClip(sp) {
     sp.el.removeAttribute('clip-path');
+    // Unwrap the <g> wrapper if present
+    if (sp._clipWrap) {
+      const wrapper = sp._clipWrap;
+      const parent = wrapper.parentNode;
+      if (parent) {
+        parent.insertBefore(sp.el, wrapper);
+        wrapper.remove();
+      }
+      sp._clipWrap = null;
+    }
     if (sp._clipId) {
       const el = document.getElementById(sp._clipId);
       if (el) el.remove();
