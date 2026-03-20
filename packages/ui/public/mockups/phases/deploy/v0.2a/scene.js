@@ -294,7 +294,7 @@ simState.units = [
 // ── Initialise shared modules ────────────────────────────
 renderTerrain();
 initAllTooltips();
-initBoard({ initialScale: 0.5 });
+initBoard({ initialScale: 0.47 });
 initBattleControls();
 initModelInteraction();
 
@@ -305,7 +305,7 @@ initModelInteraction();
 // Use setCamera() so camera.js internal state (tx/ty/scale) stays in sync
 // with the DOM. Writing inner.style.transform directly causes a desync —
 // camera.js thinks tx=0 and the first drag snaps to centre.
-setCamera(200, 0, 0.5);
+setCamera(0, 0, 0.47);
 
 // ── Build terrain collision AABBs ────────────────────────
 var svgEl = document.getElementById('bf-svg');

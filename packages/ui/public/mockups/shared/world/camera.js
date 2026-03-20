@@ -2,21 +2,38 @@
  * camera.js — Board pan/zoom state and controls.
  *
  * Split from svg-renderer.js for maintainability.
+ *
+ * Pan limits are derived from MIN_ZOOM so that the reachable world-space
+ * edges are identical at every zoom level. At MIN_ZOOM the viewport exactly
+ * fills the content bounds (pan = 0). At higher zoom, panning lets you
+ * reach those same edges.
  */
 
 import { currentUnit, activeRangeTypes, callbacks } from '../state/store.js';
 
+// ── Zoom limits ────────────────────────────────────────
+var MIN_ZOOM = 0.47;
+var MAX_ZOOM = 3;
+
 // ── Pan / Zoom state (module-scoped) ───────────────────
-var scale = 0.5;
+var scale = MIN_ZOOM;
 var tx = 0;
 var ty = 0;
 
-// ── Content boundaries in SVG coordinates ──────────────
-// These define the world-space extent the user should be able to reach.
-var CONTENT_LEFT   = -560;   // staging zone left edge + margin
-var CONTENT_RIGHT  =  740;   // board right edge + margin
-var CONTENT_TOP    =  -20;   // top margin
-var CONTENT_BOTTOM =  548;   // board bottom + margin
+// ── Content boundaries (computed at init from MIN_ZOOM) ─
+// At MIN_ZOOM with tx/ty=0 the viewport shows exactly this rectangle.
+// These become the hard pan edges at every zoom level.
+var SVG_MID_X = 360;  // viewBox 720 / 2
+var SVG_MID_Y = 264;  // viewBox 528 / 2
+
+// Width bounds are screen-independent: 720 / MIN_ZOOM / 2
+var HALF_W = 720 / (2 * MIN_ZOOM);               // ≈766 SVG units
+var CONTENT_LEFT  = SVG_MID_X - HALF_W;           // ≈-406
+var CONTENT_RIGHT = SVG_MID_X + HALF_W;           // ≈1126
+
+// Height bounds depend on viewport aspect ratio — computed in initBoard()
+var CONTENT_TOP    = -300;  // safe defaults until initBoard runs
+var CONTENT_BOTTOM =  828;
 
 // ── Apply Transform (with content-aware clamping) ──────
 export function applyTx() {
@@ -24,41 +41,36 @@ export function applyTx() {
   var bf    = document.getElementById('battlefield');
   if (!inner) return;
 
-  // Clamp tx/ty so the user can always pan to see every content edge,
-  // but no further. The reachable world extent stays constant at all zoom levels.
   if (bf) {
     var bfW = bf.clientWidth;
     var bfH = bf.clientHeight;
 
-    // SVG viewBox is 720×528, centered in the inner element.
     // pxPerUnit converts SVG units → CSS pixels at the current scale.
     var pxPerUnit = (bfW / 720) * scale;
 
-    // SVG midpoints (viewBox centre)
-    var svgMidX = 360;
-    var svgMidY = 264;
-
     // Max positive tx = pan right enough to see leftmost content
-    var maxPositiveTx = (svgMidX - CONTENT_LEFT) * pxPerUnit - bfW / 2;
+    var maxPositiveTx = (SVG_MID_X - CONTENT_LEFT) * pxPerUnit - bfW / 2;
     // Max negative tx = pan left enough to see rightmost content
-    var maxNegativeTx = (CONTENT_RIGHT - svgMidX) * pxPerUnit - bfW / 2;
+    var maxNegativeTx = (CONTENT_RIGHT - SVG_MID_X) * pxPerUnit - bfW / 2;
 
     // Max positive ty = pan down enough to see topmost content
-    var maxPositiveTy = (svgMidY - CONTENT_TOP) * pxPerUnit - bfH / 2;
+    var maxPositiveTy = (SVG_MID_Y - CONTENT_TOP) * pxPerUnit - bfH / 2;
     // Max negative ty = pan up enough to see bottommost content
-    var maxNegativeTy = (CONTENT_BOTTOM - svgMidY) * pxPerUnit - bfH / 2;
+    var maxNegativeTy = (CONTENT_BOTTOM - SVG_MID_Y) * pxPerUnit - bfH / 2;
 
     var clampedPosTx = Math.max(0, maxPositiveTx);
     var clampedNegTx = Math.max(0, maxNegativeTx);
     var clampedPosTy = Math.max(0, maxPositiveTy);
     var clampedNegTy = Math.max(0, maxNegativeTy);
 
-    // Debug: log pan limits at each zoom level
+    // Debug: log pan limits when zoom changes
     if (!applyTx._lastScale || Math.abs(applyTx._lastScale - scale) > 0.01) {
+      var leftEdge  = SVG_MID_X - (clampedPosTx + bfW / 2) / pxPerUnit;
+      var rightEdge = SVG_MID_X + (clampedNegTx + bfW / 2) / pxPerUnit;
       console.log('[camera] scale=' + scale.toFixed(2) +
         ' panX=[' + (-clampedNegTx).toFixed(0) + ', +' + clampedPosTx.toFixed(0) + ']' +
         ' panY=[' + (-clampedNegTy).toFixed(0) + ', +' + clampedPosTy.toFixed(0) + ']' +
-        ' worldRangeX=' + ((clampedPosTx + clampedNegTx) / pxPerUnit).toFixed(0) + ' SVG units');
+        ' edges=[' + leftEdge.toFixed(0) + ', ' + rightEdge.toFixed(0) + ']');
       applyTx._lastScale = scale;
     }
 
@@ -80,7 +92,7 @@ export function setCamera(newTx, newTy, newScale) {
 }
 
 export function resetCamera(initialScale) {
-  scale = initialScale !== undefined ? initialScale : 0.5;
+  scale = initialScale !== undefined ? initialScale : MIN_ZOOM;
   tx = 0; ty = 0;
   applyTx();
 }
@@ -88,13 +100,30 @@ export function resetCamera(initialScale) {
 // ── initBoard — pan / zoom ─────────────────────────────
 export function initBoard(opts) {
   opts = opts || {};
-  var initialScale = opts.initialScale !== undefined ? opts.initialScale : 0.5;
+  var initialScale = opts.initialScale !== undefined ? opts.initialScale : MIN_ZOOM;
   scale = initialScale;
   tx = 0; ty = 0;
 
   var inner = document.getElementById('battlefield-inner');
   var bf    = document.getElementById('battlefield');
   if (!inner || !bf) return;
+
+  // ── Compute height bounds from actual viewport aspect ratio ──
+  // Width bounds (CONTENT_LEFT/RIGHT) are derived from MIN_ZOOM and the
+  // SVG viewBox width (720), so they're screen-independent.
+  // Height bounds depend on the viewport's aspect ratio because the SVG
+  // uses preserveAspectRatio="xMidYMid slice" (width determines ppu).
+  var bfW = bf.clientWidth;
+  var bfH = bf.clientHeight;
+  var HALF_H = (bfH / bfW) * 720 / (2 * MIN_ZOOM);
+  CONTENT_TOP    = SVG_MID_Y - HALF_H;
+  CONTENT_BOTTOM = SVG_MID_Y + HALF_H;
+
+  console.log('[camera] bounds L=' + CONTENT_LEFT.toFixed(0) +
+    ' R=' + CONTENT_RIGHT.toFixed(0) +
+    ' T=' + CONTENT_TOP.toFixed(0) +
+    ' B=' + CONTENT_BOTTOM.toFixed(0) +
+    ' (minZoom=' + MIN_ZOOM + ')');
 
   applyTx();
 
@@ -122,8 +151,8 @@ export function initBoard(opts) {
       clearTimeout(zoomEaseTimer);
       zoomEaseTimer = setTimeout(function(){ inner.classList.remove('zoom-easing'); }, 220);
     }
-    var zoomFactor = 1 + ((window.__zoomSensitivity || 5) / 50); // 5 → 1.1, 10 → 1.2
-    scale = Math.min(3, Math.max(.35, scale * (e.deltaY>0 ? 1/zoomFactor : zoomFactor)));
+    var zoomFactor = 1 + ((window.__zoomSensitivity || 5) / 50);
+    scale = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale * (e.deltaY > 0 ? 1 / zoomFactor : zoomFactor)));
     applyTx();
     clearTimeout(zoomSettleTimer);
     zoomSettleTimer = setTimeout(showRangeCirclesNow, 220);
@@ -144,7 +173,7 @@ export function initBoard(opts) {
 
   document.addEventListener('mousemove', function(e) {
     if (!isDragging) return;
-    var panMult = (window.__camPanSpeed || 5) / 5; // 5 → 1x, 10 → 2x
+    var panMult = (window.__camPanSpeed || 5) / 5;
     var dx = (e.clientX - lastMX) * panMult;
     var dy = (e.clientY - lastMY) * panMult;
     lastMX = e.clientX;
@@ -169,7 +198,7 @@ export function initBoard(opts) {
   var resetBtn = document.getElementById('reset-btn');
   if (resetBtn) {
     resetBtn.addEventListener('click', function() {
-      scale=initialScale; tx=0; ty=0; applyTx();
+      scale = initialScale; tx = 0; ty = 0; applyTx();
       if (currentUnit && activeRangeTypes.size > 0) {
         setTimeout(function(){
           if (typeof callbacks.updateRangeCircles === 'function') callbacks.updateRangeCircles(currentUnit);
