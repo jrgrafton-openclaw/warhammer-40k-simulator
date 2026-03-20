@@ -94,6 +94,24 @@ Editor.Selection = {
       C.selUI.appendChild(h);
     });
 
+    // Edge-midpoint handles (stretch in one dimension)
+    const edgeHandleSize = 8;
+    [
+      [s.x + s.w/2, s.y,       'n', edgeHandleSize, 4, 'ns-resize'],   // top edge
+      [s.x + s.w/2, s.y + s.h, 's', edgeHandleSize, 4, 'ns-resize'],   // bottom edge
+      [s.x,         s.y + s.h/2,'w', 4, edgeHandleSize, 'ew-resize'],   // left edge
+      [s.x + s.w,   s.y + s.h/2,'e', 4, edgeHandleSize, 'ew-resize'],   // right edge
+    ].forEach(([hx, hy, pos, hw, hh, cursor]) => {
+      const h = document.createElementNS(NS, 'rect');
+      h.setAttribute('x', hx - hw/2); h.setAttribute('y', hy - hh/2);
+      h.setAttribute('width', hw); h.setAttribute('height', hh);
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = cursor;
+      h.classList.add('sel-handle');
+      if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
+      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
+      C.selUI.appendChild(h);
+    });
+
     // Rotate handle
     const rh = document.createElementNS(NS, 'circle');
     rh.setAttribute('cx', cx); rh.setAttribute('cy', s.y - 16); rh.setAttribute('r', 4);
