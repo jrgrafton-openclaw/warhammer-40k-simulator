@@ -3,8 +3,8 @@
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Sprites = {
-  // Determine layer: top sprites go to spriteTop, floor sprites go to spriteFloor
-  getLayer(file, cat) { return cat === 'tRuinsTop' ? 'spriteTop' : 'spriteFloor'; },
+  // Determine layer type for a sprite
+  getLayerType(file, cat) { return cat === 'tRuinsTop' ? 'top' : 'floor'; },
 
   // ── Drag from thumbnail grid ──
   startThumbDrag(e, file, cat) {
@@ -22,7 +22,7 @@ Editor.Sprites = {
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
         Editor.Undo.push();
-        const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayer(file, cat));
+        const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayerType(file, cat));
         // Scatter terrain defaults to no drop shadow
         if (cat === 'tScatter' && sp) {
           sp.shadowMul = 0;
@@ -35,7 +35,8 @@ Editor.Sprites = {
   },
 
   // ── Add sprite to SVG ──
-  addSprite(file, x, y, w, h, rot, layer, skipSelect) {
+  // layerType: 'floor' or 'top' (for roof opacity). Sprites are direct SVG children.
+  addSprite(file, x, y, w, h, rot, layerType, skipSelect) {
     const C = Editor.Core, NS = C.NS;
     const id = 's' + (C.sid++);
     const img = document.createElementNS(NS, 'image');
@@ -44,9 +45,12 @@ Editor.Sprites = {
     img.setAttribute('preserveAspectRatio', 'none');
     if (rot) img.setAttribute('transform', `rotate(${rot},${x+w/2},${y+h/2})`);
     img.dataset.id = id; img.style.cursor = 'pointer';
-    document.getElementById(layer).appendChild(img);
+    // Insert directly into SVG before selUI for true z-order independence
+    const svg = C.svg;
+    const selUI = document.getElementById('selUI');
+    svg.insertBefore(img, selUI);
 
-    const sp = { id, file, x, y, w, h, rot, el: img, layer, hidden: false, flipX: false, flipY: false, shadowMul: 1.0 };
+    const sp = { id, file, x, y, w, h, rot, el: img, layerType: layerType || 'floor', hidden: false, flipX: false, flipY: false, shadowMul: 1.0 };
     C.allSprites.push(sp);
 
     img.onmousedown = e => {

@@ -46,8 +46,8 @@ Editor.Groups = {
       sp.el.parentNode.removeChild(sp.el);
       g.appendChild(sp.el);
       sp.groupId = id;
-      sp.originalLayer = sp.originalLayer || sp.layer;
-      sp.layer = id;
+      
+      
     });
 
     // Ensure selUI and dragRect stay last
@@ -81,9 +81,9 @@ Editor.Groups = {
     // Move sprite into the group <g>
     sp.el.parentNode.removeChild(sp.el);
     gEl.appendChild(sp.el);
-    sp.originalLayer = sp.originalLayer || sp.layer;
+    
     sp.groupId = groupId;
-    sp.layer = groupId;
+    
 
     Editor.Selection.deselect();
     Editor.Persistence.save();
@@ -121,18 +121,13 @@ Editor.Groups = {
     const gEl = document.getElementById(groupId);
     if (!gEl) return;
 
-    // Move sprites back to their original containers
+    // Move sprites back to being direct SVG children (insert before selUI)
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
+    const selUI = document.getElementById('selUI');
     sprites.forEach(sp => {
-      const targetLayer = sp.originalLayer || 'spriteFloor';
-      const container = document.getElementById(targetLayer);
-      if (container) {
-        gEl.removeChild(sp.el);
-        container.appendChild(sp.el);
-        sp.layer = targetLayer;
-      }
+      gEl.removeChild(sp.el);
+      svg.insertBefore(sp.el, selUI);
       delete sp.groupId;
-      delete sp.originalLayer;
     });
 
     // Remove the group <g> element
@@ -198,7 +193,7 @@ Editor.Groups = {
         const gEl = document.getElementById(sp.groupId);
         sp.el.parentNode.removeChild(sp.el);
         gEl.appendChild(sp.el);
-        sp.layer = sp.groupId;
+        // sprite stays in the group DOM
       }
     });
 
