@@ -144,6 +144,9 @@
       <div id="foglayer_03"><div class="image01"></div><div class="image02"></div></div>
     </div>
 
+    <!-- Lightning vignette flash (inverse-vignette: transparent center, lit edges) -->
+    <div id="lightning-vignette-flash" aria-hidden="true"></div>
+
     <!-- No viewport mask — fog is BEHIND the board, board occludes naturally -->
 
     <a class="backlink" href="../../../index.html#deploy" title="Back to mockup archive">← Mockups</a>
@@ -248,6 +251,9 @@
         <g id="layer-move-rulers"></g>
       </svg>
 
+      <!-- Lightning board tint (extremely subtle blue wash during flash) -->
+      <div id="lightning-board-tint" aria-hidden="true"></div>
+
     </div><!-- /battlefield-inner -->
 
     <!-- Effects canvas (explosions, sparks, debris) -->
@@ -350,7 +356,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
 <script src="fog-fx.js?v=20260318-edge11"></script>
 <script type="module" src="scene.js?v=20260319-rubber1"></script>
-<script src="debug-menu.js?v=20260319-rubber1"></script>
+<script src="lightning-fx.js?v=20260319-lightning1"></script>
+<script src="debug-menu.js?v=20260319-lightning1"></script>
 <!-- Fog world-space compensation — translate fogwrapper to track camera pan -->
 <script>
 (function initFogCompensation() {
