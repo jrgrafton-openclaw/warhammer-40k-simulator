@@ -48,8 +48,22 @@ export function applyTx() {
     // Max negative ty = pan up enough to see bottommost content
     var maxNegativeTy = (CONTENT_BOTTOM - svgMidY) * pxPerUnit - bfH / 2;
 
-    tx = Math.max(-Math.max(0, maxNegativeTx), Math.min(Math.max(0, maxPositiveTx), tx));
-    ty = Math.max(-Math.max(0, maxNegativeTy), Math.min(Math.max(0, maxPositiveTy), ty));
+    var clampedPosTx = Math.max(0, maxPositiveTx);
+    var clampedNegTx = Math.max(0, maxNegativeTx);
+    var clampedPosTy = Math.max(0, maxPositiveTy);
+    var clampedNegTy = Math.max(0, maxNegativeTy);
+
+    // Debug: log pan limits at each zoom level
+    if (!applyTx._lastScale || Math.abs(applyTx._lastScale - scale) > 0.01) {
+      console.log('[camera] scale=' + scale.toFixed(2) +
+        ' panX=[' + (-clampedNegTx).toFixed(0) + ', +' + clampedPosTx.toFixed(0) + ']' +
+        ' panY=[' + (-clampedNegTy).toFixed(0) + ', +' + clampedPosTy.toFixed(0) + ']' +
+        ' worldRangeX=' + ((clampedPosTx + clampedNegTx) / pxPerUnit).toFixed(0) + ' SVG units');
+      applyTx._lastScale = scale;
+    }
+
+    tx = Math.max(-clampedNegTx, Math.min(clampedPosTx, tx));
+    ty = Math.max(-clampedNegTy, Math.min(clampedPosTy, ty));
   }
 
   inner.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
