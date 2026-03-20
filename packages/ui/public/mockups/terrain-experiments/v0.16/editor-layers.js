@@ -23,20 +23,23 @@ Editor.Layers = {
       svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
       svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
     };
-    const spriteContainers = new Set(['spriteFloor', 'spriteTop']);
+    // Skip old containers and background elements
+    const skipIds = new Set(['selUI', 'dragRect', 'deployZones', 'bgImg',
+      'svgGroundGradient', 'svgGroundWarm', 'svgGroundDual', 'svgGroundHaze',
+      'svgGroundConcrete', 'svgGroundTactical', 'spriteFloor', 'spriteTop', 'cropOverlay']);
 
-    // Also recognize custom group <g> elements
     Array.from(svg.children).forEach(el => {
+      if (!el.id && el.tagName === 'rect' && !el.classList.contains('sel-rect')) return; // bg rect
+      if (!el.id && el.tagName === 'defs') return;
+      if (skipIds.has(el.id)) return;
       if (groupMeta[el.id]) {
         items.push({ type: 'group', groupId: el.id, svgEl: el, meta: groupMeta[el.id] });
-      } else if (spriteContainers.has(el.id)) {
-        Array.from(el.children).forEach(sprEl => {
-          const sp = C.allSprites.find(s => s.el === sprEl);
-          if (sp) items.push({ type: 'sprite', ref: sp, svgEl: sprEl, parentId: el.id });
-        });
       } else if (el.id && el.id.startsWith('group-')) {
-        // Custom sprite group
         items.push({ type: 'custom-group', groupId: el.id, svgEl: el });
+      } else {
+        // Individual sprite (direct SVG child)
+        const sp = C.allSprites.find(s => s.el === el);
+        if (sp) items.push({ type: 'sprite', ref: sp, svgEl: el });
       }
     });
 
@@ -323,7 +326,7 @@ Editor.Layers = {
     const sMulPct = Math.round(sMul * 100);
     row.innerHTML = `<img src="${C.spriteBasePath}${sp.file}">
       <div style="flex:1;min-width:0"><div class="lname">${sp.file.replace(/\.(png|jpg)/, '')}</div><div class="lmeta">${sp.layer === 'spriteTop' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div>
-      <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation()"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
+      <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation();this.closest('.layer-row').draggable=false" onmouseup="this.closest('.layer-row').draggable=true"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
       <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleVis('${sp.id}')">${sp.hidden ? '🔇' : '👁'}</button>
       ${(sp.cropL || sp.cropT || sp.cropR || sp.cropB) ? `<button class="lbtn" title="Reset crop" onclick="event.stopPropagation();Editor.Crop.resetCrop(Editor.Core.allSprites.find(s=>s.id==='${sp.id}'))">✂️</button>` : ''}
       <button class="lbtn" title="Duplicate" onclick="event.stopPropagation();Editor.Layers.dupSprite('${sp.id}')">📋</button>
