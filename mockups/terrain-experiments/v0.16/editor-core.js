@@ -92,12 +92,38 @@ Editor.Core = {
     });
   },
 
-  // ── Debug output ──
+  // ── Layer name → z-index mapping ──
+  layerIndex(layerName) {
+    const order = ['lightLayer','spriteFloor','spriteTop','svgRuins','svgScatter','modelLayer'];
+    const idx = order.indexOf(layerName);
+    return idx >= 0 ? idx : -1;
+  },
+
+  // ── Debug output — full scene config ──
   updateDebug() {
     if (!this.debug) return;
-    this.debug.value = JSON.stringify(this.allSprites.map(s => ({
-      id: s.id, file: s.file, x: Math.round(s.x), y: Math.round(s.y),
-      w: Math.round(s.w), h: Math.round(s.h), rot: s.rot, layer: s.layer
-    })), null, 1);
+    const config = {
+      sprites: this.allSprites.map(s => ({
+        id: s.id, file: s.file, x: Math.round(s.x), y: Math.round(s.y),
+        w: Math.round(s.w), h: Math.round(s.h), rot: s.rot,
+        layer: this.layerIndex(s.layer), layerName: s.layer, hidden: s.hidden || false
+      })),
+      models: this.allModels.map(m => m.kind === 'circle'
+        ? { kind: m.kind, x: Math.round(m.x), y: Math.round(m.y), r: m.r, stroke: m.s, icon: m.iconType }
+        : { kind: m.kind, x: Math.round(m.x), y: Math.round(m.y), w: m.w, h: m.h, stroke: m.s }),
+      lights: this.allLights.map(l => ({
+        id: l.id, x: Math.round(l.x), y: Math.round(l.y),
+        color: l.color, radius: l.radius, intensity: l.intensity
+      })),
+      objectives: (this.allObjectives || []).map(o => ({
+        idx: o.idx, leftPct: +o.leftPct.toFixed(2), topPct: +o.topPct.toFixed(2)
+      })),
+      settings: {
+        bg: document.getElementById('bgSel')?.value,
+        ruinsOpacity: parseInt(document.querySelectorAll('input[type=range]')[0]?.value || 92),
+        roofOpacity: parseInt(document.querySelectorAll('input[type=range]')[1]?.value || 85)
+      }
+    };
+    this.debug.value = JSON.stringify(config, null, 1);
   }
 };

@@ -35,8 +35,10 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 #battlefield{display:block;background:#030609;border:1px solid #1a2a3a;border-radius:4px}
 
 /* ── Bottom bar ── */
-.bottom{background:#0a0e14;border-top:1px solid #1a2a3a;padding:6px 12px;display:flex;gap:6px;align-items:center}
-#debug{flex:1;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:9px;height:50px;resize:none;padding:4px;border-radius:3px}
+.config-panel{border-top:1px solid #1a2a3a;padding-top:8px;margin-top:8px}
+.config-actions{display:flex;gap:4px;margin-top:4px}
+.config-actions .tbtn{flex:1;font-size:8px;padding:3px 6px}
+#debug{width:100%;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:8px;height:180px;resize:vertical;padding:4px;border-radius:3px;box-sizing:border-box}
 
 /* ── Drag ghost ── */
 .ghost{position:fixed;pointer-events:none;opacity:0.6;z-index:9999}
