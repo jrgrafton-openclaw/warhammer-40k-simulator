@@ -17,8 +17,9 @@ Editor.Layers = {
 
     // Walk SVG children, expand sprite containers, collect groups
     const groupMeta = {
-      modelLayer:  { name: 'Models',     icon: 'models' },
-      lightLayer:  { name: 'Lights',     icon: 'lights' }
+      modelLayer:     { name: 'Models',     icon: 'models' },
+      lightLayer:     { name: 'Lights',     icon: 'lights' },
+      objectiveLayer: { name: 'Objectives', icon: 'objectives' }
     };
     const spriteContainers = new Set(['spriteFloor', 'spriteTop']);
 
@@ -34,12 +35,6 @@ Editor.Layers = {
       }
       // Skip backgrounds, deployZones, svgRuins, svgScatter, selUI, dragRect
     });
-
-    // Add objectives as a virtual group (HTML overlay, always visually on top)
-    if (C.allObjectives.length > 0) {
-      items.push({ type: 'group', groupId: 'objectives-group', svgEl: null,
-        meta: { name: 'Objectives', icon: 'objectives' } });
-    }
 
     return items; // bottom-to-top
   },
@@ -60,15 +55,12 @@ Editor.Layers = {
         : this._createSpriteRow(item, C);
 
       const itemId = this._itemId(item);
-      const isObjectivesGroup = item.type === 'group' && item.groupId === 'objectives-group';
-      row.draggable = !isObjectivesGroup; // Objectives is HTML overlay, always on top
+      row.draggable = true;
       row.dataset.layerId = itemId;
 
-      if (!isObjectivesGroup) {
-        row.addEventListener('dragstart', () => {
-          this.draggedId = itemId; row.classList.add('dragging');
-        });
-      }
+      row.addEventListener('dragstart', () => {
+        this.draggedId = itemId; row.classList.add('dragging');
+      });
       row.addEventListener('dragend', () => {
         row.classList.remove('dragging'); this.draggedId = null;
       });
@@ -112,10 +104,12 @@ Editor.Layers = {
       count = C.allLights.length;
       meta = `${count} light${count !== 1 ? 's' : ''}`;
       iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#ffaa44" stroke-width="1.5"><circle cx="12" cy="10" r="5"/><line x1="10" y1="16" x2="14" y2="16"/><line x1="10" y1="18" x2="14" y2="18"/></svg>`;
-    } else {
+    } else if (item.groupId === 'objectiveLayer') {
       count = C.allObjectives.length;
       meta = `${count} marker${count !== 1 ? 's' : ''}`;
       iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#8090a0" stroke-width="1.5"><polygon points="12,3 21,8 21,16 12,21 3,16 3,8"/><text x="12" y="14" text-anchor="middle" font-size="8" fill="#8090a0" stroke="none">O</text></svg>`;
+    } else {
+      count = 0; meta = ''; iconSvg = '';
     }
 
     const row = document.createElement('div');
@@ -185,17 +179,7 @@ Editor.Layers = {
     };
 
     // Case 3: Group on anything → move the group's SVG <g> in DOM
-    if (dragIsGroup && dragItem.svgEl) {
-      // If target is the objectives group (HTML, no SVG element),
-      // "above objectives" = top of z-order = last before selUI
-      if (!targetItem.svgEl) {
-        _fixTrailingEls();
-        const selUI = document.getElementById('selUI');
-        svg.insertBefore(dragItem.svgEl, selUI);
-        Editor.Persistence.save(); this.rebuild();
-        return;
-      }
-
+    if (dragIsGroup) {
       const targetSvgRef = targetIsGroup
         ? targetItem.svgEl
         : targetItem.svgEl.parentNode; // sprite's container <g>
@@ -212,16 +196,8 @@ Editor.Layers = {
     // Case 4: Sprite on group → move sprite's container relative to the group
     if (!dragIsGroup && targetIsGroup) {
       const spriteContainer = dragItem.svgEl.parentNode;
-
-      if (!targetItem.svgEl) {
-        // Target is objectives (HTML) → move sprite container to top of SVG z-order
-        _fixTrailingEls();
-        const selUI = document.getElementById('selUI');
-        svg.insertBefore(spriteContainer, selUI);
-      } else {
-        svg.insertBefore(spriteContainer, targetItem.svgEl);
-        _fixTrailingEls();
-      }
+      svg.insertBefore(spriteContainer, targetItem.svgEl);
+      _fixTrailingEls();
 
       Editor.Persistence.save(); this.rebuild();
     }
