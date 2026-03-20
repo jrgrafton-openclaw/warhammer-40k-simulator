@@ -47,10 +47,36 @@ Editor.Layers = {
   rebuild() {
     const C = Editor.Core;
     const list = document.getElementById('layersList');
+    const svg = document.getElementById('battlefield');
     list.innerHTML = '';
 
     const zItems = this._buildZOrder();
     const displayItems = zItems.slice().reverse();
+
+    // Drop zone at top — dragging a group here puts it in front of everything
+    const topZone = document.createElement('div');
+    topZone.className = 'layer-drop-top';
+    topZone.style.cssText = 'height:4px;border-radius:2px;margin-bottom:2px;';
+    topZone.addEventListener('dragover', e => { e.preventDefault(); topZone.style.background = '#00d4ff'; topZone.style.height = '8px'; });
+    topZone.addEventListener('dragleave', () => { topZone.style.background = ''; topZone.style.height = '4px'; });
+    topZone.addEventListener('drop', e => {
+      e.preventDefault(); topZone.style.background = ''; topZone.style.height = '4px';
+      if (!this.draggedId) return;
+      const dragItem = zItems.find(z => this._itemId(z) === this.draggedId);
+      if (!dragItem) return;
+      const isGroup = dragItem.type === 'group' || dragItem.type === 'custom-group';
+      if (isGroup) {
+        Editor.Undo.push();
+        const selUI = document.getElementById('selUI');
+        svg.insertBefore(dragItem.svgEl, selUI);
+        const _selUI = document.getElementById('selUI');
+        const _dragRect = document.getElementById('dragRect');
+        if (_selUI) svg.appendChild(_selUI);
+        if (_dragRect) svg.appendChild(_dragRect);
+        Editor.Persistence.save(); this.rebuild();
+      }
+    });
+    list.appendChild(topZone);
 
     displayItems.forEach(item => {
       let row;
@@ -324,12 +350,21 @@ Editor.Layers = {
     const dragIsGroup = dragItem.type === 'group' || dragItem.type === 'custom-group';
     const targetIsGroup = targetItem.type === 'group' || targetItem.type === 'custom-group';
 
+    const _fixTrailingEls = () => {
+      const selUI = document.getElementById('selUI');
+      const dragRect = document.getElementById('dragRect');
+      if (selUI) svg.appendChild(selUI);
+      if (dragRect) svg.appendChild(dragRect);
+    };
+
+    // Sprite on sprite, same container → reorder within
     if (!dragIsGroup && !targetIsGroup &&
         dragItem.svgEl.parentNode === targetItem.svgEl.parentNode) {
       this.reorderBefore(dragItem.ref.id, targetItem.ref.id);
       return;
     }
 
+    // Sprite on sprite, different container → move sprite to other container
     if (!dragIsGroup && !targetIsGroup &&
         dragItem.svgEl.parentNode !== targetItem.svgEl.parentNode) {
       const src = dragItem.ref;
@@ -343,39 +378,29 @@ Editor.Layers = {
       return;
     }
 
-    const _fixTrailingEls = () => {
-      const selUI = document.getElementById('selUI');
-      const dragRect = document.getElementById('dragRect');
-      if (selUI) svg.appendChild(selUI);
-      if (dragRect) svg.appendChild(dragRect);
-    };
-
-    if (dragIsGroup) {
-      // Resolve target to a top-level SVG child
-      let targetSvgRef;
-      if (targetIsGroup) {
-        targetSvgRef = targetItem.svgEl;
-      } else {
-        // Target is a sprite — use its container as reference
-        targetSvgRef = targetItem.svgEl.parentNode;
-      }
-      // Display is reversed: top of panel = front (last in DOM)
-      // "drop above" in UI = after in DOM = in front visually
-      // insertBefore puts dragged BEHIND target, so use nextSibling for "above"
-      // Since the drop indicator already resolved, just insert before the target
-      if (targetSvgRef === dragItem.svgEl) { _fixTrailingEls(); return; }
-      // If target is after dragged in DOM, insert after target; otherwise before
-      svg.insertBefore(dragItem.svgEl, targetSvgRef);
+    // Group on group → reorder groups in SVG DOM
+    if (dragIsGroup && targetIsGroup) {
+      if (dragItem.svgEl === targetItem.svgEl) return;
+      svg.insertBefore(dragItem.svgEl, targetItem.svgEl);
       _fixTrailingEls();
       Editor.Persistence.save(); this.rebuild();
       return;
     }
 
-    if (!dragIsGroup && targetIsGroup) {
-      const spriteContainer = dragItem.svgEl.parentNode;
-      if (spriteContainer === targetItem.svgEl) { return; }
-      svg.insertBefore(spriteContainer, targetItem.svgEl);
+    // Group on sprite → resolve to sprite's container, insert before it
+    if (dragIsGroup && !targetIsGroup) {
+      const targetContainer = targetItem.svgEl.parentNode;
+      if (targetContainer === dragItem.svgEl) return;
+      svg.insertBefore(dragItem.svgEl, targetContainer);
       _fixTrailingEls();
+      Editor.Persistence.save(); this.rebuild();
+      return;
+    }
+
+    // Sprite on group → just select the sprite (don't move containers)
+    // Use addToGroup for custom groups instead (handled separately in custom group drop handler)
+    if (!dragIsGroup && targetIsGroup) {
+      // Don't move the sprite's entire container
       Editor.Persistence.save(); this.rebuild();
     }
   },
