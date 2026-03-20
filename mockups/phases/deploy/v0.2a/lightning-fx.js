@@ -1,13 +1,8 @@
 /**
- * lightning-fx.js — Vignette-edge lightning flashes for v0.2a.
+ * lightning-fx.js — Atmospheric effects for v0.2a.
  *
- * Two rendering modes:
- *   "board"       — SVG rects inside #bf-svg-vignette (lights up board edges)
- *   "screenspace" — CSS overlay at z-index 9 with mix-blend-mode:screen
- *                   (lights up dark gaps around the board)
- *
- * Screenspace can be clipped to #battlefield (excludes roster) or
- * cover the full viewport (includes roster).
+ * 1. Lightning flashes (two modes: board / screenspace)
+ * 2. Ambient music (Web Audio API with gain node for volume control)
  *
  * Reads config from window globals set by debug-menu.js.
  */
@@ -275,7 +270,71 @@
   // ── Public API ──
   window._lightningRestart = restart;
 
-  // ── Self-start ──
+  // ═══════════════════════════════════════════════════════
+  // AMBIENT MUSIC (Web Audio API)
+  // ═══════════════════════════════════════════════════════
+  var audioCtx = null;
+  var gainNode = null;
+  var audioEl = null;
+  var musicStarted = false;
+
+  function musicVol() {
+    return window._musicVolume !== undefined ? window._musicVolume : 0.5;
+  }
+  function musicEnabled() {
+    return window._musicEnabled !== undefined ? window._musicEnabled : true;
+  }
+
+  function initAudio() {
+    audioEl = document.getElementById('ambient-audio');
+    if (!audioEl) return;
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    var source = audioCtx.createMediaElementSource(audioEl);
+    gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+    source.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    window.__wh40kAudioGain = gainNode;
+    window.__wh40kAudioCtx = audioCtx;
+  }
+
+  function rampGain(target, dur) {
+    if (!gainNode || !audioCtx) return;
+    gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+    gainNode.gain.setValueAtTime(gainNode.gain.value, audioCtx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(target, audioCtx.currentTime + dur);
+  }
+
+  function startMusic() {
+    if (musicStarted) return;
+    musicStarted = true;
+    if (!audioCtx) initAudio();
+    if (!audioEl) return;
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    audioEl.play().catch(function() {});
+    var vol = musicEnabled() ? musicVol() : 0;
+    rampGain(vol, 1.5); // 1.5s fade-in
+  }
+
+  // Start music on first user interaction (autoplay policy)
+  function onFirstInteraction() {
+    startMusic();
+    document.removeEventListener('click', onFirstInteraction);
+    document.removeEventListener('keydown', onFirstInteraction);
+  }
+  document.addEventListener('click', onFirstInteraction);
+  document.addEventListener('keydown', onFirstInteraction);
+
+  // Public: update volume (called by debug menu)
+  window._musicUpdateVolume = function() {
+    if (!gainNode) return;
+    var vol = musicEnabled() ? musicVol() : 0;
+    rampGain(vol, 0.15);
+  };
+
+  // ═══════════════════════════════════════════════════════
+  // SELF-START
+  // ═══════════════════════════════════════════════════════
   if (document.readyState === 'complete') {
     restart();
   } else {
