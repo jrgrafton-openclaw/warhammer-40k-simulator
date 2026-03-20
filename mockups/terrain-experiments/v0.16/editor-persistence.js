@@ -33,6 +33,50 @@ Editor.Persistence = {
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
   },
 
+  importJSON() {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json,application/json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          if (!confirm('This will clear all current sprites, models, and lights. Continue?')) return;
+          // If data has the "output" format (layerType on sprites, stroke on models), convert it
+          if (data.sprites && data.sprites[0] && ('layerType' in data.sprites[0]) && !('cropL' in data.sprites[0])) {
+            // Convert from output JSON to localStorage format
+            data.sprites = data.sprites.map(s => ({
+              file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
+              layerType: s.layerType || 'floor', hidden: s.hidden || false,
+              flipX: s.flipX || false, flipY: s.flipY || false,
+              groupId: s.groupId || null,
+              cropL: s.crop?.l || 0, cropT: s.crop?.t || 0, cropR: s.crop?.r || 0, cropB: s.crop?.b || 0,
+              shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
+            }));
+            if (data.models) {
+              data.models = data.models.map(m => m.kind === 'circle'
+                ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)', iconType: m.icon || m.iconType }
+                : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)' });
+            }
+            if (data.settings) {
+              data.bg = data.settings.bg;
+              data.ruinsOpacity = data.settings.ruinsOpacity;
+              data.roofOpacity = data.settings.roofOpacity;
+            }
+          }
+          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+          location.reload();
+        } catch (err) {
+          alert('Invalid JSON file: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  },
+
   load() {
     const raw = localStorage.getItem(this.STORAGE_KEY);
     if (!raw) return;
