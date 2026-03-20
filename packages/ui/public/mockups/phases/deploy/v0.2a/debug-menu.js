@@ -193,8 +193,49 @@
       'Content:   [' + (c.left||0) + ', ' + (c.right||0) + '] × [' + (c.top||0) + ', ' + (c.bottom||0) + ']';
   }
 
-  // Update after modules load
-  window.addEventListener('load', function() { setTimeout(updateCamInfo, 100); });
+  // Rubber-band controls
+  subLabel(camBody, 'RUBBER BAND');
+
+  var rbDefaults = { enabled: true, stretch: 0.30, dampen: 200, duration: 400 };
+  var RB_KEY = 'wh40k-debug-v02a-rb';
+  function loadRB() {
+    try { var r = localStorage.getItem(RB_KEY); if (r) return Object.assign({}, rbDefaults, JSON.parse(r)); } catch(e) {}
+    return Object.assign({}, rbDefaults);
+  }
+  function saveRB(s) { try { localStorage.setItem(RB_KEY, JSON.stringify(s)); } catch(e) {} }
+  var rbState = loadRB();
+
+  function applyRB() {
+    if (typeof window.__setRubberBand === 'function') {
+      window.__setRubberBand(rbState);
+    } else if (window.__rubberBand) {
+      // Fallback: write directly
+      Object.assign(window.__rubberBand, rbState);
+    }
+  }
+
+  toggleRow(camBody, 'Enabled', rbState.enabled, function(on) {
+    rbState.enabled = on; saveRB(rbState); applyRB();
+  });
+  sliderRow(camBody, 'Stretch', 0.05, 0.8, 0.05, rbState.stretch, '', function(v) {
+    rbState.stretch = v; saveRB(rbState); applyRB();
+  });
+  sliderRow(camBody, 'Dampening', 50, 500, 10, rbState.dampen, 'px', function(v) {
+    rbState.dampen = v; saveRB(rbState); applyRB();
+  });
+  sliderRow(camBody, 'Bounce Duration', 100, 800, 50, rbState.duration, 'px', function(v) {
+    rbState.duration = v; saveRB(rbState); applyRB();
+  });
+
+  // Wire up after modules load
+  window.addEventListener('load', function() {
+    setTimeout(function() {
+      updateCamInfo();
+      // Wire setRubberBand from camera.js module
+      // camera.js exports setRubberBand — we import it via a global bridge
+      applyRB();
+    }, 100);
+  });
 
   // ══════════════════════════════════════════════════════
   // BACKGROUND SECTION

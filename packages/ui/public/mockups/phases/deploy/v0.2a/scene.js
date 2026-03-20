@@ -11,12 +11,15 @@ import { mapData } from '../../../shared/state/terrain-data.js';
 import { renderTerrain } from '../../../shared/world/terrain.js';
 import { buildTerrainAABBs } from '../../../shared/world/collision.js';
 import { initBoard, initBattleControls, initModelInteraction, getRangeInches,
-         renderModels, applyTx, setCamera } from '../../../shared/world/svg-renderer.js';
+         renderModels, applyTx, setCamera, setRubberBand } from '../../../shared/world/svg-renderer.js';
 import { initDeployment } from './deployment.js?v=20260314-deploy5';
 import '../../../shared/world/world-api.js';
 
 // ── Wire getRangeInches into the card builder ────────────
 setGetRangeInches(getRangeInches);
+
+// ── Expose setRubberBand globally for debug panel ────────
+window.__setRubberBand = setRubberBand;
 
 // ── Unit definitions ────────────────────────────────────
 // Imperium starts in the STAGING ZONE (x=-540 to -290, y=20 to 508).
