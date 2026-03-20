@@ -19,6 +19,7 @@ Editor.Core = {
   multiSel: [],
   sid: 0,  // sprite id counter
   clipboardSprites: [],
+  clipboardLights: [],
 
   // Image paths resolve to img/ subdirectory
   spriteBasePath: 'img/',

@@ -192,18 +192,39 @@ Editor.Selection = {
     // Undo: Ctrl/Cmd+Z
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); Editor.Undo.pop(); return; }
 
-    // Copy
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c' && C.multiSel.length) {
-      C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden }));
-      e.preventDefault(); return;
+    // Copy (sprites or lights)
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+      if (C.multiSel.length) {
+        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden }));
+        C.clipboardLights = [];
+        e.preventDefault(); return;
+      }
+      if (Editor.Lights.selectedLight) {
+        const l = Editor.Lights.selectedLight;
+        C.clipboardLights = [{ x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity }];
+        C.clipboardSprites = [];
+        e.preventDefault(); return;
+      }
+      return;
     }
-    // Paste
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v' && C.clipboardSprites.length) {
-      Editor.Undo.push();
-      this.deselect();
-      C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layer, true));
-      C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Persistence.save(); Editor.Layers.rebuild();
-      e.preventDefault(); return;
+    // Paste (sprites or lights)
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
+      if (C.clipboardSprites.length) {
+        Editor.Undo.push();
+        this.deselect();
+        C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layer, true));
+        C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Persistence.save(); Editor.Layers.rebuild();
+        e.preventDefault(); return;
+      }
+      if (C.clipboardLights.length) {
+        Editor.Undo.push();
+        C.clipboardLights.forEach(l => {
+          Editor.Lights.addLight(l.x + 20, l.y + 20, l.color, l.radius, l.intensity);
+        });
+        Editor.Persistence.save(); Editor.Layers.rebuild();
+        e.preventDefault(); return;
+      }
+      return;
     }
 
     if (e.key === 'Escape') { this.deselect(); return; }
