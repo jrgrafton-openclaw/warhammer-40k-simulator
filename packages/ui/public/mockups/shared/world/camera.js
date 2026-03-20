@@ -157,11 +157,12 @@ export function initBoard(opts) {
   initialScale = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, initialScale));
   scale = initialScale;
 
-  // Centre viewport on the content midpoint.
-  // tx offset = (contentMidX - svgMidX) * pxPerUnit  — shifts view to content centre.
+  // Start panned all the way left so the staging zone is fully visible.
+  // This means tx = max positive tx (pan right to see leftmost content).
   var pxPerUnit = (bfW / 720) * scale;
-  tx = (contentMidX - SVG_MID_X) * pxPerUnit;
-  ty = (contentMidY - SVG_MID_Y) * pxPerUnit;  // 264-264=0 usually
+  var maxPosTxInit = (SVG_MID_X - BOUND_LEFT) * pxPerUnit - bfW / 2;
+  tx = Math.max(0, maxPosTxInit);
+  ty = 0;
 
   applyTx();
 
@@ -245,10 +246,11 @@ export function initBoard(opts) {
   if (resetBtn) {
     resetBtn.addEventListener('click', function() {
       scale = initialScale;
-      // Re-centre on content midpoint
+      // Pan all the way left to show staging zone
       var ppu = (bfW / 720) * scale;
-      tx = (contentMidX - SVG_MID_X) * ppu;
-      ty = (contentMidY - SVG_MID_Y) * ppu;
+      var maxPosReset = (SVG_MID_X - BOUND_LEFT) * ppu - bfW / 2;
+      tx = Math.max(0, maxPosReset);
+      ty = 0;
       applyTx();
       if (currentUnit && activeRangeTypes.size > 0) {
         setTimeout(function(){
