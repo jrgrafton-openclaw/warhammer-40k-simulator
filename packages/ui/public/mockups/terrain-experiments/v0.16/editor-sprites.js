@@ -22,7 +22,13 @@ Editor.Sprites = {
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
         Editor.Undo.push();
-        this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayer(file, cat));
+        const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayer(file, cat));
+        // Scatter terrain defaults to no drop shadow
+        if (cat === 'tScatter' && sp) {
+          sp.shadowMul = 0;
+          if (Editor.Effects) Editor.Effects._applyToSprite(sp);
+          Editor.Layers.rebuild();
+        }
       }
     };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
@@ -40,7 +46,7 @@ Editor.Sprites = {
     img.dataset.id = id; img.style.cursor = 'pointer';
     document.getElementById(layer).appendChild(img);
 
-    const sp = { id, file, x, y, w, h, rot, el: img, layer, hidden: false, flipX: false, flipY: false };
+    const sp = { id, file, x, y, w, h, rot, el: img, layer, hidden: false, flipX: false, flipY: false, shadowMul: 1.0 };
     C.allSprites.push(sp);
 
     img.onmousedown = e => {
@@ -65,6 +71,8 @@ Editor.Sprites = {
     };
 
     if (!skipSelect) Editor.Selection.select(sp);
+    // Apply sprite grounding effects (guard: skip during persistence load, Effects.init runs after)
+    if (Editor.Effects && Editor.Effects._ready) Editor.Effects._applyToSprite(sp);
     C.updateDebug();
     Editor.Persistence.save();
     Editor.Layers.rebuild();

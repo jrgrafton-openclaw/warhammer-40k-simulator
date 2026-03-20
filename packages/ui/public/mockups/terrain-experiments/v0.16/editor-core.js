@@ -117,6 +117,7 @@ Editor.Core = {
         layer: this.layerIndex(s.originalLayer || s.layer), layerName: s.originalLayer || s.layer,
         hidden: s.hidden || false, flipX: s.flipX || false, flipY: s.flipY || false,
         groupId: s.groupId || null,
+        shadowMul: s.shadowMul != null ? +s.shadowMul.toFixed(2) : 1.0,
         crop: (s.cropL || s.cropT || s.cropR || s.cropB) ? { l: +(s.cropL||0).toFixed(3), t: +(s.cropT||0).toFixed(3), r: +(s.cropR||0).toFixed(3), b: +(s.cropB||0).toFixed(3) } : null
       })),
       models: this.allModels.map(m => m.kind === 'circle'
