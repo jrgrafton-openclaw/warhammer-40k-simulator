@@ -17,6 +17,7 @@ Editor.Shortcuts = {
         <div class="sc-section">
           <h4>Selection</h4>
           <div class="sc-row"><kbd>Click</kbd> Select sprite</div>
+          <div class="sc-row"><kbd>⇧ Click</kbd> Add/remove from selection</div>
           <div class="sc-row"><kbd>Drag</kbd> Drag-select multiple</div>
           <div class="sc-row"><kbd>Esc</kbd> Deselect all</div>
           <div class="sc-row"><kbd>⌘/Ctrl C</kbd> Copy</div>

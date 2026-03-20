@@ -15,8 +15,7 @@ Editor.Persistence = {
         layer: s.originalLayer || s.layer, hidden: s.hidden,
         flipX: s.flipX || false, flipY: s.flipY || false,
         groupId: s.groupId || null, originalLayer: s.originalLayer || null,
-        cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
-        _fullX: s._fullX, _fullY: s._fullY, _fullW: s._fullW, _fullH: s._fullH
+        cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0
       })),
       models: C.allModels.map(m => m.kind === 'circle'
         ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
@@ -65,10 +64,6 @@ Editor.Persistence = {
           if (s.groupId) { sp.groupId = s.groupId; sp.originalLayer = s.originalLayer || layerForAdd; }
           if (s.cropL || s.cropT || s.cropR || s.cropB) {
             sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
-            sp._fullX = s._fullX != null ? s._fullX : sp.x;
-            sp._fullY = s._fullY != null ? s._fullY : sp.y;
-            sp._fullW = s._fullW != null ? s._fullW : sp.w;
-            sp._fullH = s._fullH != null ? s._fullH : sp.h;
           }
         });
       }

@@ -45,6 +45,21 @@ Editor.Sprites = {
 
     img.onmousedown = e => {
       e.stopPropagation();
+      if (e.shiftKey) {
+        // Toggle sprite in/out of multi-selection
+        if (C.multiSel.includes(sp)) {
+          C.multiSel = C.multiSel.filter(s => s !== sp);
+          C.selected = C.multiSel[0] || null;
+        } else {
+          C.multiSel.push(sp);
+          C.selected = sp;
+        }
+        Editor.Lights.deselectLight();
+        Editor.Models.deselectModel();
+        Editor.Selection.drawSelectionUI();
+        Editor.Layers.rebuild();
+        return;
+      }
       if (!C.multiSel.includes(sp)) Editor.Selection.select(sp);
       Editor.Selection.startMoveMulti(e, sp);
     };
@@ -68,6 +83,8 @@ Editor.Sprites = {
       t += `translate(${cx},${cy}) scale(${sx},${sy}) translate(${-cx},${-cy})`;
     }
     el.setAttribute('transform', t.trim());
+    // Sync crop clipPath with current position
+    if (sp._clipId && Editor.Crop) Editor.Crop.updateClipPosition(sp);
   },
 
   // ── Resize handle ──
