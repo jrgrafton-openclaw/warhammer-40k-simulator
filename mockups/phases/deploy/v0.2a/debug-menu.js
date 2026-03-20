@@ -31,8 +31,8 @@
     offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55,
     offboardBrightnessInactive: 100, offboardBrightnessActive: 220,
     zoneVigDepth: 80, zoneVigOpacity: 0.95,
-    lightningOn: true, lightningIntensity: 0.7,
-    lightningFreqMin: 8, lightningFreqMax: 18,
+    lightningOn: true, lightningMode: 'screenspace', lightningIncludeRoster: false,
+    lightningIntensity: 0.7, lightningFreqMin: 8, lightningFreqMax: 18,
     lightningSfxVol: 0.25, lightningBoardTint: false, lightningTintStrength: 0.15
   };
 
@@ -504,6 +504,56 @@
   toggleRow(ltBody, 'Enabled', state.lightningOn, function(on) {
     state.lightningOn = on; applyLightning(); save(state);
   });
+
+  // Mode dropdown
+  (function() {
+    var row = document.createElement('div');
+    row.className = 'dbg-row';
+    var lbl = document.createElement('span');
+    lbl.className = 'dbg-row-label';
+    lbl.textContent = 'Mode';
+    var sel = document.createElement('select');
+    sel.className = 'dbg-select';
+    var modeOpts = [
+      { value: 'board', text: 'Board Only' },
+      { value: 'screenspace', text: 'Screenspace' }
+    ];
+    modeOpts.forEach(function(o) {
+      var opt = document.createElement('option');
+      opt.value = o.value;
+      opt.textContent = o.text;
+      if (o.value === state.lightningMode) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function() {
+      state.lightningMode = sel.value;
+      // Show/hide include-roster toggle
+      rosterRow.style.display = sel.value === 'screenspace' ? '' : 'none';
+      applyLightning(); save(state);
+    });
+    row.appendChild(lbl);
+    row.appendChild(sel);
+    ltBody.appendChild(row);
+
+    // Include Roster toggle (only visible in screenspace mode)
+    var rosterRow = document.createElement('div');
+    rosterRow.className = 'dbg-row';
+    rosterRow.style.display = state.lightningMode === 'screenspace' ? '' : 'none';
+    var rosterLbl = document.createElement('span');
+    rosterLbl.className = 'dbg-row-label';
+    rosterLbl.textContent = 'Include Roster';
+    var rosterTog = document.createElement('div');
+    rosterTog.className = 'dbg-toggle' + (state.lightningIncludeRoster ? ' on' : '');
+    rosterTog.addEventListener('click', function() {
+      var isOn = rosterTog.classList.toggle('on');
+      state.lightningIncludeRoster = isOn;
+      applyLightning(); save(state);
+    });
+    rosterRow.appendChild(rosterLbl);
+    rosterRow.appendChild(rosterTog);
+    ltBody.appendChild(rosterRow);
+  })();
+
   sliderRow(ltBody, 'Intensity', 0, 100, 1, Math.round(state.lightningIntensity * 100), '%', function(v) {
     state.lightningIntensity = v / 100; applyLightning(); save(state);
   });
@@ -823,6 +873,8 @@
 
   function applyLightning() {
     window._lightningEnabled = state.lightningOn;
+    window._lightningMode = state.lightningMode;
+    window._lightningIncludeRoster = state.lightningIncludeRoster;
     window._lightningIntensity = state.lightningIntensity;
     window._lightningFreqMin = state.lightningFreqMin * 1000;
     window._lightningFreqMax = state.lightningFreqMax * 1000;
