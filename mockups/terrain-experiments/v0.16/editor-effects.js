@@ -29,7 +29,11 @@ Editor.Effects = {
   // ── Apply correct filter to a single sprite ──
   _applyToSprite(sp) {
     const mul = sp.shadowMul != null ? sp.shadowMul : 1.0;
-    const filterId = this._getOrCreateFilter(mul);
+    // Counter-rotate shadow offset so shadows are consistent in screen space
+    const rot = sp.rot || 0;
+    const flipX = sp.flipX ? -1 : 1;
+    const flipY = sp.flipY ? -1 : 1;
+    const filterId = this._getOrCreateFilter(mul, rot, flipX, flipY);
     if (filterId) {
       sp.el.setAttribute('filter', `url(#${filterId})`);
     } else {
@@ -39,10 +43,12 @@ Editor.Effects = {
     sp.el.style.filter = '';
   },
 
-  // ── Get or create a filter for given shadow multiplier ──
-  _getOrCreateFilter(rawMul) {
+  // ── Get or create a filter for given shadow multiplier + rotation ──
+  _getOrCreateFilter(rawMul, rot, flipX, flipY) {
     // Quantise multiplier to nearest 0.1 to limit filter count
     const mul = Math.round((rawMul || 0) * 10) / 10;
+    // Quantise rotation to nearest 5° to limit filter count
+    const qRot = Math.round((rot || 0) / 5) * 5;
 
     const hasShadow = this.shadow.on && mul > 0;
     const hasFeather = this.feather.on;
@@ -50,23 +56,33 @@ Editor.Effects = {
 
     if (!hasShadow && !hasFeather && !hasGrade) return null;
 
-    // Build cache key from all active params
+    // Build cache key including rotation + flip for shadow direction
     const key = [
-      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul}` : '',
+      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
       hasFeather ? `f${this.feather.radius}` : '',
       hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : ''
     ].join('|');
 
     if (this._filterCache[key]) return this._filterCache[key];
 
+    // Compute counter-rotated shadow offset so shadow is consistent in screen space.
+    // The SVG filter operates in pre-transform (local) space, so we must inverse-rotate
+    // the desired screen-space offset to get the correct local offset.
+    const rad = -(qRot || 0) * Math.PI / 180;
+    const dx = this.shadow.dx;
+    const dy = this.shadow.dy;
+    const localDx = flipX * (dx * Math.cos(rad) + dy * Math.sin(rad));
+    const localDy = flipY * (-dx * Math.sin(rad) + dy * Math.cos(rad));
+
     const id = `spFx${this._filterId++}`;
-    this._buildFilter(id, hasShadow, hasFeather, hasGrade, mul);
+    this._buildFilter(id, hasShadow, hasFeather, hasGrade, mul, localDx, localDy);
     this._filterCache[key] = id;
     return id;
   },
 
   // ── Build a combined SVG filter ──
-  _buildFilter(id, hasShadow, hasFeather, hasGrade, shadowMul) {
+  // localDx/localDy: counter-rotated shadow offset for screen-space consistency
+  _buildFilter(id, hasShadow, hasFeather, hasGrade, shadowMul, localDx, localDy) {
     const NS = Editor.Core.NS;
     const defs = Editor.Core.svg.querySelector('defs');
 
@@ -138,8 +154,8 @@ Editor.Effects = {
 
       const off = document.createElementNS(NS, 'feOffset');
       off.setAttribute('in', 'spriteAlpha');
-      off.setAttribute('dx', this.shadow.dx);
-      off.setAttribute('dy', this.shadow.dy);
+      off.setAttribute('dx', localDx != null ? localDx.toFixed(2) : this.shadow.dx);
+      off.setAttribute('dy', localDy != null ? localDy.toFixed(2) : this.shadow.dy);
       off.setAttribute('result', 'offAlpha');
       f.appendChild(off);
 

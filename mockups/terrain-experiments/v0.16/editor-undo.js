@@ -15,7 +15,8 @@ Editor.Undo = {
         layerType: s.layerType || 'floor', hidden: s.hidden,
         flipX: s.flipX || false, flipY: s.flipY || false,
         cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
-        groupId: s.groupId || null
+        groupId: s.groupId || null,
+        shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
       })),
       models: C.allModels.map(m => m.kind === 'circle'
         ? { kind: 'circle', x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
@@ -37,9 +38,9 @@ Editor.Undo = {
     // Cancel active crop mode
     if (Editor.Crop && Editor.Crop.active) Editor.Crop.cancel();
 
-    // Remove existing sprites and their clips
+    // Remove existing sprites and their clips/wrappers
     C.allSprites.forEach(s => {
-      if (s._clipId) Editor.Crop._removeClip(s);
+      if (s._clipId || s._clipWrap) Editor.Crop._removeClip(s);
       s.el.remove();
     });
     C.allSprites = [];
@@ -80,17 +81,19 @@ Editor.Undo = {
       sp.cropT = s.cropT || 0;
       sp.cropR = s.cropR || 0;
       sp.cropB = s.cropB || 0;
+      sp.shadowMul = s.shadowMul != null ? s.shadowMul : 1.0;
 
       // Apply flip
       if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
 
-      // Move into group if needed
+      // Move into group if needed (handle crop wrappers)
       if (s.groupId) {
         sp.groupId = s.groupId;
         const gEl = document.getElementById(s.groupId);
         if (gEl) {
-          sp.el.parentNode.removeChild(sp.el);
-          gEl.appendChild(sp.el);
+          const elToMove = sp._clipWrap || sp.el;
+          if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
+          gEl.appendChild(elToMove);
         }
       }
     });
@@ -113,6 +116,9 @@ Editor.Undo = {
     snapshot.lights.forEach(l => Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true));
 
     Editor.Objectives.restorePositions(snapshot.objectives);
+
+    // Re-apply sprite effects (filters) with correct per-sprite shadowMul
+    if (Editor.Effects && Editor.Effects._ready) Editor.Effects.rebuildAll();
 
     // Ensure selUI and dragRect stay last
     const svg = document.getElementById('battlefield');
