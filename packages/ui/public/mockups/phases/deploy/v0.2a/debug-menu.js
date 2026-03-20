@@ -171,6 +171,32 @@
   }
 
   // ══════════════════════════════════════════════════════
+  // CAMERA SECTION (read-only info)
+  // ══════════════════════════════════════════════════════
+  var camBody = section('CAMERA');
+  var camInfo = document.createElement('div');
+  camInfo.className = 'dbg-cam-info';
+  camInfo.style.cssText = 'font:11px/1.6 monospace;color:#8af;padding:4px 8px;white-space:pre;';
+  camBody.appendChild(camInfo);
+
+  function updateCamInfo() {
+    var info = window.__cameraInfo || {};
+    var b = info.bounds || {};
+    var c = info.content || {};
+    camInfo.textContent =
+      'Min Zoom:  ' + (info.minZoom || 0).toFixed(3) + '\n' +
+      'Max Zoom:  ' + (info.maxZoom || 0).toFixed(1) + '\n' +
+      'Bounds L:  ' + (b.left || 0).toFixed(0) + '\n' +
+      'Bounds R:  ' + (b.right || 0).toFixed(0) + '\n' +
+      'Bounds T:  ' + (b.top || 0).toFixed(0) + '\n' +
+      'Bounds B:  ' + (b.bottom || 0).toFixed(0) + '\n' +
+      'Content:   [' + (c.left||0) + ', ' + (c.right||0) + '] × [' + (c.top||0) + ', ' + (c.bottom||0) + ']';
+  }
+
+  // Update after modules load
+  window.addEventListener('load', function() { setTimeout(updateCamInfo, 100); });
+
+  // ══════════════════════════════════════════════════════
   // BACKGROUND SECTION
   // ══════════════════════════════════════════════════════
   var bgBody = section('BACKGROUND');
