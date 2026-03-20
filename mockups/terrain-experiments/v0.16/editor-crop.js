@@ -171,6 +171,18 @@ Editor.Crop = {
     Editor.Selection.drawSelectionUI();
   },
 
+  /* ── Build the same transform string that apply() uses on the sprite ── */
+  _spriteTransform(sp) {
+    const cx = sp.x + sp.w / 2, cy = sp.y + sp.h / 2;
+    let t = '';
+    if (sp.rot) t += `rotate(${sp.rot},${cx},${cy}) `;
+    if (sp.flipX || sp.flipY) {
+      const sx = sp.flipX ? -1 : 1, sy = sp.flipY ? -1 : 1;
+      t += `translate(${cx},${cy}) scale(${sx},${sy}) translate(${-cx},${-cy})`;
+    }
+    return t.trim();
+  },
+
   /* ── Apply SVG clipPath to sprite ── */
   _applyClip(sp) {
     this._removeClip(sp);
@@ -188,11 +200,13 @@ Editor.Crop = {
     const clipPath = document.createElementNS(NS, 'clipPath');
     clipPath.id = clipId;
     const clipRect = document.createElementNS(NS, 'rect');
-    // Position clip relative to sprite's current x/y/w/h
     clipRect.setAttribute('x', sp.x + sp.w * cL);
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
     clipRect.setAttribute('height', sp.h * (1 - cT - cB));
+    // Apply same rotation/flip transform so clip aligns with the visual sprite
+    const t = this._spriteTransform(sp);
+    if (t) clipRect.setAttribute('transform', t);
     clipPath.appendChild(clipRect);
     defs.appendChild(clipPath);
 
@@ -215,6 +229,10 @@ Editor.Crop = {
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));
     clipRect.setAttribute('height', sp.h * (1 - cT - cB));
+    // Sync transform with current sprite rotation/flip
+    const t = this._spriteTransform(sp);
+    if (t) clipRect.setAttribute('transform', t);
+    else clipRect.removeAttribute('transform');
   },
 
   /* ── Remove existing clip from sprite ── */
