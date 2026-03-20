@@ -96,7 +96,14 @@ Editor.Sprites = {
     const C = Editor.Core;
     Editor.Undo.push();
     const cx = sp.x + sp.w/2, cy = sp.y + sp.h/2;
-    const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); sp.rot = Math.round(Math.atan2(p.x-cx, -(p.y-cy))*180/Math.PI); this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug(); };
+    const mv = e2 => {
+      const p = C.svgPt(e2.clientX, e2.clientY);
+      let deg = Math.atan2(p.x-cx, -(p.y-cy))*180/Math.PI;
+      if (e2.shiftKey) deg = Math.round(deg / 45) * 45;
+      else deg = Math.round(deg);
+      sp.rot = deg;
+      this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
+    };
     const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   }
