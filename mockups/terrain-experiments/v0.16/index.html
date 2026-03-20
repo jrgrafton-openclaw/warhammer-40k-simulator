@@ -42,6 +42,28 @@
   <div class="bg-row">
     <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('spriteTop').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'"><span style="font-size:10px;width:30px">85%</span>
   </div>
+  <h3>Sprite Grounding</h3>
+  <div class="fx-section">
+    <div class="toggle-row">
+      <button class="tbtn on" id="fxShadowBtn" onclick="Editor.Effects.toggleShadow(this)">Drop Shadow</button>
+      <button class="tbtn" id="fxFeatherBtn" onclick="Editor.Effects.toggleFeather(this)">Feathered Edges</button>
+      <button class="tbtn on" id="fxGradeBtn" onclick="Editor.Effects.toggleGrade(this)">Color Grade</button>
+    </div>
+    <div class="fx-controls" id="fxShadowControls">
+      <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="20" value="6" oninput="Editor.Effects.setShadowParam('blur',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">6px</span></label>
+      <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55" oninput="Editor.Effects.setShadowParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">55%</span></label>
+      <label><span class="fx-lbl">Offset X</span><input type="range" min="-10" max="10" value="3" oninput="Editor.Effects.setShadowParam('dx',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
+      <label><span class="fx-lbl">Offset Y</span><input type="range" min="-10" max="10" value="3" oninput="Editor.Effects.setShadowParam('dy',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
+    </div>
+    <div class="fx-controls" id="fxFeatherControls" style="display:none">
+      <label><span class="fx-lbl">Feather Radius</span><input type="range" min="1" max="30" value="10" oninput="Editor.Effects.setFeatherRadius(+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">10px</span></label>
+    </div>
+    <div class="fx-controls" id="fxGradeControls">
+      <label><span class="fx-lbl">Brightness</span><input type="range" min="20" max="120" value="75" oninput="Editor.Effects.setGradeParam('brightness',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">75%</span></label>
+      <label><span class="fx-lbl">Saturation</span><input type="range" min="0" max="150" value="70" oninput="Editor.Effects.setGradeParam('saturation',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">70%</span></label>
+      <label><span class="fx-lbl">Sepia</span><input type="range" min="0" max="50" value="8" oninput="Editor.Effects.setGradeParam('sepia',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">8%</span></label>
+    </div>
+  </div>
   <h3>Ruins — Floor</h3>
   <div class="thumb-grid" id="tRuinsFloor"></div>
   <h3>Ruins — Top</h3>
@@ -179,6 +201,7 @@
 <script src="editor-shortcuts.js?v=t1713987700"></script>
 <script src="editor-selection.js?v=t1713987700"></script>
 <script src="editor-layers.js?v=t1713987700"></script>
+<script src="editor-effects.js?v=t1713987700"></script>
 <script src="editor-persistence.js?v=t1713987700"></script>
-<script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Zoom.init();</script>
+<script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();</script>
 </body></html>
