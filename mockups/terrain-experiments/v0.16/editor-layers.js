@@ -238,9 +238,17 @@ Editor.Layers = {
     row.innerHTML = `<img src="${C.spriteBasePath}${sp.file}">
       <div style="flex:1;min-width:0"><div class="lname">${sp.file.replace(/\.(png|jpg)/, '')}</div><div class="lmeta">${sp.layer === 'spriteTop' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div></div>
       <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleVis('${sp.id}')">${sp.hidden ? '🔇' : '👁'}</button>
+      ${(sp.cropL || sp.cropT || sp.cropR || sp.cropB) ? `<button class="lbtn" title="Reset crop" onclick="event.stopPropagation();Editor.Crop.resetCrop(Editor.Core.allSprites.find(s=>s.id==='${sp.id}'))">✂️</button>` : ''}
       <button class="lbtn" title="Duplicate" onclick="event.stopPropagation();Editor.Layers.dupSprite('${sp.id}')">📋</button>
       <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Layers.delSprite('${sp.id}')">🗑</button>`;
-    row.onclick = () => { const s = C.allSprites.find(x => x.id === sp.id); if (s) Editor.Selection.select(s); };
+    row.onclick = (e) => {
+      const s = C.allSprites.find(x => x.id === sp.id); if (!s) return;
+      if (e.shiftKey) {
+        if (C.multiSel.includes(s)) { C.multiSel = C.multiSel.filter(x => x !== s); C.selected = C.multiSel[0] || null; }
+        else { C.multiSel.push(s); C.selected = s; }
+        Editor.Selection.drawSelectionUI(); this.rebuild();
+      } else { Editor.Selection.select(s); }
+    };
     return row;
   },
 

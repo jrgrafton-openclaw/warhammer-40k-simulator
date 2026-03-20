@@ -73,7 +73,7 @@ Editor.Selection = {
 
   drawSel() {
     const C = Editor.Core, NS = C.NS, s = C.selected;
-    if (!s) { C.selUI.style.display = 'none'; return; }
+    if (!s || (Editor.Crop && Editor.Crop.active)) { C.selUI.style.display = 'none'; return; }
     C.selUI.style.display = ''; C.selUI.innerHTML = '';
     const cx = s.x + s.w/2, cy = s.y + s.h/2;
 
