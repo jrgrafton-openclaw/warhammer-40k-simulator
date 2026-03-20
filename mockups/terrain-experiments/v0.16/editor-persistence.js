@@ -12,9 +12,9 @@ Editor.Persistence = {
     const data = {
       sprites: C.allSprites.map(s => ({
         file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot,
-        layer: s.originalLayer || s.layer, hidden: s.hidden,
+        layerType: s.layerType || 'floor', hidden: s.hidden,
         flipX: s.flipX || false, flipY: s.flipY || false,
-        groupId: s.groupId || null, originalLayer: s.originalLayer || null,
+        groupId: s.groupId || null,
         cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
         shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
       })),
@@ -57,12 +57,13 @@ Editor.Persistence = {
       // Restore sprites
       if (data.sprites) {
         data.sprites.forEach(s => {
-          const layerForAdd = s.originalLayer || s.layer || 'spriteFloor';
-          const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, layerForAdd, true);
+          // Map old layer names to layerType for backward compat
+          let lt = s.layerType || (s.layer === 'spriteTop' ? 'top' : 'floor');
+          const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, lt, true);
           sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
           sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
           if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
-          if (s.groupId) { sp.groupId = s.groupId; sp.originalLayer = s.originalLayer || layerForAdd; }
+          if (s.groupId) { sp.groupId = s.groupId; }
           if (s.cropL || s.cropT || s.cropR || s.cropB) {
             sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
           }

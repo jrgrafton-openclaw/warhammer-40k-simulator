@@ -4,7 +4,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/tokens/colors.css">
 <link rel="stylesheet" href="../../shared/components/battlefield.css">
-<link rel="stylesheet" href="editor.css?v=t1713988200">
+<link rel="stylesheet" href="editor.css?v=t1713989500">
 </head><body>
 <div class="main">
 <div class="sidebar left">
@@ -40,7 +40,7 @@
   </div>
   <h3>Roof Opacity</h3>
   <div class="bg-row">
-    <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('spriteTop').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'"><span style="font-size:10px;width:30px">85%</span>
+    <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="Editor.Core.allSprites.filter(s=>s.layerType==='top').forEach(s=>s.el.style.opacity=this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span style="font-size:10px;width:30px">85%</span>
   </div>
   <h3>Sprite Grounding</h3>
   <div class="fx-section">
@@ -189,19 +189,19 @@
 </div>
 </div>
 
-<script src="editor-core.js?v=t1713988200"></script>
-<script src="editor-undo.js?v=t1713988200"></script>
-<script src="editor-models.js?v=t1713988200"></script>
-<script src="editor-sprites.js?v=t1713988200"></script>
-<script src="editor-objectives.js?v=t1713988200"></script>
-<script src="editor-lights.js?v=t1713988200"></script>
-<script src="editor-groups.js?v=t1713988200"></script>
-<script src="editor-crop.js?v=t1713988200"></script>
-<script src="editor-zoom.js?v=t1713988200"></script>
-<script src="editor-shortcuts.js?v=t1713988200"></script>
-<script src="editor-selection.js?v=t1713988200"></script>
-<script src="editor-layers.js?v=t1713988200"></script>
-<script src="editor-effects.js?v=t1713988200"></script>
-<script src="editor-persistence.js?v=t1713988200"></script>
+<script src="editor-core.js?v=t1713989500"></script>
+<script src="editor-undo.js?v=t1713989500"></script>
+<script src="editor-models.js?v=t1713989500"></script>
+<script src="editor-sprites.js?v=t1713989500"></script>
+<script src="editor-objectives.js?v=t1713989500"></script>
+<script src="editor-lights.js?v=t1713989500"></script>
+<script src="editor-groups.js?v=t1713989500"></script>
+<script src="editor-crop.js?v=t1713989500"></script>
+<script src="editor-zoom.js?v=t1713989500"></script>
+<script src="editor-shortcuts.js?v=t1713989500"></script>
+<script src="editor-selection.js?v=t1713989500"></script>
+<script src="editor-layers.js?v=t1713989500"></script>
+<script src="editor-effects.js?v=t1713989500"></script>
+<script src="editor-persistence.js?v=t1713989500"></script>
 <script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();</script>
 </body></html>

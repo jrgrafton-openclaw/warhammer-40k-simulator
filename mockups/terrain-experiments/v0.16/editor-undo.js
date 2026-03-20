@@ -12,10 +12,10 @@ Editor.Undo = {
     const snapshot = {
       sprites: C.allSprites.map(s => ({
         id: s.id, file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot,
-        layer: s.layer, hidden: s.hidden,
+        layerType: s.layerType || 'floor', hidden: s.hidden,
         flipX: s.flipX || false, flipY: s.flipY || false,
         cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
-        groupId: s.groupId || null, originalLayer: s.originalLayer || null
+        groupId: s.groupId || null
       })),
       models: C.allModels.map(m => m.kind === 'circle'
         ? { kind: 'circle', x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
@@ -71,8 +71,7 @@ Editor.Undo = {
     C.sid = snapshot.sid;
     snapshot.sprites.forEach(s => {
       // Add to original layer first (or spriteFloor as fallback)
-      const addLayer = s.originalLayer || (s.groupId ? 'spriteFloor' : s.layer) || 'spriteFloor';
-      const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, addLayer, true);
+      const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType || 'floor', true);
       sp.hidden = s.hidden;
       sp.el.style.display = sp.hidden ? 'none' : '';
       sp.flipX = s.flipX || false;
@@ -88,8 +87,6 @@ Editor.Undo = {
       // Move into group if needed
       if (s.groupId) {
         sp.groupId = s.groupId;
-        sp.originalLayer = s.originalLayer;
-        sp.layer = s.groupId;
         const gEl = document.getElementById(s.groupId);
         if (gEl) {
           sp.el.parentNode.removeChild(sp.el);

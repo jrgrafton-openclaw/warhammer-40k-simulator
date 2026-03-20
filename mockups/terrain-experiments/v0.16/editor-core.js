@@ -114,7 +114,7 @@ Editor.Core = {
       sprites: this.allSprites.map(s => ({
         id: s.id, file: s.file, x: Math.round(s.x), y: Math.round(s.y),
         w: Math.round(s.w), h: Math.round(s.h), rot: s.rot,
-        layer: this.layerIndex(s.originalLayer || s.layer), layerName: s.originalLayer || s.layer,
+        layerType: s.layerType || 'floor',
         hidden: s.hidden || false, flipX: s.flipX || false, flipY: s.flipY || false,
         groupId: s.groupId || null,
         shadowMul: s.shadowMul != null ? +s.shadowMul.toFixed(2) : 1.0,

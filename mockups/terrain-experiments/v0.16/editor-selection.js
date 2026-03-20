@@ -309,7 +309,7 @@ Editor.Selection = {
     // Copy (sprites or lights)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
       if (C.multiSel.length) {
-        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layer: s.layer, hidden: s.hidden, flipX: s.flipX, flipY: s.flipY }));
+        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layerType: s.layerType, hidden: s.hidden, flipX: s.flipX, flipY: s.flipY }));
         C.clipboardLights = [];
         e.preventDefault(); return;
       }
@@ -326,7 +326,7 @@ Editor.Selection = {
       if (C.clipboardSprites.length) {
         Editor.Undo.push();
         this.deselect();
-        C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layer, true));
+        C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layerType || "floor", true));
         C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Persistence.save(); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
@@ -381,7 +381,7 @@ Editor.Selection = {
     // Duplicate
     if (e.key === 'd') {
       Editor.Undo.push();
-      C.multiSel = (C.multiSel.length ? C.multiSel : [C.selected]).map(s => Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layer, true));
+      C.multiSel = (C.multiSel.length ? C.multiSel : [C.selected]).map(s => Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layerType || "floor", true));
       C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Layers.rebuild();
     }
 
@@ -411,17 +411,17 @@ Editor.Selection = {
       this.drawSelectionUI(); C.updateDebug(); Editor.Persistence.save();
     }
 
-    // Z-order
+    // Z-order (sprites are direct SVG children)
     if (e.key === '=' || e.key === '+') {
-      const layer = document.getElementById(C.selected.layer);
+      const parent = C.selected.el.parentNode;
       const next = C.selected.el.nextElementSibling;
-      if (next) layer.insertBefore(next, C.selected.el);
+      if (next && next.id !== 'selUI' && next.id !== 'dragRect') parent.insertBefore(next, C.selected.el);
       Editor.Persistence.save(); Editor.Layers.rebuild();
     }
     if (e.key === '-') {
-      const layer = document.getElementById(C.selected.layer);
+      const parent = C.selected.el.parentNode;
       const prev = C.selected.el.previousElementSibling;
-      if (prev) layer.insertBefore(C.selected.el, prev);
+      if (prev) parent.insertBefore(C.selected.el, prev);
       Editor.Persistence.save(); Editor.Layers.rebuild();
     }
 
