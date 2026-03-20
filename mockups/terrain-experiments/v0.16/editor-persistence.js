@@ -19,7 +19,9 @@ Editor.Persistence = {
       objectives: Editor.Objectives.serialize(),
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ranges[0]?.value || 92,
-      roofOpacity: ranges[1]?.value || 85
+      roofOpacity: ranges[1]?.value || 85,
+      layerOrder: Array.from(document.getElementById('battlefield').children)
+        .map(el => el.id).filter(id => id)
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
   },
@@ -71,6 +73,15 @@ Editor.Persistence = {
       // Restore objective positions
       if (data.objectives) {
         Editor.Objectives.restorePositions(data.objectives);
+      }
+
+      // Restore SVG layer z-order
+      if (data.layerOrder) {
+        const svg = document.getElementById('battlefield');
+        data.layerOrder.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.parentNode === svg) svg.appendChild(el);
+        });
       }
 
       Editor.Selection.deselect();

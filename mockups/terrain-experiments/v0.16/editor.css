@@ -55,12 +55,11 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 .layer-row.hidden-sprite .lname{opacity:0.4;text-decoration:line-through}
 
 /* ── Layer group rows (Models, Lights) ── */
-.layer-row.layer-child{padding-left:14px;border-left:2px solid #1a2a3a;margin-left:6px;font-size:8px}
-.layer-row.layer-child:hover{background:#12222e}
-.layer-row.layer-child .lname{font-size:9px}
-.layer-row.layer-child .lmeta{font-size:7px}
-.layer-row.group-row{background:#0a1018;border-color:#1a2a3a}
+.layer-row.group-row{background:#0a1018;border-color:#1a2a3a;cursor:grab}
 .layer-row.group-row .lname{color:#00d4ff;font-weight:600}
+.layer-row.drop-above{border-top:2px solid #00d4ff}
+.layer-row.drop-below{border-bottom:2px solid #00d4ff}
+.layer-row .drag-hint{color:#304050;font-size:10px;cursor:grab;user-select:none;padding:0 2px}
 .layer-row .group-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .layer-row .group-icon svg{width:16px;height:16px}
 
