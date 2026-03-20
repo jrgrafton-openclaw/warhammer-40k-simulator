@@ -30,7 +30,10 @@
     wispsOn: true,
     offboardBorders: false, offboardFillOpacity: 0.04, offboardSoftness: 55,
     offboardBrightnessInactive: 100, offboardBrightnessActive: 220,
-    zoneVigDepth: 80, zoneVigOpacity: 0.95
+    zoneVigDepth: 80, zoneVigOpacity: 0.95,
+    lightningOn: true, lightningIntensity: 0.7,
+    lightningFreqMin: 8, lightningFreqMax: 18,
+    lightningSfxVol: 0.25, lightningBoardTint: false, lightningTintStrength: 0.15
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -493,6 +496,33 @@
     state.wispsOn = on; applyFx(); save(state);
   });
 
+  // ══════════════════════════════════════════════════════
+  // LIGHTNING SECTION
+  // ══════════════════════════════════════════════════════
+  var ltBody = section('LIGHTNING');
+
+  toggleRow(ltBody, 'Enabled', state.lightningOn, function(on) {
+    state.lightningOn = on; applyLightning(); save(state);
+  });
+  sliderRow(ltBody, 'Intensity', 0, 100, 1, Math.round(state.lightningIntensity * 100), '%', function(v) {
+    state.lightningIntensity = v / 100; applyLightning(); save(state);
+  });
+  sliderRow(ltBody, 'Min Interval (s)', 3, 30, 1, state.lightningFreqMin, 's', function(v) {
+    state.lightningFreqMin = v; applyLightning(); save(state);
+  });
+  sliderRow(ltBody, 'Max Interval (s)', 5, 45, 1, state.lightningFreqMax, 's', function(v) {
+    state.lightningFreqMax = v; applyLightning(); save(state);
+  });
+  sliderRow(ltBody, 'SFX Volume', 0, 100, 1, Math.round(state.lightningSfxVol * 100), '%', function(v) {
+    state.lightningSfxVol = v / 100; applyLightning(); save(state);
+  });
+  toggleRow(ltBody, 'Board Tint', state.lightningBoardTint, function(on) {
+    state.lightningBoardTint = on; applyLightning(); save(state);
+  });
+  sliderRow(ltBody, 'Tint Strength', 0, 100, 1, Math.round(state.lightningTintStrength * 100), '%', function(v) {
+    state.lightningTintStrength = v / 100; applyLightning(); save(state);
+  });
+
   // ── Append menu to body ───────────────────────────────
   document.body.appendChild(menu);
 
@@ -791,6 +821,17 @@
     });
   }
 
+  function applyLightning() {
+    window._lightningEnabled = state.lightningOn;
+    window._lightningIntensity = state.lightningIntensity;
+    window._lightningFreqMin = state.lightningFreqMin * 1000;
+    window._lightningFreqMax = state.lightningFreqMax * 1000;
+    window._lightningSfxVol = state.lightningSfxVol;
+    window._lightningBoardTint = state.lightningBoardTint;
+    window._lightningTintStrength = state.lightningTintStrength;
+    if (typeof window._lightningRestart === 'function') window._lightningRestart();
+  }
+
   function applyFx() {
     window._fogFxEnabled = state.fxOn;
     window._fogWispsEnabled = state.wispsOn;
@@ -815,6 +856,7 @@
     applyZones();
     applyOffboard();
     applyZoneVignettes();
+    applyLightning();
     applyFx();
   }
   if (document.readyState === 'complete') {
