@@ -33,7 +33,8 @@
     zoneVigDepth: 80, zoneVigOpacity: 0.95,
     lightningOn: true, lightningMode: 'screenspace', lightningGradientMask: true,
     lightningIntensity: 0.7, lightningFreqMin: 8, lightningFreqMax: 18,
-    lightningSfxVol: 0.25, lightningBoardTint: false, lightningTintStrength: 0.15
+    lightningSfxVol: 0.25, lightningBoardTint: false, lightningTintStrength: 0.15,
+    musicOn: true, musicVolume: 0.5
   };
 
   // ── Load / Save ───────────────────────────────────────
@@ -573,6 +574,18 @@
     state.lightningTintStrength = v / 100; applyLightning(); save(state);
   });
 
+  // ══════════════════════════════════════════════════════
+  // AUDIO SECTION
+  // ══════════════════════════════════════════════════════
+  var audioBody = section('AUDIO');
+
+  toggleRow(audioBody, 'Music', state.musicOn, function(on) {
+    state.musicOn = on; applyAudio(); save(state);
+  });
+  sliderRow(audioBody, 'Music Volume', 0, 100, 1, Math.round(state.musicVolume * 100), '%', function(v) {
+    state.musicVolume = v / 100; applyAudio(); save(state);
+  });
+
   // ── Append menu to body ───────────────────────────────
   document.body.appendChild(menu);
 
@@ -884,6 +897,12 @@
     if (typeof window._lightningRestart === 'function') window._lightningRestart();
   }
 
+  function applyAudio() {
+    window._musicEnabled = state.musicOn;
+    window._musicVolume = state.musicVolume;
+    if (typeof window._musicUpdateVolume === 'function') window._musicUpdateVolume();
+  }
+
   function applyFx() {
     window._fogFxEnabled = state.fxOn;
     window._fogWispsEnabled = state.wispsOn;
@@ -909,6 +928,7 @@
     applyOffboard();
     applyZoneVignettes();
     applyLightning();
+    applyAudio();
     applyFx();
   }
   if (document.readyState === 'complete') {
