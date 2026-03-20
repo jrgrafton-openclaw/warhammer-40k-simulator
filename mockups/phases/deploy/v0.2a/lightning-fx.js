@@ -20,7 +20,7 @@
     return {
       enabled:        window._lightningEnabled !== undefined ? window._lightningEnabled : true,
       mode:           window._lightningMode || 'screenspace',
-      includeRoster:  window._lightningIncludeRoster !== undefined ? window._lightningIncludeRoster : false,
+      gradientMask:   window._lightningGradientMask !== undefined ? window._lightningGradientMask : true,
       intensity:      window._lightningIntensity !== undefined ? window._lightningIntensity : 0.7,
       freqMin:        window._lightningFreqMin !== undefined ? window._lightningFreqMin : 8000,
       freqMax:        window._lightningFreqMax !== undefined ? window._lightningFreqMax : 18000,
@@ -111,39 +111,34 @@
   var screenOverlay = null;
 
   function ensureScreenOverlay() {
-    if (screenOverlay) return;
-    screenOverlay = document.createElement('div');
-    screenOverlay.id = 'lightning-screen-flash';
-    screenOverlay.setAttribute('aria-hidden', 'true');
-    screenOverlay.style.cssText =
-      'pointer-events:none;' +
-      'inset:0;' +
-      'opacity:0;' +
-      'mix-blend-mode:screen;' +
-      'background:radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(' + FLASH_COLOR + ',0.12) 70%, rgba(' + FLASH_COLOR + ',0.18) 100%);';
-    applyScreenPosition();
-    document.body.appendChild(screenOverlay);
+    if (!screenOverlay) {
+      screenOverlay = document.createElement('div');
+      screenOverlay.id = 'lightning-screen-flash';
+      screenOverlay.setAttribute('aria-hidden', 'true');
+      screenOverlay.style.cssText =
+        'pointer-events:none;' +
+        'position:absolute;' +
+        'inset:0;' +
+        'z-index:9;' +
+        'opacity:0;' +
+        'mix-blend-mode:screen;';
+      var bf = document.getElementById('battlefield');
+      if (bf) bf.appendChild(screenOverlay);
+      else document.body.appendChild(screenOverlay);
+    }
+    applyScreenBackground();
   }
 
-  function applyScreenPosition() {
+  function applyScreenBackground() {
     if (!screenOverlay) return;
     var c = cfg();
-    if (c.includeRoster) {
-      // Full viewport — position fixed
-      screenOverlay.style.position = 'fixed';
-      screenOverlay.style.zIndex = '9999';
-      // Move to body if not already there
-      if (screenOverlay.parentNode !== document.body) {
-        document.body.appendChild(screenOverlay);
-      }
+    if (c.gradientMask) {
+      // Inverse-vignette: transparent centre, flash at edges
+      screenOverlay.style.background =
+        'radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(' + FLASH_COLOR + ',0.12) 70%, rgba(' + FLASH_COLOR + ',0.18) 100%)';
     } else {
-      // Battlefield only — position absolute inside #battlefield
-      screenOverlay.style.position = 'absolute';
-      screenOverlay.style.zIndex = '9';
-      var bf = document.getElementById('battlefield');
-      if (bf && screenOverlay.parentNode !== bf) {
-        bf.appendChild(screenOverlay);
-      }
+      // Flat fill: uniform flash across entire play area
+      screenOverlay.style.background = 'rgba(' + FLASH_COLOR + ',0.14)';
     }
   }
 
@@ -212,7 +207,6 @@
       syncBoardGeometry();
     } else {
       ensureScreenOverlay();
-      applyScreenPosition();
     }
 
     var peak = c.mode === 'board' ? c.intensity * 0.18 : c.intensity * 1.0;
@@ -273,7 +267,6 @@
       createBoardRects();
     } else {
       ensureScreenOverlay();
-      applyScreenPosition();
     }
 
     if (c.enabled) scheduleNext();
