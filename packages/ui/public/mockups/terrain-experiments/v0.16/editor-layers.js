@@ -9,9 +9,51 @@ Editor.Layers = {
   draggedId: null,
   expandedGroups: { modelLayer: false, lightLayer: false },
 
-  /* ── Build the unified z-order list from SVG DOM ── */
+  /* ── Build the unified z-order list ── */
+  /* Phase 1: Uses EditorState.zOrder when available, falls back to DOM walk. */
   _buildZOrder() {
     const C = Editor.Core;
+    const S = Editor.State;
+
+    // If EditorState has a populated zOrder, use it (Phase 1 path)
+    if (S.zOrder.length > 0) {
+      return this._buildZOrderFromState(S, C);
+    }
+    // Fallback: walk the DOM (legacy path)
+    return this._buildZOrderFromDOM(C);
+  },
+
+  /* Build z-order items from EditorState.zOrder array */
+  _buildZOrderFromState(S, C) {
+    const groupMeta = {
+      modelLayer:      { name: 'Models',      icon: 'models' },
+      lightLayer:      { name: 'Lights',      icon: 'lights' },
+      objectiveRings:  { name: 'Obj Rings',   icon: 'obj-rings' },
+      objectiveHexes:  { name: 'Obj Hexes',   icon: 'obj-hexes' },
+      svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
+      svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
+    };
+    const items = [];
+    for (var i = 0; i < S.zOrder.length; i++) {
+      var entry = S.zOrder[i];
+      if (entry.type === 'sprite') {
+        var sp = S.findSprite(entry.id);
+        if (sp) items.push({ type: 'sprite', ref: sp, svgEl: S.getSpriteRootEl(sp) });
+      } else if (entry.type === 'group') {
+        var el = document.getElementById(entry.id);
+        if (el) items.push({ type: 'custom-group', groupId: entry.id, svgEl: el });
+      } else if (entry.type === 'builtin') {
+        var el2 = document.getElementById(entry.id);
+        if (el2 && groupMeta[entry.id]) {
+          items.push({ type: 'group', groupId: entry.id, svgEl: el2, meta: groupMeta[entry.id] });
+        }
+      }
+    }
+    return items;
+  },
+
+  /* Legacy DOM-walking z-order builder (fallback) */
+  _buildZOrderFromDOM(C) {
     const svg = document.getElementById('battlefield');
     const items = [];
 
@@ -23,19 +65,16 @@ Editor.Layers = {
       svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
       svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
     };
-    // Skip old containers and background elements
     const skipIds = new Set(['selUI', 'dragRect', 'deployZones', 'bgImg',
       'svgGroundGradient', 'svgGroundWarm', 'svgGroundDual', 'svgGroundHaze',
       'svgGroundConcrete', 'svgGroundTactical', 'cropOverlay']);
-    // Legacy container IDs — scan their children for sprites placed by old code
     const legacyContainers = new Set(['spriteFloor', 'spriteTop']);
 
     Array.from(svg.children).forEach(el => {
-      if (!el.id && el.tagName === 'rect' && !el.classList.contains('sel-rect')) return; // bg rect
+      if (!el.id && el.tagName === 'rect' && !el.classList.contains('sel-rect')) return;
       if (!el.id && el.tagName === 'defs') return;
       if (skipIds.has(el.id)) return;
       if (legacyContainers.has(el.id)) {
-        // Scan children of old spriteFloor/spriteTop for sprites (backward compat)
         Array.from(el.children).forEach(child => {
           const sp = C.allSprites.find(s => s.el === child);
           if (sp) items.push({ type: 'sprite', ref: sp, svgEl: child });
@@ -47,12 +86,10 @@ Editor.Layers = {
       } else if (el.id && el.id.startsWith('group-')) {
         items.push({ type: 'custom-group', groupId: el.id, svgEl: el });
       } else {
-        // Individual sprite (direct SVG child, or inside a crop wrapper <g>)
         let sp = C.allSprites.find(s => s.el === el);
         if (sp) {
           items.push({ type: 'sprite', ref: sp, svgEl: el });
         } else if (el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
-          // Crop wrapper <g> — find the sprite inside
           sp = C.allSprites.find(s => s._clipWrap === el);
           if (sp) items.push({ type: 'sprite', ref: sp, svgEl: el });
         }
@@ -114,6 +151,7 @@ Editor.Layers = {
       const _dragRect = document.getElementById('dragRect');
       if (_selUI) svg.appendChild(_selUI);
       if (_dragRect) svg.appendChild(_dragRect);
+      Editor.State.syncZOrderFromDOM();
       Editor.Persistence.save(); this.rebuild();
     });
     list.appendChild(topZone);
@@ -453,6 +491,7 @@ Editor.Layers = {
         if (dragRect) svg.appendChild(dragRect);
       };
       _fix();
+      Editor.State.syncZOrderFromDOM();
       Editor.Persistence.save(); this.rebuild();
       return;
     }
@@ -507,6 +546,7 @@ Editor.Layers = {
     }
 
     _fixTrailingEls();
+    Editor.State.syncZOrderFromDOM();
     Editor.Persistence.save(); this.rebuild();
   },
 
@@ -573,6 +613,7 @@ Editor.Layers = {
         gEl.insertBefore(srcSp.el, sp.el);
       }
 
+      Editor.State.syncZOrderFromDOM();
       Editor.Persistence.save();
       this.rebuild();
     });
@@ -589,6 +630,7 @@ Editor.Layers = {
     C.allSprites = C.allSprites.filter(s => s !== src);
     const idx = C.allSprites.indexOf(target);
     C.allSprites.splice(idx, 0, src);
+    Editor.State.syncZOrderFromDOM();
     Editor.Persistence.save(); this.rebuild();
   },
 

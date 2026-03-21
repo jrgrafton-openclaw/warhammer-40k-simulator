@@ -84,6 +84,7 @@ function loadEditor() {
   // Load all editor modules in order
   const editorDir = path.resolve(__dirname, '..');
   const modules = [
+    'editor-state.js',
     'editor-core.js', 'editor-undo.js', 'editor-models.js', 'editor-sprites.js',
     'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
     'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',

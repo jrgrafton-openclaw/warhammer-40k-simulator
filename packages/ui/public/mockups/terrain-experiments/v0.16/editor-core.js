@@ -40,6 +40,8 @@ Editor.Core = {
     Editor.Selection.init();
     Editor.Sprites.initFileDrop();
     Editor.Persistence.load();
+    Editor.State.syncFromCore();
+    Editor.State.syncZOrderFromDOM();
     Editor.Layers.rebuild();
     this.updateDebug();
   },

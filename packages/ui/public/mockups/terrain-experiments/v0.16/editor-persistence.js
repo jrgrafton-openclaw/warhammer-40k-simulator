@@ -1,5 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    Editor Persistence — localStorage save/load
+   Phase 1: Uses EditorState as the serialization source.
+   zOrder is now an explicit array — no more DOM-walking heuristics.
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Persistence = {
@@ -7,96 +9,107 @@ Editor.Persistence = {
 
   save() {
     const C = Editor.Core;
+    const S = Editor.State;
     C.updateDebug();
+
+    // Sync EditorState from Core before serializing
+    S.syncFromCore();
+    S.syncZOrderFromDOM();
+
     const ranges = document.querySelectorAll('input[type=range]');
-    // Build sprites in z-order (DOM order) instead of allSprites order
+
+    // Build sprites in z-order using EditorState.zOrder
     const orderedSprites = [];
-    const svgEl = document.getElementById('battlefield');
-    Array.from(svgEl.children).forEach(el => {
-      let sp = C.allSprites.find(s => s.el === el);
-      if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
-        sp = C.allSprites.find(s => s._clipWrap === el);
+    for (var i = 0; i < S.zOrder.length; i++) {
+      var entry = S.zOrder[i];
+      if (entry.type === 'sprite') {
+        var sp = S.findSprite(entry.id);
+        if (sp) orderedSprites.push(sp);
+      } else if (entry.type === 'group') {
+        // Collect group children in DOM order
+        var gEl = document.getElementById(entry.id);
+        if (gEl) {
+          Array.from(gEl.children).forEach(function(child) {
+            var gSp = S.sprites.find(function(s) { return s.el === child; });
+            if (!gSp && child.tagName === 'g' && child.id && child.id.endsWith('-wrap')) {
+              gSp = S.sprites.find(function(s) { return s._clipWrap === child; });
+            }
+            if (gSp) orderedSprites.push(gSp);
+          });
+        }
       }
-      if (sp && !sp.groupId) orderedSprites.push(sp);
-      // For group <g> elements, collect children in order
-      if (el.id && el.id.startsWith('group-')) {
-        Array.from(el.children).forEach(child => {
-          let gSp = C.allSprites.find(s => s.el === child);
-          if (!gSp && child.tagName === 'g' && child.id && child.id.endsWith('-wrap')) {
-            gSp = C.allSprites.find(s => s._clipWrap === child);
-          }
-          if (gSp) orderedSprites.push(gSp);
-        });
-      }
-    });
-    // Add any sprites not found (fallback)
-    C.allSprites.forEach(sp => {
-      if (!orderedSprites.includes(sp)) orderedSprites.push(sp);
+    }
+    // Fallback: add any sprites not found via zOrder
+    S.sprites.forEach(function(sp) {
+      if (orderedSprites.indexOf(sp) === -1) orderedSprites.push(sp);
     });
 
-    const data = {
-      sprites: orderedSprites.map(s => ({
-        file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot,
-        layerType: s.layerType || 'floor', hidden: s.hidden,
-        flipX: s.flipX || false, flipY: s.flipY || false,
-        groupId: s.groupId || null,
-        cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
-        shadowMul: s.shadowMul != null ? s.shadowMul : 1.0,
-        _fileName: s._fileName || null
-      })),
-      models: C.allModels.map(m => m.kind === 'circle'
-        ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
-        : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.s, f: m.f }),
+    var data = {
+      sprites: orderedSprites.map(function(s) {
+        return {
+          file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot,
+          layerType: s.layerType || 'floor', hidden: s.hidden,
+          flipX: s.flipX || false, flipY: s.flipY || false,
+          groupId: s.groupId || null,
+          cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0,
+          shadowMul: s.shadowMul != null ? s.shadowMul : 1.0,
+          _fileName: s._fileName || null
+        };
+      }),
+      models: S.models.map(function(m) {
+        return m.kind === 'circle'
+          ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
+          : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.s, f: m.f };
+      }),
       lights: Editor.Lights.serialize(),
       objectives: Editor.Objectives.serialize(),
-      groups: (C.groups || []).map(g => ({ id: g.id, name: g.name, opacity: g.opacity })),
+      groups: S.groups.map(function(g) { return { id: g.id, name: g.name, opacity: g.opacity }; }),
       effects: {
-        shadow: {...Editor.Effects.shadow},
-        feather: {...Editor.Effects.feather},
-        grade: {...Editor.Effects.grade}
+        shadow: Object.assign({}, S.effects.shadow),
+        feather: Object.assign({}, S.effects.feather),
+        grade: Object.assign({}, S.effects.grade)
       },
       bg: document.getElementById('bgSel').value,
-      ruinsOpacity: ranges[0]?.value || 92,
-      roofOpacity: ranges[1]?.value || 85,
-      // Save stable IDs for layer order: use sprite ID for crop wrappers (ephemeral IDs)
-      layerOrder: Array.from(document.getElementById('battlefield').children)
-        .map(el => {
-          if (el.id && el.id.endsWith('-wrap')) {
-            const sp = C.allSprites.find(s => s._clipWrap === el);
-            return sp ? sp.id : el.id;
-          }
-          return el.id || el.dataset?.id || '';
-        }).filter(id => id)
+      ruinsOpacity: ranges[0] ? ranges[0].value : 92,
+      roofOpacity: ranges[1] ? ranges[1].value : 85,
+      // Explicit zOrder array (Phase 1)
+      zOrder: S.zOrder.slice(),
+      // Keep layerOrder for backward compat with older versions
+      layerOrder: S.zOrder.map(function(entry) { return entry.id; })
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
   },
 
   importJSON() {
-    const input = document.createElement('input');
+    var input = document.createElement('input');
     input.type = 'file'; input.accept = '.json,application/json';
-    input.onchange = e => {
-      const file = e.target.files[0];
+    input.onchange = function(e) {
+      var file = e.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
+      var reader = new FileReader();
+      reader.onload = function(ev) {
         try {
-          const data = JSON.parse(ev.target.result);
+          var data = JSON.parse(ev.target.result);
           if (!confirm('This will clear all current sprites, models, and lights. Continue?')) return;
           // If data has the "output" format (layerType on sprites, stroke on models), convert it
           if (data.sprites && data.sprites[0] && ('layerType' in data.sprites[0]) && !('cropL' in data.sprites[0])) {
-            // Convert from output JSON to localStorage format
-            data.sprites = data.sprites.map(s => ({
-              file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
-              layerType: s.layerType || 'floor', hidden: s.hidden || false,
-              flipX: s.flipX || false, flipY: s.flipY || false,
-              groupId: s.groupId || null,
-              cropL: s.crop?.l || 0, cropT: s.crop?.t || 0, cropR: s.crop?.r || 0, cropB: s.crop?.b || 0,
-              shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
-            }));
+            data.sprites = data.sprites.map(function(s) {
+              return {
+                file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
+                layerType: s.layerType || 'floor', hidden: s.hidden || false,
+                flipX: s.flipX || false, flipY: s.flipY || false,
+                groupId: s.groupId || null,
+                cropL: s.crop ? s.crop.l || 0 : 0, cropT: s.crop ? s.crop.t || 0 : 0,
+                cropR: s.crop ? s.crop.r || 0 : 0, cropB: s.crop ? s.crop.b || 0 : 0,
+                shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
+              };
+            });
             if (data.models) {
-              data.models = data.models.map(m => m.kind === 'circle'
-                ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)', iconType: m.icon || m.iconType }
-                : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)' });
+              data.models = data.models.map(function(m) {
+                return m.kind === 'circle'
+                  ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)', iconType: m.icon || m.iconType }
+                  : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)' };
+              });
             }
             if (data.settings) {
               data.bg = data.settings.bg;
@@ -106,16 +119,16 @@ Editor.Persistence = {
           }
           // Auto-create groups from sprite groupId references if missing
           if (data.sprites) {
-            const groupIds = new Set(data.sprites.filter(s => s.groupId).map(s => s.groupId));
+            var groupIds = new Set(data.sprites.filter(function(s) { return s.groupId; }).map(function(s) { return s.groupId; }));
             if (!data.groups) data.groups = [];
-            groupIds.forEach(gId => {
-              if (!data.groups.find(g => g.id === gId)) {
-                const num = parseInt(gId.replace('group-g', '')) || 0;
+            groupIds.forEach(function(gId) {
+              if (!data.groups.find(function(g) { return g.id === gId; })) {
+                var num = parseInt(gId.replace('group-g', '')) || 0;
                 data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
               }
             });
           }
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+          localStorage.setItem(Editor.Persistence.STORAGE_KEY, JSON.stringify(data));
           location.reload();
         } catch (err) {
           alert('Invalid JSON file: ' + err.message);
@@ -127,15 +140,16 @@ Editor.Persistence = {
   },
 
   load() {
-    const raw = localStorage.getItem(this.STORAGE_KEY);
+    var raw = localStorage.getItem(this.STORAGE_KEY);
     if (!raw) return;
     try {
-      const data = JSON.parse(raw);
-      const C = Editor.Core;
+      var data = JSON.parse(raw);
+      var C = Editor.Core;
+      var S = Editor.State;
 
       if (data.bg) { document.getElementById('bgSel').value = data.bg; C.setBg(data.bg); }
 
-      const ranges = document.querySelectorAll('input[type=range]');
+      var ranges = document.querySelectorAll('input[type=range]');
       if (data.ruinsOpacity && ranges[0]) {
         ranges[0].value = data.ruinsOpacity;
         document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
@@ -143,39 +157,37 @@ Editor.Persistence = {
       }
       if (data.roofOpacity && ranges[1]) {
         ranges[1].value = data.roofOpacity;
-        // Apply per-sprite to top-layer sprites (spriteTop container is empty after architecture change)
         C._savedRoofOpacity = data.roofOpacity / 100;
         ranges[1].nextElementSibling.textContent = data.roofOpacity + '%';
       }
 
       // Restore effects state
       if (data.effects) {
-        const E = Editor.Effects;
+        var E = Editor.Effects;
         if (data.effects.shadow) Object.assign(E.shadow, data.effects.shadow);
         if (data.effects.feather) Object.assign(E.feather, data.effects.feather);
         if (data.effects.grade) Object.assign(E.grade, data.effects.grade);
         // Update DOM controls if they exist
-        const shadowBtn = document.querySelector('[onclick*="toggleShadow"]');
+        var shadowBtn = document.querySelector('[onclick*="toggleShadow"]');
         if (shadowBtn) shadowBtn.classList.toggle('on', E.shadow.on);
-        const featherBtn = document.querySelector('[onclick*="toggleFeather"]');
+        var featherBtn = document.querySelector('[onclick*="toggleFeather"]');
         if (featherBtn) featherBtn.classList.toggle('on', E.feather.on);
-        const gradeBtn = document.querySelector('[onclick*="toggleGrade"]');
+        var gradeBtn = document.querySelector('[onclick*="toggleGrade"]');
         if (gradeBtn) gradeBtn.classList.toggle('on', E.grade.on);
-        const fxShadowControls = document.getElementById('fxShadowControls');
+        var fxShadowControls = document.getElementById('fxShadowControls');
         if (fxShadowControls) fxShadowControls.style.display = E.shadow.on ? '' : 'none';
-        const fxFeatherControls = document.getElementById('fxFeatherControls');
+        var fxFeatherControls = document.getElementById('fxFeatherControls');
         if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
-        const fxGradeControls = document.getElementById('fxGradeControls');
+        var fxGradeControls = document.getElementById('fxGradeControls');
         if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
         if (E._ready) E._flush();
       }
 
       // Restore sprites
       if (data.sprites) {
-        data.sprites.forEach(s => {
-          // Map old layer names to layerType for backward compat
-          let lt = s.layerType || (s.layer === 'spriteTop' ? 'top' : 'floor');
-          const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, lt, true);
+        data.sprites.forEach(function(s) {
+          var lt = s.layerType || (s.layer === 'spriteTop' ? 'top' : 'floor');
+          var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, lt, true);
           sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
           sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
           if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
@@ -192,7 +204,7 @@ Editor.Persistence = {
       if (data.models) {
         document.getElementById('modelLayer').innerHTML = '';
         C.allModels = [];
-        data.models.forEach(m => {
+        data.models.forEach(function(m) {
           if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, m.s, m.f, m.iconType);
           else Editor.Models.addRect(m.x, m.y, m.w, m.h, m.s, m.f);
         });
@@ -200,16 +212,18 @@ Editor.Persistence = {
 
       // Restore lights
       if (data.lights) {
-        data.lights.forEach(l => Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true));
+        data.lights.forEach(function(l) {
+          Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
+        });
       }
 
       // Auto-create groups from sprite groupId references if missing from groups array
       if (data.sprites) {
-        const groupIds = new Set(data.sprites.filter(s => s.groupId).map(s => s.groupId));
+        var groupIds = new Set(data.sprites.filter(function(s) { return s.groupId; }).map(function(s) { return s.groupId; }));
         if (!data.groups) data.groups = [];
-        groupIds.forEach(gId => {
-          if (!data.groups.find(g => g.id === gId)) {
-            const num = parseInt(gId.replace('group-g', '')) || 0;
+        groupIds.forEach(function(gId) {
+          if (!data.groups.find(function(g) { return g.id === gId; })) {
+            var num = parseInt(gId.replace('group-g', '')) || 0;
             data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
           }
         });
@@ -226,12 +240,12 @@ Editor.Persistence = {
       }
 
       // Migrate any sprites still in old containers to be direct SVG children
-      const svgEl = document.getElementById('battlefield');
-      const selUIEl = document.getElementById('selUI');
-      ['spriteFloor', 'spriteTop'].forEach(cid => {
-        const container = document.getElementById(cid);
+      var svgEl = document.getElementById('battlefield');
+      var selUIEl = document.getElementById('selUI');
+      ['spriteFloor', 'spriteTop'].forEach(function(cid) {
+        var container = document.getElementById(cid);
         if (container) {
-          Array.from(container.children).forEach(child => {
+          Array.from(container.children).forEach(function(child) {
             container.removeChild(child);
             svgEl.insertBefore(child, selUIEl);
           });
@@ -243,32 +257,62 @@ Editor.Persistence = {
 
       // Apply saved roof opacity per-sprite (after sprites are created)
       if (C._savedRoofOpacity != null) {
-        C.allSprites.filter(s => s.layerType === 'top').forEach(s => {
+        C.allSprites.filter(function(s) { return s.layerType === 'top'; }).forEach(function(s) {
           s.el.style.opacity = C._savedRoofOpacity;
         });
         delete C._savedRoofOpacity;
       }
 
-      // Restore SVG layer z-order (after crops so wrappers exist)
-      if (data.layerOrder) {
-        const svg = document.getElementById('battlefield');
-        data.layerOrder.forEach(id => {
-          let el = document.getElementById(id);
-          // For sprite IDs, prefer the crop wrapper (direct SVG child)
-          const sp = C.allSprites.find(s => s.id === id);
-          if (sp) el = sp._clipWrap || sp.el;
-          if (el && el.parentNode === svg) svg.appendChild(el);
-        });
-        // Ensure selUI and dragRect stay last
-        const _selUI = document.getElementById('selUI');
-        const _dragRect = document.getElementById('dragRect');
-        if (_selUI) svg.appendChild(_selUI);
-        if (_dragRect) svg.appendChild(_dragRect);
+      // Restore z-order: prefer explicit zOrder array (Phase 1), fallback to layerOrder
+      if (data.zOrder && data.zOrder.length) {
+        // Phase 1 format — explicit zOrder with type/id entries
+        this._restoreZOrderFromExplicit(data.zOrder, C);
+      } else if (data.layerOrder) {
+        // Legacy format — flat ID list
+        this._restoreZOrderFromLayerOrder(data.layerOrder, C);
       }
+
+      // Sync EditorState after load
+      S.syncFromCore();
+      S.syncZOrderFromDOM();
 
       Editor.Selection.deselect();
     } catch (e) {
       console.warn('Failed to load layout', e);
     }
+  },
+
+  /** Restore z-order from explicit zOrder array (Phase 1 format). */
+  _restoreZOrderFromExplicit(zOrder, C) {
+    var svg = document.getElementById('battlefield');
+    zOrder.forEach(function(entry) {
+      var el;
+      if (entry.type === 'sprite') {
+        var sp = C.allSprites.find(function(s) { return s.id === entry.id; });
+        el = sp ? (sp._clipWrap || sp.el) : null;
+      } else {
+        el = document.getElementById(entry.id);
+      }
+      if (el && el.parentNode === svg) svg.appendChild(el);
+    });
+    var _selUI = document.getElementById('selUI');
+    var _dragRect = document.getElementById('dragRect');
+    if (_selUI) svg.appendChild(_selUI);
+    if (_dragRect) svg.appendChild(_dragRect);
+  },
+
+  /** Restore z-order from legacy layerOrder (flat ID list). */
+  _restoreZOrderFromLayerOrder(layerOrder, C) {
+    var svg = document.getElementById('battlefield');
+    layerOrder.forEach(function(id) {
+      var el = document.getElementById(id);
+      var sp = C.allSprites.find(function(s) { return s.id === id; });
+      if (sp) el = sp._clipWrap || sp.el;
+      if (el && el.parentNode === svg) svg.appendChild(el);
+    });
+    var _selUI = document.getElementById('selUI');
+    var _dragRect = document.getElementById('dragRect');
+    if (_selUI) svg.appendChild(_selUI);
+    if (_dragRect) svg.appendChild(_dragRect);
   }
 };
