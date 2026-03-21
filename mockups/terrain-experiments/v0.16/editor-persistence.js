@@ -35,7 +35,7 @@ Editor.Persistence = {
             const sp = C.allSprites.find(s => s._clipWrap === el);
             return sp ? sp.id : el.id;
           }
-          return el.id;
+          return el.id || el.dataset?.id || '';
         }).filter(id => id)
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
