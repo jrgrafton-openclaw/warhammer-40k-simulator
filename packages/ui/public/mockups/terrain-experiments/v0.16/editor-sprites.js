@@ -21,7 +21,6 @@ Editor.Sprites = {
       ghostEl.remove(); ghostEl = null;
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
-        Editor.Undo.push();
         const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayerType(file, cat));
         // Scatter terrain defaults to no drop shadow
         if (cat === 'tScatter' && sp) {
@@ -29,6 +28,7 @@ Editor.Sprites = {
           if (Editor.Effects) Editor.Effects._applyToSprite(sp);
           Editor.Layers.rebuild();
         }
+        if (sp) Editor.Undo.record(Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(sp)));
       }
     };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
@@ -36,9 +36,9 @@ Editor.Sprites = {
 
   // ── Add sprite to SVG ──
   // layerType: 'floor' or 'top' (for roof opacity). Sprites are direct SVG children.
-  addSprite(file, x, y, w, h, rot, layerType, skipSelect) {
+  addSprite(file, x, y, w, h, rot, layerType, skipSelect, _forceId) {
     const C = Editor.Core, NS = C.NS;
-    const id = 's' + (C.sid++);
+    const id = _forceId || ('s' + (C.sid++));
     const img = document.createElementNS(NS, 'image');
     const isDataUrl = file.startsWith('data:');
     img.setAttribute('href', isDataUrl ? file : C.spriteBasePath + file);
@@ -187,7 +187,6 @@ Editor.Sprites = {
 
       const C = Editor.Core;
       const pt = C.svgPt(e.clientX, e.clientY);
-      Editor.Undo.push();
 
       // Process files in parallel, stagger placement
       const promises = files.map((file, idx) => {
@@ -228,6 +227,8 @@ Editor.Sprites = {
           C.multiSel = valid;
           C.selected = valid[0];
           Editor.Selection.drawSelectionUI();
+          const cmds = valid.map(s => Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(s)));
+          Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Drop files'));
           Editor.State.dispatch({ type: 'ADD_SPRITE' });
           Editor.Layers.rebuild();
         }
@@ -257,7 +258,7 @@ Editor.Sprites = {
   startResize(e, sp, corner) {
     e.preventDefault();
     const C = Editor.Core;
-    Editor.Undo.push();
+    const _before = { x: sp.x, y: sp.y, w: sp.w, h: sp.h };
     const o = { x: sp.x, y: sp.y, w: sp.w, h: sp.h }, ar = o.w / o.h;
     const p0 = C.svgPt(e.clientX, e.clientY);
     const rad = -(sp.rot || 0) * Math.PI / 180;
@@ -280,7 +281,7 @@ Editor.Sprites = {
       }
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'RESIZE_SPRITE' }); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Undo.record(Editor.Commands.Resize.create(sp.id, _before, { x: sp.x, y: sp.y, w: sp.w, h: sp.h })); Editor.State.dispatch({ type: 'RESIZE_SPRITE' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -288,7 +289,7 @@ Editor.Sprites = {
   startRotate(e, sp) {
     e.preventDefault();
     const C = Editor.Core;
-    Editor.Undo.push();
+    const _beforeRot = sp.rot;
     const cx = sp.x + sp.w/2, cy = sp.y + sp.h/2;
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY);
@@ -298,7 +299,7 @@ Editor.Sprites = {
       sp.rot = deg;
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'ROTATE_SPRITE' }); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Undo.record(Editor.Commands.Rotate.create(sp.id, _beforeRot, sp.rot)); Editor.State.dispatch({ type: 'ROTATE_SPRITE' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   }
 };

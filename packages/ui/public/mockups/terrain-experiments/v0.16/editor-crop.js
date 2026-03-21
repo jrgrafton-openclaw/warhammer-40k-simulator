@@ -142,6 +142,9 @@ Editor.Crop = {
     const o = this.original;
     const cr = this.cropRect;
 
+    // Capture before state
+    const beforeCrop = { cropL: sp.cropL || 0, cropT: sp.cropT || 0, cropR: sp.cropR || 0, cropB: sp.cropB || 0 };
+
     // Calculate crop percentages from full bounds
     sp.cropL = Math.max(0, (cr.x - o.x) / o.w);
     sp.cropT = Math.max(0, (cr.y - o.y) / o.h);
@@ -154,11 +157,14 @@ Editor.Crop = {
     if (sp.cropR < 0.005) sp.cropR = 0;
     if (sp.cropB < 0.005) sp.cropB = 0;
 
+    const afterCrop = { cropL: sp.cropL, cropT: sp.cropT, cropR: sp.cropR, cropB: sp.cropB };
+
     // Apply the clip (sprite x/y/w/h stays as full bounds)
     this._applyClip(sp);
 
     this._cleanup();
     Editor.Selection.drawSelectionUI();
+    Editor.Undo.record(Editor.Commands.Crop.create(sp.id, beforeCrop, afterCrop));
     Editor.State.dispatch({ type: 'CROP' });
     Editor.Core.updateDebug();
     Editor.Layers.rebuild();

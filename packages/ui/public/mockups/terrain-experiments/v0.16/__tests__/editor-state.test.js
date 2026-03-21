@@ -637,10 +637,10 @@ describe('Undo — granularity', () => {
 
   it('undo reverts a move (position restored)', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 50, 50, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.x = 200; sp.y = 200;
-    Editor.Sprites.apply(sp);
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.Move.create(sp.id, 100, 100, 200, 200);
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.x).toBe(100);
     expect(restored.y).toBe(100);
@@ -648,10 +648,12 @@ describe('Undo — granularity', () => {
 
   it('undo reverts a resize', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 200, 150, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.w = 300; sp.h = 250;
-    Editor.Sprites.apply(sp);
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.Resize.create(sp.id,
+      { x: 100, y: 100, w: 200, h: 150 },
+      { x: 100, y: 100, w: 300, h: 250 });
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.w).toBe(200);
     expect(restored.h).toBe(150);
@@ -659,40 +661,41 @@ describe('Undo — granularity', () => {
 
   it('undo reverts a rotation', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 50, 50, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.rot = 45;
-    Editor.Sprites.apply(sp);
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.Rotate.create(sp.id, 0, 45);
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.rot).toBe(0);
   });
 
   it('undo reverts a flip', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 50, 50, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.flipX = true;
-    Editor.Sprites.apply(sp);
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.SetProperty.create(sp.id, { flipX: false }, { flipX: true });
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.flipX).toBe(false);
   });
 
   it('undo reverts adding a sprite', () => {
-    Editor.Undo.push();
-    Editor.Sprites.addSprite('new.png', 0, 0, 50, 50, 0, 'floor', true);
+    const sp = Editor.Sprites.addSprite('new.png', 0, 0, 50, 50, 0, 'floor', true);
+    const data = Editor.Commands._captureSprite(sp);
+    const cmd = Editor.Commands.AddSprite.create(data);
+    Editor.Undo.record(cmd);
     expect(Editor.Core.allSprites.length).toBe(1);
-    Editor.Undo.pop();
+    Editor.Undo.undo();
     expect(Editor.Core.allSprites.length).toBe(0);
   });
 
   it('undo reverts group creation', () => {
     const sp1 = Editor.Sprites.addSprite('a.png', 0, 0, 50, 50, 0, 'floor', true);
     const sp2 = Editor.Sprites.addSprite('b.png', 60, 0, 50, 50, 0, 'floor', true);
-    // createGroup pushes undo internally
+    // createGroup records undo command internally
     Editor.Groups.createGroup([sp1, sp2]);
     expect(Editor.Core.groups.length).toBe(1);
-    Editor.Undo.pop();
-    // After undo, sprites should be ungrouped
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites;
     expect(restored.every(s => !s.groupId)).toBe(true);
     expect(Editor.Core.groups.length).toBe(0);
@@ -700,10 +703,12 @@ describe('Undo — granularity', () => {
 
   it('undo reverts crop', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 200, 150, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.cropL = 0.1; sp.cropT = 0.2; sp.cropR = 0.15; sp.cropB = 0.05;
-    Editor.Crop._applyClip(sp);
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.Crop.create(sp.id,
+      { cropL: 0, cropT: 0, cropR: 0, cropB: 0 },
+      { cropL: 0.1, cropT: 0.2, cropR: 0.15, cropB: 0.05 });
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.cropL).toBe(0);
     expect(restored.cropT).toBe(0);
@@ -712,18 +717,20 @@ describe('Undo — granularity', () => {
 
   it('undo reverts shadowMul change', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 50, 50, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.shadowMul = 0;
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.SetProperty.create(sp.id, { shadowMul: 1.0 }, { shadowMul: 0 });
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.shadowMul).toBe(1.0);
   });
 
   it('undo reverts hide/show', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 50, 50, 0, 'floor', true);
-    Editor.Undo.push();
-    sp.hidden = true;
-    Editor.Undo.pop();
+    const cmd = Editor.Commands.SetProperty.create(sp.id, { hidden: false }, { hidden: true });
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.Undo.undo();
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored.hidden).toBe(false);
   });
@@ -732,18 +739,15 @@ describe('Undo — granularity', () => {
     const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
     const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
 
-    // Operation 1: move sp1
-    Editor.Undo.push();
-    sp1.x = 200;
-    Editor.Sprites.apply(sp1);
+    const cmd1 = Editor.Commands.Move.create(sp1.id, 10, 10, 200, 10);
+    cmd1.apply();
+    Editor.Undo.record(cmd1);
 
-    // Operation 2: move sp2
-    Editor.Undo.push();
-    sp2.x = 300;
-    Editor.Sprites.apply(sp2);
+    const cmd2 = Editor.Commands.Move.create(sp2.id, 70, 10, 300, 10);
+    cmd2.apply();
+    Editor.Undo.record(cmd2);
 
-    // Undo once — should only revert sp2's move
-    Editor.Undo.pop();
+    Editor.Undo.undo();
     const restoredSp1 = Editor.Core.allSprites.find(s => s.file === 'a.png');
     const restoredSp2 = Editor.Core.allSprites.find(s => s.file === 'b.png');
     expect(restoredSp1.x).toBe(200); // sp1's move NOT reverted
@@ -751,10 +755,13 @@ describe('Undo — granularity', () => {
   });
 
   it('undo stack respects max size', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 50, 50, 0, 'floor', true);
     for (let i = 0; i < 60; i++) {
-      Editor.Undo.push();
+      const cmd = Editor.Commands.Move.create(sp.id, i, 0, i + 1, 0);
+      cmd.apply();
+      Editor.Undo.record(cmd);
     }
-    expect(Editor.Undo.stack.length).toBeLessThanOrEqual(50);
+    expect(Editor.Undo.undoStack.length).toBeLessThanOrEqual(50);
   });
 });
 

@@ -197,8 +197,8 @@ describe('Round-trip persistence', () => {
     });
   });
 
-  // Documents known gap: effects globals are never persisted
-  it.skip('effects globals survive round-trip (KNOWN GAP — not persisted)', () => {
+  // Fixed in Phase 2: effects globals now persist via dispatch
+  it('effects globals survive round-trip', () => {
     const Editor = loadScene(fixture);
     // Change effects globals
     Editor.Effects.shadow.dx = 10;

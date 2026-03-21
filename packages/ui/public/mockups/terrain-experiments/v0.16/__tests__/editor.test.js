@@ -85,7 +85,7 @@ function loadEditor() {
   const editorDir = path.resolve(__dirname, '..');
   const modules = [
     'editor-state.js',
-    'editor-core.js', 'editor-undo.js', 'editor-models.js', 'editor-sprites.js',
+    'editor-bus.js', 'editor-core.js', 'editor-undo.js', 'editor-commands.js', 'editor-models.js', 'editor-sprites.js',
     'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
     'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',
     'editor-effects.js', 'editor-persistence.js'
@@ -393,30 +393,24 @@ describe('Editor Undo — shadowMul preservation', () => {
     Editor = loadEditor();
   });
 
-  it('undo snapshot captures shadowMul', () => {
+  it('command captures shadowMul via _captureSprite', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.shadowMul = 0.3;
 
-    Editor.Undo.push();
-    const snapshot = Editor.Undo.stack[Editor.Undo.stack.length - 1];
-    const saved = snapshot.sprites.find(s => s.id === sp.id);
-    expect(saved.shadowMul).toBeCloseTo(0.3);
+    const captured = Editor.Commands._captureSprite(sp);
+    expect(captured.shadowMul).toBeCloseTo(0.3);
   });
 
   it('undo restores shadowMul correctly', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.shadowMul = 0.5;
 
-    // Push state with shadowMul=0.5
-    Editor.Undo.push();
+    const cmd = Editor.Commands.SetProperty.create(sp.id, { shadowMul: 0.5 }, { shadowMul: 1.0 });
+    cmd.apply();
+    Editor.Undo.record(cmd);
 
-    // Change shadowMul
-    sp.shadowMul = 1.0;
+    Editor.Undo.undo();
 
-    // Undo should restore shadowMul=0.5
-    Editor.Undo.pop();
-
-    // Find the restored sprite
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored).toBeTruthy();
     expect(restored.shadowMul).toBeCloseTo(0.5);
@@ -428,13 +422,14 @@ describe('Editor Undo — shadowMul preservation', () => {
     sp1.shadowMul = 0.2;
     sp2.shadowMul = 0.8;
 
-    Editor.Undo.push();
+    const cmd = Editor.Commands.Batch.create([
+      Editor.Commands.SetProperty.create(sp1.id, { shadowMul: 0.2 }, { shadowMul: 1.0 }),
+      Editor.Commands.SetProperty.create(sp2.id, { shadowMul: 0.8 }, { shadowMul: 1.0 }),
+    ], 'Batch shadowMul change');
+    cmd.apply();
+    Editor.Undo.record(cmd);
 
-    // Change both
-    sp1.shadowMul = 1.0;
-    sp2.shadowMul = 1.0;
-
-    Editor.Undo.pop();
+    Editor.Undo.undo();
 
     const r1 = Editor.Core.allSprites.find(s => s.file === 'a.png');
     const r2 = Editor.Core.allSprites.find(s => s.file === 'b.png');

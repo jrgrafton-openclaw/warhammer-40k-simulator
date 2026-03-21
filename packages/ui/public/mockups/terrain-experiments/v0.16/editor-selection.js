@@ -181,10 +181,10 @@ Editor.Selection = {
   // ── Move (single sprite) ──
   startMove(e, sp) {
     const C = Editor.Core;
-    Editor.Undo.push();
+    const _bx = sp.x, _by = sp.y;
     const pt = C.svgPt(e.clientX, e.clientY), ox = pt.x - sp.x, oy = pt.y - sp.y;
     const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); sp.x = p.x-ox; sp.y = p.y-oy; Editor.Sprites.apply(sp); this.drawSelectionUI(); C.updateDebug(); };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Undo.record(Editor.Commands.Move.create(sp.id, _bx, _by, sp.x, sp.y)); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -192,11 +192,11 @@ Editor.Selection = {
   startMoveMulti(e, sp) {
     const C = Editor.Core;
     if (C.multiSel.length > 1 && C.multiSel.includes(sp)) {
-      Editor.Undo.push();
+      const befores = C.multiSel.map(s => ({ id: s.id, x: s.x, y: s.y }));
       const pt = C.svgPt(e.clientX, e.clientY);
       const offsets = C.multiSel.map(s => ({ s, ox: pt.x - s.x, oy: pt.y - s.y }));
       const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); offsets.forEach(({s, ox, oy}) => { s.x = p.x-ox; s.y = p.y-oy; Editor.Sprites.apply(s); }); this.drawSelectionUI(); C.updateDebug(); };
-      const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
+      const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); const cmds = befores.map(b => { const s = Editor.Commands._findSprite(b.id); return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null; }).filter(Boolean); Editor.Undo.record(Editor.Commands.Batch.create(cmds, 'Multi-move')); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     } else {
       C.multiSel = [sp]; this.startMove(e, sp);
@@ -208,7 +208,7 @@ Editor.Selection = {
     const C = Editor.Core;
     if (C.multiSel.length <= 1) return;
     e.preventDefault();
-    Editor.Undo.push();
+    const _befores = C.multiSel.map(s => ({ id: s.id, x: s.x, y: s.y, w: s.w, h: s.h }));
 
     const bW = bMaxX - bMinX, bH = bMaxY - bMinY;
     const p0 = C.svgPt(e.clientX, e.clientY);
@@ -251,6 +251,8 @@ Editor.Selection = {
     const up = () => {
       document.removeEventListener('mousemove', mv);
       document.removeEventListener('mouseup', up);
+      const cmds = _befores.map(b => { const s = Editor.Commands._findSprite(b.id); return s ? Editor.Commands.Resize.create(b.id, b, { x: s.x, y: s.y, w: s.w, h: s.h }) : null; }).filter(Boolean);
+      Editor.Undo.record(Editor.Commands.Batch.create(cmds, 'Multi-resize'));
       Editor.State.dispatch({ type: 'SET_PROPERTY' });
     };
     document.addEventListener('mousemove', mv);
@@ -262,7 +264,7 @@ Editor.Selection = {
     const C = Editor.Core;
     if (C.multiSel.length <= 1) return;
     e.preventDefault();
-    Editor.Undo.push();
+    const _befores = C.multiSel.map(s => ({ id: s.id, x: s.x, y: s.y, rot: s.rot }));
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     C.multiSel.forEach(s => { minX = Math.min(minX, s.x); minY = Math.min(minY, s.y); maxX = Math.max(maxX, s.x+s.w); maxY = Math.max(maxY, s.y+s.h); });
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
@@ -280,7 +282,7 @@ Editor.Selection = {
       });
       this.drawSelectionUI(); C.updateDebug();
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); const cmds = _befores.map(b => { const s = Editor.Commands._findSprite(b.id); if (!s) return null; const subcmds = []; if (s.x !== b.x || s.y !== b.y) subcmds.push(Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y)); if (s.rot !== b.rot) subcmds.push(Editor.Commands.Rotate.create(b.id, b.rot, s.rot)); return subcmds; }).filter(Boolean).flat(); Editor.Undo.record(Editor.Commands.Batch.create(cmds, 'Multi-rotate')); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -288,8 +290,11 @@ Editor.Selection = {
   onKey(e) {
     const C = Editor.Core;
 
-    // Undo: Ctrl/Cmd+Z
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); Editor.Undo.pop(); return; }
+    // Undo: Ctrl/Cmd+Z (without Shift)
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); Editor.Undo.undo(); return; }
+    // Redo: Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); Editor.Undo.redo(); return; }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); Editor.Undo.redo(); return; }
 
     // Group/Ungroup: Ctrl/Cmd+G
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'g') {
@@ -326,17 +331,18 @@ Editor.Selection = {
     // Paste (sprites or lights)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
       if (C.clipboardSprites.length) {
-        Editor.Undo.push();
         this.deselect();
         C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layerType || "floor", true));
-        C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
+        C.selected = C.multiSel[0]; this.drawSelectionUI();
+        const cmds = C.multiSel.map(s => Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(s)));
+        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Paste'));
+        Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
       if (C.clipboardLights.length) {
-        Editor.Undo.push();
-        C.clipboardLights.forEach(l => {
-          Editor.Lights.addLight(l.x + 20, l.y + 20, l.color, l.radius, l.intensity);
-        });
+        const newLights = C.clipboardLights.map(l => Editor.Lights.addLight(l.x + 20, l.y + 20, l.color, l.radius, l.intensity));
+        const cmds = newLights.filter(Boolean).map(l => Editor.Commands.AddLight.create(Editor.Commands._captureLight(l)));
+        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Paste lights'));
         Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
@@ -364,16 +370,18 @@ Editor.Selection = {
     // Delete (sprites or selected light)
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (Editor.Lights.selectedLight) {
-        Editor.Undo.push();
-        Editor.Lights.removeLight(Editor.Lights.selectedLight.id);
-        Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
+        const lData = Editor.Commands._captureLight(Editor.Lights.selectedLight);
+        Editor.Commands._removeLight(Editor.Lights.selectedLight.id);
+        Editor.Undo.record(Editor.Commands.DeleteLight.create(lData));
+        Editor.State.dispatch({ type: 'DELETE_LIGHT' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
       if (C.selected) {
-        Editor.Undo.push();
-        const toDelete = C.multiSel.length > 1 ? C.multiSel : [C.selected];
-        toDelete.forEach(s => { s.el.remove(); C.allSprites = C.allSprites.filter(x => x !== s); });
-        this.deselect(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
+        const toDelete = C.multiSel.length > 1 ? [...C.multiSel] : [C.selected];
+        const cmds = toDelete.map(s => Editor.Commands.DeleteSprite.create(Editor.Commands._captureSprite(s)));
+        toDelete.forEach(s => { if (s._clipId || s._clipWrap) Editor.Crop._removeClip(s); s.el.remove(); C.allSprites = C.allSprites.filter(x => x !== s); Editor.State.removeFromZOrder(s.id); });
+        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Delete sprites'));
+        this.deselect(); C.updateDebug(); Editor.State.dispatch({ type: 'DELETE_SPRITE' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
     }
@@ -382,9 +390,11 @@ Editor.Selection = {
 
     // Duplicate
     if (e.key === 'd') {
-      Editor.Undo.push();
       C.multiSel = (C.multiSel.length ? C.multiSel : [C.selected]).map(s => Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layerType || "floor", true));
-      C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Layers.rebuild();
+      C.selected = C.multiSel[0];
+      const cmds = C.multiSel.map(s => Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(s)));
+      Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Duplicate'));
+      this.drawSelectionUI(); Editor.Layers.rebuild();
     }
 
     // Crop
@@ -395,38 +405,59 @@ Editor.Selection = {
 
     // Flip
     if (e.key === 'f' || e.key === 'F') {
-      Editor.Undo.push();
       const targets = C.multiSel.length > 1 ? C.multiSel : [C.selected];
+      const prop = e.shiftKey ? 'flipY' : 'flipX';
+      const cmds = targets.map(s => {
+        const from = {}; from[prop] = s[prop];
+        const to = {}; to[prop] = !s[prop];
+        return Editor.Commands.SetProperty.create(s.id, from, to);
+      });
       targets.forEach(s => {
         if (e.shiftKey) s.flipY = !s.flipY;
         else s.flipX = !s.flipX;
         Editor.Sprites.apply(s);
       });
+      Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Flip'));
       this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
     // Rotate
     if (e.key === 'r' || e.key === 'R') {
-      Editor.Undo.push();
       const step = e.shiftKey ? 45 : 15;
-      (C.multiSel.length > 1 ? C.multiSel : [C.selected]).forEach(s => { s.rot = (s.rot + step) % 360; Editor.Sprites.apply(s); });
+      const targets = C.multiSel.length > 1 ? C.multiSel : [C.selected];
+      const cmds = targets.map(s => {
+        const fromRot = s.rot;
+        return Editor.Commands.Rotate.create(s.id, fromRot, (fromRot + step) % 360);
+      });
+      targets.forEach(s => { s.rot = (s.rot + step) % 360; Editor.Sprites.apply(s); });
+      Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Rotate'));
       this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
     // Z-order (sprites are direct SVG children, may be inside crop wrapper)
     if (e.key === '=' || e.key === '+') {
+      const beforeDOM = Editor.Commands.captureDOMOrder();
       const el = C.selected.rootEl;
       const parent = el.parentNode;
       const next = el.nextElementSibling;
-      if (next && next.id !== 'selUI' && next.id !== 'dragRect') parent.insertBefore(next, el);
-      Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
+      if (next && next.id !== 'selUI' && next.id !== 'dragRect') {
+        parent.insertBefore(next, el);
+        const afterDOM = Editor.Commands.captureDOMOrder();
+        Editor.Undo.record(Editor.Commands.Reorder.create(beforeDOM, afterDOM));
+      }
+      Editor.State.dispatch({ type: 'REORDER' }); Editor.Layers.rebuild();
     }
     if (e.key === '-') {
+      const beforeDOM = Editor.Commands.captureDOMOrder();
       const el = C.selected.rootEl;
       const parent = el.parentNode;
       const prev = el.previousElementSibling;
-      if (prev) parent.insertBefore(el, prev);
-      Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
+      if (prev) {
+        parent.insertBefore(el, prev);
+        const afterDOM = Editor.Commands.captureDOMOrder();
+        Editor.Undo.record(Editor.Commands.Reorder.create(beforeDOM, afterDOM));
+      }
+      Editor.State.dispatch({ type: 'REORDER' }); Editor.Layers.rebuild();
     }
 
     // Arrow keys — move selected sprites
@@ -435,7 +466,7 @@ Editor.Selection = {
       const step = e.shiftKey ? 10 : 1;
       const targets = C.multiSel.length > 0 ? C.multiSel : [C.selected];
       if (targets[0]) {
-        Editor.Undo.push();
+        const befores = targets.map(s => ({ id: s.id, x: s.x, y: s.y }));
         targets.forEach(s => {
           if (e.key === 'ArrowUp') s.y -= step;
           if (e.key === 'ArrowDown') s.y += step;
@@ -443,6 +474,8 @@ Editor.Selection = {
           if (e.key === 'ArrowRight') s.x += step;
           Editor.Sprites.apply(s);
         });
+        const cmds = befores.map(b => { const s = Editor.Commands._findSprite(b.id); return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null; }).filter(Boolean);
+        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Arrow move'));
         this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
       }
     }
