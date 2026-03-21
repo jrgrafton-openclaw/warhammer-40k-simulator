@@ -358,14 +358,12 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const dy = parseFloat(offset.getAttribute('dy'));
 
     // For 90° rotation with default dx=3, dy=3:
-    // local_dx = 1 * (3*cos(-90°) + 3*sin(-90°)) = 1 * (0 + -3) = -3
-    // local_dy = 1 * (-3*sin(-90°) + 3*cos(-90°)) = 1 * (3 + 0) = 3
-    // Wait, let me recalculate. rad = -90 * PI/180 = -PI/2
-    // cos(-PI/2) ≈ 0, sin(-PI/2) ≈ -1
-    // localDx = 1 * (3*0 + 3*(-1)) = -3
-    // localDy = 1 * (-3*(-1) + 3*0) = 3
-    expect(dx).toBeCloseTo(-3, 0);
-    expect(dy).toBeCloseTo(3, 0);
+    // rad = 90 * PI/180 = PI/2
+    // cos(PI/2) ≈ 0, sin(PI/2) ≈ 1
+    // localDx = 1 * (3*0 + 3*1) = 3
+    // localDy = 1 * (-3*1 + 3*0) = -3
+    expect(dx).toBeCloseTo(3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
   });
 
   it('different rotations produce different filters', () => {
