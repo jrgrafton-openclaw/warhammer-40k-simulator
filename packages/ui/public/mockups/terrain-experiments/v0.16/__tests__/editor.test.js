@@ -385,7 +385,9 @@ describe('Editor Effects — shadow rotation compensation', () => {
     expect(filter0).not.toBe(filter90);
   });
 
-  it('flipX sprite gets SAME shadow direction (single light source)', () => {
+  it('flipX sprite: local offset is counter-flipped so screen shadow is ↘', () => {
+    // feOffset is in LOCAL space (pre-transform). flipX scale(-1,1) will
+    // negate the x, so we pre-negate it so the screen result is correct.
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.flipX = true;
     sp.shadowMul = 1.0;
@@ -396,12 +398,13 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const offset = filter.querySelector('feOffset');
     const dx = parseFloat(offset.getAttribute('dx'));
     const dy = parseFloat(offset.getAttribute('dy'));
-    // Flip does NOT change shadow direction — same as unflipped
-    expect(dx).toBeCloseTo(3, 0);
+    // Local dx=-3 (negated), dy=3 (unchanged)
+    // After scale(-1,1): screen (-3*-1, 3) = (3, 3) = ↘
+    expect(dx).toBeCloseTo(-3, 0);
     expect(dy).toBeCloseTo(3, 0);
   });
 
-  it('flipY sprite gets SAME shadow direction (single light source)', () => {
+  it('flipY sprite: local offset is counter-flipped so screen shadow is ↘', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.flipY = true;
     sp.shadowMul = 1.0;
@@ -412,12 +415,13 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const offset = filter.querySelector('feOffset');
     const dx = parseFloat(offset.getAttribute('dx'));
     const dy = parseFloat(offset.getAttribute('dy'));
-    // Flip does NOT change shadow direction — same as unflipped
+    // Local dx=3 (unchanged), dy=-3 (negated)
+    // After scale(1,-1): screen (3, -3*-1) = (3, 3) = ↘
     expect(dx).toBeCloseTo(3, 0);
-    expect(dy).toBeCloseTo(3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
   });
 
-  it('flipX + 90° rotation — only rotation affects shadow, not flip', () => {
+  it('flipX + 90° rotation: combined counter-transform for screen ↘', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 90, 'floor', true);
     sp.flipX = true;
     sp.shadowMul = 1.0;
@@ -428,12 +432,14 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const offset = filter.querySelector('feOffset');
     const dx = parseFloat(offset.getAttribute('dx'));
     const dy = parseFloat(offset.getAttribute('dy'));
-    // Same as rot=90 without flip: dx=3, dy=-3
-    expect(dx).toBeCloseTo(3, 0);
+    // flipX=-1, rot=90: localDx = -1 * (3*0 + 3*1) = -3
+    // flipY=1, rot=90:  localDy = 1 * (-3*1 + 3*0) = -3
+    // After scale(-1,1) + rotate(90°): screen = (3, 3) = ↘
+    expect(dx).toBeCloseTo(-3, 0);
     expect(dy).toBeCloseTo(-3, 0);
   });
 
-  it('flipX + flipY sprite — shadow unchanged by flip', () => {
+  it('flipX + flipY: both axes counter-flipped for screen ↘', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.flipX = true;
     sp.flipY = true;
@@ -445,9 +451,10 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const offset = filter.querySelector('feOffset');
     const dx = parseFloat(offset.getAttribute('dx'));
     const dy = parseFloat(offset.getAttribute('dy'));
-    // Same as no flip: dx=3, dy=3
-    expect(dx).toBeCloseTo(3, 0);
-    expect(dy).toBeCloseTo(3, 0);
+    // Both flipped: local dx=-3, dy=-3
+    // After scale(-1,-1): screen (3, 3) = ↘
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
   });
 });
 

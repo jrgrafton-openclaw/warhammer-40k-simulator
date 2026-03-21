@@ -31,7 +31,9 @@ Editor.Effects = {
     const mul = sp.shadowMul != null ? sp.shadowMul : 1.0;
     // Counter-rotate shadow offset so shadows are consistent in screen space
     const rot = sp.rot || 0;
-    const filterId = this._getOrCreateFilter(mul, rot);
+    const flipX = sp.flipX ? -1 : 1;
+    const flipY = sp.flipY ? -1 : 1;
+    const filterId = this._getOrCreateFilter(mul, rot, flipX, flipY);
     if (filterId) {
       sp.el.setAttribute('filter', `url(#${filterId})`);
     } else {
@@ -42,7 +44,7 @@ Editor.Effects = {
   },
 
   // ── Get or create a filter for given shadow multiplier + rotation ──
-  _getOrCreateFilter(rawMul, rot) {
+  _getOrCreateFilter(rawMul, rot, flipX, flipY) {
     // Quantise multiplier to nearest 0.1 to limit filter count
     const mul = Math.round((rawMul || 0) * 10) / 10;
     // Quantise rotation to nearest 5° to limit filter count
@@ -56,7 +58,7 @@ Editor.Effects = {
 
     // Build cache key including rotation + flip for shadow direction
     const key = [
-      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul},r${qRot}` : '',
+      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
       hasFeather ? `f${this.feather.radius}` : '',
       hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : ''
     ].join('|');
@@ -69,11 +71,15 @@ Editor.Effects = {
     const rad = (qRot || 0) * Math.PI / 180;
     const dx = this.shadow.dx;
     const dy = this.shadow.dy;
-    // Counter-rotate shadow offset for rotation only.
-    // Flip does NOT affect shadow direction — a single light source means
-    // all shadows point the same screen-space direction regardless of flip.
-    const localDx = dx * Math.cos(rad) + dy * Math.sin(rad);
-    const localDy = -dx * Math.sin(rad) + dy * Math.cos(rad);
+    // Counter-rotate AND counter-flip the shadow offset.
+    // feOffset operates in LOCAL space (pre-transform). The element's transform
+    // (rotate + scale/flip) is applied AFTER the filter. So we must inverse-transform
+    // the desired screen-space offset to get correct local values.
+    // For target screen offset (dx, dy) with transform rotate(rot) + scale(flipX, flipY):
+    //   localDx = (dx*cos(rot) + dy*sin(rot)) / flipX = flipX * (dx*cos + dy*sin)
+    //   localDy = (-dx*sin(rot) + dy*cos(rot)) / flipY = flipY * (-dx*sin + dy*cos)
+    const localDx = flipX * (dx * Math.cos(rad) + dy * Math.sin(rad));
+    const localDy = flipY * (-dx * Math.sin(rad) + dy * Math.cos(rad));
 
     const id = `spFx${this._filterId++}`;
     this._buildFilter(id, hasShadow, hasFeather, hasGrade, mul, localDx, localDy);
