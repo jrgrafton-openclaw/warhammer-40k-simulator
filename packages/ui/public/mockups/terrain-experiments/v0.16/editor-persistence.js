@@ -213,8 +213,12 @@ Editor.Persistence = {
         document.getElementById('modelLayer').innerHTML = '';
         C.allModels = [];
         data.models.forEach(function(m) {
-          if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, m.s, m.f, m.iconType);
-          else Editor.Models.addRect(m.x, m.y, m.w, m.h, m.s, m.f);
+          // Handle both internal format (s, f, iconType) and output format (stroke, icon)
+          var stroke = m.s || m.stroke;
+          var fill = m.f || (stroke ? (stroke === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)') : 'url(#mf-imp)');
+          var iconType = m.iconType || m.icon;
+          if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, stroke, fill, iconType);
+          else Editor.Models.addRect(m.x, m.y, m.w, m.h, stroke, fill);
         });
       }
 
