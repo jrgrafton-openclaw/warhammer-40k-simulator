@@ -54,6 +54,11 @@ Editor.Shortcuts = {
           <div class="sc-row"><kbd>L</kbd> Toggle light centers</div>
           <div class="sc-row"><kbd>?</kbd> This help</div>
         </div>
+        <div class="sc-section">
+          <h4>Import</h4>
+          <div class="sc-row"><kbd>Drop files</kbd> Drag images onto canvas</div>
+          <div class="sc-row"><kbd>Multi-drop</kbd> Drop several files at once</div>
+        </div>
       </div>
     `;
     document.body.appendChild(div);

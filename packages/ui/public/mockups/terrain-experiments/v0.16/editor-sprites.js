@@ -40,7 +40,8 @@ Editor.Sprites = {
     const C = Editor.Core, NS = C.NS;
     const id = 's' + (C.sid++);
     const img = document.createElementNS(NS, 'image');
-    img.setAttribute('href', C.spriteBasePath + file);
+    const isDataUrl = file.startsWith('data:');
+    img.setAttribute('href', isDataUrl ? file : C.spriteBasePath + file);
     img.setAttribute('x', x); img.setAttribute('y', y); img.setAttribute('width', w); img.setAttribute('height', h);
     img.setAttribute('preserveAspectRatio', 'none');
     if (rot) img.setAttribute('transform', `rotate(${rot},${x+w/2},${y+h/2})`);
@@ -81,6 +82,83 @@ Editor.Sprites = {
     Editor.Persistence.save();
     Editor.Layers.rebuild();
     return sp;
+  },
+
+  // ── File drag-and-drop onto canvas ──
+  initFileDrop() {
+    const wrap = document.getElementById('mapWrap');
+    if (!wrap) return;
+
+    wrap.addEventListener('dragover', e => {
+      // Only accept file drags, not internal layer reorder drags
+      if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        wrap.classList.add('drop-active');
+      }
+    });
+
+    wrap.addEventListener('dragleave', e => {
+      // Only remove if leaving the wrapper entirely
+      if (!wrap.contains(e.relatedTarget)) {
+        wrap.classList.remove('drop-active');
+      }
+    });
+
+    wrap.addEventListener('drop', e => {
+      e.preventDefault();
+      wrap.classList.remove('drop-active');
+      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      if (!files.length) return;
+
+      const C = Editor.Core;
+      const pt = C.svgPt(e.clientX, e.clientY);
+      Editor.Undo.push();
+
+      // Process files in parallel, stagger placement
+      const promises = files.map((file, idx) => {
+        return new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onload = ev => {
+            const dataUrl = ev.target.result;
+            // Probe image dimensions
+            const probe = new Image();
+            probe.onload = () => {
+              // Scale to fit ~120px wide, maintain aspect ratio
+              const scale = Math.min(200 / probe.width, 200 / probe.height, 1);
+              const w = Math.round(probe.width * scale);
+              const h = Math.round(probe.height * scale);
+              // Stagger placement so multiple files don't stack exactly
+              const offsetX = idx * 20;
+              const offsetY = idx * 20;
+              const sp = this.addSprite(
+                dataUrl, // data URL as file reference
+                Math.max(0, Math.min(720 - w, pt.x - w/2 + offsetX)),
+                Math.max(0, Math.min(528 - h, pt.y - h/2 + offsetY)),
+                w, h, 0, 'floor', true
+              );
+              // Store original filename for display
+              sp._fileName = file.name;
+              resolve(sp);
+            };
+            probe.onerror = () => resolve(null);
+            probe.src = dataUrl;
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      Promise.all(promises).then(sprites => {
+        const valid = sprites.filter(Boolean);
+        if (valid.length) {
+          C.multiSel = valid;
+          C.selected = valid[0];
+          Editor.Selection.drawSelectionUI();
+          Editor.Persistence.save();
+          Editor.Layers.rebuild();
+        }
+      });
+    });
   },
 
   // ── Apply position/size/rotation/flip to SVG element ──

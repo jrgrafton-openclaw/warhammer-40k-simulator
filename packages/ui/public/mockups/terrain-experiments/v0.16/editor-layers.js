@@ -355,8 +355,11 @@ Editor.Layers = {
     row.className = 'layer-row' + (C.multiSel.includes(sp) ? ' sel' : '') + (sp.hidden ? ' hidden-sprite' : '') + (indented ? ' child-row' : '');
     const sMul = sp.shadowMul != null ? sp.shadowMul : 1.0;
     const sMulPct = Math.round(sMul * 100);
-    row.innerHTML = `<img src="${C.spriteBasePath}${sp.file}">
-      <div style="flex:1;min-width:0"><div class="lname">${sp.file.replace(/\.(png|jpg)/, '')}</div><div class="lmeta">${sp.layerType === 'top' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div>
+    const isDataUrl = sp.file.startsWith('data:');
+    const thumbSrc = isDataUrl ? sp.file : C.spriteBasePath + sp.file;
+    const displayName = isDataUrl ? (sp._fileName || 'Dropped image').replace(/\.(png|jpg|jpeg|webp)$/i, '') : sp.file.replace(/\.(png|jpg)/, '');
+    row.innerHTML = `<img src="${thumbSrc}">
+      <div style="flex:1;min-width:0"><div class="lname">${displayName}</div><div class="lmeta">${sp.layerType === 'top' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div>
       <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation();Editor.Undo.push();this.closest('.layer-row').draggable=false" onmouseup="this.closest('.layer-row').draggable=true"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
       <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleVis('${sp.id}')">${sp.hidden ? '🔇' : '👁'}</button>
       ${(sp.cropL || sp.cropT || sp.cropR || sp.cropB) ? `<button class="lbtn" title="Reset crop" onclick="event.stopPropagation();Editor.Crop.resetCrop(Editor.Core.allSprites.find(s=>s.id==='${sp.id}'))">✂️</button>` : ''}
