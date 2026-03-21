@@ -5,7 +5,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Persistence = {
-  STORAGE_KEY: 'wh40k-editor-v016r-layout',
+  STORAGE_KEY: 'wh40k-editor-v016-layout',
 
   save() {
     const C = Editor.Core;
