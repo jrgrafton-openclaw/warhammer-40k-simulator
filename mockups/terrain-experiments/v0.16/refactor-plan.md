@@ -98,11 +98,12 @@ Using `test-scene.json`:
 - [ ] Drag within group → intra-group order changes
 - [ ] Multi-select drag → all selected sprites move together, relative order preserved
 
-### 0.5 — Visual Regression Baseline (Playwright)
-- [ ] Set up Playwright test that:
-  1. Serves `index.html` via a local static server
-  2. Injects `test-scene.json` into localStorage
-  3. Takes a full-page screenshot → saves as `__tests__/snapshots/baseline.png`
+### 0.5 — Visual Regression Baseline (Browser Tool)
+No extra dependencies — use the OpenClaw browser tool directly:
+- [ ] Serve `index.html` via local static server (`npx serve`)
+- [ ] `browser → navigate` to load the editor
+- [ ] Inject `test-scene.json` into localStorage via `browser → act (evaluate)`
+- [ ] Reload → `browser → screenshot` → save as `__tests__/snapshots/baseline.png`
 - [ ] Screenshot after save+reload → pixel-diff against baseline (tolerance: 0.1%)
 - [ ] Screenshot after undo (move sprite → undo) → matches baseline
 
@@ -324,9 +325,9 @@ Each phase is independently deployable and leaves the editor in a working state.
 
 ---
 
-## Visual Test Strategy (Playwright)
+## Visual Test Strategy (Browser Tool)
 
-Each phase adds visual regression checks:
+Each phase adds visual regression checks using the OpenClaw browser tool — no Playwright/Puppeteer dependency:
 
 ```
 __tests__/
@@ -335,10 +336,10 @@ __tests__/
   snapshots/
     baseline.png             ← Phase 0 golden screenshot
   editor.test.js             ← unit tests (Vitest + jsdom)
-  editor-visual.test.js      ← visual tests (Playwright)
   vitest.config.js
-  playwright.config.js
 ```
+
+Flow: serve locally → `browser navigate` → inject fixture via `evaluate` → `browser screenshot` → diff.
 
 Visual tests verify:
 1. **Load fixture → screenshot** matches baseline
