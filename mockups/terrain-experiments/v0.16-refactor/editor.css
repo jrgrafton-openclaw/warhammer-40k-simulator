@@ -1,0 +1,105 @@
+/* ══════════════════════════════════════════════════════════════
+   Terrain Sprite Editor v0.16 — Styles
+   Shared tokens: ../../shared/tokens/colors.css
+   Shared battlefield: ../../shared/components/battlefield.css
+══════════════════════════════════════════════════════════════ */
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.main{display:flex;flex:1;overflow:hidden}
+
+/* ── Sidebars ── */
+.sidebar{width:260px;min-width:260px;background:#0f1520;overflow-y:auto;padding:10px;font-size:11px}
+.sidebar.left{border-right:1px solid #1a2a3a}
+.sidebar.right{width:240px;min-width:240px;border-left:1px solid #1a2a3a;background:#0d131d}
+.sidebar h3{color:#00d4ff;font-size:10px;letter-spacing:2px;margin:10px 0 4px;text-transform:uppercase}
+.sidebar h3:first-child{margin-top:0}
+
+/* ── Thumbnail grid ── */
+.thumb-grid{display:flex;flex-wrap:wrap;gap:4px}
+.thumb{width:72px;height:72px;border:1px solid #1a2a3a;border-radius:3px;cursor:grab;object-fit:cover;background:#0a0e18}
+.thumb:hover{border-color:#00d4ff}
+
+/* ── Background row / controls ── */
+.bg-row{display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:wrap}
+.bg-row select{background:#0a0e18;color:#ccc;border:1px solid #1a2a3a;padding:3px 6px;border-radius:3px;font-size:10px;flex:1}
+
+/* ── Toggle buttons ── */
+.tbtn{background:#0a0e18;color:#8090a0;border:1px solid #1a2a3a;padding:3px 8px;border-radius:3px;font-size:9px;cursor:pointer;white-space:nowrap}
+.tbtn.on{border-color:#00d4ff;color:#00d4ff}
+.toggle-row{display:flex;flex-wrap:wrap;gap:3px;margin:4px 0}
+
+/* ── Effects controls ── */
+.fx-section{margin:4px 0 8px}
+.fx-controls{margin:6px 0 2px;padding:6px;background:#0a0e18;border:1px solid #1a2a3a;border-radius:4px}
+.fx-controls label{display:flex;align-items:center;gap:4px;margin:3px 0;color:#8090a0;font-size:9px}
+.fx-controls input[type="range"]{flex:1;accent-color:#00d4ff;height:14px}
+.fx-lbl{width:68px;flex-shrink:0;font-size:9px;color:#607080}
+.fx-val{width:32px;text-align:right;font-size:9px;color:#4f6476}
+
+/* ── Canvas area ── */
+.canvas-wrap{flex:1;display:flex;overflow:hidden;position:relative}
+.map-wrapper{position:relative;width:100%;height:100%}
+#battlefield{display:block;width:100%;height:100%;background:#030609}
+
+/* ── Bottom bar ── */
+.config-panel{border-top:1px solid #1a2a3a;padding-top:8px;margin-top:8px}
+.config-actions{display:flex;gap:4px;margin-top:4px}
+.config-actions .tbtn{flex:1;font-size:8px;padding:3px 6px}
+#debug{width:100%;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:8px;height:180px;resize:vertical;padding:4px;border-radius:3px;box-sizing:border-box}
+
+/* ── File drop zone ── */
+.drop-active{outline:2px dashed #00d4ff;outline-offset:-2px;background:rgba(0,212,255,0.04)}
+
+/* ── Drag ghost ── */
+.ghost{position:fixed;pointer-events:none;opacity:0.6;z-index:9999}
+
+/* ── Layers panel ── */
+.layers-panel{margin-top:8px;padding-top:6px}
+.layer-row{display:flex;align-items:center;gap:4px;padding:4px;border-radius:3px;cursor:pointer;font-size:9px;border:1px solid transparent;margin-bottom:3px}
+.layer-row:hover{background:#1a2a3a}
+.layer-row.sel{border-color:#00d4ff;background:#0a1828}
+.layer-row.dragging{opacity:.45}
+.layer-row img{width:24px;height:24px;object-fit:cover;border-radius:2px;flex-shrink:0}
+.layer-row .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8090a0}
+.layer-row .lmeta{font-size:8px;color:#4f6476}
+.layer-row .lbtn{background:none;border:none;color:#607080;cursor:pointer;font-size:11px;padding:0 2px}
+.layer-row .lbtn:hover{color:#00d4ff}
+.layer-row.hidden-sprite .lname{opacity:0.4;text-decoration:line-through}
+
+/* ── Layer group rows (Models, Lights) ── */
+.layer-row.group-row{background:#0a1018;border-color:#1a2a3a;cursor:grab}
+.layer-row.group-row .lname{color:#00d4ff;font-weight:600}
+.layer-row.drop-above{border-top:2px solid #00d4ff}
+.layer-row.drop-below{border-bottom:2px solid #00d4ff}
+.layer-row .drag-hint{color:#304050;font-size:10px;cursor:grab;user-select:none;padding:0 2px}
+.layer-row.child-row{padding-left:20px;background:#080e16}
+.layer-row.child-row:hover{background:#0e1828}
+.layer-row .child-icon{width:24px;text-align:center;flex-shrink:0;font-size:12px}
+.expand-toggle{font-size:8px;margin-right:4px;color:#607080}
+.group-opacity{width:40px;height:12px;accent-color:#00d4ff}
+.layer-row.custom-group-row .lname{color:#00d4ff}
+.layer-row .group-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.layer-row .group-icon svg{width:16px;height:16px}
+
+/* ── Selection rect ── */
+.sel-rect{fill:rgba(0,212,255,0.08);stroke:#00d4ff;stroke-width:1;stroke-dasharray:4,2;pointer-events:none}
+
+/* ── Objective markers use shared battlefield.css defaults (no editor overrides) ── */
+
+/* ── Shortcuts help panel ── */
+.shortcuts-panel{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#0d131d;border:1px solid #1a2a3a;border-radius:8px;padding:16px 20px;z-index:10000;min-width:480px;max-width:600px;box-shadow:0 8px 32px rgba(0,0,0,0.6)}
+.shortcuts-panel h3{color:#00d4ff;font-size:13px;letter-spacing:1px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.shortcuts-close{cursor:pointer;color:#607080;font-size:16px}
+.shortcuts-close:hover{color:#00d4ff}
+.sc-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px}
+.sc-section h4{color:#8090a0;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;border-bottom:1px solid #1a2a3a;padding-bottom:3px}
+.sc-row{font-size:10px;color:#8090a0;margin:3px 0;display:flex;align-items:center;gap:6px}
+.sc-row kbd{background:#0a0e18;border:1px solid #1a2a3a;border-radius:3px;padding:1px 5px;font-family:Inter,sans-serif;font-size:9px;color:#00d4ff;min-width:20px;text-align:center;white-space:nowrap}
+
+/* ── Light controls in sidebar ── */
+.light-controls{margin:6px 0;padding:6px;background:#0a0e18;border:1px solid #1a2a3a;border-radius:4px;font-size:10px}
+.light-controls label{display:flex;align-items:center;gap:6px;margin:3px 0;color:#8090a0}
+.light-controls input[type="color"]{width:28px;height:20px;border:1px solid #1a2a3a;background:none;cursor:pointer;padding:0}
+.light-controls input[type="range"]{flex:1;accent-color:#00d4ff}
+.light-controls .lc-val{width:30px;text-align:right;font-size:9px;color:#4f6476}
