@@ -609,14 +609,15 @@ Editor.Layers = {
 
       if (dropAbove) {
         // UI above = in front = after in DOM
-        if (sp.el.nextElementSibling) {
-          gEl.insertBefore(srcSp.el, sp.el.nextElementSibling);
+        var targetRoot = sp.rootEl;
+        if (targetRoot.nextElementSibling) {
+          gEl.insertBefore(srcSp.rootEl, targetRoot.nextElementSibling);
         } else {
-          gEl.appendChild(srcSp.el);
+          gEl.appendChild(srcSp.rootEl);
         }
       } else {
         // UI below = behind = before in DOM
-        gEl.insertBefore(srcSp.el, sp.el);
+        gEl.insertBefore(srcSp.rootEl, sp.rootEl);
       }
 
       Editor.State.syncZOrderFromDOM();
@@ -634,7 +635,7 @@ Editor.Layers = {
     if (!src || !target) return;
     var beforeOrder = Editor.Commands.captureDOMOrder();
     // Both sprites are direct SVG children — just reorder
-    target.el.parentNode.insertBefore(src.el, target.el);
+    target.rootEl.parentNode.insertBefore(src.rootEl, target.rootEl);
     C.allSprites = C.allSprites.filter(s => s !== src);
     const idx = C.allSprites.indexOf(target);
     C.allSprites.splice(idx, 0, src);
@@ -647,22 +648,27 @@ Editor.Layers = {
   toggleLightVis(id) {
     const C = Editor.Core;
     const l = C.allLights.find(x => x.id === id); if (!l) return;
-    const hidden = l.el.style.display === 'none';
-    l.el.style.display = hidden ? '' : 'none';
+    const wasHidden = l.el.style.display === 'none';
+    l.el.style.display = wasHidden ? '' : 'none';
+    Editor.Undo.record(Editor.Commands.ToggleLightVis.create(id, wasHidden));
+    Editor.State.dispatch({ type: 'TOGGLE_LIGHT_VIS' });
     this.rebuild();
   },
 
   toggleVis(id) {
     const C = Editor.Core;
     const sp = C.allSprites.find(s => s.id === id); if (!sp) return;
+    const from = { hidden: sp.hidden };
     sp.hidden = !sp.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
+    const to = { hidden: sp.hidden };
+    Editor.Undo.record(Editor.Commands.SetProperty.create(id, from, to));
     this.rebuild(); Editor.State.dispatch({ type: 'TOGGLE_SPRITE_VIS' });
   },
 
   dupSprite(id) {
     const s = Editor.Core.allSprites.find(x => x.id === id);
     if (s) {
-      const dup = Editor.Sprites.addSprite(s.file, s.x + 15, s.y + 15, s.w, s.h, s.rot, s.layer);
+      const dup = Editor.Sprites.addSprite(s.file, s.x + 15, s.y + 15, s.w, s.h, s.rot, s.layerType);
       Editor.Undo.record(Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(dup)));
       this.rebuild();
     }
