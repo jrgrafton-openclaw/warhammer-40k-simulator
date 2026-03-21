@@ -99,9 +99,8 @@ Using `test-scene.json`:
 - [ ] Multi-select drag → all selected sprites move together, relative order preserved
 
 ### 0.5 — Visual Regression Baseline (Browser Tool)
-No extra dependencies — use the OpenClaw browser tool directly:
-- [ ] Serve `index.html` via local static server (`npx serve`)
-- [ ] `browser → navigate` to load the editor
+No extra dependencies — use the OpenClaw browser tool against the live GitHub Pages deployment:
+- [ ] `browser → navigate` to `https://jrgrafton-openclaw.github.io/warhammer-40k-simulator/mockups/terrain-experiments/v0.16/index.html`
 - [ ] Inject `test-scene.json` into localStorage via `browser → act (evaluate)`
 - [ ] Reload → `browser → screenshot` → save as `__tests__/snapshots/baseline.png`
 - [ ] Screenshot after save+reload → pixel-diff against baseline (tolerance: 0.1%)
@@ -339,7 +338,7 @@ __tests__/
   vitest.config.js
 ```
 
-Flow: serve locally → `browser navigate` → inject fixture via `evaluate` → `browser screenshot` → diff.
+Flow: `browser navigate` to GitHub Pages → inject fixture via `evaluate` → `browser screenshot` → diff.
 
 Visual tests verify:
 1. **Load fixture → screenshot** matches baseline
