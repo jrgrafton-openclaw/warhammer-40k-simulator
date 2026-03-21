@@ -27,8 +27,15 @@ Editor.Persistence = {
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ranges[0]?.value || 92,
       roofOpacity: ranges[1]?.value || 85,
+      // Save stable IDs for layer order: use sprite ID for crop wrappers (ephemeral IDs)
       layerOrder: Array.from(document.getElementById('battlefield').children)
-        .map(el => el.id).filter(id => id)
+        .map(el => {
+          if (el.id && el.id.endsWith('-wrap')) {
+            const sp = C.allSprites.find(s => s._clipWrap === el);
+            return sp ? sp.id : el.id;
+          }
+          return el.id;
+        }).filter(id => id)
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
   },
@@ -94,7 +101,8 @@ Editor.Persistence = {
       }
       if (data.roofOpacity && ranges[1]) {
         ranges[1].value = data.roofOpacity;
-        document.getElementById('spriteTop').style.opacity = data.roofOpacity / 100;
+        // Apply per-sprite to top-layer sprites (spriteTop container is empty after architecture change)
+        C._savedRoofOpacity = data.roofOpacity / 100;
         ranges[1].nextElementSibling.textContent = data.roofOpacity + '%';
       }
 
@@ -140,15 +148,6 @@ Editor.Persistence = {
         Editor.Objectives.restorePositions(data.objectives);
       }
 
-      // Restore SVG layer z-order
-      if (data.layerOrder) {
-        const svg = document.getElementById('battlefield');
-        data.layerOrder.forEach(id => {
-          const el = document.getElementById(id);
-          if (el && el.parentNode === svg) svg.appendChild(el);
-        });
-      }
-
       // Migrate any sprites still in old containers to be direct SVG children
       const svgEl = document.getElementById('battlefield');
       const selUIEl = document.getElementById('selUI');
@@ -162,8 +161,36 @@ Editor.Persistence = {
         }
       });
 
-      // Re-apply crop clips
+      // Re-apply crop clips BEFORE layer order restore (creates wrappers)
       Editor.Crop.reapplyAll();
+
+      // Apply saved roof opacity per-sprite (after sprites are created)
+      if (C._savedRoofOpacity != null) {
+        C.allSprites.filter(s => s.layerType === 'top').forEach(s => {
+          s.el.style.opacity = C._savedRoofOpacity;
+        });
+        delete C._savedRoofOpacity;
+      }
+
+      // Restore SVG layer z-order (after crops so wrappers exist)
+      if (data.layerOrder) {
+        const svg = document.getElementById('battlefield');
+        data.layerOrder.forEach(id => {
+          // Try direct element lookup first
+          let el = document.getElementById(id);
+          // If not found, might be a sprite ID — find its actual element (or wrapper)
+          if (!el) {
+            const sp = C.allSprites.find(s => s.id === id);
+            if (sp) el = sp._clipWrap || sp.el;
+          }
+          if (el && el.parentNode === svg) svg.appendChild(el);
+        });
+        // Ensure selUI and dragRect stay last
+        const _selUI = document.getElementById('selUI');
+        const _dragRect = document.getElementById('dragRect');
+        if (_selUI) svg.appendChild(_selUI);
+        if (_dragRect) svg.appendChild(_dragRect);
+      }
 
       Editor.Selection.deselect();
     } catch (e) {
