@@ -9,8 +9,33 @@ Editor.Persistence = {
     const C = Editor.Core;
     C.updateDebug();
     const ranges = document.querySelectorAll('input[type=range]');
+    // Build sprites in z-order (DOM order) instead of allSprites order
+    const orderedSprites = [];
+    const svgEl = document.getElementById('battlefield');
+    Array.from(svgEl.children).forEach(el => {
+      let sp = C.allSprites.find(s => s.el === el);
+      if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
+        sp = C.allSprites.find(s => s._clipWrap === el);
+      }
+      if (sp && !sp.groupId) orderedSprites.push(sp);
+      // For group <g> elements, collect children in order
+      if (el.id && el.id.startsWith('group-')) {
+        Array.from(el.children).forEach(child => {
+          let gSp = C.allSprites.find(s => s.el === child);
+          if (!gSp && child.tagName === 'g' && child.id && child.id.endsWith('-wrap')) {
+            gSp = C.allSprites.find(s => s._clipWrap === child);
+          }
+          if (gSp) orderedSprites.push(gSp);
+        });
+      }
+    });
+    // Add any sprites not found (fallback)
+    C.allSprites.forEach(sp => {
+      if (!orderedSprites.includes(sp)) orderedSprites.push(sp);
+    });
+
     const data = {
-      sprites: C.allSprites.map(s => ({
+      sprites: orderedSprites.map(s => ({
         file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot,
         layerType: s.layerType || 'floor', hidden: s.hidden,
         flipX: s.flipX || false, flipY: s.flipY || false,
@@ -25,6 +50,11 @@ Editor.Persistence = {
       lights: Editor.Lights.serialize(),
       objectives: Editor.Objectives.serialize(),
       groups: (C.groups || []).map(g => ({ id: g.id, name: g.name, opacity: g.opacity })),
+      effects: {
+        shadow: {...Editor.Effects.shadow},
+        feather: {...Editor.Effects.feather},
+        grade: {...Editor.Effects.grade}
+      },
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ranges[0]?.value || 92,
       roofOpacity: ranges[1]?.value || 85,
@@ -107,6 +137,28 @@ Editor.Persistence = {
         ranges[1].nextElementSibling.textContent = data.roofOpacity + '%';
       }
 
+      // Restore effects state
+      if (data.effects) {
+        const E = Editor.Effects;
+        if (data.effects.shadow) Object.assign(E.shadow, data.effects.shadow);
+        if (data.effects.feather) Object.assign(E.feather, data.effects.feather);
+        if (data.effects.grade) Object.assign(E.grade, data.effects.grade);
+        // Update DOM controls if they exist
+        const shadowBtn = document.querySelector('[onclick*="toggleShadow"]');
+        if (shadowBtn) shadowBtn.classList.toggle('on', E.shadow.on);
+        const featherBtn = document.querySelector('[onclick*="toggleFeather"]');
+        if (featherBtn) featherBtn.classList.toggle('on', E.feather.on);
+        const gradeBtn = document.querySelector('[onclick*="toggleGrade"]');
+        if (gradeBtn) gradeBtn.classList.toggle('on', E.grade.on);
+        const fxShadowControls = document.getElementById('fxShadowControls');
+        if (fxShadowControls) fxShadowControls.style.display = E.shadow.on ? '' : 'none';
+        const fxFeatherControls = document.getElementById('fxFeatherControls');
+        if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
+        const fxGradeControls = document.getElementById('fxGradeControls');
+        if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
+        if (E._ready) E._flush();
+      }
+
       // Restore sprites
       if (data.sprites) {
         data.sprites.forEach(s => {
@@ -178,13 +230,10 @@ Editor.Persistence = {
       if (data.layerOrder) {
         const svg = document.getElementById('battlefield');
         data.layerOrder.forEach(id => {
-          // Try direct element lookup first
           let el = document.getElementById(id);
-          // If not found, might be a sprite ID — find its actual element (or wrapper)
-          if (!el) {
-            const sp = C.allSprites.find(s => s.id === id);
-            if (sp) el = sp._clipWrap || sp.el;
-          }
+          // For sprite IDs, prefer the crop wrapper (direct SVG child)
+          const sp = C.allSprites.find(s => s.id === id);
+          if (sp) el = sp._clipWrap || sp.el;
           if (el && el.parentNode === svg) svg.appendChild(el);
         });
         // Ensure selUI and dragRect stay last

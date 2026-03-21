@@ -205,7 +205,10 @@ Editor.Crop = {
   _applyClip(sp) {
     this._removeClip(sp);
 
-    const cL = sp.cropL || 0, cT = sp.cropT || 0, cR = sp.cropR || 0, cB = sp.cropB || 0;
+    let cL = sp.cropL || 0, cT = sp.cropT || 0, cR = sp.cropR || 0, cB = sp.cropB || 0;
+    // Swap crop sides for flipped sprites so clip maps to correct visual side
+    if (sp.flipX) { const tmp = cL; cL = cR; cR = tmp; }
+    if (sp.flipY) { const tmp = cT; cT = cB; cB = tmp; }
     if (cL === 0 && cT === 0 && cR === 0 && cB === 0) {
       Editor.Sprites.apply(sp);
       return;
@@ -250,7 +253,10 @@ Editor.Crop = {
     const clipRect = clipPath.querySelector('rect');
     if (!clipRect) return;
 
-    const cL = sp.cropL || 0, cT = sp.cropT || 0, cR = sp.cropR || 0, cB = sp.cropB || 0;
+    let cL = sp.cropL || 0, cT = sp.cropT || 0, cR = sp.cropR || 0, cB = sp.cropB || 0;
+    // Swap crop sides for flipped sprites
+    if (sp.flipX) { const tmp = cL; cL = cR; cR = tmp; }
+    if (sp.flipY) { const tmp = cT; cT = cB; cB = tmp; }
     clipRect.setAttribute('x', sp.x + sp.w * cL);
     clipRect.setAttribute('y', sp.y + sp.h * cT);
     clipRect.setAttribute('width', sp.w * (1 - cL - cR));

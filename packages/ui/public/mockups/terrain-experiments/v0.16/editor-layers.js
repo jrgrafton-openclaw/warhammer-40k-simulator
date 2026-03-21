@@ -81,19 +81,40 @@ Editor.Layers = {
     topZone.addEventListener('drop', e => {
       e.preventDefault(); topZone.style.background = ''; topZone.style.height = '4px';
       if (!this.draggedId) return;
-      const dragItem = zItems.find(z => this._itemId(z) === this.draggedId);
-      if (!dragItem) return;
-      const isGroup = dragItem.type === 'group' || dragItem.type === 'custom-group';
-      if (isGroup) {
-        Editor.Undo.push();
-        const selUI = document.getElementById('selUI');
-        svg.insertBefore(dragItem.svgEl, selUI);
-        const _selUI = document.getElementById('selUI');
-        const _dragRect = document.getElementById('dragRect');
-        if (_selUI) svg.appendChild(_selUI);
-        if (_dragRect) svg.appendChild(_dragRect);
-        Editor.Persistence.save(); this.rebuild();
+      Editor.Undo.push();
+      const selUI = document.getElementById('selUI');
+
+      let dragItem = zItems.find(z => this._itemId(z) === this.draggedId);
+
+      // Handle sprite being dragged out of a group (not in zItems as direct SVG child)
+      if (!dragItem) {
+        const sp = C.allSprites.find(s => s.id === this.draggedId);
+        if (!sp) return;
+        const elToMove = sp._clipWrap || sp.el;
+        if (sp.groupId) {
+          const oldGroupEl = document.getElementById(sp.groupId);
+          if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
+          delete sp.groupId;
+        }
+        svg.insertBefore(elToMove, selUI);
+      } else {
+        // Multi-select batch move: if dragged sprite is in multiSel, move all
+        const dragSp = dragItem.type === 'sprite' ? dragItem.ref : null;
+        if (dragSp && C.multiSel.length > 1 && C.multiSel.includes(dragSp)) {
+          const selEls = C.multiSel.map(s => s._clipWrap || s.el).filter(el => el.parentNode === svg);
+          const allChildren = Array.from(svg.children);
+          selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
+          selEls.forEach(el => svg.insertBefore(el, selUI));
+        } else {
+          svg.insertBefore(dragItem.svgEl, selUI);
+        }
       }
+
+      const _selUI = document.getElementById('selUI');
+      const _dragRect = document.getElementById('dragRect');
+      if (_selUI) svg.appendChild(_selUI);
+      if (_dragRect) svg.appendChild(_dragRect);
+      Editor.Persistence.save(); this.rebuild();
     });
     list.appendChild(topZone);
 
@@ -117,9 +138,8 @@ Editor.Layers = {
           });
         }
       } else if (item.type === 'custom-group') {
-        row = this._createCustomGroupRow(item, C);
+        row = this._createCustomGroupRow(item, C, zItems);
         list.appendChild(row);
-        this._setupDrag(row, this._itemId(item), zItems);
         // Show child sprites (in DOM order = z-order)
         const gId = item.groupId;
         const gEl = document.getElementById(gId);
@@ -269,7 +289,7 @@ Editor.Layers = {
   },
 
   /* ── Custom sprite group row ── */
-  _createCustomGroupRow(item, C) {
+  _createCustomGroupRow(item, C, zItems) {
     const gId = item.groupId;
     const group = (C.groups || []).find(g => g.id === gId);
     const name = group ? group.name : gId;
@@ -313,24 +333,43 @@ Editor.Layers = {
       });
     });
 
-    // Accept sprite drops to add to this group
+    // Make group row draggable for z-order reordering
+    row.draggable = true;
+    row.dataset.layerId = gId;
+    row.addEventListener('dragstart', () => { this.draggedId = gId; row.classList.add('dragging'); });
+    row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedId = null; });
+
+    // Accept drops: sprites → add to group, groups/built-ins → z-order reorder
     row.addEventListener('dragover', e => {
       e.preventDefault();
-      if (this.draggedId && !this.draggedId.startsWith('group-')) {
+      e.stopImmediatePropagation();
+      if (!this.draggedId || this.draggedId === gId) return;
+      const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
+      if (isSpriteDrag) {
         row.classList.add('drop-above');
+        row.classList.remove('drop-below');
+      } else {
+        const rect = row.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        row.classList.toggle('drop-above', e.clientY < mid);
+        row.classList.toggle('drop-below', e.clientY >= mid);
       }
     });
-    row.addEventListener('dragleave', () => { row.classList.remove('drop-above'); });
+    row.addEventListener('dragleave', () => { row.classList.remove('drop-above', 'drop-below'); });
     row.addEventListener('drop', e => {
       e.preventDefault();
       e.stopPropagation();
-      e.stopImmediatePropagation(); // Prevent _setupDrag's drop handler from also firing
-      row.classList.remove('drop-above');
-      if (this.draggedId && !this.draggedId.startsWith('group-')) {
+      e.stopImmediatePropagation();
+      row.classList.remove('drop-above', 'drop-below');
+      if (!this.draggedId || this.draggedId === gId) return;
+      const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
+      if (isSpriteDrag) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
         if (sp && sp.groupId !== gId) {
           Editor.Groups.addToGroup(gId, sp);
         }
+      } else if (zItems) {
+        this._handleDrop(this.draggedId, gId, zItems);
       }
     });
 
