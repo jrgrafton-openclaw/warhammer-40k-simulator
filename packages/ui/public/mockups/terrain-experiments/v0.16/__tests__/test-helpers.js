@@ -80,11 +80,11 @@ export function loadEditor() {
   }
 
   const modules = [
-    'editor-state.js',
-    'editor-bus.js', 'editor-core.js', 'editor-undo.js', 'editor-commands.js', 'editor-models.js', 'editor-sprites.js',
-    'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
-    'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',
-    'editor-effects.js', 'editor-persistence.js'
+    'js/core/state.js',
+    'js/core/bus.js', 'js/entities/core.js', 'js/core/undo.js', 'js/core/commands.js', 'js/entities/models.js', 'js/entities/sprites.js',
+    'js/entities/objectives.js', 'js/entities/lights.js', 'js/tools/groups.js', 'js/tools/crop.js',
+    'js/ui/zoom.js', 'js/ui/shortcuts.js', 'js/tools/selection.js', 'js/ui/layers.js',
+    'js/tools/effects.js', 'js/persistence.js'
   ];
 
   window.Editor = {};

@@ -84,11 +84,11 @@ function loadEditor() {
   // Load all editor modules in order
   const editorDir = path.resolve(__dirname, '..');
   const modules = [
-    'editor-state.js',
-    'editor-bus.js', 'editor-core.js', 'editor-undo.js', 'editor-commands.js', 'editor-models.js', 'editor-sprites.js',
-    'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
-    'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',
-    'editor-effects.js', 'editor-persistence.js'
+    'js/core/state.js',
+    'js/core/bus.js', 'js/entities/core.js', 'js/core/undo.js', 'js/core/commands.js', 'js/entities/models.js', 'js/entities/sprites.js',
+    'js/entities/objectives.js', 'js/entities/lights.js', 'js/tools/groups.js', 'js/tools/crop.js',
+    'js/ui/zoom.js', 'js/ui/shortcuts.js', 'js/tools/selection.js', 'js/ui/layers.js',
+    'js/tools/effects.js', 'js/persistence.js'
   ];
 
   // Create Editor namespace — must be on window AND as a global var the scripts can see
@@ -518,7 +518,7 @@ describe('Integration — James layout JSON', () => {
   });
 
   it('loads james-layout.json without errors', () => {
-    const layoutPath = path.resolve(__dirname, '..', 'james-layout.json');
+    const layoutPath = path.resolve(__dirname, '..', 'data', 'james-layout.json');
     const layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
 
     expect(layout.sprites.length).toBeGreaterThan(0);
@@ -532,7 +532,7 @@ describe('Integration — James layout JSON', () => {
   });
 
   it('all sprites render with correct structure after import', () => {
-    const layoutPath = path.resolve(__dirname, '..', 'james-layout.json');
+    const layoutPath = path.resolve(__dirname, '..', 'data', 'james-layout.json');
     const layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
 
     // Simulate import: create all sprites from layout data
@@ -851,7 +851,7 @@ describe('Integration — test-layout.json', () => {
   });
 
   it('loads test-layout.json with groups, crops, flips', () => {
-    const layoutPath = path.resolve(__dirname, '..', 'test-layout.json');
+    const layoutPath = path.resolve(__dirname, '..', 'data', 'test-layout.json');
     const raw = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
 
     // Convert from output format

@@ -115,10 +115,10 @@ describe('Zero manual save() calls in production modules', () => {
     const path = require('path');
     const dir = path.resolve(__dirname, '..');
     const modules = [
-      'editor-effects.js', 'editor-sprites.js', 'editor-groups.js',
-      'editor-layers.js', 'editor-crop.js', 'editor-lights.js',
-      'editor-core.js', 'editor-selection.js', 'editor-undo.js',
-      'editor-models.js'
+      'js/tools/effects.js', 'js/entities/sprites.js', 'js/tools/groups.js',
+      'js/ui/layers.js', 'js/tools/crop.js', 'js/entities/lights.js',
+      'js/entities/core.js', 'js/tools/selection.js', 'js/core/undo.js',
+      'js/entities/models.js'
     ];
     const violations = [];
     modules.forEach(mod => {
@@ -135,9 +135,9 @@ describe('Zero manual save() calls in production modules', () => {
     const dir = path.resolve(__dirname, '..');
     // Modules that mutate state should have at least one dispatch call
     const mutatingModules = [
-      'editor-effects.js', 'editor-sprites.js', 'editor-groups.js',
-      'editor-layers.js', 'editor-crop.js', 'editor-lights.js',
-      'editor-undo.js', 'editor-selection.js'
+      'js/tools/effects.js', 'js/entities/sprites.js', 'js/tools/groups.js',
+      'js/ui/layers.js', 'js/tools/crop.js', 'js/entities/lights.js',
+      'js/core/undo.js', 'js/tools/selection.js'
     ];
     mutatingModules.forEach(mod => {
       const code = fs.readFileSync(path.join(dir, mod), 'utf8');
