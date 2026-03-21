@@ -34,16 +34,19 @@ Unpersisted state:
 - Light visibility toggles
 - Expanded group state in layers panel
 
-### 3. Crop Wrapper Duality (P1)
+### 3. Objectives `restorePositions()` is a No-Op (P1)
+`Editor.Objectives.restorePositions()` is an empty function. Objectives are only created during `Editor.Core.init()` with hardcoded default positions. `Persistence.load()` calls `restorePositions(data.objectives)` but it does nothing — so custom objective positions (if they were ever dragged) would be silently lost on reload. Discovered during Phase 0 round-trip testing.
+
+### 4. Crop Wrapper Duality (P1)
 Cropping wraps `<image>` in `<g clip-path>`. Every z-order operation must check `sp._clipWrap || sp.el`. This pattern appears **20+ times** across 5 modules. Missing one check = bug.
 
-### 4. Full-Snapshot Undo (P2)
+### 5. Full-Snapshot Undo (P2)
 `push()` clones entire world. `pop()` destroys everything and rebuilds from scratch. Problems:
 - Granularity: two operations sharing a `push()` undo together
 - Incomplete: doesn't capture effects globals, toggle states, zoom/pan
 - Expensive: full DOM teardown/rebuild on every Ctrl+Z
 
-### 5. Module Coupling (P3)
+### 6. Module Coupling (P3)
 Every module directly calls 5–8 others. No event bus, no central dispatcher. Adding a feature = updating N modules. Missing one = bug.
 
 ---
@@ -107,6 +110,19 @@ No extra dependencies — use the OpenClaw browser tool against the live GitHub 
 - [ ] Screenshot after undo (move sprite → undo) → matches baseline
 
 **Exit criteria:** All persistence round-trip tests pass. Visual baseline established. Undo gaps documented as known-failing tests.
+
+### Phase 0 Results ✅
+
+**Completed.** 60 tests passing, 3 skipped (known gaps).
+
+| File | Tests | What it covers |
+|------|:---:|---|
+| `persistence.test.js` | 12 ✅ 2 ⏭ | Full save→clear→load round-trip, crop/group/model/settings preservation |
+| `undo.test.js` | 8 ✅ 1 ⏭ | Move/add/group/crop undo, shadowMul, multi-step, grouped+cropped combined |
+| `layers.test.js` | 7 ✅ | Drag reorder, out-of/into-group, multi-select batch, crop wrapper z-order |
+| `editor.test.js` | 33 ✅ | Pre-existing (unchanged) |
+
+**New gap discovered:** `Objectives.restorePositions()` is a no-op — added to architecture diagnosis above.
 
 ---
 
@@ -311,7 +327,7 @@ EditorBus.emit('sprite:moved', { id, x, y });
 
 | Phase | Files Changed | New Files | Risk | Est. Effort |
 |-------|:---:|:---:|:---:|:---:|
-| 0 — Test infrastructure | 0 | 3–4 test files, 1 fixture | None (no prod changes) | 1 day |
+| 0 — Test infrastructure ✅ | 0 | 4 test files, 1 fixture | None (no prod changes) | ✅ Done |
 | 1 — EditorState | 3 (persistence, core, layers) | 1 (editor-state.js) | Medium | 1–2 days |
 | 2 — Auto-save dispatch | All editor-*.js | 0 | Medium | 1 day |
 | 3 — rootEl getter | 5 (groups, layers, undo, persistence, crop) | 0 | Low | 0.5 day |

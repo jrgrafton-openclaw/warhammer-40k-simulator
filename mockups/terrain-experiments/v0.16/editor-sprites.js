@@ -154,6 +154,17 @@ Editor.Sprites = {
                   data.roofOpacity = data.settings.roofOpacity;
                 }
               }
+              // Auto-create groups from sprite groupId references if missing
+              if (data.sprites) {
+                const groupIds = new Set(data.sprites.filter(s => s.groupId).map(s => s.groupId));
+                if (!data.groups) data.groups = [];
+                groupIds.forEach(gId => {
+                  if (!data.groups.find(g => g.id === gId)) {
+                    const num = parseInt(gId.replace('group-g', '')) || 0;
+                    data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
+                  }
+                });
+              }
               localStorage.setItem(Editor.Persistence.STORAGE_KEY, JSON.stringify(data));
               location.reload();
             } else {
