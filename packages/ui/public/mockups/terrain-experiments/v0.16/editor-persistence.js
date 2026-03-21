@@ -147,6 +147,9 @@ Editor.Persistence = {
       var C = Editor.Core;
       var S = Editor.State;
 
+      // Suppress dispatch/sync during load — we'll sync once at the end
+      S._loading = true;
+
       if (data.bg) { document.getElementById('bgSel').value = data.bg; C.setBg(data.bg); }
 
       var ranges = document.querySelectorAll('input[type=range]');
@@ -277,8 +280,8 @@ Editor.Persistence = {
         this._restoreZOrderFromLayerOrder(data.layerOrder, C);
       }
 
-      // Final sync: rebuild zOrder from the now-correct DOM state
-      // (groups, crops, and z-order restore are all done at this point)
+      // Re-enable dispatch and do final sync from the now-correct DOM state
+      S._loading = false;
       S.syncFromCore();
       S.syncZOrderFromDOM();
 

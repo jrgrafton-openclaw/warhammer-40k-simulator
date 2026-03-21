@@ -246,6 +246,8 @@ Editor.State = {
    *   ADD_MODEL, DELETE_MODEL, MOVE_MODEL, PASTE, UNDO, IMPORT
    */
   dispatch(action) {
+    // During persistence load, skip sync — we'll do it once at the end
+    if (this._loading) return;
     // Sync state immediately so zOrder/arrays are always current.
     // Only the localStorage write is debounced.
     this.syncFromCore();
