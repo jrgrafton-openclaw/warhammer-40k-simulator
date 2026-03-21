@@ -258,35 +258,49 @@ All modules migrated:
 
 ---
 
-## Phase 3: `rootEl` Getter — Kill the Duality
+## Phase 3: `rootEl` Getter — Kill the Duality ✅
 
 **Goal:** Eliminate `sp._clipWrap || sp.el` scattered across the codebase.
 
-### 3.1 — Add `sp.rootEl` Getter
+**Status:** ✅ Complete. 175 tests passing (170 original + 5 new), 3 skipped.
+
+### 3.1 — Add `sp.rootEl` Getter ✅
 ```js
 Object.defineProperty(sprite, 'rootEl', {
-  get() { return this._clipWrap || this.el; }
+  get() { return this._clipWrap || this.el; },
+  enumerable: false, configurable: true
 });
 ```
+Added in `Editor.Sprites.addSprite()` — every sprite gets the getter at creation time.
 
-### 3.2 — Replace All `_clipWrap || el` References
-- [ ] `editor-groups.js` — 5 occurrences
-- [ ] `editor-layers.js` — 8 occurrences (including `_handleDrop`, `_setupGroupChildDrag`)
-- [ ] `editor-undo.js` — 2 occurrences
-- [ ] `editor-persistence.js` — 2 occurrences
-- [ ] `editor-selection.js` — any occurrences
+### 3.2 — Replace All `_clipWrap || el` References ✅
+- [x] `editor-groups.js` — 6 occurrences replaced (createGroup, addToGroup, ungroup, deleteGroup, restore)
+- [x] `editor-layers.js` — 7 occurrences replaced (_handleDrop top-zone, _handleDrop sprite-out-of-group, _handleDrop multi-select ×2, _handleDrop target guard ×2, _handleDrop dragEl fallback)
+- [x] `editor-undo.js` — 1 occurrence replaced (pop group-move)
+- [x] `editor-persistence.js` — 2 occurrences replaced (_restoreZOrderFromExplicit, _restoreZOrderFromLayerOrder)
+- [x] `editor-selection.js` — 2 occurrences replaced (z-order +/- keyboard shortcuts)
+- [x] `editor-state.js` — `getSpriteRootEl()` now delegates to `sp.rootEl`
 
-### 3.3 — Crop Module Updates
-- [ ] `Editor.Crop.enter()` sets `sp._clipWrap` → now automatically reflected in `sp.rootEl`
-- [ ] `Editor.Crop._removeClip()` clears `sp._clipWrap` → `sp.rootEl` falls back to `sp.el`
+### 3.3 — Crop Module Updates ✅
+- [x] `Editor.Crop._applyClip(sp)` sets `sp._clipWrap` → automatically reflected in `sp.rootEl`
+- [x] `Editor.Crop._removeClip(sp)` clears `sp._clipWrap` → `sp.rootEl` falls back to `sp.el`
+- No changes needed in editor-crop.js itself — the getter dynamically reads `_clipWrap`.
 
-### 3.4 — Tests
-- [ ] Crop a sprite → `sp.rootEl` is the wrapper
-- [ ] Uncrop → `sp.rootEl` is the image element
-- [ ] All group/layer operations use `rootEl` — no test references `_clipWrap || el`
-- [ ] Visual regression unchanged
+### 3.4 — Tests ✅ (5 new tests in editor-state.test.js)
+- [x] `sp.rootEl` returns `el` when uncropped
+- [x] `sp.rootEl` returns `_clipWrap` when cropped
+- [x] `sp.rootEl` falls back to `el` after uncrop (crop → remove → check)
+- [x] `getSpriteRootEl` delegates to `sp.rootEl`
+- [x] `rootEl` is not enumerable (does not pollute serialization)
 
-**Exit criteria:** Zero occurrences of `_clipWrap || el` outside the `rootEl` getter definition.
+**Verification:** `grep -rn "_clipWrap || " *.js` returns only the getter definition in `editor-sprites.js:56`.
+
+**Exit criteria:** ✅ Zero occurrences of `_clipWrap || el` outside the `rootEl` getter definition.
+
+**Architecture notes:**
+- `rootEl` is defined as a non-enumerable property so it doesn't appear in `Object.keys()` or `JSON.stringify()`, preventing serialization pollution.
+- The `_clipWrap` property is still set/cleared by `editor-crop.js` — the getter is read-only sugar that eliminates the scattered duality pattern.
+- Reverse lookups (`s._clipWrap === el`) in `editor-layers.js`, `editor-persistence.js`, `editor-state.js`, and test helpers remain — these find which sprite owns a given DOM element, a different concern from the duality pattern.
 
 ---
 
@@ -379,7 +393,7 @@ EditorBus.emit('sprite:moved', { id, x, y });
 | 0 — Test infrastructure ✅ | 0 | 4 test files, 1 fixture | None (no prod changes) | ✅ Done |
 | 1 — EditorState ✅ | 3 (persistence, core, layers) | 1 (editor-state.js) + 1 test | Medium | ✅ Done |
 | 2 — Auto-save dispatch ✅ | 11 editor-*.js + 1 test | 1 (dispatch.test.js) | Medium | ✅ Done |
-| 3 — rootEl getter | 5 (groups, layers, undo, persistence, crop) | 0 | Low | 0.5 day |
+| 3 — rootEl getter ✅ | 6 (sprites, groups, layers, undo, persistence, selection, state) | 0 | Low | ✅ Done |
 | 4 — Command undo | 2 (undo, all callers) | 1 (editor-commands.js) | High | 2 days |
 | 5 — Event bus | All editor-*.js | 1 (editor-bus.js) | Medium | 1–2 days |
 
