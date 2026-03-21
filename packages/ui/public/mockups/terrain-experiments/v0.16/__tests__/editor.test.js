@@ -452,12 +452,73 @@ describe('Integration — James layout JSON', () => {
     expect(layout.sprites.length).toBeGreaterThan(0);
     expect(layout.models.length).toBeGreaterThan(0);
 
-    // Simulate import: store as localStorage data and reload
-    // We'll just verify the sprite data is valid
     layout.sprites.forEach(s => {
       expect(s.file).toBeTruthy();
       expect(typeof s.x).toBe('number');
       expect(typeof s.y).toBe('number');
+    });
+  });
+
+  it('all sprites render with correct structure after import', () => {
+    const layoutPath = path.resolve(__dirname, '..', 'james-layout.json');
+    const layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
+
+    // Simulate import: create all sprites from layout data
+    layout.sprites.forEach(s => {
+      const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType || 'floor', true);
+      sp.hidden = !!s.hidden;
+      sp.flipX = !!s.flipX;
+      sp.flipY = !!s.flipY;
+      sp.cropL = s.cropL || 0;
+      sp.cropT = s.cropT || 0;
+      sp.cropR = s.cropR || 0;
+      sp.cropB = s.cropB || 0;
+      sp.shadowMul = s.shadowMul != null ? s.shadowMul : 1.0;
+      if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
+    });
+
+    // Apply crops
+    Editor.Crop.reapplyAll();
+
+    // Apply effects (simulating Effects.init)
+    Editor.Effects._ready = true;
+    Editor.Effects.rebuildAll();
+
+    const C = Editor.Core;
+    expect(C.allSprites.length).toBe(layout.sprites.length);
+
+    // Verify every sprite has a valid element in the SVG
+    C.allSprites.forEach(sp => {
+      expect(sp.el).toBeTruthy();
+      expect(sp.el.getAttribute('href')).toContain(sp.file);
+
+      // Sprite element should be in the SVG (directly or via wrapper)
+      const svg = document.getElementById('battlefield');
+      const elInSvg = sp._clipWrap
+        ? svg.contains(sp._clipWrap) && sp._clipWrap.contains(sp.el)
+        : svg.contains(sp.el);
+      expect(elInSvg).toBe(true);
+
+      // Every sprite should have a filter applied
+      expect(sp.el.getAttribute('filter')).toBeTruthy();
+    });
+
+    // Verify cropped sprites have correct wrapper structure
+    const cropped = C.allSprites.filter(sp => sp.cropL || sp.cropT || sp.cropR || sp.cropB);
+    expect(cropped.length).toBe(4); // 4 cropped sprites in James's data
+
+    cropped.forEach(sp => {
+      expect(sp._clipWrap).toBeTruthy();
+      expect(sp._clipWrap.getAttribute('clip-path')).toBeTruthy();
+      expect(sp.el.parentNode).toBe(sp._clipWrap);
+    });
+
+    // Verify uncropped sprites are direct SVG children (not wrapped)
+    const uncropped = C.allSprites.filter(sp => !sp.cropL && !sp.cropT && !sp.cropR && !sp.cropB);
+    const svg = document.getElementById('battlefield');
+    uncropped.forEach(sp => {
+      expect(sp._clipWrap).toBeFalsy();
+      expect(sp.el.parentNode).toBe(svg);
     });
   });
 });
