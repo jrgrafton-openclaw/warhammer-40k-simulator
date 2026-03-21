@@ -1,0 +1,607 @@
+{
+ "sprites": [
+  {
+   "id": "s0",
+   "file": "scatter-v5.png",
+   "x": 317,
+   "y": 455,
+   "w": 85,
+   "h": 76,
+   "rot": 45,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s1",
+   "file": "t10-layer-bottom.png",
+   "x": 92,
+   "y": 262,
+   "w": 100,
+   "h": 80,
+   "rot": 0,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s2",
+   "file": "layer-bottom-aligned.png",
+   "x": 174,
+   "y": 331,
+   "w": 91,
+   "h": 89,
+   "rot": 1.7763568394002505e-15,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": true,
+   "flipY": true,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s3",
+   "file": "layer-bottom-aligned.png",
+   "x": 174,
+   "y": 403,
+   "w": 91,
+   "h": 85,
+   "rot": 1.7763568394002505e-15,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": true,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s4",
+   "file": "openai-scatter.png",
+   "x": 158,
+   "y": 302,
+   "w": 78,
+   "h": 73,
+   "rot": 45,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s5",
+   "file": "layer-top-v3.png",
+   "x": 214,
+   "y": 360,
+   "w": 53,
+   "h": 57,
+   "rot": 1.7763568394002505e-15,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s6",
+   "file": "layer-top-v3.png",
+   "x": 213,
+   "y": 398,
+   "w": 53,
+   "h": 60,
+   "rot": 1.7763568394002505e-15,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": true,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": {
+    "l": 0,
+    "t": 0,
+    "r": 0,
+    "b": 0.156
+   }
+  },
+  {
+   "id": "s7",
+   "file": "layer-top-v4.png",
+   "x": 99,
+   "y": 260,
+   "w": 100,
+   "h": 75,
+   "rot": 0,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s8",
+   "file": "layer-top-v2.png",
+   "x": 77,
+   "y": 67,
+   "w": 92,
+   "h": 63,
+   "rot": 90,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": true,
+   "flipY": false,
+   "groupId": "group-g1",
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s9",
+   "file": "layer-top-aligned.png",
+   "x": 267,
+   "y": 166,
+   "w": 78,
+   "h": 63,
+   "rot": 45,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s10",
+   "file": "scatter-v6.png",
+   "x": 34,
+   "y": 259,
+   "w": 96,
+   "h": 84,
+   "rot": -8,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s11",
+   "file": "layer-bottom-v5.png",
+   "x": 55,
+   "y": 73,
+   "w": 100,
+   "h": 80,
+   "rot": 90,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g1",
+   "shadowMul": 0.04,
+   "crop": null
+  },
+  {
+   "id": "s12",
+   "file": "layer-bottom-v5.png",
+   "x": 56,
+   "y": 119,
+   "w": 100,
+   "h": 80,
+   "rot": 90,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": true,
+   "groupId": "group-g1",
+   "shadowMul": 0.04,
+   "crop": {
+    "l": 0.107,
+    "t": 0,
+    "r": 0,
+    "b": 0
+   }
+  },
+  {
+   "id": "s13",
+   "file": "scatter-v2.png",
+   "x": 80,
+   "y": 86,
+   "w": 64,
+   "h": 64,
+   "rot": -45,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": true,
+   "groupId": "group-g1",
+   "shadowMul": 0,
+   "crop": {
+    "l": 0.16,
+    "t": 0,
+    "r": 0,
+    "b": 0.343
+   }
+  },
+  {
+   "id": "s14",
+   "file": "scatter-v2.png",
+   "x": 82,
+   "y": 90,
+   "w": 64,
+   "h": 64,
+   "rot": 7,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g1",
+   "shadowMul": 0,
+   "crop": null
+  },
+  {
+   "id": "s15",
+   "file": "scatter-v3.png",
+   "x": 56,
+   "y": 125,
+   "w": 93,
+   "h": 74,
+   "rot": 24,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g1",
+   "shadowMul": 0.03,
+   "crop": null
+  },
+  {
+   "id": "s16",
+   "file": "layer-top-v5.png",
+   "x": 268,
+   "y": 167,
+   "w": 81,
+   "h": 64,
+   "rot": 45,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s17",
+   "file": "t10-layer-bottom.png",
+   "x": 272,
+   "y": 172,
+   "w": 72,
+   "h": 57,
+   "rot": 45,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s18",
+   "file": "scatter-layer.png",
+   "x": 220,
+   "y": 116,
+   "w": 100,
+   "h": 80,
+   "rot": 60,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s19",
+   "file": "scatter-layer.png",
+   "x": 230,
+   "y": 206,
+   "w": 100,
+   "h": 80,
+   "rot": 60,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": null,
+   "shadowMul": 1,
+   "crop": null
+  }
+ ],
+ "models": [
+  {
+   "kind": "circle",
+   "x": 100,
+   "y": 64,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 117,
+   "y": 64,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 134,
+   "y": 64,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 108,
+   "y": 81,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 125,
+   "y": 81,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 120,
+   "y": 160,
+   "r": 9,
+   "stroke": "#0088aa",
+   "icon": "star"
+  },
+  {
+   "kind": "circle",
+   "x": 80,
+   "y": 300,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 97,
+   "y": 300,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 114,
+   "y": 300,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 88,
+   "y": 317,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 105,
+   "y": 317,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 150,
+   "y": 400,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "diamond"
+  },
+  {
+   "kind": "circle",
+   "x": 167,
+   "y": 400,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "diamond"
+  },
+  {
+   "kind": "circle",
+   "x": 184,
+   "y": 400,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "diamond"
+  },
+  {
+   "kind": "circle",
+   "x": 158,
+   "y": 417,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "diamond"
+  },
+  {
+   "kind": "circle",
+   "x": 175,
+   "y": 417,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "diamond"
+  },
+  {
+   "kind": "rect",
+   "x": 39,
+   "y": 468,
+   "w": 43,
+   "h": 25,
+   "stroke": "#0088aa"
+  },
+  {
+   "kind": "circle",
+   "x": 560,
+   "y": 100,
+   "r": 9,
+   "stroke": "#aa2810",
+   "icon": "star"
+  },
+  {
+   "kind": "circle",
+   "x": 500,
+   "y": 200,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 517,
+   "y": 200,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 534,
+   "y": 200,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 551,
+   "y": 200,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 568,
+   "y": 200,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 500,
+   "y": 217,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 517,
+   "y": 217,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 534,
+   "y": 217,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 551,
+   "y": 217,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 568,
+   "y": 217,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 560,
+   "y": 350,
+   "r": 8,
+   "stroke": "#aa2810",
+   "icon": "diamond"
+  }
+ ],
+ "lights": [],
+ "groups": [],
+ "objectives": [
+  {
+   "idx": 0,
+   "leftPct": 50,
+   "topPct": 13.64
+  },
+  {
+   "idx": 1,
+   "leftPct": 16.67,
+   "topPct": 50
+  },
+  {
+   "idx": 2,
+   "leftPct": 50,
+   "topPct": 50
+  },
+  {
+   "idx": 3,
+   "leftPct": 83.33,
+   "topPct": 50
+  },
+  {
+   "idx": 4,
+   "leftPct": 50,
+   "topPct": 86.36
+  }
+ ],
+ "settings": {
+  "bg": "svg-gradient",
+  "ruinsOpacity": 100,
+  "roofOpacity": 100
+ }
+}
