@@ -52,6 +52,10 @@ Editor.Sprites = {
     svg.insertBefore(img, selUI);
 
     const sp = { id, file, x, y, w, h, rot, el: img, layerType: layerType || 'floor', hidden: false, flipX: false, flipY: false, shadowMul: 1.0 };
+    Object.defineProperty(sp, 'rootEl', {
+      get() { return this._clipWrap || this.el; },
+      enumerable: false, configurable: true
+    });
     C.allSprites.push(sp);
 
     img.onmousedown = e => {

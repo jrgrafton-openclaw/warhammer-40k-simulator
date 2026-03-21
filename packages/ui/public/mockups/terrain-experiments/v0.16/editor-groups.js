@@ -34,7 +34,7 @@ Editor.Groups = {
     for (let i = svgChildren.length - 1; i >= 0; i--) {
       const child = svgChildren[i];
       if (sprites.some(s => {
-        const el = s._clipWrap || s.el;
+        const el = s.rootEl;
         return el.parentNode === child || el === child;
       })) {
         insertRef = child.nextElementSibling;
@@ -46,7 +46,7 @@ Editor.Groups = {
 
     // Move sprites into the group <g> (handle crop wrappers)
     sprites.forEach(sp => {
-      const elToMove = sp._clipWrap || sp.el;
+      const elToMove = sp.rootEl;
       elToMove.parentNode.removeChild(elToMove);
       g.appendChild(elToMove);
       sp.groupId = id;
@@ -76,7 +76,7 @@ Editor.Groups = {
     Editor.Undo.push();
 
     // The element to move may be wrapped in a crop <g>
-    const elToMove = sp._clipWrap || sp.el;
+    const elToMove = sp.rootEl;
 
     // Remove from current group if in one
     if (sp.groupId && sp.groupId !== groupId) {
@@ -132,7 +132,7 @@ Editor.Groups = {
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
     const insertRef = gEl.nextElementSibling; // insert where the group was
     sprites.forEach(sp => {
-      const elToMove = sp._clipWrap || sp.el;
+      const elToMove = sp.rootEl;
       gEl.removeChild(elToMove);
       svg.insertBefore(elToMove, insertRef);
       delete sp.groupId;
@@ -157,8 +157,7 @@ Editor.Groups = {
 
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
     sprites.forEach(sp => {
-      if (sp._clipWrap) sp._clipWrap.remove();
-      else sp.el.remove();
+      sp.rootEl.remove();
       C.allSprites = C.allSprites.filter(s => s !== sp);
     });
 
@@ -200,7 +199,7 @@ Editor.Groups = {
     C.allSprites.forEach(sp => {
       if (sp.groupId && document.getElementById(sp.groupId)) {
         const gEl = document.getElementById(sp.groupId);
-        const elToMove = sp._clipWrap || sp.el;
+        const elToMove = sp.rootEl;
         if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
         gEl.appendChild(elToMove);
       }

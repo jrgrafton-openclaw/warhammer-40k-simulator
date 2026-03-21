@@ -91,7 +91,7 @@ Editor.Undo = {
         sp.groupId = s.groupId;
         const gEl = document.getElementById(s.groupId);
         if (gEl) {
-          const elToMove = sp._clipWrap || sp.el;
+          const elToMove = sp.rootEl;
           if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
           gEl.appendChild(elToMove);
         }

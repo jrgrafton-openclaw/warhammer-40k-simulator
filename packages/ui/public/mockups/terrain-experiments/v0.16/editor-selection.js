@@ -415,14 +415,14 @@ Editor.Selection = {
 
     // Z-order (sprites are direct SVG children, may be inside crop wrapper)
     if (e.key === '=' || e.key === '+') {
-      const el = C.selected._clipWrap || C.selected.el;
+      const el = C.selected.rootEl;
       const parent = el.parentNode;
       const next = el.nextElementSibling;
       if (next && next.id !== 'selUI' && next.id !== 'dragRect') parent.insertBefore(next, el);
       Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
     }
     if (e.key === '-') {
-      const el = C.selected._clipWrap || C.selected.el;
+      const el = C.selected.rootEl;
       const parent = el.parentNode;
       const prev = el.previousElementSibling;
       if (prev) parent.insertBefore(el, prev);

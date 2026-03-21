@@ -52,7 +52,7 @@ Editor.State = {
    * This is THE single place for the crop wrapper duality.
    */
   getSpriteRootEl(sp) {
-    return sp._clipWrap || sp.el;
+    return sp.rootEl;
   },
 
   /** Find a sprite by id. */

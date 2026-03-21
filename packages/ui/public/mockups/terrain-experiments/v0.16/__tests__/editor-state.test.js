@@ -64,6 +64,46 @@ describe('EditorState — core accessors', () => {
     expect(Editor.State.getSpriteRootEl(sp)).toBe(sp.el);
   });
 
+  // ── Phase 3: rootEl getter tests ──
+
+  it('sp.rootEl returns el when uncropped', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 10, 20, 100, 80, 0, 'floor', true);
+    expect(sp.rootEl).toBe(sp.el);
+  });
+
+  it('sp.rootEl returns _clipWrap when cropped', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 10, 20, 100, 80, 0, 'floor', true);
+    sp.cropL = 0.1; sp.cropR = 0.1;
+    Editor.Crop.reapplyAll();
+    expect(sp._clipWrap).toBeTruthy();
+    expect(sp.rootEl).toBe(sp._clipWrap);
+  });
+
+  it('sp.rootEl falls back to el after uncrop', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 10, 20, 100, 80, 0, 'floor', true);
+    sp.cropL = 0.1; sp.cropR = 0.1;
+    Editor.Crop.reapplyAll();
+    expect(sp.rootEl).toBe(sp._clipWrap);
+    // Remove crop
+    Editor.Crop._removeClip(sp);
+    expect(sp._clipWrap).toBeNull();
+    expect(sp.rootEl).toBe(sp.el);
+  });
+
+  it('getSpriteRootEl delegates to sp.rootEl', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 10, 20, 100, 80, 0, 'floor', true);
+    expect(Editor.State.getSpriteRootEl(sp)).toBe(sp.rootEl);
+    sp.cropL = 0.1;
+    Editor.Crop.reapplyAll();
+    expect(Editor.State.getSpriteRootEl(sp)).toBe(sp.rootEl);
+  });
+
+  it('rootEl is not enumerable (does not pollute serialization)', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 10, 20, 100, 80, 0, 'floor', true);
+    const keys = Object.keys(sp);
+    expect(keys).not.toContain('rootEl');
+  });
+
   it('syncFromCore copies all arrays by reference', () => {
     const sp = Editor.Sprites.addSprite('test.png', 10, 20, 100, 80, 0, 'floor', true);
     Editor.State.syncFromCore();

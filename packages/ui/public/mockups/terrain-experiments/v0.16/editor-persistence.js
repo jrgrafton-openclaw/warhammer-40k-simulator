@@ -289,7 +289,7 @@ Editor.Persistence = {
       var el;
       if (entry.type === 'sprite') {
         var sp = C.allSprites.find(function(s) { return s.id === entry.id; });
-        el = sp ? (sp._clipWrap || sp.el) : null;
+        el = sp ? sp.rootEl : null;
       } else {
         el = document.getElementById(entry.id);
       }
@@ -307,7 +307,7 @@ Editor.Persistence = {
     layerOrder.forEach(function(id) {
       var el = document.getElementById(id);
       var sp = C.allSprites.find(function(s) { return s.id === id; });
-      if (sp) el = sp._clipWrap || sp.el;
+      if (sp) el = sp.rootEl;
       if (el && el.parentNode === svg) svg.appendChild(el);
     });
     var _selUI = document.getElementById('selUI');

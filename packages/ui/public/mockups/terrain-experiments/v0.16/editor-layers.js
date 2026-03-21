@@ -127,7 +127,7 @@ Editor.Layers = {
       if (!dragItem) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
         if (!sp) return;
-        const elToMove = sp._clipWrap || sp.el;
+        const elToMove = sp.rootEl;
         if (sp.groupId) {
           const oldGroupEl = document.getElementById(sp.groupId);
           if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
@@ -138,7 +138,7 @@ Editor.Layers = {
         // Multi-select batch move: if dragged sprite is in multiSel, move all
         const dragSp = dragItem.type === 'sprite' ? dragItem.ref : null;
         if (dragSp && C.multiSel.length > 1 && C.multiSel.includes(dragSp)) {
-          const selEls = C.multiSel.map(s => s._clipWrap || s.el).filter(el => el.parentNode === svg);
+          const selEls = C.multiSel.map(s => s.rootEl).filter(el => el.parentNode === svg);
           const allChildren = Array.from(svg.children);
           selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
           selEls.forEach(el => svg.insertBefore(el, selUI));
@@ -469,14 +469,14 @@ Editor.Layers = {
       // Remove from current group
       Editor.Undo.push();
       const oldGroupEl = document.getElementById(sp.groupId);
-      let elToMove = sp._clipWrap || sp.el;
+      let elToMove = sp.rootEl;
       if (oldGroupEl) oldGroupEl.removeChild(elToMove);
       delete sp.groupId;
       // Guard: ensure target is a current direct child of svg
       let targetEl = targetItem.svgEl;
       if (targetEl.parentNode !== svg) {
         const tSp = C.allSprites.find(s => s.id === targetId);
-        targetEl = tSp ? (tSp._clipWrap || tSp.el) : null;
+        targetEl = tSp ? tSp.rootEl : null;
       }
       if (targetEl && targetEl.parentNode === svg) {
         svg.insertBefore(elToMove, targetEl);
@@ -513,7 +513,7 @@ Editor.Layers = {
     let targetEl = targetItem.svgEl;
     if (targetEl.parentNode !== svg) {
       const tSp = C.allSprites.find(s => s.id === targetId);
-      targetEl = tSp ? (tSp._clipWrap || tSp.el) : null;
+      targetEl = tSp ? tSp.rootEl : null;
     }
     if (!targetEl || targetEl.parentNode !== svg) return;
 
@@ -522,7 +522,7 @@ Editor.Layers = {
     const dragSp = dragItem.type === 'sprite' ? dragItem.ref : null;
     if (dragSp && C.multiSel.length > 1 && C.multiSel.includes(dragSp)) {
       // Collect SVG elements for all selected sprites
-      const selEls = C.multiSel.map(s => s._clipWrap || s.el).filter(el => el.parentNode === svg);
+      const selEls = C.multiSel.map(s => s.rootEl).filter(el => el.parentNode === svg);
       // Sort by current DOM position to preserve relative order
       const allChildren = Array.from(svg.children);
       selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
@@ -538,7 +538,7 @@ Editor.Layers = {
       let dragEl = dragItem.svgEl;
       if (dragEl.parentNode !== svg) {
         const dSp = C.allSprites.find(s => s.id === draggedId);
-        dragEl = dSp ? (dSp._clipWrap || dSp.el) : null;
+        dragEl = dSp ? dSp.rootEl : null;
       }
       if (dragEl && dragEl.parentNode === svg) {
         svg.insertBefore(dragEl, targetEl);
