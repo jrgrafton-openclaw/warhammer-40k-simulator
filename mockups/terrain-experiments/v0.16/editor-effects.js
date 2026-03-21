@@ -68,7 +68,7 @@ Editor.Effects = {
     // Compute counter-rotated shadow offset so shadow is consistent in screen space.
     // The SVG filter operates in pre-transform (local) space, so we must inverse-rotate
     // the desired screen-space offset to get the correct local offset.
-    const rad = -(qRot || 0) * Math.PI / 180;
+    const rad = (qRot || 0) * Math.PI / 180;
     const dx = this.shadow.dx;
     const dy = this.shadow.dy;
     const localDx = flipX * (dx * Math.cos(rad) + dy * Math.sin(rad));
