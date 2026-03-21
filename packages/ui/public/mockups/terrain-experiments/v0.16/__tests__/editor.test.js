@@ -384,6 +384,74 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const filter90 = sp90.el.getAttribute('filter');
     expect(filter0).not.toBe(filter90);
   });
+
+  it('flipX sprite gets horizontally mirrored shadow offset', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipX = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // flipX negates dx: localDx = -1 * (3*cos(0) + 3*sin(0)) = -3
+    // flipY unchanged: localDy = 1 * (-3*sin(0) + 3*cos(0)) = 3
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(3, 0);
+  });
+
+  it('flipY sprite gets vertically mirrored shadow offset', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipY = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // flipX unchanged: localDx = 1 * (3*cos(0) + 3*sin(0)) = 3
+    // flipY negates dy: localDy = -1 * (-3*sin(0) + 3*cos(0)) = -3
+    expect(dx).toBeCloseTo(3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
+  });
+
+  it('flipX + 90° rotation gets correct combined shadow offset', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 90, 'floor', true);
+    sp.flipX = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // flipX=-1, rot=90: localDx = -1 * (3*0 + 3*1) = -3
+    // flipY=1, rot=90:  localDy = 1 * (-3*1 + 3*0) = -3
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
+  });
+
+  it('flipX + flipY sprite gets fully negated shadow offset', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipX = true;
+    sp.flipY = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // Both flipped: dx negated, dy negated
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
+  });
 });
 
 describe('Editor Undo — shadowMul preservation', () => {
