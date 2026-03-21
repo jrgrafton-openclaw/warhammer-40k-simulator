@@ -192,8 +192,13 @@ Editor.Persistence = {
           sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
           if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
           if (s.groupId) { sp.groupId = s.groupId; }
-          if (s.cropL || s.cropT || s.cropR || s.cropB) {
-            sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
+          // Handle both internal format (cropL/T/R/B) and output format (crop: {l,t,r,b})
+          var cL = s.cropL || (s.crop ? s.crop.l || 0 : 0);
+          var cT = s.cropT || (s.crop ? s.crop.t || 0 : 0);
+          var cR = s.cropR || (s.crop ? s.crop.r || 0 : 0);
+          var cB = s.cropB || (s.crop ? s.crop.b || 0 : 0);
+          if (cL || cT || cR || cB) {
+            sp.cropL = cL; sp.cropT = cT; sp.cropR = cR; sp.cropB = cB;
           }
           sp.shadowMul = s.shadowMul != null ? s.shadowMul : 1.0;
           if (s._fileName) sp._fileName = s._fileName;
