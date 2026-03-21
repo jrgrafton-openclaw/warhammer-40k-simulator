@@ -89,13 +89,17 @@ Editor.Sprites = {
     const wrap = document.getElementById('mapWrap');
     if (!wrap) return;
 
-    wrap.addEventListener('dragover', e => {
-      // Only accept file drags, not internal layer reorder drags
-      if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'copy';
-        wrap.classList.add('drop-active');
-      }
+    // Accept drops on the entire page body too (redirect to canvas)
+    const targets = [wrap, document.body];
+    targets.forEach(target => {
+      target.addEventListener('dragover', e => {
+        // Only accept file drags, not internal layer reorder drags
+        if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          wrap.classList.add('drop-active');
+        }
+      });
     });
 
     wrap.addEventListener('dragleave', e => {
@@ -105,10 +109,65 @@ Editor.Sprites = {
       }
     });
 
+    // Prevent browser default file open on body drops
+    document.body.addEventListener('drop', e => {
+      if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+        e.preventDefault();
+        // Redirect to the canvas drop handler
+        wrap.dispatchEvent(new DragEvent('drop', { dataTransfer: e.dataTransfer, clientX: e.clientX, clientY: e.clientY }));
+      }
+    });
+
     wrap.addEventListener('drop', e => {
       e.preventDefault();
       wrap.classList.remove('drop-active');
-      const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+      const allFiles = Array.from(e.dataTransfer.files);
+
+      // Check for JSON layout files first
+      const jsonFiles = allFiles.filter(f => f.name.endsWith('.json') || f.type === 'application/json');
+      if (jsonFiles.length) {
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            if (data.sprites && Array.isArray(data.sprites)) {
+              // Route through import logic (save to localStorage + reload)
+              if (!confirm(`Import layout with ${data.sprites.length} sprites? This will replace the current scene.`)) return;
+              // Use the same import conversion as importJSON
+              if (data.sprites[0] && ('layerType' in data.sprites[0]) && !('cropL' in data.sprites[0])) {
+                data.sprites = data.sprites.map(s => ({
+                  file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
+                  layerType: s.layerType || 'floor', hidden: s.hidden || false,
+                  flipX: s.flipX || false, flipY: s.flipY || false,
+                  groupId: s.groupId || null,
+                  cropL: s.crop?.l || 0, cropT: s.crop?.t || 0, cropR: s.crop?.r || 0, cropB: s.crop?.b || 0,
+                  shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
+                }));
+                if (data.models) {
+                  data.models = data.models.map(m => m.kind === 'circle'
+                    ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)', iconType: m.icon || m.iconType }
+                    : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)' });
+                }
+                if (data.settings) {
+                  data.bg = data.settings.bg;
+                  data.ruinsOpacity = data.settings.ruinsOpacity;
+                  data.roofOpacity = data.settings.roofOpacity;
+                }
+              }
+              localStorage.setItem(Editor.Persistence.STORAGE_KEY, JSON.stringify(data));
+              location.reload();
+            } else {
+              alert('JSON file does not contain a valid layout (missing sprites array).');
+            }
+          } catch (err) {
+            alert('Invalid JSON file: ' + err.message);
+          }
+        };
+        reader.readAsText(jsonFiles[0]);
+        return;
+      }
+
+      const files = allFiles.filter(f => f.type.startsWith('image/'));
       if (!files.length) return;
 
       const C = Editor.Core;
