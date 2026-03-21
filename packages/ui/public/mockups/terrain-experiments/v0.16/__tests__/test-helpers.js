@@ -81,7 +81,7 @@ export function loadEditor() {
 
   const modules = [
     'editor-state.js',
-    'editor-core.js', 'editor-undo.js', 'editor-models.js', 'editor-sprites.js',
+    'editor-bus.js', 'editor-core.js', 'editor-undo.js', 'editor-commands.js', 'editor-models.js', 'editor-sprites.js',
     'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
     'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',
     'editor-effects.js', 'editor-persistence.js'
