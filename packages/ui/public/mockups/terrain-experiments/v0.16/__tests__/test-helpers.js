@@ -291,33 +291,39 @@ export function assertSceneEqual(a, b) {
     diffs.push(`sprite count: ${a.sprites.length} vs ${b.sprites.length}`);
   }
 
-  // Compare sprites by index (order matters)
-  const len = Math.min(a.sprites.length, b.sprites.length);
-  for (let i = 0; i < len; i++) {
-    const sa = a.sprites[i], sb = b.sprites[i];
-    const fields = ['file', 'x', 'y', 'w', 'h', 'layerType', 'hidden', 'flipX', 'flipY', 'shadowMul'];
-    fields.forEach(f => {
-      if (sa[f] !== sb[f]) diffs.push(`sprite[${i}].${f}: ${sa[f]} vs ${sb[f]}`);
-    });
-    // Rotation — use tolerance for near-zero values
-    if (Math.abs((sa.rot || 0) - (sb.rot || 0)) > 1e-10) {
-      diffs.push(`sprite[${i}].rot: ${sa.rot} vs ${sb.rot}`);
+  // Compare sprites by matching (file + position), not by index.
+  // DOM z-order serialization may reorder sprites (grouped sprites move to group position).
+  const used = new Set();
+  for (let i = 0; i < a.sprites.length; i++) {
+    const sa = a.sprites[i];
+    const matchIdx = b.sprites.findIndex((sb, j) =>
+      !used.has(j) && sb.file === sa.file && Math.abs(sb.x - sa.x) < 2 && Math.abs(sb.y - sa.y) < 2
+    );
+    if (matchIdx === -1) {
+      diffs.push(`sprite[${i}] ${sa.file} at (${sa.x},${sa.y}) not found in other scene`);
+      continue;
     }
-    // Crop
+    used.add(matchIdx);
+    const sb = b.sprites[matchIdx];
+    const fields = ['w', 'h', 'layerType', 'hidden', 'flipX', 'flipY', 'shadowMul'];
+    fields.forEach(f => {
+      if (sa[f] !== sb[f]) diffs.push(`sprite ${sa.file}(${sa.x},${sa.y}).${f}: ${sa[f]} vs ${sb[f]}`);
+    });
+    if (Math.abs((sa.rot || 0) - (sb.rot || 0)) > 1e-10) {
+      diffs.push(`sprite ${sa.file}(${sa.x},${sa.y}).rot: ${sa.rot} vs ${sb.rot}`);
+    }
     const ca = sa.crop, cb = sb.crop;
     if ((!ca) !== (!cb)) {
-      diffs.push(`sprite[${i}].crop: ${JSON.stringify(ca)} vs ${JSON.stringify(cb)}`);
+      diffs.push(`sprite ${sa.file}(${sa.x},${sa.y}).crop: ${JSON.stringify(ca)} vs ${JSON.stringify(cb)}`);
     } else if (ca && cb) {
       ['l', 't', 'r', 'b'].forEach(k => {
         if (Math.abs((ca[k] || 0) - (cb[k] || 0)) > 1e-6) {
-          diffs.push(`sprite[${i}].crop.${k}: ${ca[k]} vs ${cb[k]}`);
+          diffs.push(`sprite ${sa.file}(${sa.x},${sa.y}).crop.${k}: ${ca[k]} vs ${cb[k]}`);
         }
       });
     }
-    // GroupId — compare without exact string match (group IDs regenerate)
-    // Just check both null or both non-null
     if ((!sa.groupId) !== (!sb.groupId)) {
-      diffs.push(`sprite[${i}].groupId: ${sa.groupId} vs ${sb.groupId}`);
+      diffs.push(`sprite ${sa.file}(${sa.x},${sa.y}).groupId: ${sa.groupId} vs ${sb.groupId}`);
     }
   }
 
