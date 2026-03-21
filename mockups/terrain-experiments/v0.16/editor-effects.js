@@ -248,11 +248,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxShadowControls');
     if (ctrl) ctrl.style.display = this.shadow.on ? '' : 'none';
     this._flush();
+    Editor.Persistence.save();
   },
 
   setShadowParam(param, value) {
     this.shadow[param] = value;
     this._flush();
+    Editor.Persistence.save();
   },
 
   toggleFeather(btn) {
@@ -261,11 +263,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxFeatherControls');
     if (ctrl) ctrl.style.display = this.feather.on ? '' : 'none';
     this._flush();
+    Editor.Persistence.save();
   },
 
   setFeatherRadius(val) {
     this.feather.radius = val;
     this._flush();
+    Editor.Persistence.save();
   },
 
   toggleGrade(btn) {
@@ -274,11 +278,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxGradeControls');
     if (ctrl) ctrl.style.display = this.grade.on ? '' : 'none';
     this._flush();
+    Editor.Persistence.save();
   },
 
   setGradeParam(param, value) {
     this.grade[param] = value;
     this._flush();
+    Editor.Persistence.save();
   },
 
   // ── Per-sprite shadow multiplier ──

@@ -28,6 +28,12 @@ function loadEditor() {
           <defs></defs>
           <rect width="720" height="528" fill="#0c1218"/>
           <image id="bgImg" href="" x="0" y="0" width="720" height="528"/>
+          <g id="svgGroundGradient" style="display:none"></g>
+          <g id="svgGroundWarm" style="display:none"></g>
+          <g id="svgGroundDual" style="display:none"></g>
+          <g id="svgGroundHaze" style="display:none"></g>
+          <g id="svgGroundConcrete" style="display:none"></g>
+          <g id="svgGroundTactical" style="display:none"></g>
           <g id="deployZones"></g>
           <g id="lightLayer"></g>
           <g id="spriteFloor"></g>
@@ -518,6 +524,358 @@ describe('Integration — James layout JSON', () => {
       expect(sp._clipWrap).toBeFalsy();
       expect(sp.el.parentNode).toBe(svg);
     });
+  });
+});
+
+describe('Bug 1 — Effects persistence', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('save includes effects state, load restores it', () => {
+    // Change effects to non-default values
+    Editor.Effects.shadow.on = false;
+    Editor.Effects.shadow.dx = 5;
+    Editor.Effects.shadow.dy = 7;
+    Editor.Effects.shadow.blur = 10;
+    Editor.Effects.shadow.opacity = 0.8;
+    Editor.Effects.feather.on = true;
+    Editor.Effects.feather.radius = 15;
+    Editor.Effects.grade.on = false;
+    Editor.Effects.grade.brightness = 0.5;
+    Editor.Effects.grade.saturation = 0.3;
+    Editor.Effects.grade.sepia = 0.2;
+
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+    expect(saved.effects).toBeTruthy();
+    expect(saved.effects.shadow.on).toBe(false);
+    expect(saved.effects.shadow.dx).toBe(5);
+    expect(saved.effects.feather.on).toBe(true);
+    expect(saved.effects.feather.radius).toBe(15);
+    expect(saved.effects.grade.on).toBe(false);
+    expect(saved.effects.grade.brightness).toBe(0.5);
+
+    // Reset to defaults
+    Editor.Effects.shadow.on = true;
+    Editor.Effects.shadow.dx = 3;
+    Editor.Effects.feather.on = false;
+    Editor.Effects.grade.on = true;
+
+    // Reload
+    Editor.Persistence.load();
+
+    // Verify restored
+    expect(Editor.Effects.shadow.on).toBe(false);
+    expect(Editor.Effects.shadow.dx).toBe(5);
+    expect(Editor.Effects.shadow.dy).toBe(7);
+    expect(Editor.Effects.feather.on).toBe(true);
+    expect(Editor.Effects.feather.radius).toBe(15);
+    expect(Editor.Effects.grade.on).toBe(false);
+    expect(Editor.Effects.grade.brightness).toBe(0.5);
+    expect(Editor.Effects.grade.saturation).toBe(0.3);
+    expect(Editor.Effects.grade.sepia).toBe(0.2);
+  });
+
+  it('toggle/set functions call Persistence.save', () => {
+    const saveSpy = vi.spyOn(Editor.Persistence, 'save');
+    const fakeBtn = document.createElement('button');
+
+    Editor.Effects.toggleShadow(fakeBtn);
+    expect(saveSpy).toHaveBeenCalled();
+    saveSpy.mockClear();
+
+    Editor.Effects.setShadowParam('dx', 10);
+    expect(saveSpy).toHaveBeenCalled();
+    saveSpy.mockClear();
+
+    Editor.Effects.toggleFeather(fakeBtn);
+    expect(saveSpy).toHaveBeenCalled();
+    saveSpy.mockClear();
+
+    Editor.Effects.setFeatherRadius(20);
+    expect(saveSpy).toHaveBeenCalled();
+    saveSpy.mockClear();
+
+    Editor.Effects.toggleGrade(fakeBtn);
+    expect(saveSpy).toHaveBeenCalled();
+    saveSpy.mockClear();
+
+    Editor.Effects.setGradeParam('brightness', 0.9);
+    expect(saveSpy).toHaveBeenCalled();
+
+    saveSpy.mockRestore();
+  });
+});
+
+describe('Bug 2 — Top zone accepts sprites', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('sprite dragged to top zone moves to front', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // Simulate: set draggedId to sp1, then trigger top zone logic
+    Editor.Layers.draggedId = sp1.id;
+    const zItems = Editor.Layers._buildZOrder();
+
+    // Manually execute the top-zone drop logic
+    const selUI = document.getElementById('selUI');
+    const dragItem = zItems.find(z => Editor.Layers._itemId(z) === sp1.id);
+    svg.insertBefore(dragItem.svgEl, selUI);
+    svg.appendChild(document.getElementById('selUI'));
+    svg.appendChild(document.getElementById('dragRect'));
+
+    // sp1 should now be after sp2 and sp3 (in front)
+    const children = Array.from(svg.children);
+    const idx1 = children.indexOf(sp1.el);
+    const idx2 = children.indexOf(sp2.el);
+    const idx3 = children.indexOf(sp3.el);
+    expect(idx1).toBeGreaterThan(idx2);
+    expect(idx1).toBeGreaterThan(idx3);
+  });
+});
+
+describe('Bug 4 — Crop with flip', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('flipX swaps cropL and cropR in clip rect', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipX = true;
+    sp.cropL = 0.2; // 20% from left
+    sp.cropT = 0;
+    sp.cropR = 0;
+    sp.cropB = 0;
+
+    Editor.Crop._applyClip(sp);
+
+    // With flipX, cropL should be applied as cropR visually
+    // So the clip rect x should be at sp.x + sp.w * 0 (swapped: cL=0, cR=0.2)
+    const clipPath = document.getElementById(sp._clipId);
+    const clipRect = clipPath.querySelector('rect');
+    const clipX = parseFloat(clipRect.getAttribute('x'));
+    const clipW = parseFloat(clipRect.getAttribute('width'));
+    // After swap: cL=0, cR=0.2 → x = 100 + 80*0 = 100, w = 80*(1-0-0.2) = 64
+    expect(clipX).toBeCloseTo(100, 0);
+    expect(clipW).toBeCloseTo(64, 0);
+  });
+
+  it('flipY swaps cropT and cropB in clip rect', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipY = true;
+    sp.cropL = 0;
+    sp.cropT = 0;
+    sp.cropR = 0;
+    sp.cropB = 0.3; // 30% from bottom
+
+    Editor.Crop._applyClip(sp);
+
+    // With flipY, cropB should be applied as cropT visually
+    // After swap: cT=0.3, cB=0 → y = 100 + 60*0.3 = 118, h = 60*(1-0.3-0) = 42
+    const clipPath = document.getElementById(sp._clipId);
+    const clipRect = clipPath.querySelector('rect');
+    const clipY = parseFloat(clipRect.getAttribute('y'));
+    const clipH = parseFloat(clipRect.getAttribute('height'));
+    expect(clipY).toBeCloseTo(118, 0);
+    expect(clipH).toBeCloseTo(42, 0);
+  });
+});
+
+describe('Bug 5 — Layer order for cropped sprites', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('layer order preserved through save/load for cropped sprites', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // Crop sp2 (creates a wrapper)
+    sp2.cropL = 0.1;
+    sp2.cropT = 0;
+    sp2.cropR = 0;
+    sp2.cropB = 0;
+    Editor.Crop._applyClip(sp2);
+
+    // Reorder: move sp1 to front
+    const selUI = document.getElementById('selUI');
+    svg.insertBefore(sp1.el, selUI);
+
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+
+    // sp1 should be after sp2 and sp3 in layerOrder (front = last)
+    const idx1 = saved.layerOrder.indexOf(sp1.id);
+    const idx2 = saved.layerOrder.indexOf(sp2.id);
+    expect(idx1).toBeGreaterThan(idx2);
+
+    // layerOrder should use sprite IDs, not wrapper IDs
+    expect(saved.layerOrder).toContain(sp2.id);
+  });
+});
+
+describe('Bug 6 — Within-group z-order persistence', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('save serializes sprites in DOM order, not creation order', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // Reorder in DOM: sp3 before sp1 (sp3 goes behind sp1)
+    svg.insertBefore(sp3.el, sp1.el);
+
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+
+    // In saved data, sp3 should come before sp1
+    const files = saved.sprites.map(s => s.file);
+    expect(files.indexOf('c.png')).toBeLessThan(files.indexOf('a.png'));
+  });
+
+  it('within-group sprite order follows DOM order in save', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // Group sp1 and sp2
+    const group = Editor.Groups.createGroup([sp1, sp2]);
+    const gEl = document.getElementById(group.id);
+
+    // Reorder within group: sp2 before sp1 in DOM
+    gEl.insertBefore(sp2.el, sp1.el);
+
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+
+    // In saved data, sp2 (b.png) should come before sp1 (a.png) among grouped sprites
+    const groupedFiles = saved.sprites.filter(s => s.groupId === group.id).map(s => s.file);
+    expect(groupedFiles.indexOf('b.png')).toBeLessThan(groupedFiles.indexOf('a.png'));
+  });
+});
+
+describe('Integration — test-layout.json', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('loads test-layout.json with groups, crops, flips', () => {
+    const layoutPath = path.resolve(__dirname, '..', 'test-layout.json');
+    const raw = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
+
+    // Convert from output format
+    const data = {
+      sprites: raw.sprites.map(s => ({
+        file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
+        layerType: s.layerType || 'floor', hidden: s.hidden || false,
+        flipX: s.flipX || false, flipY: s.flipY || false,
+        groupId: s.groupId || null,
+        cropL: s.crop?.l || 0, cropT: s.crop?.t || 0, cropR: s.crop?.r || 0, cropB: s.crop?.b || 0,
+        shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
+      })),
+      groups: raw.groups
+    };
+
+    // Create sprites
+    data.sprites.forEach(s => {
+      const sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType, true);
+      sp.hidden = s.hidden;
+      sp.flipX = s.flipX;
+      sp.flipY = s.flipY;
+      sp.groupId = s.groupId;
+      sp.cropL = s.cropL;
+      sp.cropT = s.cropT;
+      sp.cropR = s.cropR;
+      sp.cropB = s.cropB;
+      sp.shadowMul = s.shadowMul;
+      if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
+    });
+
+    // Apply crops
+    Editor.Crop.reapplyAll();
+
+    // Restore groups
+    if (data.groups && data.groups.length) {
+      Editor.Groups.restore(data.groups);
+    }
+
+    // Apply effects
+    Editor.Effects._ready = true;
+    Editor.Effects.rebuildAll();
+
+    const C = Editor.Core;
+
+    // 20 sprites total
+    expect(C.allSprites.length).toBe(20);
+
+    // Group g1 has 6 sprites
+    const g1Sprites = C.allSprites.filter(s => s.groupId === 'group-g1');
+    expect(g1Sprites.length).toBe(6);
+
+    // Group element exists in DOM
+    const gEl = document.getElementById('group-g1');
+    expect(gEl).toBeTruthy();
+
+    // Grouped sprites are inside the group <g>
+    g1Sprites.forEach(sp => {
+      const elInGroup = sp._clipWrap
+        ? gEl.contains(sp._clipWrap)
+        : gEl.contains(sp.el);
+      expect(elInGroup).toBe(true);
+    });
+
+    // Cropped+flipped sprites have clip paths
+    // s6: flipY + crop.b=0.156
+    const s6 = C.allSprites[6];
+    expect(s6.flipY).toBe(true);
+    expect(s6.cropB).toBeCloseTo(0.156, 2);
+    expect(s6._clipWrap).toBeTruthy();
+
+    // s12: flipY + crop.l=0.107
+    const s12 = C.allSprites[12];
+    expect(s12.flipY).toBe(true);
+    expect(s12.cropL).toBeCloseTo(0.107, 2);
+    expect(s12._clipWrap).toBeTruthy();
+
+    // s13: flipY + crop.l=0.16 + crop.b=0.343
+    const s13 = C.allSprites[13];
+    expect(s13.flipY).toBe(true);
+    expect(s13.cropL).toBeCloseTo(0.16, 2);
+    expect(s13.cropB).toBeCloseTo(0.343, 2);
+    expect(s13._clipWrap).toBeTruthy();
+
+    // Verify clip rects account for flip (Bug 4 regression test)
+    // s6 has flipY + cropB=0.156: after swap, cT=0.156, cB=0
+    // clipRect y should be sp.y + sp.h * 0.156
+    const s6clip = document.getElementById(s6._clipId);
+    if (s6clip) {
+      const rect = s6clip.querySelector('rect');
+      const clipY = parseFloat(rect.getAttribute('y'));
+      expect(clipY).toBeCloseTo(s6.y + s6.h * 0.156, 0);
+    }
   });
 });
 
