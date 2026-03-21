@@ -392,10 +392,21 @@ Editor.Layers = {
       // Remove from current group
       Editor.Undo.push();
       const oldGroupEl = document.getElementById(sp.groupId);
-      const elToMove = sp._clipWrap || sp.el;
+      let elToMove = sp._clipWrap || sp.el;
       if (oldGroupEl) oldGroupEl.removeChild(elToMove);
       delete sp.groupId;
-      svg.insertBefore(elToMove, targetItem.svgEl);
+      // Guard: ensure target is a current direct child of svg
+      let targetEl = targetItem.svgEl;
+      if (targetEl.parentNode !== svg) {
+        const tSp = C.allSprites.find(s => s.id === targetId);
+        targetEl = tSp ? (tSp._clipWrap || tSp.el) : null;
+      }
+      if (targetEl && targetEl.parentNode === svg) {
+        svg.insertBefore(elToMove, targetEl);
+      } else {
+        const selUI = document.getElementById('selUI');
+        svg.insertBefore(elToMove, selUI);
+      }
       const _fix = () => {
         const selUI = document.getElementById('selUI');
         const dragRect = document.getElementById('dragRect');
@@ -419,7 +430,43 @@ Editor.Layers = {
     // All items (sprites and groups) are now direct SVG children.
     // Reordering is just svg.insertBefore.
     if (dragItem.svgEl === targetItem.svgEl) return;
-    svg.insertBefore(dragItem.svgEl, targetItem.svgEl);
+
+    // Guard: ensure target is a current direct child of svg
+    let targetEl = targetItem.svgEl;
+    if (targetEl.parentNode !== svg) {
+      const tSp = C.allSprites.find(s => s.id === targetId);
+      targetEl = tSp ? (tSp._clipWrap || tSp.el) : null;
+    }
+    if (!targetEl || targetEl.parentNode !== svg) return;
+
+    // Multi-select batch move: if dragged sprite is part of a multi-selection,
+    // move all selected sprites as a batch, preserving their relative order
+    const dragSp = dragItem.type === 'sprite' ? dragItem.ref : null;
+    if (dragSp && C.multiSel.length > 1 && C.multiSel.includes(dragSp)) {
+      // Collect SVG elements for all selected sprites
+      const selEls = C.multiSel.map(s => s._clipWrap || s.el).filter(el => el.parentNode === svg);
+      // Sort by current DOM position to preserve relative order
+      const allChildren = Array.from(svg.children);
+      selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
+      // The layer panel is reversed: top of panel = last in DOM = in front.
+      // "Drop above" in UI means "insert after" in DOM.
+      // insertBefore(el, target) puts el just before target in DOM (= behind target visually).
+      // We insert all selected elements before the target, in order.
+      selEls.forEach(el => {
+        if (el !== targetEl) svg.insertBefore(el, targetEl);
+      });
+    } else {
+      // Single item move
+      let dragEl = dragItem.svgEl;
+      if (dragEl.parentNode !== svg) {
+        const dSp = C.allSprites.find(s => s.id === draggedId);
+        dragEl = dSp ? (dSp._clipWrap || dSp.el) : null;
+      }
+      if (dragEl && dragEl.parentNode === svg) {
+        svg.insertBefore(dragEl, targetEl);
+      }
+    }
+
     _fixTrailingEls();
     Editor.Persistence.save(); this.rebuild();
   },

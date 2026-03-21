@@ -520,3 +520,128 @@ describe('Integration — James layout JSON', () => {
     });
   });
 });
+
+describe('Bug fixes — layer persistence, multi-select drag, insertBefore guard', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('sprite elements have id attribute set (Bug 1 prerequisite)', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 10, 10, 50, 50, 0, 'floor', true);
+    expect(sp.el.id).toBe(sp.id);
+    expect(sp.el.dataset.id).toBe(sp.id);
+  });
+
+  it('layer order persists sprite IDs through save/load cycle (Bug 1)', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // Reorder: move sp1 after sp3 in DOM (in front visually)
+    const svg = document.getElementById('battlefield');
+    const selUI = document.getElementById('selUI');
+    svg.insertBefore(sp1.el, selUI);
+
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+
+    // layerOrder should contain all sprite IDs
+    expect(saved.layerOrder).toContain(sp1.id);
+    expect(saved.layerOrder).toContain(sp2.id);
+    expect(saved.layerOrder).toContain(sp3.id);
+
+    // sp1 should appear after sp3 in the saved order
+    const idx1 = saved.layerOrder.indexOf(sp1.id);
+    const idx3 = saved.layerOrder.indexOf(sp3.id);
+    expect(idx1).toBeGreaterThan(idx3);
+  });
+
+  it('save() uses dataset.id fallback for elements without id attr', () => {
+    const sp = Editor.Sprites.addSprite('fallback.png', 10, 10, 50, 50, 0, 'floor', true);
+    // Simulate an element that has dataset.id but no .id (shouldn't happen after fix, but tests fallback)
+    const origId = sp.el.id;
+    sp.el.removeAttribute('id');
+    sp.el.id = '';
+
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+    // Should still capture the sprite via dataset.id fallback
+    expect(saved.layerOrder).toContain(sp.id);
+
+    // Restore
+    sp.el.id = origId;
+  });
+
+  it('multi-select batch move reorders all selected sprites (Bug 2)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+    const sp4 = Editor.Sprites.addSprite('d.png', 190, 10, 50, 50, 0, 'floor', true);
+
+    // Select sp1 and sp2
+    Editor.Core.multiSel = [sp1, sp2];
+    Editor.Core.selected = sp1;
+
+    // Build zItems for _handleDrop
+    const zItems = Editor.Layers._buildZOrder();
+
+    // Drag sp1 (multi-selected with sp2) to sp4's position
+    Editor.Layers._handleDrop(sp1.id, sp4.id, zItems);
+
+    // Both sp1 and sp2 should now be just before sp4 in DOM order
+    const children = Array.from(svg.children);
+    const idx1 = children.indexOf(sp1.el);
+    const idx2 = children.indexOf(sp2.el);
+    const idx4 = children.indexOf(sp4.el);
+
+    // sp1 and sp2 should be moved together, before sp4
+    expect(idx1).toBeLessThan(idx4);
+    expect(idx2).toBeLessThan(idx4);
+    // Relative order preserved: sp1 before sp2
+    expect(idx1).toBeLessThan(idx2);
+  });
+
+  it('insertBefore guard handles stale svgEl references (Bug 3)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+
+    // Build zItems
+    const zItems = Editor.Layers._buildZOrder();
+
+    // Simulate stale svgEl: move target's element into a different parent
+    const fakeParent = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    svg.appendChild(fakeParent);
+    const targetItem = zItems.find(z => z.ref === sp2);
+    fakeParent.appendChild(targetItem.svgEl); // Now sp2's svgEl is NOT a child of svg
+
+    // This should NOT throw — the guard should catch the stale reference
+    expect(() => {
+      Editor.Layers._handleDrop(sp1.id, sp2.id, zItems);
+    }).not.toThrow();
+  });
+
+  it('insertBefore guard for sprite dragged out of group (Bug 3)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // Group sp1 and sp2
+    const group = Editor.Groups.createGroup([sp1, sp2]);
+
+    // Build zItems (sp1 and sp2 are inside the group, not in zItems as direct SVG children)
+    const zItems = Editor.Layers._buildZOrder();
+
+    // Drag sp1 out of group onto sp3 — should not throw even if target svgEl is stale
+    expect(() => {
+      Editor.Layers._handleDrop(sp1.id, sp3.id, zItems);
+    }).not.toThrow();
+
+    // sp1 should no longer have a groupId
+    expect(sp1.groupId).toBeUndefined();
+  });
+});
