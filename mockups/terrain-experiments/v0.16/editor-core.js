@@ -38,6 +38,7 @@ Editor.Core = {
     Editor.Models.init();
     Editor.Objectives.init();
     Editor.Selection.init();
+    Editor.Sprites.initFileDrop();
     Editor.Persistence.load();
     Editor.Layers.rebuild();
     this.updateDebug();

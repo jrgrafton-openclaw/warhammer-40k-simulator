@@ -48,6 +48,9 @@ body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;fle
 .config-actions .tbtn{flex:1;font-size:8px;padding:3px 6px}
 #debug{width:100%;background:#060a10;color:#0f8;border:1px solid #1a2a3a;font-family:monospace;font-size:8px;height:180px;resize:vertical;padding:4px;border-radius:3px;box-sizing:border-box}
 
+/* ── File drop zone ── */
+.drop-active{outline:2px dashed #00d4ff;outline-offset:-2px;background:rgba(0,212,255,0.04)}
+
 /* ── Drag ghost ── */
 .ghost{position:fixed;pointer-events:none;opacity:0.6;z-index:9999}
 
