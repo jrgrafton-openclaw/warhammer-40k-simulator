@@ -252,6 +252,27 @@ Editor.State = {
     this.syncZOrderFromDOM();
     this._dirty = true;
     this._scheduleSave();
+    // Emit event for cross-module subscribers
+    if (Editor.Bus) {
+      var type = action && action.type ? action.type : 'UNKNOWN';
+      Editor.Bus.emit('state:dispatched', action);
+      // Map dispatch types to semantic events
+      if (type === 'ADD_SPRITE') Editor.Bus.emit('sprite:added', action);
+      else if (type === 'DELETE_SPRITE') Editor.Bus.emit('sprite:removed', action);
+      else if (type === 'MOVE_SPRITE') Editor.Bus.emit('sprite:moved', action);
+      else if (type === 'RESIZE_SPRITE') Editor.Bus.emit('sprite:resized', action);
+      else if (type === 'ROTATE_SPRITE') Editor.Bus.emit('sprite:rotated', action);
+      else if (type === 'SET_PROPERTY' || type === 'TOGGLE_SPRITE_VIS') Editor.Bus.emit('sprite:property-changed', action);
+      else if (type === 'CROP' || type === 'RESET_CROP') Editor.Bus.emit('sprite:property-changed', action);
+      else if (type === 'GROUP') Editor.Bus.emit('group:created', action);
+      else if (type === 'UNGROUP' || type === 'DELETE_GROUP') Editor.Bus.emit('group:removed', action);
+      else if (type === 'ADD_TO_GROUP') Editor.Bus.emit('group:sprite-added', action);
+      else if (type === 'ADD_LIGHT' || type === 'DELETE_LIGHT' || type === 'MOVE_LIGHT' || type === 'UPDATE_LIGHT') Editor.Bus.emit('light:changed', action);
+      else if (type === 'REORDER') Editor.Bus.emit('zorder:changed', action);
+      else if (type === 'SET_EFFECT') Editor.Bus.emit('effect:changed', action);
+      else if (type === 'IMPORT') Editor.Bus.emit('state:loaded', action);
+      else if (type === 'UNDO') Editor.Bus.emit('state:undone', action);
+    }
   },
 
   /** Schedule a debounced save. Resets timer on each call. */
