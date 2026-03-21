@@ -118,7 +118,7 @@ Editor.Layers = {
     topZone.addEventListener('drop', e => {
       e.preventDefault(); topZone.style.background = ''; topZone.style.height = '4px';
       if (!this.draggedId) return;
-      Editor.Undo.push();
+      var beforeOrder = Editor.Commands.captureDOMOrder();
       const selUI = document.getElementById('selUI');
 
       let dragItem = zItems.find(z => this._itemId(z) === this.draggedId);
@@ -152,6 +152,8 @@ Editor.Layers = {
       if (_selUI) svg.appendChild(_selUI);
       if (_dragRect) svg.appendChild(_dragRect);
       Editor.State.syncZOrderFromDOM();
+      var afterOrder = Editor.Commands.captureDOMOrder();
+      Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
       Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
     });
     list.appendChild(topZone);
@@ -437,7 +439,7 @@ Editor.Layers = {
     const displayName = isDataUrl ? (sp._fileName || 'Dropped image').replace(/\.(png|jpg|jpeg|webp)$/i, '') : sp.file.replace(/\.(png|jpg)/, '');
     row.innerHTML = `<img src="${thumbSrc}">
       <div style="flex:1;min-width:0"><div class="lname">${displayName}</div><div class="lmeta">${sp.layerType === 'top' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div>
-      <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation();Editor.Undo.push();this.closest('.layer-row').draggable=false" onmouseup="this.closest('.layer-row').draggable=true"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
+      <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation();Editor.Commands.captureShadow('${sp.id}',this.value/100);this.closest('.layer-row').draggable=false" onmouseup="Editor.Commands.commitShadow();this.closest('.layer-row').draggable=true"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
       <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleVis('${sp.id}')">${sp.hidden ? '🔇' : '👁'}</button>
       ${(sp.cropL || sp.cropT || sp.cropR || sp.cropB) ? `<button class="lbtn" title="Reset crop" onclick="event.stopPropagation();Editor.Crop.resetCrop(Editor.Core.allSprites.find(s=>s.id==='${sp.id}'))">✂️</button>` : ''}
       <button class="lbtn" title="Duplicate" onclick="event.stopPropagation();Editor.Layers.dupSprite('${sp.id}')">📋</button>
@@ -467,7 +469,7 @@ Editor.Layers = {
       const sp = C.allSprites.find(s => s.id === draggedId);
       if (!sp || !sp.groupId) return;
       // Remove from current group
-      Editor.Undo.push();
+      var beforeOrder = Editor.Commands.captureDOMOrder();
       const oldGroupEl = document.getElementById(sp.groupId);
       let elToMove = sp.rootEl;
       if (oldGroupEl) oldGroupEl.removeChild(elToMove);
@@ -492,11 +494,13 @@ Editor.Layers = {
       };
       _fix();
       Editor.State.syncZOrderFromDOM();
+      var afterOrder = Editor.Commands.captureDOMOrder();
+      Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
       Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
       return;
     }
 
-    Editor.Undo.push();
+    var beforeOrder = Editor.Commands.captureDOMOrder();
 
     const _fixTrailingEls = () => {
       const selUI = document.getElementById('selUI');
@@ -547,6 +551,8 @@ Editor.Layers = {
 
     _fixTrailingEls();
     Editor.State.syncZOrderFromDOM();
+    var afterOrder = Editor.Commands.captureDOMOrder();
+    Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
     Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
   },
 
@@ -592,7 +598,7 @@ Editor.Layers = {
       const srcSp = C.allSprites.find(s => s.id === this._dragGroupChild);
       if (!srcSp) return;
 
-      Editor.Undo.push();
+      var beforeOrder = Editor.Commands.captureDOMOrder();
       const gEl = document.getElementById(groupId);
       if (!gEl) return;
 
@@ -614,6 +620,8 @@ Editor.Layers = {
       }
 
       Editor.State.syncZOrderFromDOM();
+      var afterOrder = Editor.Commands.captureDOMOrder();
+      Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
       Editor.State.dispatch({ type: 'REORDER' });
       this.rebuild();
     });
@@ -624,13 +632,15 @@ Editor.Layers = {
     const src = C.allSprites.find(s => s.id === srcId);
     const target = C.allSprites.find(s => s.id === targetId);
     if (!src || !target) return;
-    Editor.Undo.push();
+    var beforeOrder = Editor.Commands.captureDOMOrder();
     // Both sprites are direct SVG children — just reorder
     target.el.parentNode.insertBefore(src.el, target.el);
     C.allSprites = C.allSprites.filter(s => s !== src);
     const idx = C.allSprites.indexOf(target);
     C.allSprites.splice(idx, 0, src);
     Editor.State.syncZOrderFromDOM();
+    var afterOrder = Editor.Commands.captureDOMOrder();
+    Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
     Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
   },
 
@@ -652,8 +662,8 @@ Editor.Layers = {
   dupSprite(id) {
     const s = Editor.Core.allSprites.find(x => x.id === id);
     if (s) {
-      Editor.Undo.push();
-      Editor.Sprites.addSprite(s.file, s.x + 15, s.y + 15, s.w, s.h, s.rot, s.layer);
+      const dup = Editor.Sprites.addSprite(s.file, s.x + 15, s.y + 15, s.w, s.h, s.rot, s.layer);
+      Editor.Undo.record(Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(dup)));
       this.rebuild();
     }
   },
@@ -661,8 +671,10 @@ Editor.Layers = {
   delSprite(id) {
     const C = Editor.Core;
     const sp = C.allSprites.find(s => s.id === id); if (!sp) return;
-    Editor.Undo.push();
-    sp.el.remove(); C.allSprites = C.allSprites.filter(s => s !== sp);
+    const data = Editor.Commands._captureSprite(sp);
+    const cmd = Editor.Commands.DeleteSprite.create(data);
+    cmd.apply();
+    Editor.Undo.record(cmd);
     if (C.selected === sp) Editor.Selection.deselect();
     C.updateDebug(); Editor.State.dispatch({ type: 'DELETE_SPRITE' }); this.rebuild();
   }

@@ -296,11 +296,13 @@ Editor.Crop = {
   /* ── Reset crop back to full image ── */
   resetCrop(sp) {
     if (!sp) return;
-    Editor.Undo.push();
+    const beforeCrop = { cropL: sp.cropL || 0, cropT: sp.cropT || 0, cropR: sp.cropR || 0, cropB: sp.cropB || 0 };
+    const afterCrop = { cropL: 0, cropT: 0, cropR: 0, cropB: 0 };
     this._removeClip(sp);
     sp.cropL = 0; sp.cropT = 0; sp.cropR = 0; sp.cropB = 0;
     Editor.Sprites.apply(sp);
     Editor.Selection.drawSelectionUI();
+    Editor.Undo.record(Editor.Commands.Crop.create(sp.id, beforeCrop, afterCrop));
     Editor.State.dispatch({ type: 'RESET_CROP' });
     Editor.Core.updateDebug();
     Editor.Layers.rebuild();
