@@ -5,7 +5,14 @@
 ```
 v0.16/
 ├── index.html          HTML shell + SVG battlefield + sidebar controls
-├── editor.css          All editor styles
+├── css/                Styles — one file per concern
+│   ├── base.css        Reset, body, layout
+│   ├── sidebar.css     Left sidebar, thumbnails, toggles, controls
+│   ├── effects.css     Shadow/feather/grade slider controls
+│   ├── canvas.css      Battlefield SVG area, selection rect, drag ghost
+│   ├── layers.css      Right sidebar layers panel, group rows, drag indicators
+│   ├── config.css      JSON debug panel, light controls
+│   └── shortcuts.css   Keyboard shortcuts overlay
 ├── img/                Sprite images (referenced via Editor.Core.spriteBasePath)
 ├── js/
 │   ├── core/           Infrastructure — loaded first, no cross-deps between them
