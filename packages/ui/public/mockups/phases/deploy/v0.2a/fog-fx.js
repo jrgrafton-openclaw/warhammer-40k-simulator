@@ -249,6 +249,8 @@
         }
         spawnSparks(sx, sy);
         ex.hasSpawnedSparks = true;
+        // Dispatch event for explosion SFX
+        window.dispatchEvent(new CustomEvent('explosion-flash'));
       }
     }
   }
