@@ -34,6 +34,7 @@
     lightningOn: true, lightningMode: 'screenspace', lightningGradientMask: true,
     lightningIntensity: 0.7, lightningFreqMin: 8, lightningFreqMax: 18,
     lightningSfxVol: 0.25, lightningBoardTint: false, lightningTintStrength: 0.15,
+    explosionSfxOn: true, explosionSfxVol: 0.15,
     musicOn: true, musicVolume: 0.5
   };
 
@@ -489,6 +490,15 @@
     state.sparkSpeed = v; applyFx(); save(state);
   });
 
+  // Explosion SFX sub-section
+  subLabel(fxBody, 'EXPLOSION SFX');
+  toggleRow(fxBody, 'Enabled', state.explosionSfxOn, function(on) {
+    state.explosionSfxOn = on; applyExplosionSfx(); save(state);
+  });
+  sliderRow(fxBody, 'Volume', 0, 100, 1, Math.round(state.explosionSfxVol * 100), '%', function(v) {
+    state.explosionSfxVol = v / 100; applyExplosionSfx(); save(state);
+  });
+
   // WISPS / DEBRIS SECTION
   // ══════════════════════════════════════════════════════
   var wispBody = section('WISPS / DEBRIS');
@@ -903,6 +913,11 @@
     if (typeof window._musicUpdateVolume === 'function') window._musicUpdateVolume();
   }
 
+  function applyExplosionSfx() {
+    window._explosionSfxEnabled = state.explosionSfxOn;
+    window._explosionSfxVolume = state.explosionSfxVol;
+  }
+
   function applyFx() {
     window._fogFxEnabled = state.fxOn;
     window._fogWispsEnabled = state.wispsOn;
@@ -929,6 +944,7 @@
     applyZoneVignettes();
     applyLightning();
     applyAudio();
+    applyExplosionSfx();
     applyFx();
   }
   if (document.readyState === 'complete') {
