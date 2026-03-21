@@ -277,9 +277,13 @@ Editor.Persistence = {
         this._restoreZOrderFromLayerOrder(data.layerOrder, C);
       }
 
-      // Sync EditorState after load
+      // Final sync: rebuild zOrder from the now-correct DOM state
+      // (groups, crops, and z-order restore are all done at this point)
       S.syncFromCore();
       S.syncZOrderFromDOM();
+
+      // Rebuild layers panel
+      Editor.Layers.rebuild();
 
       Editor.Selection.deselect();
     } catch (e) {
@@ -294,7 +298,10 @@ Editor.Persistence = {
       var el;
       if (entry.type === 'sprite') {
         var sp = C.allSprites.find(function(s) { return s.id === entry.id; });
-        el = sp ? sp.rootEl : null;
+        if (!sp) return;
+        el = sp.rootEl;
+        // Skip sprites inside groups — their order is managed by the group
+        if (sp.groupId) return;
       } else {
         el = document.getElementById(entry.id);
       }
