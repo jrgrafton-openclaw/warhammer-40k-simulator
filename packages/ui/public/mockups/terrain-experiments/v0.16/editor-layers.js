@@ -152,7 +152,7 @@ Editor.Layers = {
       if (_selUI) svg.appendChild(_selUI);
       if (_dragRect) svg.appendChild(_dragRect);
       Editor.State.syncZOrderFromDOM();
-      Editor.Persistence.save(); this.rebuild();
+      Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
     });
     list.appendChild(topZone);
 
@@ -492,7 +492,7 @@ Editor.Layers = {
       };
       _fix();
       Editor.State.syncZOrderFromDOM();
-      Editor.Persistence.save(); this.rebuild();
+      Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
       return;
     }
 
@@ -547,7 +547,7 @@ Editor.Layers = {
 
     _fixTrailingEls();
     Editor.State.syncZOrderFromDOM();
-    Editor.Persistence.save(); this.rebuild();
+    Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
   },
 
   /* ── Drag reorder within a custom group ── */
@@ -614,7 +614,7 @@ Editor.Layers = {
       }
 
       Editor.State.syncZOrderFromDOM();
-      Editor.Persistence.save();
+      Editor.State.dispatch({ type: 'REORDER' });
       this.rebuild();
     });
   },
@@ -631,7 +631,7 @@ Editor.Layers = {
     const idx = C.allSprites.indexOf(target);
     C.allSprites.splice(idx, 0, src);
     Editor.State.syncZOrderFromDOM();
-    Editor.Persistence.save(); this.rebuild();
+    Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
   },
 
   toggleLightVis(id) {
@@ -646,7 +646,7 @@ Editor.Layers = {
     const C = Editor.Core;
     const sp = C.allSprites.find(s => s.id === id); if (!sp) return;
     sp.hidden = !sp.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
-    this.rebuild(); Editor.Persistence.save();
+    this.rebuild(); Editor.State.dispatch({ type: 'TOGGLE_SPRITE_VIS' });
   },
 
   dupSprite(id) {
@@ -664,6 +664,6 @@ Editor.Layers = {
     Editor.Undo.push();
     sp.el.remove(); C.allSprites = C.allSprites.filter(s => s !== sp);
     if (C.selected === sp) Editor.Selection.deselect();
-    C.updateDebug(); Editor.Persistence.save(); this.rebuild();
+    C.updateDebug(); Editor.State.dispatch({ type: 'DELETE_SPRITE' }); this.rebuild();
   }
 };

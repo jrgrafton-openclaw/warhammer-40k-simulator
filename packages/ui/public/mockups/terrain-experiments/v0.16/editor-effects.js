@@ -248,13 +248,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxShadowControls');
     if (ctrl) ctrl.style.display = this.shadow.on ? '' : 'none';
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   setShadowParam(param, value) {
     this.shadow[param] = value;
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   toggleFeather(btn) {
@@ -263,13 +263,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxFeatherControls');
     if (ctrl) ctrl.style.display = this.feather.on ? '' : 'none';
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   setFeatherRadius(val) {
     this.feather.radius = val;
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   toggleGrade(btn) {
@@ -278,13 +278,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxGradeControls');
     if (ctrl) ctrl.style.display = this.grade.on ? '' : 'none';
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   setGradeParam(param, value) {
     this.grade[param] = value;
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   // ── Per-sprite shadow multiplier ──
@@ -294,6 +294,6 @@ Editor.Effects = {
     sp.shadowMul = val;
     this._applyToSprite(sp);
     Editor.Core.updateDebug();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   }
 };

@@ -184,7 +184,7 @@ Editor.Selection = {
     Editor.Undo.push();
     const pt = C.svgPt(e.clientX, e.clientY), ox = pt.x - sp.x, oy = pt.y - sp.y;
     const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); sp.x = p.x-ox; sp.y = p.y-oy; Editor.Sprites.apply(sp); this.drawSelectionUI(); C.updateDebug(); };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -196,7 +196,7 @@ Editor.Selection = {
       const pt = C.svgPt(e.clientX, e.clientY);
       const offsets = C.multiSel.map(s => ({ s, ox: pt.x - s.x, oy: pt.y - s.y }));
       const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); offsets.forEach(({s, ox, oy}) => { s.x = p.x-ox; s.y = p.y-oy; Editor.Sprites.apply(s); }); this.drawSelectionUI(); C.updateDebug(); };
-      const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+      const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     } else {
       C.multiSel = [sp]; this.startMove(e, sp);
@@ -251,7 +251,7 @@ Editor.Selection = {
     const up = () => {
       document.removeEventListener('mousemove', mv);
       document.removeEventListener('mouseup', up);
-      Editor.Persistence.save();
+      Editor.State.dispatch({ type: 'SET_PROPERTY' });
     };
     document.addEventListener('mousemove', mv);
     document.addEventListener('mouseup', up);
@@ -280,7 +280,7 @@ Editor.Selection = {
       });
       this.drawSelectionUI(); C.updateDebug();
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -329,7 +329,7 @@ Editor.Selection = {
         Editor.Undo.push();
         this.deselect();
         C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layerType || "floor", true));
-        C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.Persistence.save(); Editor.Layers.rebuild();
+        C.selected = C.multiSel[0]; this.drawSelectionUI(); Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
       if (C.clipboardLights.length) {
@@ -337,7 +337,7 @@ Editor.Selection = {
         C.clipboardLights.forEach(l => {
           Editor.Lights.addLight(l.x + 20, l.y + 20, l.color, l.radius, l.intensity);
         });
-        Editor.Persistence.save(); Editor.Layers.rebuild();
+        Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
       return;
@@ -366,14 +366,14 @@ Editor.Selection = {
       if (Editor.Lights.selectedLight) {
         Editor.Undo.push();
         Editor.Lights.removeLight(Editor.Lights.selectedLight.id);
-        Editor.Persistence.save(); Editor.Layers.rebuild();
+        Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
       if (C.selected) {
         Editor.Undo.push();
         const toDelete = C.multiSel.length > 1 ? C.multiSel : [C.selected];
         toDelete.forEach(s => { s.el.remove(); C.allSprites = C.allSprites.filter(x => x !== s); });
-        this.deselect(); C.updateDebug(); Editor.Persistence.save(); Editor.Layers.rebuild();
+        this.deselect(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
     }
@@ -402,7 +402,7 @@ Editor.Selection = {
         else s.flipX = !s.flipX;
         Editor.Sprites.apply(s);
       });
-      this.drawSelectionUI(); C.updateDebug(); Editor.Persistence.save();
+      this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
     // Rotate
@@ -410,7 +410,7 @@ Editor.Selection = {
       Editor.Undo.push();
       const step = e.shiftKey ? 45 : 15;
       (C.multiSel.length > 1 ? C.multiSel : [C.selected]).forEach(s => { s.rot = (s.rot + step) % 360; Editor.Sprites.apply(s); });
-      this.drawSelectionUI(); C.updateDebug(); Editor.Persistence.save();
+      this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
     // Z-order (sprites are direct SVG children, may be inside crop wrapper)
@@ -419,14 +419,14 @@ Editor.Selection = {
       const parent = el.parentNode;
       const next = el.nextElementSibling;
       if (next && next.id !== 'selUI' && next.id !== 'dragRect') parent.insertBefore(next, el);
-      Editor.Persistence.save(); Editor.Layers.rebuild();
+      Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
     }
     if (e.key === '-') {
       const el = C.selected._clipWrap || C.selected.el;
       const parent = el.parentNode;
       const prev = el.previousElementSibling;
       if (prev) parent.insertBefore(el, prev);
-      Editor.Persistence.save(); Editor.Layers.rebuild();
+      Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
     }
 
     // Arrow keys — move selected sprites
@@ -443,7 +443,7 @@ Editor.Selection = {
           if (e.key === 'ArrowRight') s.x += step;
           Editor.Sprites.apply(s);
         });
-        this.drawSelectionUI(); C.updateDebug(); Editor.Persistence.save();
+        this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
       }
     }
   }

@@ -580,34 +580,34 @@ describe('Bug 1 — Effects persistence', () => {
     expect(Editor.Effects.grade.sepia).toBe(0.2);
   });
 
-  it('toggle/set functions call Persistence.save', () => {
-    const saveSpy = vi.spyOn(Editor.Persistence, 'save');
+  it('toggle/set functions call State.dispatch (Phase 2: auto-save via dispatch)', () => {
+    const dispatchSpy = vi.spyOn(Editor.State, 'dispatch');
     const fakeBtn = document.createElement('button');
 
     Editor.Effects.toggleShadow(fakeBtn);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.setShadowParam('dx', 10);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.toggleFeather(fakeBtn);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.setFeatherRadius(20);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.toggleGrade(fakeBtn);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.setGradeParam('brightness', 0.9);
-    expect(saveSpy).toHaveBeenCalled();
+    expect(dispatchSpy).toHaveBeenCalled();
 
-    saveSpy.mockRestore();
+    dispatchSpy.mockRestore();
   });
 });
 

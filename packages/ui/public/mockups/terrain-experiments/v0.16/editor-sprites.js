@@ -79,7 +79,7 @@ Editor.Sprites = {
     // Apply sprite grounding effects (guard: skip during persistence load, Effects.init runs after)
     if (Editor.Effects && Editor.Effects._ready) Editor.Effects._applyToSprite(sp);
     C.updateDebug();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'ADD_SPRITE', id: sp.id });
     Editor.Layers.rebuild();
     return sp;
   },
@@ -224,7 +224,7 @@ Editor.Sprites = {
           C.multiSel = valid;
           C.selected = valid[0];
           Editor.Selection.drawSelectionUI();
-          Editor.Persistence.save();
+          Editor.State.dispatch({ type: 'ADD_SPRITE' });
           Editor.Layers.rebuild();
         }
       });
@@ -276,7 +276,7 @@ Editor.Sprites = {
       }
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'RESIZE_SPRITE' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -294,7 +294,7 @@ Editor.Sprites = {
       sp.rot = deg;
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'ROTATE_SPRITE' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   }
 };

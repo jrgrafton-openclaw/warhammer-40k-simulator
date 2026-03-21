@@ -1,6 +1,7 @@
 /* ══════════════════════════════════════════════════════════════
    EditorState — Single Source of Truth for all editor state.
-   Phase 1 of refactor: centralize scattered state into one object.
+   Phase 1: centralize scattered state into one object.
+   Phase 2: dispatch() mutation API with debounced auto-save.
 
    All state arrays (sprites, models, lights, objectives, groups)
    and settings/effects/counters live here. DOM is a derived view.
@@ -220,6 +221,61 @@ Editor.State = {
       Editor.Effects.shadow = this.effects.shadow;
       Editor.Effects.feather = this.effects.feather;
       Editor.Effects.grade = this.effects.grade;
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // Phase 2: Dispatch API — central mutation notification
+  // ═══════════════════════════════════════════════════════════
+
+  _dirty: false,
+  _saveTimer: null,
+  _SAVE_DELAY: 300,
+
+  /**
+   * Notify that state has changed. Marks dirty and schedules
+   * debounced auto-save. All modules call this instead of
+   * Editor.Persistence.save() directly.
+   *
+   * @param {Object} action - { type: string, ... } describing what changed.
+   *   Action types: MOVE_SPRITE, RESIZE_SPRITE, ROTATE_SPRITE, ADD_SPRITE,
+   *   DELETE_SPRITE, FLIP_SPRITE, SET_SETTING, SET_EFFECT, CROP, RESET_CROP,
+   *   GROUP, UNGROUP, DELETE_GROUP, ADD_TO_GROUP, RENAME_GROUP,
+   *   SET_GROUP_OPACITY, REORDER, ADD_LIGHT, MOVE_LIGHT, DELETE_LIGHT,
+   *   UPDATE_LIGHT, TOGGLE_LIGHT_VIS, TOGGLE_SPRITE_VIS, SET_PROPERTY,
+   *   ADD_MODEL, DELETE_MODEL, MOVE_MODEL, PASTE, UNDO, IMPORT
+   */
+  dispatch(action) {
+    // Sync state immediately so zOrder/arrays are always current.
+    // Only the localStorage write is debounced.
+    this.syncFromCore();
+    this.syncZOrderFromDOM();
+    this._dirty = true;
+    this._scheduleSave();
+  },
+
+  /** Schedule a debounced save. Resets timer on each call. */
+  _scheduleSave() {
+    var self = this;
+    if (this._saveTimer) clearTimeout(this._saveTimer);
+    this._saveTimer = setTimeout(function() {
+      self._saveTimer = null;
+      if (self._dirty) {
+        Editor.Persistence.save();
+        self._dirty = false;
+      }
+    }, this._SAVE_DELAY);
+  },
+
+  /** Flush pending save immediately (e.g. before unload). */
+  flush() {
+    if (this._saveTimer) {
+      clearTimeout(this._saveTimer);
+      this._saveTimer = null;
+    }
+    if (this._dirty) {
+      Editor.Persistence.save();
+      this._dirty = false;
     }
   }
 };

@@ -133,6 +133,6 @@ Editor.Undo = {
     C.selUI.innerHTML = '';
     Editor.Layers.rebuild();
     C.updateDebug();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'UNDO' });
   }
 };

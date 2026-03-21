@@ -20,7 +20,7 @@ Editor.Lights = {
     btn.onclick = () => {
       Editor.Undo.push();
       this.addLight(360, 264, '#ffaa44', 80, 0.3);
-      Editor.Persistence.save();
+      Editor.State.dispatch({ type: 'ADD_LIGHT' });
       Editor.Layers.rebuild();
     };
     row.appendChild(btn);
@@ -47,7 +47,7 @@ Editor.Lights = {
     this.selectedLight[prop] = val;
     this.applyLight(this.selectedLight);
     this.refreshControls();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'UPDATE_LIGHT' });
   },
 
   selectLight(light) {
@@ -179,7 +179,7 @@ Editor.Lights = {
       light.x = p.x - ox; light.y = p.y - oy;
       this.applyLight(light);
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'MOVE_LIGHT' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -193,7 +193,7 @@ Editor.Lights = {
     light.grad.remove();
     C.allLights.splice(idx, 1);
     if (this.selectedLight === light) this.deselectLight();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'DELETE_LIGHT' });
     Editor.Layers.rebuild();
   },
 

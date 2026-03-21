@@ -159,7 +159,7 @@ Editor.Crop = {
 
     this._cleanup();
     Editor.Selection.drawSelectionUI();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'CROP' });
     Editor.Core.updateDebug();
     Editor.Layers.rebuild();
   },
@@ -295,7 +295,7 @@ Editor.Crop = {
     sp.cropL = 0; sp.cropT = 0; sp.cropR = 0; sp.cropB = 0;
     Editor.Sprites.apply(sp);
     Editor.Selection.drawSelectionUI();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'RESET_CROP' });
     Editor.Core.updateDebug();
     Editor.Layers.rebuild();
   },

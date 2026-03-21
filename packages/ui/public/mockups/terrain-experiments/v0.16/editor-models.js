@@ -100,7 +100,7 @@ Editor.Models = {
     m.el.remove();
     C.allModels.splice(idx, 1);
     if (this.selectedModel === m) this.deselectModel();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_PROPERTY' });
     Editor.Layers.rebuild();
   },
 
@@ -111,7 +111,7 @@ Editor.Models = {
     Editor.Undo.push();
     const p0 = C.svgPt(e.clientX, e.clientY), ox = p0.x - m.x, oy = p0.y - m.y;
     const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); m.x = p.x - ox; m.y = p.y - oy; this.applyModel(m); };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   }
 };

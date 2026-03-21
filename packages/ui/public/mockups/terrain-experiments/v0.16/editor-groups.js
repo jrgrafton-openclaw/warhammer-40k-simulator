@@ -62,7 +62,7 @@ Editor.Groups = {
     C.groups.push(group);
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'GROUP', id: id });
     Editor.Layers.rebuild();
     C.updateDebug();
     return group;
@@ -93,7 +93,7 @@ Editor.Groups = {
     sp.groupId = groupId;
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'ADD_TO_GROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
   },
@@ -104,7 +104,7 @@ Editor.Groups = {
     const group = C.groups.find(g => g.id === groupId);
     if (!group) return;
     group.name = newName;
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'RENAME_GROUP', id: groupId });
     Editor.Layers.rebuild();
   },
 
@@ -116,7 +116,7 @@ Editor.Groups = {
     group.opacity = Math.max(0, Math.min(1, opacity));
     const el = document.getElementById(groupId);
     if (el) el.setAttribute('opacity', group.opacity);
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_GROUP_OPACITY', id: groupId });
   },
 
   /* ── Ungroup — return sprites to original layers ── */
@@ -145,7 +145,7 @@ Editor.Groups = {
     C.groups = C.groups.filter(g => g.id !== groupId);
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'UNGROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
   },
@@ -168,7 +168,7 @@ Editor.Groups = {
     C.groups = C.groups.filter(g => g.id !== groupId);
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'DELETE_GROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
   },
