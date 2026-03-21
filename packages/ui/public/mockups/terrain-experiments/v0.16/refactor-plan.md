@@ -156,21 +156,44 @@ const EditorState = {
 ```
 
 ### 1.2 — State Accessors
-- [ ] `EditorState.getSpriteRootEl(sp)` — returns `sp._clipWrap || sp.el` (single place for the duality)
-- [ ] `EditorState.findSprite(id)`, `.findGroup(id)`, `.findLight(id)`
-- [ ] `EditorState.getZOrderedElements()` — returns elements in z-order (replaces `_buildZOrder()`)
+- [x] `EditorState.getSpriteRootEl(sp)` — returns `sp._clipWrap || sp.el` (single place for the duality)
+- [x] `EditorState.findSprite(id)`, `.findGroup(id)`, `.findLight(id)`
+- [x] `EditorState.getZOrderedElements()` — returns elements in z-order (replaces `_buildZOrder()`)
 
 ### 1.3 — Migrate Persistence to Use EditorState
-- [ ] `save()` serializes `EditorState` directly (no DOM walking for z-order)
-- [ ] `load()` populates `EditorState` first, then calls a render pass
-- [ ] `zOrder` is now an explicit array in the saved JSON — no more `layerOrder` heuristics
+- [x] `save()` serializes `EditorState` directly (no DOM walking for z-order)
+- [x] `load()` populates `EditorState` first, then calls a render pass
+- [x] `zOrder` is now an explicit array in the saved JSON — no more `layerOrder` heuristics
 
 ### 1.4 — Tests
-- [ ] All Phase 0 round-trip tests still pass
-- [ ] New test: `EditorState.zOrder` matches expected order after mutations
-- [ ] Visual regression: screenshots unchanged
+- [x] All Phase 0 round-trip tests still pass
+- [x] New test: `EditorState.zOrder` matches expected order after mutations
+- [ ] Visual regression: screenshots unchanged (not automated — requires browser tool)
 
 **Exit criteria:** Persistence no longer walks the DOM for z-order. `EditorState` is the single serialization source.
+
+### Phase 1 Results ✅
+
+**Completed.** 118 tests passing, 3 skipped (same known gaps from Phase 0).
+
+| File | Tests | What it covers |
+|------|:---:|---|
+| `editor-state.test.js` | 58 ✅ | EditorState accessors, zOrder sync/persist, crop transforms, resize with rotation+flip, layer moves into/out of groups, undo granularity for all action types, persistence through EditorState |
+| `persistence.test.js` | 12 ✅ 2 ⏭ | (unchanged from Phase 0) |
+| `undo.test.js` | 8 ✅ 1 ⏭ | (unchanged from Phase 0) |
+| `layers.test.js` | 7 ✅ | (unchanged from Phase 0) |
+| `editor.test.js` | 33 ✅ | (unchanged from Phase 0) |
+
+**Files changed:**
+- `editor-state.js` — **NEW**: EditorState object with all state arrays, zOrder, settings, effects, counters. Accessors: `getSpriteRootEl`, `findSprite/Group/Light`, `getZOrderedElements`, `syncZOrderFromDOM`, `syncFromCore/syncToCore`.
+- `editor-core.js` — Added `Editor.State.syncFromCore()` and `syncZOrderFromDOM()` calls after init.
+- `editor-persistence.js` — Rewritten `save()` to use `EditorState.zOrder` instead of DOM-walking. Saves explicit `zOrder` array + backward-compat `layerOrder`. `load()` syncs EditorState after load. Added `_restoreZOrderFromExplicit` and `_restoreZOrderFromLayerOrder` helpers.
+- `editor-layers.js` — `_buildZOrder()` now has two paths: `_buildZOrderFromState()` (uses EditorState.zOrder) and `_buildZOrderFromDOM()` (legacy fallback). All DOM reorder handlers call `Editor.State.syncZOrderFromDOM()`.
+
+**Architecture notes for later phases:**
+- During Phase 1, EditorState arrays are **references** to Editor.Core arrays (via `syncFromCore()`), not copies. This means mutations to `Editor.Core.allSprites` are immediately visible via `Editor.State.sprites`. This is intentional for Phase 1 — Phase 2 (dispatch API) will make EditorState the primary owner.
+- `zOrder` is synced from DOM after any reorder operation. Phase 2 can eliminate the DOM-sync by having `dispatch()` update zOrder directly.
+- Backward compat: legacy `layerOrder` (flat ID list) still loads correctly. The `zOrder` array with `{type, id}` entries is the Phase 1+ format.
 
 ---
 
@@ -328,7 +351,7 @@ EditorBus.emit('sprite:moved', { id, x, y });
 | Phase | Files Changed | New Files | Risk | Est. Effort |
 |-------|:---:|:---:|:---:|:---:|
 | 0 — Test infrastructure ✅ | 0 | 4 test files, 1 fixture | None (no prod changes) | ✅ Done |
-| 1 — EditorState | 3 (persistence, core, layers) | 1 (editor-state.js) | Medium | 1–2 days |
+| 1 — EditorState ✅ | 3 (persistence, core, layers) | 1 (editor-state.js) + 1 test | Medium | ✅ Done |
 | 2 — Auto-save dispatch | All editor-*.js | 0 | Medium | 1 day |
 | 3 — rootEl getter | 5 (groups, layers, undo, persistence, crop) | 0 | Low | 0.5 day |
 | 4 — Command undo | 2 (undo, all callers) | 1 (editor-commands.js) | High | 2 days |
