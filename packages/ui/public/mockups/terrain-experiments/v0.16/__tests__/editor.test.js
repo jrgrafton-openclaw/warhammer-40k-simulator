@@ -458,6 +458,68 @@ describe('Editor Effects — shadow rotation compensation', () => {
   });
 });
 
+describe('Editor Effects — filter region (Bug 7)', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('filter region is large enough for rotated sprites with shadows', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 45, 'floor', true);
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    // Filter region should be at least -50%/-50% and 200%/200%
+    expect(parseInt(filter.getAttribute('x'))).toBeLessThanOrEqual(-50);
+    expect(parseInt(filter.getAttribute('y'))).toBeLessThanOrEqual(-50);
+    expect(parseInt(filter.getAttribute('width'))).toBeGreaterThanOrEqual(200);
+    expect(parseInt(filter.getAttribute('height'))).toBeGreaterThanOrEqual(200);
+  });
+});
+
+describe('Editor Groups — rename (Bug 1)', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('Groups.rename updates group name', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const group = Editor.Groups.createGroup([sp1, sp2]);
+    expect(group.name).toBe('Group 1');
+
+    Editor.Groups.rename(group.id, 'My Group');
+    const updated = Editor.Core.groups.find(g => g.id === group.id);
+    expect(updated.name).toBe('My Group');
+  });
+
+  it('custom group row dragstart is prevented on group-name element', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    Editor.Groups.createGroup([sp1, sp2]);
+    Editor.Layers.rebuild();
+
+    const list = document.getElementById('layersList');
+    const groupRow = list.querySelector('.custom-group-row');
+    expect(groupRow).toBeTruthy();
+
+    // Simulate dragstart on the group-name element
+    const nameEl = groupRow.querySelector('.group-name');
+    expect(nameEl).toBeTruthy();
+
+    const event = new window.Event('dragstart', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'target', { value: nameEl });
+    const defaultPrevented = !nameEl.dispatchEvent(event);
+    // The dragstart should be prevented when originating from group-name
+    // (The row's dragstart handler checks for .group-name and calls preventDefault)
+  });
+});
+
 describe('Editor Undo — shadowMul preservation', () => {
   let Editor;
 

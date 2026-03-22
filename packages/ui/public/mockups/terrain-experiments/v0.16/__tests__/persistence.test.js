@@ -183,6 +183,55 @@ describe('Round-trip persistence', () => {
       });
     });
 
+    it('preserves sprite z-order after round-trip (Bug 5)', () => {
+      const { beforeZOrder, afterZOrder } = doRoundTrip();
+      expect(afterZOrder).toEqual(beforeZOrder);
+    });
+
+    it('preserves z-order after reorder + round-trip (Bug 5)', () => {
+      const Editor = loadScene(fixture);
+
+      // Reorder: move the first sprite to the end
+      const svg = document.getElementById('battlefield');
+      const selUI = document.getElementById('selUI');
+      const firstSprite = Editor.Core.allSprites.find(s => !s.groupId);
+      if (firstSprite) {
+        svg.insertBefore(firstSprite.rootEl, selUI);
+        Editor.State.syncZOrderFromDOM();
+      }
+
+      const beforeZOrder = getSpriteZOrder(Editor);
+      Editor.Persistence.save();
+
+      // Nuke all state
+      const C = Editor.Core;
+      C.allSprites.forEach(s => {
+        if (s._clipWrap) s._clipWrap.remove();
+        else s.el.remove();
+      });
+      C.allSprites = [];
+      document.getElementById('modelLayer').innerHTML = '';
+      C.allModels = [];
+      C.allLights = [];
+      (C.groups || []).forEach(g => {
+        const el = document.getElementById(g.id);
+        if (el) el.remove();
+      });
+      C.groups = [];
+      C.allObjectives = [];
+      document.getElementById('objectiveRings').innerHTML = '';
+      document.getElementById('objectiveHexes').innerHTML = '';
+      C.sid = 0;
+      Editor.Groups.gid = 0;
+
+      Editor.Persistence.load();
+      Editor.Crop.reapplyAll();
+      Editor.Effects.rebuildAll();
+
+      const afterZOrder = getSpriteZOrder(Editor);
+      expect(afterZOrder).toEqual(beforeZOrder);
+    });
+
     it('full assertSceneEqual passes on round-trip (sprites + models)', () => {
       const { beforeExport, afterExport } = doRoundTrip();
       const result = assertSceneEqual(beforeExport, afterExport);
