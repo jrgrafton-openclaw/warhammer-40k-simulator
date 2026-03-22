@@ -21,7 +21,9 @@ Editor.Sprites = {
       ghostEl.remove(); ghostEl = null;
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
-        const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayerType(file, cat));
+        const is2x = file.includes('-2x.');
+        const w = is2x ? 50 : 100, h = is2x ? 160 : 80;
+        const sp = this.addSprite(file, pt.x - w/2, pt.y - h/2, w, h, 0, this.getLayerType(file, cat));
         // Scatter terrain defaults to no drop shadow
         if (cat === 'tScatter' && sp) {
           sp.shadowMul = 0;
