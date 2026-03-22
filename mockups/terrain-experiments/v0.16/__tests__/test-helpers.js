@@ -16,13 +16,27 @@ export function loadEditor() {
   const dom = new JSDOM(`<!DOCTYPE html><html><body>
     <div class="main">
       <div class="sidebar left"></div>
-      <div id="layersList"></div>
       <select id="bgSel"><option value="svg-gradient">SVG</option></select>
       <textarea id="debug"></textarea>
       <div id="tRuinsFloor"></div><div id="tRuinsTop"></div><div id="tScatter"></div>
-      <input type="range" min="0" max="100" value="92"><span>92%</span>
-      <input type="range" min="0" max="100" value="85"><span>85%</span>
+      <input id="ruinsOpacitySlider" type="range" min="0" max="100" value="92"><span>92%</span>
+      <div class="fx-controls" id="fxShadowControls">
+        <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="20" value="6"><span class="fx-val">6px</span></label>
+        <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55"><span class="fx-val">55%</span></label>
+        <label><span class="fx-lbl">Offset X</span><input type="range" min="-10" max="10" value="3"><span class="fx-val">3px</span></label>
+        <label><span class="fx-lbl">Offset Y</span><input type="range" min="-10" max="10" value="3"><span class="fx-val">3px</span></label>
+        <label><span class="fx-lbl">Distance</span><input type="range" min="0" max="300" value="100"><span class="fx-val">100%</span></label>
+      </div>
+      <div class="fx-controls" id="fxFeatherControls" style="display:none">
+        <label><span class="fx-lbl">Feather Radius</span><input type="range" min="1" max="30" value="10"><span class="fx-val">10px</span></label>
+      </div>
+      <div class="fx-controls" id="fxGradeControls">
+        <label><span class="fx-lbl">Brightness</span><input type="range" min="20" max="120" value="75"><span class="fx-val">75%</span></label>
+        <label><span class="fx-lbl">Saturation</span><input type="range" min="0" max="150" value="70"><span class="fx-val">70%</span></label>
+        <label><span class="fx-lbl">Sepia</span><input type="range" min="0" max="50" value="8"><span class="fx-val">8%</span></label>
+      </div>
       <div id="objectives"></div>
+      <div id="layersList"></div>
       <div class="map-wrapper" id="mapWrap">
         <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528">
           <defs></defs>
@@ -80,10 +94,11 @@ export function loadEditor() {
   }
 
   const modules = [
-    'editor-core.js', 'editor-undo.js', 'editor-models.js', 'editor-sprites.js',
-    'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
-    'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',
-    'editor-effects.js', 'editor-persistence.js'
+    'js/core/state.js',
+    'js/core/bus.js', 'js/entities/core.js', 'js/core/undo.js', 'js/core/commands.js', 'js/entities/models.js', 'js/entities/sprites.js',
+    'js/entities/objectives.js', 'js/entities/lights.js', 'js/tools/groups.js', 'js/tools/crop.js',
+    'js/ui/zoom.js', 'js/ui/shortcuts.js', 'js/tools/selection.js', 'js/ui/layers.js',
+    'js/tools/effects.js', 'js/persistence.js'
   ];
 
   window.Editor = {};
@@ -120,15 +135,11 @@ export function loadScene(fixtureJson) {
       document.getElementById('bgSel').value = data.settings.bg;
       C.setBg(data.settings.bg);
     }
-    // Set range sliders if provided
-    const ranges = document.querySelectorAll('input[type=range]');
-    if (data.settings.ruinsOpacity != null && ranges[0]) {
-      ranges[0].value = data.settings.ruinsOpacity;
-      ranges[0].nextElementSibling.textContent = data.settings.ruinsOpacity + '%';
-    }
-    if (data.settings.roofOpacity != null && ranges[1]) {
-      ranges[1].value = data.settings.roofOpacity;
-      ranges[1].nextElementSibling.textContent = data.settings.roofOpacity + '%';
+    // Set ruins opacity slider if provided
+    const ruinsSlider = document.getElementById('ruinsOpacitySlider');
+    if (data.settings.ruinsOpacity != null && ruinsSlider) {
+      ruinsSlider.value = data.settings.ruinsOpacity;
+      ruinsSlider.nextElementSibling.textContent = data.settings.ruinsOpacity + '%';
     }
   }
 
@@ -244,7 +255,6 @@ export function exportScene(Editor) {
     settings: {
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: 100,
-      roofOpacity: 100,
     }
   };
 }

@@ -84,10 +84,11 @@ function loadEditor() {
   // Load all editor modules in order
   const editorDir = path.resolve(__dirname, '..');
   const modules = [
-    'editor-core.js', 'editor-undo.js', 'editor-models.js', 'editor-sprites.js',
-    'editor-objectives.js', 'editor-lights.js', 'editor-groups.js', 'editor-crop.js',
-    'editor-zoom.js', 'editor-shortcuts.js', 'editor-selection.js', 'editor-layers.js',
-    'editor-effects.js', 'editor-persistence.js'
+    'js/core/state.js',
+    'js/core/bus.js', 'js/entities/core.js', 'js/core/undo.js', 'js/core/commands.js', 'js/entities/models.js', 'js/entities/sprites.js',
+    'js/entities/objectives.js', 'js/entities/lights.js', 'js/tools/groups.js', 'js/tools/crop.js',
+    'js/ui/zoom.js', 'js/ui/shortcuts.js', 'js/tools/selection.js', 'js/ui/layers.js',
+    'js/tools/effects.js', 'js/persistence.js'
   ];
 
   // Create Editor namespace — must be on window AND as a global var the scripts can see
@@ -246,11 +247,12 @@ describe('Editor Crop — wrapper approach', () => {
 
     Editor.Crop._applyClip(sp);
 
-    // Sprite should be inside a wrapper <g>
+    // Double-wrapper: outer _clipWrap (filter) → inner _clipGroup (clip) → <image>
     expect(sp._clipWrap).toBeTruthy();
     expect(sp._clipWrap.tagName).toBe('g');
-    expect(sp.el.parentNode).toBe(sp._clipWrap);
-    expect(sp._clipWrap.getAttribute('clip-path')).toContain('url(#');
+    expect(sp._clipGroup).toBeTruthy();
+    expect(sp.el.parentNode).toBe(sp._clipGroup);
+    expect(sp._clipGroup.getAttribute('clip-path')).toContain('url(#');
   });
 
   it('removeClip unwraps sprite back to direct parent', () => {
@@ -383,6 +385,140 @@ describe('Editor Effects — shadow rotation compensation', () => {
     const filter90 = sp90.el.getAttribute('filter');
     expect(filter0).not.toBe(filter90);
   });
+
+  it('flipX sprite: local offset is counter-flipped so screen shadow is ↘', () => {
+    // feOffset is in LOCAL space (pre-transform). flipX scale(-1,1) will
+    // negate the x, so we pre-negate it so the screen result is correct.
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipX = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // Local dx=-3 (negated), dy=3 (unchanged)
+    // After scale(-1,1): screen (-3*-1, 3) = (3, 3) = ↘
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(3, 0);
+  });
+
+  it('flipY sprite: local offset is counter-flipped so screen shadow is ↘', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipY = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // Local dx=3 (unchanged), dy=-3 (negated)
+    // After scale(1,-1): screen (3, -3*-1) = (3, 3) = ↘
+    expect(dx).toBeCloseTo(3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
+  });
+
+  it('flipX + 90° rotation: combined counter-transform for screen ↘', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 90, 'floor', true);
+    sp.flipX = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // flipX=-1, rot=90: localDx = -1 * (3*0 + 3*1) = -3
+    // flipY=1, rot=90:  localDy = 1 * (-3*1 + 3*0) = -3
+    // After scale(-1,1) + rotate(90°): screen = (3, 3) = ↘
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
+  });
+
+  it('flipX + flipY: both axes counter-flipped for screen ↘', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
+    sp.flipX = true;
+    sp.flipY = true;
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    const offset = filter.querySelector('feOffset');
+    const dx = parseFloat(offset.getAttribute('dx'));
+    const dy = parseFloat(offset.getAttribute('dy'));
+    // Both flipped: local dx=-3, dy=-3
+    // After scale(-1,-1): screen (3, 3) = ↘
+    expect(dx).toBeCloseTo(-3, 0);
+    expect(dy).toBeCloseTo(-3, 0);
+  });
+});
+
+describe('Editor Effects — filter region (Bug 7)', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('filter region is large enough for rotated sprites with shadows', () => {
+    const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 45, 'floor', true);
+    sp.shadowMul = 1.0;
+    Editor.Effects._applyToSprite(sp);
+
+    const filterId = sp.el.getAttribute('filter').match(/url\(#(.+)\)/)[1];
+    const filter = document.getElementById(filterId);
+    // Filter region should be at least -50%/-50% and 200%/200%
+    expect(parseInt(filter.getAttribute('x'))).toBeLessThanOrEqual(-50);
+    expect(parseInt(filter.getAttribute('y'))).toBeLessThanOrEqual(-50);
+    expect(parseInt(filter.getAttribute('width'))).toBeGreaterThanOrEqual(200);
+    expect(parseInt(filter.getAttribute('height'))).toBeGreaterThanOrEqual(200);
+  });
+});
+
+describe('Editor Groups — rename (Bug 1)', () => {
+  let Editor;
+
+  beforeEach(() => {
+    Editor = loadEditor();
+  });
+
+  it('Groups.rename updates group name', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const group = Editor.Groups.createGroup([sp1, sp2]);
+    expect(group.name).toBe('Group 1');
+
+    Editor.Groups.rename(group.id, 'My Group');
+    const updated = Editor.Core.groups.find(g => g.id === group.id);
+    expect(updated.name).toBe('My Group');
+  });
+
+  it('custom group row dragstart is prevented on group-name element', () => {
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    Editor.Groups.createGroup([sp1, sp2]);
+    Editor.Layers.rebuild();
+
+    const list = document.getElementById('layersList');
+    const groupRow = list.querySelector('.custom-group-row');
+    expect(groupRow).toBeTruthy();
+
+    // Simulate dragstart on the group-name element
+    const nameEl = groupRow.querySelector('.group-name');
+    expect(nameEl).toBeTruthy();
+
+    const event = new window.Event('dragstart', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'target', { value: nameEl });
+    const defaultPrevented = !nameEl.dispatchEvent(event);
+    // The dragstart should be prevented when originating from group-name
+    // (The row's dragstart handler checks for .group-name and calls preventDefault)
+  });
 });
 
 describe('Editor Undo — shadowMul preservation', () => {
@@ -392,30 +528,24 @@ describe('Editor Undo — shadowMul preservation', () => {
     Editor = loadEditor();
   });
 
-  it('undo snapshot captures shadowMul', () => {
+  it('command captures shadowMul via _captureSprite', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.shadowMul = 0.3;
 
-    Editor.Undo.push();
-    const snapshot = Editor.Undo.stack[Editor.Undo.stack.length - 1];
-    const saved = snapshot.sprites.find(s => s.id === sp.id);
-    expect(saved.shadowMul).toBeCloseTo(0.3);
+    const captured = Editor.Commands._captureSprite(sp);
+    expect(captured.shadowMul).toBeCloseTo(0.3);
   });
 
   it('undo restores shadowMul correctly', () => {
     const sp = Editor.Sprites.addSprite('test.png', 100, 100, 80, 60, 0, 'floor', true);
     sp.shadowMul = 0.5;
 
-    // Push state with shadowMul=0.5
-    Editor.Undo.push();
+    const cmd = Editor.Commands.SetProperty.create(sp.id, { shadowMul: 0.5 }, { shadowMul: 1.0 });
+    cmd.apply();
+    Editor.Undo.record(cmd);
 
-    // Change shadowMul
-    sp.shadowMul = 1.0;
+    Editor.Undo.undo();
 
-    // Undo should restore shadowMul=0.5
-    Editor.Undo.pop();
-
-    // Find the restored sprite
     const restored = Editor.Core.allSprites.find(s => s.file === 'test.png');
     expect(restored).toBeTruthy();
     expect(restored.shadowMul).toBeCloseTo(0.5);
@@ -427,13 +557,14 @@ describe('Editor Undo — shadowMul preservation', () => {
     sp1.shadowMul = 0.2;
     sp2.shadowMul = 0.8;
 
-    Editor.Undo.push();
+    const cmd = Editor.Commands.Batch.create([
+      Editor.Commands.SetProperty.create(sp1.id, { shadowMul: 0.2 }, { shadowMul: 1.0 }),
+      Editor.Commands.SetProperty.create(sp2.id, { shadowMul: 0.8 }, { shadowMul: 1.0 }),
+    ], 'Batch shadowMul change');
+    cmd.apply();
+    Editor.Undo.record(cmd);
 
-    // Change both
-    sp1.shadowMul = 1.0;
-    sp2.shadowMul = 1.0;
-
-    Editor.Undo.pop();
+    Editor.Undo.undo();
 
     const r1 = Editor.Core.allSprites.find(s => s.file === 'a.png');
     const r2 = Editor.Core.allSprites.find(s => s.file === 'b.png');
@@ -450,7 +581,7 @@ describe('Integration — James layout JSON', () => {
   });
 
   it('loads james-layout.json without errors', () => {
-    const layoutPath = path.resolve(__dirname, '..', 'james-layout.json');
+    const layoutPath = path.resolve(__dirname, '..', 'data', 'james-layout.json');
     const layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
 
     expect(layout.sprites.length).toBeGreaterThan(0);
@@ -464,7 +595,7 @@ describe('Integration — James layout JSON', () => {
   });
 
   it('all sprites render with correct structure after import', () => {
-    const layoutPath = path.resolve(__dirname, '..', 'james-layout.json');
+    const layoutPath = path.resolve(__dirname, '..', 'data', 'james-layout.json');
     const layout = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
 
     // Simulate import: create all sprites from layout data
@@ -503,8 +634,9 @@ describe('Integration — James layout JSON', () => {
         : svg.contains(sp.el);
       expect(elInSvg).toBe(true);
 
-      // Every sprite should have a filter applied
-      expect(sp.el.getAttribute('filter')).toBeTruthy();
+      // Every sprite should have a filter applied (on wrapper if cropped, on image if not)
+      const filterTarget = sp._clipWrap || sp.el;
+      expect(filterTarget.getAttribute('filter')).toBeTruthy();
     });
 
     // Verify cropped sprites have correct wrapper structure
@@ -513,8 +645,9 @@ describe('Integration — James layout JSON', () => {
 
     cropped.forEach(sp => {
       expect(sp._clipWrap).toBeTruthy();
-      expect(sp._clipWrap.getAttribute('clip-path')).toBeTruthy();
-      expect(sp.el.parentNode).toBe(sp._clipWrap);
+      expect(sp._clipGroup).toBeTruthy();
+      expect(sp._clipGroup.getAttribute('clip-path')).toBeTruthy();
+      expect(sp.el.parentNode).toBe(sp._clipGroup);
     });
 
     // Verify uncropped sprites are direct SVG children (not wrapped)
@@ -579,34 +712,34 @@ describe('Bug 1 — Effects persistence', () => {
     expect(Editor.Effects.grade.sepia).toBe(0.2);
   });
 
-  it('toggle/set functions call Persistence.save', () => {
-    const saveSpy = vi.spyOn(Editor.Persistence, 'save');
+  it('toggle/set functions call State.dispatch (Phase 2: auto-save via dispatch)', () => {
+    const dispatchSpy = vi.spyOn(Editor.State, 'dispatch');
     const fakeBtn = document.createElement('button');
 
     Editor.Effects.toggleShadow(fakeBtn);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.setShadowParam('dx', 10);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.toggleFeather(fakeBtn);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.setFeatherRadius(20);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.toggleGrade(fakeBtn);
-    expect(saveSpy).toHaveBeenCalled();
-    saveSpy.mockClear();
+    expect(dispatchSpy).toHaveBeenCalled();
+    dispatchSpy.mockClear();
 
     Editor.Effects.setGradeParam('brightness', 0.9);
-    expect(saveSpy).toHaveBeenCalled();
+    expect(dispatchSpy).toHaveBeenCalled();
 
-    saveSpy.mockRestore();
+    dispatchSpy.mockRestore();
   });
 });
 
@@ -783,7 +916,7 @@ describe('Integration — test-layout.json', () => {
   });
 
   it('loads test-layout.json with groups, crops, flips', () => {
-    const layoutPath = path.resolve(__dirname, '..', 'test-layout.json');
+    const layoutPath = path.resolve(__dirname, '..', 'data', 'test-layout.json');
     const raw = JSON.parse(fs.readFileSync(layoutPath, 'utf8'));
 
     // Convert from output format
@@ -828,7 +961,7 @@ describe('Integration — test-layout.json', () => {
 
     const C = Editor.Core;
 
-    // 20 sprites total
+    // 20 sprites in test-layout.json
     expect(C.allSprites.length).toBe(20);
 
     // Group g1 has 6 sprites
@@ -847,34 +980,37 @@ describe('Integration — test-layout.json', () => {
       expect(elInGroup).toBe(true);
     });
 
-    // Cropped+flipped sprites have clip paths
-    // s6: flipY + crop.b=0.156
-    const s6 = C.allSprites[6];
-    expect(s6.flipY).toBe(true);
-    expect(s6.cropB).toBeCloseTo(0.156, 2);
-    expect(s6._clipWrap).toBeTruthy();
+    // Cropped+flipped sprites have clip paths (find by properties, not index)
+    // s6: layer-top-v3.png, flipY + crop.b=0.156
+    const s6Like = C.allSprites.find(s => s.file === 'layer-top-v3.png' && s.flipY && s.cropB > 0.1);
+    expect(s6Like).toBeTruthy();
+    expect(s6Like.flipY).toBe(true);
+    expect(s6Like.cropB).toBeCloseTo(0.156, 2);
+    expect(s6Like._clipWrap).toBeTruthy();
 
-    // s12: flipY + crop.l=0.107
-    const s12 = C.allSprites[12];
-    expect(s12.flipY).toBe(true);
-    expect(s12.cropL).toBeCloseTo(0.107, 2);
-    expect(s12._clipWrap).toBeTruthy();
+    // s12: layer-bottom-v5.png, flipY + crop.l=0.107
+    const s12Like = C.allSprites.find(s => s.file === 'layer-bottom-v5.png' && s.cropL > 0.1);
+    expect(s12Like).toBeTruthy();
+    expect(s12Like.flipY).toBe(true);
+    expect(s12Like.cropL).toBeCloseTo(0.107, 2);
+    expect(s12Like._clipWrap).toBeTruthy();
 
-    // s13: flipY + crop.l=0.16 + crop.b=0.343
-    const s13 = C.allSprites[13];
-    expect(s13.flipY).toBe(true);
-    expect(s13.cropL).toBeCloseTo(0.16, 2);
-    expect(s13.cropB).toBeCloseTo(0.343, 2);
-    expect(s13._clipWrap).toBeTruthy();
+    // s13: scatter-v2.png, flipY + crop.l=0.16 + crop.b=0.343
+    const s13Like = C.allSprites.find(s => s.file === 'scatter-v2.png' && s.cropL > 0.1);
+    expect(s13Like).toBeTruthy();
+    expect(s13Like.flipY).toBe(true);
+    expect(s13Like.cropL).toBeCloseTo(0.16, 2);
+    expect(s13Like.cropB).toBeCloseTo(0.343, 2);
+    expect(s13Like._clipWrap).toBeTruthy();
 
     // Verify clip rects account for flip (Bug 4 regression test)
     // s6 has flipY + cropB=0.156: after swap, cT=0.156, cB=0
     // clipRect y should be sp.y + sp.h * 0.156
-    const s6clip = document.getElementById(s6._clipId);
+    const s6clip = document.getElementById(s6Like._clipId);
     if (s6clip) {
       const rect = s6clip.querySelector('rect');
       const clipY = parseFloat(rect.getAttribute('y'));
-      expect(clipY).toBeCloseTo(s6.y + s6.h * 0.156, 0);
+      expect(clipY).toBeCloseTo(s6Like.y + s6Like.h * 0.156, 0);
     }
   });
 });

@@ -1,0 +1,9 @@
+/* Canvas/battlefield area + selection rect + drag ghost + file drop */
+.canvas-wrap{flex:1;display:flex;overflow:hidden;position:relative}
+.map-wrapper{position:relative;width:100%;height:100%}
+#battlefield{display:block;width:100%;height:100%;background:#030609}
+
+.sel-rect{fill:rgba(0,212,255,0.08);stroke:#00d4ff;stroke-width:1;stroke-dasharray:4,2;pointer-events:none}
+
+.drop-active{outline:2px dashed #00d4ff;outline-offset:-2px;background:rgba(0,212,255,0.04)}
+.ghost{position:fixed;pointer-events:none;opacity:0.6;z-index:9999}
