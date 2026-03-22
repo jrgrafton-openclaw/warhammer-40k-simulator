@@ -421,7 +421,7 @@ Editor.Layers = {
       e.preventDefault();
       e.stopImmediatePropagation();
       if (!this.draggedId || this.draggedId === gId) return;
-      const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
+      const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg') && !this.draggedId.startsWith('deploy');
       const rect = row.getBoundingClientRect();
       const mid = rect.top + rect.height / 2;
       row.classList.toggle('drop-above', e.clientY < mid);
@@ -436,7 +436,7 @@ Editor.Layers = {
       const dropAbove = e.clientY < rect.top + rect.height / 2;
       row.classList.remove('drop-above', 'drop-below');
       if (!this.draggedId || this.draggedId === gId) return;
-      const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
+      const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg') && !this.draggedId.startsWith('deploy');
       if (isSpriteDrag) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
         if (!sp) return;
