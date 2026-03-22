@@ -7,7 +7,7 @@
 
 Editor.Layers = {
   draggedId: null,
-  expandedGroups: { modelLayer: false, lightLayer: false },
+  expandedGroups: { modelLayer: false, lightLayer: false, deployZones: false },
 
   /* ── Build the unified z-order list ── */
   /* Phase 1: Uses EditorState.zOrder when available, falls back to DOM walk. */
@@ -26,6 +26,7 @@ Editor.Layers = {
   /* Build z-order items from EditorState.zOrder array */
   _buildZOrderFromState(S, C) {
     const groupMeta = {
+      deployZones:     { name: 'Deploy Zones', icon: 'deploy' },
       modelLayer:      { name: 'Models',      icon: 'models' },
       lightLayer:      { name: 'Lights',      icon: 'lights' },
       objectiveRings:  { name: 'Obj Rings',   icon: 'obj-rings' },
@@ -58,6 +59,7 @@ Editor.Layers = {
     const items = [];
 
     const groupMeta = {
+      deployZones:     { name: 'Deploy Zones', icon: 'deploy' },
       modelLayer:      { name: 'Models',      icon: 'models' },
       lightLayer:      { name: 'Lights',      icon: 'lights' },
       objectiveRings:  { name: 'Obj Rings',   icon: 'obj-rings' },
@@ -65,7 +67,7 @@ Editor.Layers = {
       svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
       svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
     };
-    const skipIds = new Set(['selUI', 'dragRect', 'deployZones', 'bgImg',
+    const skipIds = new Set(['selUI', 'dragRect', 'bgImg',
       'svgGroundGradient', 'svgGroundWarm', 'svgGroundDual', 'svgGroundHaze',
       'svgGroundConcrete', 'svgGroundTactical', 'cropOverlay']);
     const legacyContainers = new Set(['spriteFloor', 'spriteTop']);
@@ -165,8 +167,16 @@ Editor.Layers = {
         list.appendChild(row);
         this._setupDrag(row, this._itemId(item), zItems);
 
-        // Expandable children for models and lights
-        if (item.groupId === 'modelLayer' && this.expandedGroups.modelLayer) {
+        // Expandable children for models, lights, and deploy zones
+        if (item.groupId === 'deployZones' && this.expandedGroups.deployZones) {
+          const dzEl = document.getElementById('deployZones');
+          if (dzEl) {
+            Array.from(dzEl.children).filter(c => c.id && c.id.startsWith('deploy-')).forEach(zone => {
+              const child = this._createDeployZoneChildRow(zone);
+              list.appendChild(child);
+            });
+          }
+        } else if (item.groupId === 'modelLayer' && this.expandedGroups.modelLayer) {
           C.allModels.forEach(m => {
             const child = this._createModelChildRow(m, C);
             list.appendChild(child);
@@ -243,10 +253,16 @@ Editor.Layers = {
   _createGroupRow(item, C) {
     const g = item.meta;
     let count, meta, iconSvg;
-    const expandable = item.groupId === 'modelLayer' || item.groupId === 'lightLayer';
+    const expandable = item.groupId === 'modelLayer' || item.groupId === 'lightLayer' || item.groupId === 'deployZones';
     const expanded = expandable && this.expandedGroups[item.groupId];
 
-    if (item.groupId === 'modelLayer') {
+    if (item.groupId === 'deployZones') {
+      const el = document.getElementById('deployZones');
+      const zones = el ? Array.from(el.children).filter(c => c.id && c.id.startsWith('deploy-')) : [];
+      count = zones.length;
+      meta = `${count} zone${count !== 1 ? 's' : ''}`;
+      iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><rect x="2" y="4" width="8" height="16" rx="1" stroke="#00d4ff" fill="rgba(0,140,200,0.15)"/><rect x="14" y="4" width="8" height="16" rx="1" stroke="#ff4020" fill="rgba(255,64,32,0.15)"/></svg>`;
+    } else if (item.groupId === 'modelLayer') {
       count = C.allModels.length;
       meta = `${count} unit${count !== 1 ? 's' : ''}`;
       iconSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><circle cx="12" cy="12" r="7"/><line x1="12" y1="8" x2="12" y2="16" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke-linecap="round"/></svg>`;
@@ -328,6 +344,44 @@ Editor.Layers = {
       Editor.Layers.rebuild();
     };
     return row;
+  },
+
+  /* ── Individual deploy zone child row ── */
+  _createDeployZoneChildRow(zoneEl) {
+    const row = document.createElement('div');
+    const hidden = zoneEl.style.display === 'none';
+    const zoneId = zoneEl.id;
+    const isImperium = zoneId === 'deploy-imperium';
+    const name = isImperium ? 'Imperium' : 'Ork';
+    const color = isImperium ? '#00d4ff' : '#ff4020';
+    const dotColor = isImperium ? 'rgba(0,140,200,0.6)' : 'rgba(255,64,32,0.6)';
+    row.className = 'layer-row child-row';
+    row.innerHTML = `<div class="child-icon" style="color:${dotColor}">◼</div>
+      <div style="flex:1;min-width:0"><div class="lname"${hidden ? ' style="opacity:0.4"' : ''}>${name} Deploy</div><div class="lmeta">${isImperium ? 'Left (0–240)' : 'Right (480–720)'}</div></div>
+      <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleDeployZoneVis('${zoneId}')">${hidden ? '🔇' : '👁'}</button>`;
+    return row;
+  },
+
+  /* ── Toggle individual deploy zone visibility ── */
+  toggleDeployZoneVis(zoneId) {
+    const el = document.getElementById(zoneId);
+    if (!el) return;
+    const wasHidden = el.style.display === 'none';
+    el.style.display = wasHidden ? '' : 'none';
+    // Update the parent toggle button state based on whether ANY zone is visible
+    const parent = document.getElementById('deployZones');
+    if (parent) {
+      const anyVisible = Array.from(parent.children)
+        .filter(c => c.id && c.id.startsWith('deploy-'))
+        .some(c => c.style.display !== 'none');
+      const btn = document.querySelector('button[onclick*="deployZones"]');
+      if (btn) {
+        if (anyVisible) btn.classList.add('on');
+        else btn.classList.remove('on');
+      }
+    }
+    Editor.State.dispatch({ type: 'TOGGLE_DEPLOY_ZONE_VIS' });
+    this.rebuild();
   },
 
   /* ── Custom sprite group row ── */
