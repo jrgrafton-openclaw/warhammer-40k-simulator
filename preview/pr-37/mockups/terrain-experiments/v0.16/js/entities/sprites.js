@@ -24,7 +24,7 @@ Editor.Sprites = {
         const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayerType(file, cat));
         // Scatter terrain defaults to no drop shadow
         if (cat === 'tScatter' && sp) {
-          sp.shadowMul = 0;
+          sp.shadowMul = 0.3;
           if (Editor.Effects) Editor.Effects._applyToSprite(sp);
           Editor.Layers.rebuild();
         }

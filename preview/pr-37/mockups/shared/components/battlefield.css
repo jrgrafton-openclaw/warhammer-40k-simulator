@@ -124,7 +124,7 @@
 .obj-hex-wrap.controlled { filter: drop-shadow(0 0 8px rgba(0,212,255,.5)); }
 .obj-hex-wrap.enemy      { filter: drop-shadow(0 0 8px rgba(255,64,32,.5)); }
 .obj-svg { display: block; overflow: visible; width: 100%; height: 100%; }
-.obj-bg  { fill: url(#obj-glow); }
+.obj-bg  { fill: rgba(8,12,16,.92); }
 .obj-ring { fill: none; stroke-width: 1.5; }
 .obj-n {
   font-family: 'Anton', sans-serif; font-size: 22px; font-weight: 400;

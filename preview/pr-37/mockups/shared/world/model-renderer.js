@@ -156,12 +156,6 @@ export function ensureSVGDefs() {
       '<feGaussianBlur in="clipped" stdDeviation="3" result="blur"/>',
       '<feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>',
     '</filter>',
-    '<filter id="mf-shadow" x="-50%" y="-30%" width="200%" height="200%">',
-      '<feGaussianBlur in="SourceAlpha" stdDeviation="2" result="shadow"/>',
-      '<feOffset in="shadow" dx="1" dy="2" result="shifted"/>',
-      '<feFlood flood-color="#000000" flood-opacity="0.3" result="color"/>',
-      '<feComposite in="color" in2="shifted" operator="in" result="final"/>',
-    '</filter>',
   ].join('');
   svg.insertBefore(defs, svg.firstChild);
 }
@@ -242,29 +236,6 @@ export function renderModels() {
       g.setAttribute('class', 'model-base' + (model.broken ? ' broken-cohesion' : '') + ((isLiftedUnit || isLiftedModel) ? ' is-lifted' : '') + ((isSettlingUnit || isSettlingModel) ? ' is-settling' : ''));
       g.dataset.unitId  = unit.id;
       g.dataset.modelId = model.id;
-
-      /* ── Improvement 5: Ground shadow beneath model base ── */
-      var shadow;
-      if (model.shape === 'rect') {
-        shadow = document.createElementNS(NS, 'rect');
-        shadow.setAttribute('x',      model.x - model.w / 2 + 1);
-        shadow.setAttribute('y',      model.y - model.h / 2 + 2);
-        shadow.setAttribute('width',  model.w);
-        shadow.setAttribute('height', model.h);
-        shadow.setAttribute('rx', '4'); shadow.setAttribute('ry', '4');
-        if (model.rotation) {
-          shadow.setAttribute('transform', 'rotate(' + model.rotation + ',' + (model.x + 1) + ',' + (model.y + 2) + ')');
-        }
-      } else {
-        shadow = document.createElementNS(NS, 'circle');
-        shadow.setAttribute('cx', model.x + 1);
-        shadow.setAttribute('cy', model.y + 2);
-        shadow.setAttribute('r',  model.r);
-      }
-      shadow.setAttribute('fill', 'rgba(0,0,0,0.3)');
-      shadow.setAttribute('filter', 'url(#mf-shadow)');
-      shadow.setAttribute('pointer-events', 'none');
-      g.appendChild(shadow);
 
       var el;
       if (model.shape === 'rect') {

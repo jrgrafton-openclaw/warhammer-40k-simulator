@@ -73,9 +73,16 @@ Editor.Objectives = {
 
     const points = '42,3 81,25.5 81,71.5 42,94 3,71.5 3,25.5';
 
+    const gradDef = document.createElementNS(ns, 'defs');
+    gradDef.innerHTML = '<radialGradient id="obj-glow-' + idx + '" cx="50%" cy="45%" r="55%">' +
+      '<stop offset="0%" stop-color="rgba(74,96,128,0.18)"/>' +
+      '<stop offset="100%" stop-color="rgba(8,12,16,0.92)"/>' +
+      '</radialGradient>';
+    hexSvg.insertBefore(gradDef, hexSvg.firstChild);
+
     const bg = document.createElementNS(ns, 'polygon');
     bg.setAttribute('points', points);
-    bg.setAttribute('fill', 'rgba(8,12,16,.92)');
+    bg.setAttribute('fill', 'url(#obj-glow-' + idx + ')');
     hexSvg.appendChild(bg);
 
     const border = document.createElementNS(ns, 'polygon');

@@ -31,10 +31,12 @@ Editor.Models = {
   applyModel(m) {
     if (m.kind === 'circle') {
       m.base.setAttribute('cx', m.x); m.base.setAttribute('cy', m.y);
+      if (m.shadow) { m.shadow.setAttribute('cx', m.x + 1); m.shadow.setAttribute('cy', m.y + 2); }
       m.icon.setAttribute('color', m.s === '#0088aa' ? '#006688' : '#882010');
       m.icon.innerHTML = this.mkIcon(m.x, m.y, m.iconType);
     } else {
       m.base.setAttribute('x', m.x); m.base.setAttribute('y', m.y);
+      if (m.shadow) { m.shadow.setAttribute('x', m.x + 1); m.shadow.setAttribute('y', m.y + 2); }
       m.icon.innerHTML = `<rect x="${m.x+m.w/2-6}" y="${m.y+m.h/2-4}" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.9" fill="none"/><line x1="${m.x+m.w/2-6}" y1="${m.y+m.h/2}" x2="${m.x+m.w/2+6}" y2="${m.y+m.h/2}" stroke="currentColor" stroke-width="1.2"/>`;
     }
   },
@@ -42,13 +44,20 @@ Editor.Models = {
   addCircle(cx, cy, r, s, f, iconType, restoreId) {
     const C = Editor.Core, NS = C.NS;
     const g = document.createElementNS(NS, 'g'); g.style.cursor = 'grab';
+    const shadow = document.createElementNS(NS, 'circle');
+    shadow.setAttribute('cx', cx + 1); shadow.setAttribute('cy', cy + 2);
+    shadow.setAttribute('r', r);
+    shadow.setAttribute('fill', 'rgba(0,0,0,0.25)');
+    shadow.setAttribute('filter', 'url(#mf-ground-shadow)');
+    shadow.style.pointerEvents = 'none';
+    g.appendChild(shadow);
     const c = document.createElementNS(NS, 'circle');
     c.setAttribute('r', r); c.setAttribute('fill', 'url(#mg-fill)'); c.setAttribute('stroke', s);
     c.setAttribute('stroke-width', '1.5'); c.setAttribute('filter', f); g.appendChild(c);
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
     const id = restoreId || ('m' + (this.mid++));
-    const m = { id, kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig };
+    const m = { id, kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig, shadow };
     C.allModels.push(m);
     this.applyModel(m);
     g.onmousedown = e => this.startMove(e, m);
@@ -58,6 +67,13 @@ Editor.Models = {
   addRect(x, y, w, h, s, f, restoreId) {
     const C = Editor.Core, NS = C.NS;
     const g = document.createElementNS(NS, 'g'); g.style.cursor = 'grab';
+    const shadow = document.createElementNS(NS, 'rect');
+    shadow.setAttribute('x', x + 1); shadow.setAttribute('y', y + 2);
+    shadow.setAttribute('width', w); shadow.setAttribute('height', h); shadow.setAttribute('rx', '4');
+    shadow.setAttribute('fill', 'rgba(0,0,0,0.25)');
+    shadow.setAttribute('filter', 'url(#mf-ground-shadow)');
+    shadow.style.pointerEvents = 'none';
+    g.appendChild(shadow);
     const r = document.createElementNS(NS, 'rect');
     r.setAttribute('width', w); r.setAttribute('height', h); r.setAttribute('rx', '4');
     r.setAttribute('fill', 'url(#mg-fill)'); r.setAttribute('stroke', s);
@@ -65,7 +81,7 @@ Editor.Models = {
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('color', '#006688'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
     const id = restoreId || ('m' + (this.mid++));
-    const m = { id, kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig };
+    const m = { id, kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig, shadow };
     C.allModels.push(m);
     this.applyModel(m);
     g.onmousedown = e => this.startMove(e, m);
