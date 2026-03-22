@@ -311,6 +311,11 @@ Editor.Persistence = {
         }
       });
     }
+    // Settings: flatten nested settings to top-level
+    if (data.settings) {
+      if (!data.bg && data.settings.bg) data.bg = data.settings.bg;
+      if (data.ruinsOpacity == null && data.settings.ruinsOpacity != null) data.ruinsOpacity = data.settings.ruinsOpacity;
+    }
     return data;
   },
 
