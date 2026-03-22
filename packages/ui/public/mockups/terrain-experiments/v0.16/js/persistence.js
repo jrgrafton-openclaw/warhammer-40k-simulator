@@ -16,7 +16,7 @@ Editor.Persistence = {
     S.syncFromCore();
     S.syncZOrderFromDOM();
 
-    const ranges = document.querySelectorAll('input[type=range]');
+    const ruinsSlider = document.getElementById('ruinsOpacitySlider');
 
     // Build sprites in z-order using EditorState.zOrder
     const orderedSprites = [];
@@ -71,7 +71,7 @@ Editor.Persistence = {
         grade: Object.assign({}, S.effects.grade)
       },
       bg: document.getElementById('bgSel').value,
-      ruinsOpacity: ranges[0] ? ranges[0].value : 92,
+      ruinsOpacity: ruinsSlider ? ruinsSlider.value : 92,
       // Explicit zOrder array (Phase 1)
       zOrder: S.zOrder.slice(),
       // Keep layerOrder for backward compat with older versions
@@ -143,12 +143,12 @@ Editor.Persistence = {
   _restoreSettings(data) {
     var C = Editor.Core;
     if (data.bg) { document.getElementById('bgSel').value = data.bg; C.setBg(data.bg); }
-    var ranges = document.querySelectorAll('input[type=range]');
-    if (data.ruinsOpacity != null && ranges[0]) {
-      ranges[0].value = data.ruinsOpacity;
+    var ruinsSlider = document.getElementById('ruinsOpacitySlider');
+    if (data.ruinsOpacity != null && ruinsSlider) {
+      ruinsSlider.value = data.ruinsOpacity;
       document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
       document.getElementById('svgScatter').style.opacity = data.ruinsOpacity / 100;
-      ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
+      ruinsSlider.nextElementSibling.textContent = data.ruinsOpacity + '%';
     }
     if (data.effects) {
       var E = Editor.Effects;

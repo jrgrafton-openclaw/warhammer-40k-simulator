@@ -251,9 +251,9 @@ describe('EditorState — zOrder with fixture', () => {
     Editor.State.syncZOrderFromDOM();
     const spriteEntries = Editor.State.zOrder.filter(e => e.type === 'sprite');
     const groupEntries = Editor.State.zOrder.filter(e => e.type === 'group');
-    // 20 sprites total, 6 in group-g1 → 14 ungrouped
-    expect(spriteEntries.length).toBe(14);
-    expect(groupEntries.length).toBe(1);
+    // 21 sprites total, 17 in 4 groups → 4 ungrouped
+    expect(spriteEntries.length).toBe(4);
+    expect(groupEntries.length).toBe(4);
   });
 
   it('_buildZOrder uses EditorState when populated', () => {
@@ -872,6 +872,6 @@ describe('Persistence — EditorState integration', () => {
 
     Editor.Persistence.load();
     // Should still work via layerOrder fallback
-    expect(Editor.Core.allSprites.length).toBe(20);
+    expect(Editor.Core.allSprites.length).toBe(21);
   });
 });

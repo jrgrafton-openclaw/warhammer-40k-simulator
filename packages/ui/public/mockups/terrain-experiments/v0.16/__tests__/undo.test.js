@@ -425,6 +425,6 @@ describe('Undo with fixture scene', () => {
     expect(sp.y).toBe(origY);
 
     // Other sprites unchanged
-    expect(Editor.Core.allSprites.length).toBe(20);
+    expect(Editor.Core.allSprites.length).toBe(21);
   });
 });

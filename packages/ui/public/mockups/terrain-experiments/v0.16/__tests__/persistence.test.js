@@ -2,7 +2,7 @@
  * Phase 0.2 — Round-Trip Persistence Tests
  *
  * Verifies that save → load cycles preserve all editor state.
- * Uses test-scene.json fixture (20 sprites, 29 models, 5 objectives, 1 group).
+ * Uses test-scene.json fixture (21 sprites, 29 models, 5 objectives, 4 groups).
  *
  * Run: npx vitest run packages/ui/public/mockups/terrain-experiments/v0.16/__tests__/persistence.test.js
  */
@@ -17,9 +17,9 @@ describe('Round-trip persistence', () => {
     fixture = loadFixture();
   });
 
-  it('loads all 20 sprites from fixture', () => {
+  it('loads all 21 sprites from fixture', () => {
     const Editor = loadScene(fixture);
-    expect(Editor.Core.allSprites.length).toBe(20);
+    expect(Editor.Core.allSprites.length).toBe(21);
   });
 
   it('loads all 29 models from fixture', () => {
@@ -32,13 +32,12 @@ describe('Round-trip persistence', () => {
     expect(Editor.Core.allObjectives.length).toBe(5);
   });
 
-  it('creates group-g1 with 6 sprites', () => {
+  it('creates 4 groups with 17 grouped sprites', () => {
     const Editor = loadScene(fixture);
     const grouped = Editor.Core.allSprites.filter(s => s.groupId);
-    expect(grouped.length).toBe(6);
-    // All should be in the same group
+    expect(grouped.length).toBe(17);
     const groupIds = new Set(grouped.map(s => s.groupId));
-    expect(groupIds.size).toBe(1);
+    expect(groupIds.size).toBe(4);
   });
 
   describe('save → clear → load round-trip', () => {
@@ -84,7 +83,7 @@ describe('Round-trip persistence', () => {
 
     it('preserves sprite count', () => {
       const { afterExport } = doRoundTrip();
-      expect(afterExport.sprites.length).toBe(20);
+      expect(afterExport.sprites.length).toBe(21);
     });
 
     it('preserves sprite properties (x, y, w, h, rot, layerType, flipX, flipY, shadowMul)', () => {
@@ -111,32 +110,32 @@ describe('Round-trip persistence', () => {
     it('preserves crop values for cropped sprites', () => {
       const { Editor } = doRoundTrip();
       const C = Editor.Core;
-      // Fixture has crops on: s6 (b:0.156), s12 (l:0.107), s13 (l:0.16, b:0.343)
-      // Find sprites by their file + crop characteristics
+      // Fixture has crops on: s0 (b:0.123), s7 (l:0.107), s1 (l:0.16, b:0.343),
+      // s11 (t:0.162), s19 (r:0.69), s18 (l:0.108)
       const cropped = C.allSprites.filter(s => s.cropL || s.cropT || s.cropR || s.cropB);
-      expect(cropped.length).toBeGreaterThanOrEqual(3);
+      expect(cropped.length).toBeGreaterThanOrEqual(6);
 
       // Check specific crop values survive
-      const s6Like = C.allSprites.find(s => s.file === 'layer-top-v3.png' && s.flipY && s.cropB > 0.1);
-      expect(s6Like, 'sprite with layer-top-v3.png flipY + crop.b').toBeTruthy();
-      expect(s6Like.cropB).toBeCloseTo(0.156, 2);
+      const s0Like = C.allSprites.find(s => s.file === 'layer-top-v3.png' && s.flipY && s.cropB > 0.1);
+      expect(s0Like, 'sprite with layer-top-v3.png flipY + crop.b').toBeTruthy();
+      expect(s0Like.cropB).toBeCloseTo(0.123, 2);
 
-      const s12Like = C.allSprites.find(s => s.file === 'layer-bottom-v5.png' && s.cropL > 0.1);
-      expect(s12Like, 'sprite with layer-bottom-v5.png crop.l').toBeTruthy();
-      expect(s12Like.cropL).toBeCloseTo(0.107, 2);
+      const s7Like = C.allSprites.find(s => s.file === 'layer-bottom-v5.png' && s.cropL > 0.1);
+      expect(s7Like, 'sprite with layer-bottom-v5.png crop.l').toBeTruthy();
+      expect(s7Like.cropL).toBeCloseTo(0.107, 2);
 
-      const s13Like = C.allSprites.find(s => s.file === 'scatter-v2.png' && s.cropL > 0.1);
-      expect(s13Like, 'sprite with scatter-v2.png crop.l+b').toBeTruthy();
-      expect(s13Like.cropL).toBeCloseTo(0.16, 2);
-      expect(s13Like.cropB).toBeCloseTo(0.343, 2);
+      const s1Like = C.allSprites.find(s => s.file === 'scatter-v2.png' && s.cropL > 0.1);
+      expect(s1Like, 'sprite with scatter-v2.png crop.l+b').toBeTruthy();
+      expect(s1Like.cropL).toBeCloseTo(0.16, 2);
+      expect(s1Like.cropB).toBeCloseTo(0.343, 2);
     });
 
     it('preserves groups after round-trip', () => {
       const { Editor } = doRoundTrip();
       const C = Editor.Core;
-      expect(C.groups.length).toBeGreaterThanOrEqual(1);
+      expect(C.groups.length).toBeGreaterThanOrEqual(4);
       const grouped = C.allSprites.filter(s => s.groupId);
-      expect(grouped.length).toBe(6);
+      expect(grouped.length).toBe(17);
     });
 
     it('preserves model count and types', () => {
@@ -165,7 +164,7 @@ describe('Round-trip persistence', () => {
       Editor.Persistence.save();
       const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
       expect(saved.bg).toBe('svg-gradient');
-      expect(Number(saved.ruinsOpacity)).toBe(100);
+      expect(Number(saved.ruinsOpacity)).toBe(0);
       expect(saved.roofOpacity).toBeUndefined();
     });
 

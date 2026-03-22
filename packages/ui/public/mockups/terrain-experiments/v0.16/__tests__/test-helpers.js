@@ -16,11 +16,10 @@ export function loadEditor() {
   const dom = new JSDOM(`<!DOCTYPE html><html><body>
     <div class="main">
       <div class="sidebar left"></div>
-      <div id="layersList"></div>
       <select id="bgSel"><option value="svg-gradient">SVG</option></select>
       <textarea id="debug"></textarea>
       <div id="tRuinsFloor"></div><div id="tRuinsTop"></div><div id="tScatter"></div>
-      <input type="range" min="0" max="100" value="92"><span>92%</span>
+      <input id="ruinsOpacitySlider" type="range" min="0" max="100" value="92"><span>92%</span>
       <div class="fx-controls" id="fxShadowControls">
         <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="20" value="6"><span class="fx-val">6px</span></label>
         <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55"><span class="fx-val">55%</span></label>
@@ -37,6 +36,7 @@ export function loadEditor() {
         <label><span class="fx-lbl">Sepia</span><input type="range" min="0" max="50" value="8"><span class="fx-val">8%</span></label>
       </div>
       <div id="objectives"></div>
+      <div id="layersList"></div>
       <div class="map-wrapper" id="mapWrap">
         <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528">
           <defs></defs>
@@ -135,11 +135,11 @@ export function loadScene(fixtureJson) {
       document.getElementById('bgSel').value = data.settings.bg;
       C.setBg(data.settings.bg);
     }
-    // Set range sliders if provided
-    const ranges = document.querySelectorAll('input[type=range]');
-    if (data.settings.ruinsOpacity != null && ranges[0]) {
-      ranges[0].value = data.settings.ruinsOpacity;
-      ranges[0].nextElementSibling.textContent = data.settings.ruinsOpacity + '%';
+    // Set ruins opacity slider if provided
+    const ruinsSlider = document.getElementById('ruinsOpacitySlider');
+    if (data.settings.ruinsOpacity != null && ruinsSlider) {
+      ruinsSlider.value = data.settings.ruinsOpacity;
+      ruinsSlider.nextElementSibling.textContent = data.settings.ruinsOpacity + '%';
     }
   }
 

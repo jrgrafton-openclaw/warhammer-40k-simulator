@@ -961,7 +961,7 @@ describe('Integration — test-layout.json', () => {
 
     const C = Editor.Core;
 
-    // 20 sprites total
+    // 20 sprites in test-layout.json
     expect(C.allSprites.length).toBe(20);
 
     // Group g1 has 6 sprites
@@ -980,34 +980,37 @@ describe('Integration — test-layout.json', () => {
       expect(elInGroup).toBe(true);
     });
 
-    // Cropped+flipped sprites have clip paths
-    // s6: flipY + crop.b=0.156
-    const s6 = C.allSprites[6];
-    expect(s6.flipY).toBe(true);
-    expect(s6.cropB).toBeCloseTo(0.156, 2);
-    expect(s6._clipWrap).toBeTruthy();
+    // Cropped+flipped sprites have clip paths (find by properties, not index)
+    // s6: layer-top-v3.png, flipY + crop.b=0.156
+    const s6Like = C.allSprites.find(s => s.file === 'layer-top-v3.png' && s.flipY && s.cropB > 0.1);
+    expect(s6Like).toBeTruthy();
+    expect(s6Like.flipY).toBe(true);
+    expect(s6Like.cropB).toBeCloseTo(0.156, 2);
+    expect(s6Like._clipWrap).toBeTruthy();
 
-    // s12: flipY + crop.l=0.107
-    const s12 = C.allSprites[12];
-    expect(s12.flipY).toBe(true);
-    expect(s12.cropL).toBeCloseTo(0.107, 2);
-    expect(s12._clipWrap).toBeTruthy();
+    // s12: layer-bottom-v5.png, flipY + crop.l=0.107
+    const s12Like = C.allSprites.find(s => s.file === 'layer-bottom-v5.png' && s.cropL > 0.1);
+    expect(s12Like).toBeTruthy();
+    expect(s12Like.flipY).toBe(true);
+    expect(s12Like.cropL).toBeCloseTo(0.107, 2);
+    expect(s12Like._clipWrap).toBeTruthy();
 
-    // s13: flipY + crop.l=0.16 + crop.b=0.343
-    const s13 = C.allSprites[13];
-    expect(s13.flipY).toBe(true);
-    expect(s13.cropL).toBeCloseTo(0.16, 2);
-    expect(s13.cropB).toBeCloseTo(0.343, 2);
-    expect(s13._clipWrap).toBeTruthy();
+    // s13: scatter-v2.png, flipY + crop.l=0.16 + crop.b=0.343
+    const s13Like = C.allSprites.find(s => s.file === 'scatter-v2.png' && s.cropL > 0.1);
+    expect(s13Like).toBeTruthy();
+    expect(s13Like.flipY).toBe(true);
+    expect(s13Like.cropL).toBeCloseTo(0.16, 2);
+    expect(s13Like.cropB).toBeCloseTo(0.343, 2);
+    expect(s13Like._clipWrap).toBeTruthy();
 
     // Verify clip rects account for flip (Bug 4 regression test)
     // s6 has flipY + cropB=0.156: after swap, cT=0.156, cB=0
     // clipRect y should be sp.y + sp.h * 0.156
-    const s6clip = document.getElementById(s6._clipId);
+    const s6clip = document.getElementById(s6Like._clipId);
     if (s6clip) {
       const rect = s6clip.querySelector('rect');
       const clipY = parseFloat(rect.getAttribute('y'));
-      expect(clipY).toBeCloseTo(s6.y + s6.h * 0.156, 0);
+      expect(clipY).toBeCloseTo(s6Like.y + s6Like.h * 0.156, 0);
     }
   });
 });

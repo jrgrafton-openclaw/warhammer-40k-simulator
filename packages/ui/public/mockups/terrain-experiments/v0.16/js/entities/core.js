@@ -141,7 +141,7 @@ Editor.Core = {
       })),
       settings: {
         bg: document.getElementById('bgSel')?.value,
-        ruinsOpacity: parseInt(document.querySelectorAll('input[type=range]')[0]?.value || 92)
+        ruinsOpacity: parseInt(document.getElementById('ruinsOpacitySlider')?.value || 92)
       }
     };
     this.debug.value = JSON.stringify(config, null, 1);
