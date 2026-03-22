@@ -165,6 +165,7 @@ Editor.Persistence = {
       if (data.ruinsOpacity != null && ranges[0]) {
         ranges[0].value = data.ruinsOpacity;
         document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
+        document.getElementById('svgScatter').style.opacity = data.ruinsOpacity / 100;
         ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
       }
 
