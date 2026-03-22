@@ -90,7 +90,7 @@ Editor.Core = {
   // ── Thumbnail grid population ──
   populateThumbs() {
     const thumbs = {
-      tRuinsFloor: ['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','layer-bottom-v6.png','layer-bottom-v7.png','t10-layer-bottom.png','layer-bottom-aligned-2x.png','layer-bottom-v2-2x.png','layer-bottom-v3-2x.png','layer-bottom-v4-2x.png','layer-bottom-v5-2x.png','layer-bottom-v6-2x.png','layer-bottom-v7-2x.png','t10-layer-bottom-2x.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],
+      tRuinsFloor: ['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','layer-bottom-v6.png','layer-bottom-v7.png','t10-layer-bottom.png','layer-bottom-aligned-2x.png','layer-bottom-v2-2x.png','layer-bottom-v3-2x.png','layer-bottom-v4-2x.png','layer-bottom-v5-2x.png','layer-bottom-v6-2x.png','layer-bottom-v7-2x.png','t10-layer-bottom-2x.png','layer-bottom-aligned-2x1.png','layer-bottom-aligned-4x3.png','layer-bottom-aligned-1x1.png','layer-bottom-v2-2x1.png','layer-bottom-v2-4x3.png','layer-bottom-v2-1x1.png','layer-bottom-v3-2x1.png','layer-bottom-v3-4x3.png','layer-bottom-v3-1x1.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],
       tRuinsTop: ['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','layer-top-v4.png','layer-top-v5.png','layer-top-v6.png','layer-top-v7.png','t10-layer-top.png'],
       tScatter: ['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png','rubble-edge-1.png','rubble-edge-2.png','rubble-edge-3.png','rubble-edge-4.png']
     };
