@@ -68,7 +68,11 @@ Editor.Persistence = {
       effects: {
         shadow: Object.assign({}, S.effects.shadow),
         feather: Object.assign({}, S.effects.feather),
-        grade: Object.assign({}, S.effects.grade)
+        grade: Object.assign({}, S.effects.grade),
+        scatterGlow: Object.assign({}, S.effects.scatterGlow),
+        roofTint: Object.assign({}, S.effects.roofTint),
+        groundPatch: Object.assign({}, S.effects.groundPatch),
+        modelShadow: Object.assign({}, S.effects.modelShadow)
       },
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ruinsSlider ? ruinsSlider.value : 92,
@@ -158,18 +162,38 @@ Editor.Persistence = {
       if (data.effects.shadow) Object.assign(E.shadow, data.effects.shadow);
       if (data.effects.feather) Object.assign(E.feather, data.effects.feather);
       if (data.effects.grade) Object.assign(E.grade, data.effects.grade);
+      if (data.effects.scatterGlow) Object.assign(E.scatterGlow, data.effects.scatterGlow);
+      if (data.effects.roofTint) Object.assign(E.roofTint, data.effects.roofTint);
+      if (data.effects.groundPatch) Object.assign(E.groundPatch, data.effects.groundPatch);
+      if (data.effects.modelShadow) Object.assign(E.modelShadow, data.effects.modelShadow);
       var shadowBtn = document.querySelector('[onclick*="toggleShadow"]');
       if (shadowBtn) shadowBtn.classList.toggle('on', E.shadow.on);
       var featherBtn = document.querySelector('[onclick*="toggleFeather"]');
       if (featherBtn) featherBtn.classList.toggle('on', E.feather.on);
       var gradeBtn = document.querySelector('[onclick*="toggleGrade"]');
       if (gradeBtn) gradeBtn.classList.toggle('on', E.grade.on);
+      var scatterBtn = document.getElementById('fxScatterBtn');
+      if (scatterBtn) scatterBtn.classList.toggle('on', E.scatterGlow.on);
+      var roofBtn = document.getElementById('fxRoofBtn');
+      if (roofBtn) roofBtn.classList.toggle('on', E.roofTint.on);
+      var patchBtn = document.getElementById('fxPatchBtn');
+      if (patchBtn) patchBtn.classList.toggle('on', E.groundPatch.on);
+      var modelShadowBtn = document.getElementById('fxModelShadowBtn');
+      if (modelShadowBtn) modelShadowBtn.classList.toggle('on', E.modelShadow.on);
       var fxShadowControls = document.getElementById('fxShadowControls');
       if (fxShadowControls) fxShadowControls.style.display = E.shadow.on ? '' : 'none';
       var fxFeatherControls = document.getElementById('fxFeatherControls');
       if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
       var fxGradeControls = document.getElementById('fxGradeControls');
       if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
+      var fxScatterControls = document.getElementById('fxScatterControls');
+      if (fxScatterControls) fxScatterControls.style.display = E.scatterGlow.on ? '' : 'none';
+      var fxRoofControls = document.getElementById('fxRoofControls');
+      if (fxRoofControls) fxRoofControls.style.display = E.roofTint.on ? '' : 'none';
+      var fxPatchControls = document.getElementById('fxPatchControls');
+      if (fxPatchControls) fxPatchControls.style.display = E.groundPatch.on ? '' : 'none';
+      var fxModelShadowControls = document.getElementById('fxModelShadowControls');
+      if (fxModelShadowControls) fxModelShadowControls.style.display = E.modelShadow.on ? '' : 'none';
     }
   },
 
@@ -357,6 +381,33 @@ Editor.Persistence = {
       if (sliders[0]) { sliders[0].value = Math.round(E.grade.brightness * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.brightness * 100) + '%'; }
       if (sliders[1]) { sliders[1].value = Math.round(E.grade.saturation * 100); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.saturation * 100) + '%'; }
       if (sliders[2]) { sliders[2].value = Math.round(E.grade.sepia * 100); var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.sepia * 100) + '%'; }
+    }
+    // Scatter Glow sliders
+    var scatterControls = document.getElementById('fxScatterControls');
+    if (scatterControls) {
+      var sliders = scatterControls.querySelectorAll('input[type=range]');
+      if (sliders[0]) { sliders[0].value = Math.round(E.scatterGlow.intensity * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.scatterGlow.intensity * 100) + '%'; }
+      if (sliders[1]) { sliders[1].value = E.scatterGlow.blur; var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = E.scatterGlow.blur + 'px'; }
+    }
+    // Roof Tint sliders
+    var roofControls = document.getElementById('fxRoofControls');
+    if (roofControls) {
+      var sliders = roofControls.querySelectorAll('input[type=range]');
+      if (sliders[0]) { sliders[0].value = Math.round(E.roofTint.strength * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.roofTint.strength * 100) + '%'; }
+    }
+    // Ground Patch sliders
+    var patchControls = document.getElementById('fxPatchControls');
+    if (patchControls) {
+      var sliders = patchControls.querySelectorAll('input[type=range]');
+      if (sliders[0]) { sliders[0].value = Math.round(E.groundPatch.opacity * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.groundPatch.opacity * 100) + '%'; }
+      if (sliders[1]) { sliders[1].value = E.groundPatch.extend; var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = E.groundPatch.extend + 'px'; }
+    }
+    // Model Shadow sliders
+    var modelShadowControls = document.getElementById('fxModelShadowControls');
+    if (modelShadowControls) {
+      var sliders = modelShadowControls.querySelectorAll('input[type=range]');
+      if (sliders[0]) { sliders[0].value = Math.round(E.modelShadow.opacity * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.modelShadow.opacity * 100) + '%'; }
+      if (sliders[1]) { sliders[1].value = Math.round(E.modelShadow.blur * 2); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = E.modelShadow.blur + 'px'; }
     }
   },
 
