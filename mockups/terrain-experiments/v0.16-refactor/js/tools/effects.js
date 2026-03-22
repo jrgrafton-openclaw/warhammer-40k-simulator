@@ -34,9 +34,18 @@ Editor.Effects = {
     const flipX = sp.flipX ? -1 : 1;
     const flipY = sp.flipY ? -1 : 1;
     const filterId = this._getOrCreateFilter(mul, rot, flipX, flipY);
-    if (filterId) {
-      sp.el.setAttribute('filter', `url(#${filterId})`);
+    const filterVal = filterId ? `url(#${filterId})` : null;
+    // If sprite is cropped (has wrapper), put filter on the OUTER wrapper
+    // so shadow extends beyond the clip boundary.
+    // If not cropped, put filter directly on the <image>.
+    const filterTarget = sp._clipWrap || sp.el;
+    if (filterVal) {
+      filterTarget.setAttribute('filter', filterVal);
     } else {
+      filterTarget.removeAttribute('filter');
+    }
+    // Ensure filter is NOT on the wrong element
+    if (sp._clipWrap && sp.el.hasAttribute('filter')) {
       sp.el.removeAttribute('filter');
     }
     // Remove any lingering CSS filter
@@ -247,8 +256,6 @@ Editor.Effects = {
     });
     this._filterCache = {};
     this.rebuildAll();
-    // Reapply crops so clip rects expand/contract with shadow params
-    if (Editor.Crop) Editor.Crop.reapplyAll();
   },
 
   // ── Global toggle/set handlers ──
