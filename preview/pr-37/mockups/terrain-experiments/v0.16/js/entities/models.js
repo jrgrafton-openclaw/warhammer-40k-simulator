@@ -29,12 +29,10 @@ Editor.Models = {
   },
 
   applyModel(m) {
-    // Use sprite grounding shadow direction for offset
-    const E = Editor.Effects;
-    const dist = E.shadow.distance != null ? E.shadow.distance : 1.0;
-    const sdx = E.shadow.dx * dist;
-    const sdy = E.shadow.dy * dist;
-    const sOpacity = Math.min(E.shadow.opacity, 0.55);
+    // Dedicated model shadow settings
+    const ms = Editor.Effects.modelShadow;
+    const sdx = ms.dx;
+    const sdy = ms.dy;
     if (m.kind === 'circle') {
       m.base.setAttribute('cx', m.x); m.base.setAttribute('cy', m.y);
       m.icon.setAttribute('color', m.s === '#0088aa' ? '#006688' : '#882010');

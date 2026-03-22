@@ -9,7 +9,7 @@ Editor.Effects = {
   shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55, distance: 1.0 },
   feather: { on: false, radius: 10 },
   grade:   { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
-  modelShadow: { on: true },
+  modelShadow: { on: true, dx: 1, dy: 2, blur: 1.5, opacity: 0.35 },
 
   // Filter cache: key = quantised params string → filter id
   _filterCache: {},
@@ -263,8 +263,6 @@ Editor.Effects = {
     });
     this._filterCache = {};
     this.rebuildAll();
-    // Model shadows use sprite shadow settings, so rebuild when they change
-    if (this.modelShadow.on) this.rebuildModelShadows();
   },
 
   // ── Global toggle/set handlers ──
@@ -328,6 +326,14 @@ Editor.Effects = {
   toggleModelShadow(btn) {
     this.modelShadow.on = !this.modelShadow.on;
     btn.classList.toggle('on', this.modelShadow.on);
+    const ctrl = document.getElementById('fxModelShadowControls');
+    if (ctrl) ctrl.style.display = this.modelShadow.on ? '' : 'none';
+    this.rebuildModelShadows();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
+  },
+
+  setModelShadowParam(param, value) {
+    this.modelShadow[param] = value;
     this.rebuildModelShadows();
     Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
@@ -351,14 +357,12 @@ Editor.Effects = {
 
     if (!this.modelShadow.on) return;
 
-    // Use sprite shadow DIRECTION (dx, dy, distance) but scale blur for model size.
-    // Sprite blur (6px) is tuned for ~100px sprites. Model tokens are ~8-9px radius.
-    // Cap blur at 2px for models so shadows stay crisp and visible.
-    const dist = this.shadow.distance != null ? this.shadow.distance : 1.0;
-    const dx = this.shadow.dx * dist;
-    const dy = this.shadow.dy * dist;
-    const opacity = Math.min(this.shadow.opacity, 0.55);
-    const blur = Math.min(this.shadow.blur * 0.35, 2.5);
+    // Dedicated model shadow settings (decoupled from sprite grounding)
+    const ms = this.modelShadow;
+    const dx = ms.dx;
+    const dy = ms.dy;
+    const opacity = ms.opacity;
+    const blur = ms.blur;
 
     // Update the SVG filter blur for models
     const f = document.getElementById('mf-model-shadow');
