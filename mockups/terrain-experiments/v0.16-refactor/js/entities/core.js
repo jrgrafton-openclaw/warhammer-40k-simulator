@@ -58,12 +58,14 @@ Editor.Core = {
     btn.classList.toggle('on');
     const el = document.getElementById(id);
     if (el) el.style.display = btn.classList.contains('on') ? '' : 'none';
+    Editor.State.dispatch('toggle');
   },
 
   tglMulti(btn, ids) {
     btn.classList.toggle('on');
     const show = btn.classList.contains('on');
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; });
+    Editor.State.dispatch('toggle');
   },
 
   // ── Background switcher ──

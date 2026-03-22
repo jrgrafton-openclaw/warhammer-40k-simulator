@@ -75,7 +75,16 @@ Editor.Persistence = {
       // Explicit zOrder array (Phase 1)
       zOrder: S.zOrder.slice(),
       // Keep layerOrder for backward compat with older versions
-      layerOrder: S.zOrder.map(function(entry) { return entry.id; })
+      layerOrder: S.zOrder.map(function(entry) { return entry.id; }),
+      // Toggle visibility states
+      toggles: {
+        svgRuins: document.getElementById('svgRuins')?.style.display !== 'none',
+        svgScatter: document.getElementById('svgScatter')?.style.display !== 'none',
+        deployZones: document.getElementById('deployZones')?.style.display !== 'none',
+        modelLayer: document.getElementById('modelLayer')?.style.display !== 'none',
+        objectives: document.getElementById('objectiveRings')?.style.display !== 'none',
+        lightLayer: document.getElementById('lightLayer')?.style.display !== 'none',
+      }
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
   },
@@ -290,6 +299,26 @@ Editor.Persistence = {
 
       // Rebuild layers panel
       Editor.Layers.rebuild();
+
+      // Restore toggle visibility states
+      if (data.toggles) {
+        ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer'].forEach(function(id) {
+          if (data.toggles[id] === false) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+            var btn = document.querySelector('button[onclick*="' + id + '"]');
+            if (btn) btn.classList.remove('on');
+          }
+        });
+        if (data.toggles.objectives === false) {
+          ['objectiveRings','objectiveHexes'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.style.display = 'none';
+          });
+          var objBtn = document.querySelector('button[onclick*="objectiveRings"]');
+          if (objBtn) objBtn.classList.remove('on');
+        }
+      }
 
       Editor.Selection.deselect();
     } catch (e) {
