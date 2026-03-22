@@ -29,23 +29,28 @@ Editor.Effects = {
   // ── Apply correct filter to a single sprite ──
   _applyToSprite(sp) {
     const mul = sp.shadowMul != null ? sp.shadowMul : 1.0;
-    // Counter-rotate shadow offset so shadows are consistent in screen space
     const rot = sp.rot || 0;
     const flipX = sp.flipX ? -1 : 1;
     const flipY = sp.flipY ? -1 : 1;
-    const filterId = this._getOrCreateFilter(mul, rot, flipX, flipY);
+
+    // Cropped sprites: filter goes on the outer wrapper <g> which is in
+    // PARENT space (no transform). Use raw dx/dy — no counter-rotation needed.
+    // Uncropped sprites: filter goes on the <image> which has rotate+scale
+    // transform. Counter-rotate the offset so shadow appears correct in screen space.
+    const isCropped = !!sp._clipWrap;
+    const filterId = isCropped
+      ? this._getOrCreateFilter(mul, 0, 1, 1)    // no counter-rotation for wrapper
+      : this._getOrCreateFilter(mul, rot, flipX, flipY); // counter-rotate for image
+
     const filterVal = filterId ? `url(#${filterId})` : null;
-    // If sprite is cropped (has wrapper), put filter on the OUTER wrapper
-    // so shadow extends beyond the clip boundary.
-    // If not cropped, put filter directly on the <image>.
-    const filterTarget = sp._clipWrap || sp.el;
+    const filterTarget = isCropped ? sp._clipWrap : sp.el;
     if (filterVal) {
       filterTarget.setAttribute('filter', filterVal);
     } else {
       filterTarget.removeAttribute('filter');
     }
     // Ensure filter is NOT on the wrong element
-    if (sp._clipWrap && sp.el.hasAttribute('filter')) {
+    if (isCropped && sp.el.hasAttribute('filter')) {
       sp.el.removeAttribute('filter');
     }
     // Remove any lingering CSS filter
