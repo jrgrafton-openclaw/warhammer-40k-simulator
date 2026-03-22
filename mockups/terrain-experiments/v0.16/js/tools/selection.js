@@ -56,6 +56,7 @@ Editor.Selection = {
     const C = Editor.Core;
     C.selected = sp; C.multiSel = [sp];
     Editor.Lights.deselectLight();
+    Editor.Models.deselectModel();
     this.drawSelectionUI(); Editor.Layers.rebuild();
   },
 
@@ -383,6 +384,13 @@ Editor.Selection = {
         Editor.State.dispatch({ type: 'DELETE_LIGHT' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
+      if (!C.selected && Editor.Models.selectedModel) {
+        const data = Editor.Commands._captureModel(Editor.Models.selectedModel);
+        Editor.Commands._removeModel(Editor.Models.selectedModel.id);
+        Editor.Undo.record(Editor.Commands.DeleteModel.create(data));
+        Editor.State.dispatch({ type: 'DELETE_MODEL' }); Editor.Layers.rebuild();
+        e.preventDefault(); return;
+      }
       if (C.selected) {
         const toDelete = C.multiSel.length > 1 ? [...C.multiSel] : [C.selected];
         const cmds = toDelete.map(s => Editor.Commands.DeleteSprite.create(Editor.Commands._captureSprite(s)));
@@ -391,6 +399,22 @@ Editor.Selection = {
         this.deselect(); C.updateDebug(); Editor.State.dispatch({ type: 'DELETE_SPRITE' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
+    }
+
+    // Arrow keys — move selected model (only when no sprite is actively selected)
+    if (!C.selected && Editor.Models.selectedModel && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+      e.preventDefault();
+      const m = Editor.Models.selectedModel;
+      const step = e.shiftKey ? 10 : 1;
+      const fromX = m.x, fromY = m.y;
+      if (e.key === 'ArrowUp') m.y -= step;
+      if (e.key === 'ArrowDown') m.y += step;
+      if (e.key === 'ArrowLeft') m.x -= step;
+      if (e.key === 'ArrowRight') m.x += step;
+      Editor.Models.applyModel(m);
+      Editor.Undo.record(Editor.Commands.MoveModel.create(m.id, fromX, fromY, m.x, m.y));
+      Editor.State.dispatch({ type: 'SET_PROPERTY' });
+      return;
     }
 
     if (!C.selected) return;
