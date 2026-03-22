@@ -112,11 +112,11 @@ Editor.Layers = {
     // Drop zone at top — dragging a group here puts it in front of everything
     const topZone = document.createElement('div');
     topZone.className = 'layer-drop-top';
-    topZone.style.cssText = 'height:4px;border-radius:2px;margin-bottom:2px;';
-    topZone.addEventListener('dragover', e => { e.preventDefault(); topZone.style.background = '#00d4ff'; topZone.style.height = '8px'; });
-    topZone.addEventListener('dragleave', () => { topZone.style.background = ''; topZone.style.height = '4px'; });
+    topZone.style.cssText = 'height:6px;border-radius:2px;margin-bottom:2px;position:relative;z-index:1;';
+    topZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); topZone.style.background = '#00d4ff'; topZone.style.height = '8px'; });
+    topZone.addEventListener('dragleave', () => { topZone.style.background = ''; topZone.style.height = '6px'; });
     topZone.addEventListener('drop', e => {
-      e.preventDefault(); topZone.style.background = ''; topZone.style.height = '4px';
+      e.preventDefault(); e.stopPropagation(); topZone.style.background = ''; topZone.style.height = '6px';
       if (!this.draggedId) return;
       var beforeOrder = Editor.Commands.captureDOMOrder();
       const selUI = document.getElementById('selUI');
@@ -224,9 +224,11 @@ Editor.Layers = {
     row.addEventListener('dragleave', () => { row.classList.remove('drop-above', 'drop-below'); });
     row.addEventListener('drop', e => {
       e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      const dropAbove = e.clientY < rect.top + rect.height / 2;
       row.classList.remove('drop-above', 'drop-below');
       if (this.draggedId && this.draggedId !== itemId) {
-        this._handleDrop(this.draggedId, itemId, zItems);
+        this._handleDrop(this.draggedId, itemId, zItems, dropAbove);
       }
     });
   },
@@ -376,7 +378,11 @@ Editor.Layers = {
     // Make group row draggable for z-order reordering
     row.draggable = true;
     row.dataset.layerId = gId;
-    row.addEventListener('dragstart', () => { this.draggedId = gId; row.classList.add('dragging'); });
+    row.addEventListener('dragstart', (e) => {
+      // Prevent drag from starting when clicking on the group name (allows dblclick to rename)
+      if (e.target.closest('.group-name') || e.target.closest('.group-rename-input')) { e.preventDefault(); return; }
+      this.draggedId = gId; row.classList.add('dragging');
+    });
     row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedId = null; });
 
     // Accept drops: sprites → add to group, groups/built-ins → z-order reorder
@@ -456,7 +462,8 @@ Editor.Layers = {
   },
 
   /* ── Handle drop: reorder sprites and/or groups ── */
-  _handleDrop(draggedId, targetId, zItems) {
+  /* dropAbove: true = user dropped above target row (= in front visually = after in DOM) */
+  _handleDrop(draggedId, targetId, zItems, dropAbove) {
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
 
@@ -481,7 +488,11 @@ Editor.Layers = {
         targetEl = tSp ? tSp.rootEl : null;
       }
       if (targetEl && targetEl.parentNode === svg) {
-        svg.insertBefore(elToMove, targetEl);
+        if (dropAbove) {
+          svg.insertBefore(elToMove, targetEl.nextElementSibling);
+        } else {
+          svg.insertBefore(elToMove, targetEl);
+        }
       } else {
         const selUI = document.getElementById('selUI');
         svg.insertBefore(elToMove, selUI);
@@ -532,10 +543,9 @@ Editor.Layers = {
       selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
       // The layer panel is reversed: top of panel = last in DOM = in front.
       // "Drop above" in UI means "insert after" in DOM.
-      // insertBefore(el, target) puts el just before target in DOM (= behind target visually).
-      // We insert all selected elements before the target, in order.
+      const insertRef = dropAbove ? targetEl.nextElementSibling : targetEl;
       selEls.forEach(el => {
-        if (el !== targetEl) svg.insertBefore(el, targetEl);
+        if (el !== targetEl) svg.insertBefore(el, insertRef);
       });
     } else {
       // Single item move
@@ -545,7 +555,12 @@ Editor.Layers = {
         dragEl = dSp ? dSp.rootEl : null;
       }
       if (dragEl && dragEl.parentNode === svg) {
-        svg.insertBefore(dragEl, targetEl);
+        if (dropAbove) {
+          // Drop above in layer panel = in front visually = after target in DOM
+          svg.insertBefore(dragEl, targetEl.nextElementSibling);
+        } else {
+          svg.insertBefore(dragEl, targetEl);
+        }
       }
     }
 
