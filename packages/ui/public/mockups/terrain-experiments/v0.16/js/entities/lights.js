@@ -35,7 +35,7 @@ Editor.Lights = {
       <label>Intensity <input type="range" id="lcIntensity" min="5" max="100" value="30"> <span class="lc-val" id="lcIntensityVal">0.30</span></label>
       <label>Animation <select id="lcPulseType"><option value="none">None</option><option value="pulse">Pulse</option><option value="flicker">Flicker</option><option value="breathe">Breathe</option></select></label>
       <div id="lcPulseExtras" style="display:none">
-        <label>Speed <input type="range" id="lcPulseSpeed" min="2" max="30" value="10"> <span class="lc-val" id="lcPulseSpeedVal">1.0</span></label>
+        <label id="lcPulseSpeedRow">Speed <input type="range" id="lcPulseSpeed" min="2" max="30" value="10"> <span class="lc-val" id="lcPulseSpeedVal">1.0</span></label>
         <label>Int. Amp <input type="range" id="lcPulseIntAmp" min="0" max="50" value="15"> <span class="lc-val" id="lcPulseIntAmpVal">0.15</span></label>
         <label>Rad. Amp <input type="range" id="lcPulseRadAmp" min="0" max="50" value="10"> <span class="lc-val" id="lcPulseRadAmpVal">10</span></label>
       </div>
@@ -50,6 +50,8 @@ Editor.Lights = {
       this.updateSelected('pulseType', e.target.value);
       var extras = document.getElementById('lcPulseExtras');
       if (extras) extras.style.display = e.target.value === 'none' ? 'none' : '';
+      var speedRow = document.getElementById('lcPulseSpeedRow');
+      if (speedRow) speedRow.style.display = e.target.value === 'breathe' ? 'none' : '';
     };
     document.getElementById('lcPulseSpeed').oninput = e => {
       var v = parseInt(e.target.value) / 10;
@@ -134,8 +136,12 @@ Editor.Lights = {
     var prSlider = document.getElementById('lcPulseRadAmp');
     if (prSlider) prSlider.value = l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10;
     // Show/hide amplitude controls
+    var pt = l.pulseType || 'none';
     var pulseExtras = document.getElementById('lcPulseExtras');
-    if (pulseExtras) pulseExtras.style.display = (l.pulseType || 'none') === 'none' ? 'none' : '';
+    if (pulseExtras) pulseExtras.style.display = pt === 'none' ? 'none' : '';
+    // Hide speed slider for breathe (fixed at 0.3)
+    var speedRow = document.getElementById('lcPulseSpeedRow');
+    if (speedRow) speedRow.style.display = pt === 'breathe' ? 'none' : '';
   },
 
   addLight(x, y, color, radius, intensity, skipSelect, restoreId, pulseOpts) {
