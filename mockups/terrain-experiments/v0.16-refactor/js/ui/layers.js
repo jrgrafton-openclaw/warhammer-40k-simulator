@@ -341,46 +341,18 @@ Editor.Layers = {
     const row = document.createElement('div');
     row.className = 'layer-row group-row custom-group-row';
     row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
-      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}" title="Double-click to rename">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <button class="lbtn group-rename-btn" title="Rename group" onclick="event.stopPropagation();Editor.Layers._startGroupRename('${gId}',this)">✏️</button>
       <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)" onmousedown="event.stopPropagation();this.parentElement.draggable=false" onmouseup="this.parentElement.draggable=true">
       <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>
       <button class="lbtn" title="Delete group + sprites" onclick="event.stopPropagation();Editor.Groups.deleteGroup('${gId}')">🗑</button>
       <span class="drag-hint" title="Drag to reorder">⠿</span>`;
 
-    // Double-click to rename
-    const nameEl = row.querySelector('.group-name');
-    // Prevent drag from starting when clicking on the name (allows dblclick to register)
-    nameEl.addEventListener('mousedown', e => { e.stopPropagation(); });
-    nameEl.addEventListener('dblclick', e => {
-      e.stopPropagation();
-      const input = document.createElement('input');
-      input.type = 'text'; input.value = name;
-      input.className = 'group-rename-input';
-      input.style.cssText = 'width:100%;background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff;border-radius:2px;font-size:9px;padding:1px 3px;outline:none;';
-      // Disable row dragging while editing
-      row.draggable = false;
-      nameEl.replaceWith(input);
-      input.focus(); input.select();
-      const commit = () => {
-        row.draggable = true;
-        const newName = input.value.trim() || name;
-        Editor.Groups.rename(gId, newName);
-      };
-      input.addEventListener('blur', commit);
-      input.addEventListener('mousedown', ev => ev.stopPropagation());
-      input.addEventListener('keydown', ev => {
-        if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
-        if (ev.key === 'Escape') { input.value = name; input.blur(); }
-        ev.stopPropagation();
-      });
-    });
-
     // Make group row draggable for z-order reordering
     row.draggable = true;
     row.dataset.layerId = gId;
     row.addEventListener('dragstart', (e) => {
-      // Prevent drag from starting when clicking on the group name (allows dblclick to rename)
-      if (e.target.closest('.group-name') || e.target.closest('.group-rename-input')) { e.preventDefault(); return; }
+      if (e.target.closest('.group-rename-input')) { e.preventDefault(); return; }
       this.draggedId = gId; row.classList.add('dragging');
     });
     row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedId = null; });
@@ -391,36 +363,58 @@ Editor.Layers = {
       e.stopImmediatePropagation();
       if (!this.draggedId || this.draggedId === gId) return;
       const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
-      if (isSpriteDrag) {
-        row.classList.add('drop-above');
-        row.classList.remove('drop-below');
-      } else {
-        const rect = row.getBoundingClientRect();
-        const mid = rect.top + rect.height / 2;
-        row.classList.toggle('drop-above', e.clientY < mid);
-        row.classList.toggle('drop-below', e.clientY >= mid);
-      }
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      row.classList.toggle('drop-above', e.clientY < mid);
+      row.classList.toggle('drop-below', e.clientY >= mid);
     });
     row.addEventListener('dragleave', () => { row.classList.remove('drop-above', 'drop-below'); });
     row.addEventListener('drop', e => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
+      const rect = row.getBoundingClientRect();
+      const dropAbove = e.clientY < rect.top + rect.height / 2;
       row.classList.remove('drop-above', 'drop-below');
       if (!this.draggedId || this.draggedId === gId) return;
       const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
       if (isSpriteDrag) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
-        if (sp && sp.groupId !== gId) {
+        if (!sp) return;
+        if (dropAbove) {
+          // Drop above group row = insert BEFORE the group <g> in SVG (between items, not into group)
+          const svg = document.getElementById('battlefield');
+          const gEl = document.getElementById(gId);
+          if (!gEl) return;
+          var beforeOrder = Editor.Commands.captureDOMOrder();
+          const elToMove = sp.rootEl;
+          // Remove from current group if needed
+          if (sp.groupId) {
+            const oldGroupEl = document.getElementById(sp.groupId);
+            if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
+            delete sp.groupId;
+          }
+          // "Drop above" in layer panel = in front = after in DOM
+          svg.insertBefore(elToMove, gEl.nextElementSibling);
+          const selUI = document.getElementById('selUI');
+          const dragRect = document.getElementById('dragRect');
+          if (selUI) svg.appendChild(selUI);
+          if (dragRect) svg.appendChild(dragRect);
+          Editor.State.syncZOrderFromDOM();
+          var afterOrder = Editor.Commands.captureDOMOrder();
+          Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+          Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
+        } else if (sp.groupId !== gId) {
+          // Drop below/on group = add sprite into group
           Editor.Groups.addToGroup(gId, sp);
         }
       } else if (zItems) {
-        this._handleDrop(this.draggedId, gId, zItems);
+        this._handleDrop(this.draggedId, gId, zItems, dropAbove);
       }
     });
 
     row.onclick = e => {
-      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-name')) return;
+      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-rename-btn')) return;
       const sprites = C.allSprites.filter(s => s.groupId === gId);
       if (sprites.length) {
         C.multiSel = sprites;
@@ -431,6 +425,35 @@ Editor.Layers = {
     };
 
     return row;
+  },
+
+  /* ── Start inline rename for a custom group ── */
+  _startGroupRename(gId, btn) {
+    const row = btn.closest('.layer-row');
+    if (!row) return;
+    const nameEl = row.querySelector('.group-name');
+    if (!nameEl) return;
+    const group = (Editor.Core.groups || []).find(g => g.id === gId);
+    const oldName = group ? group.name : gId;
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = oldName;
+    input.className = 'group-rename-input';
+    input.style.cssText = 'width:100%;background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff;border-radius:2px;font-size:9px;padding:1px 3px;outline:none;';
+    row.draggable = false;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+    const commit = () => {
+      row.draggable = true;
+      const newName = input.value.trim() || oldName;
+      Editor.Groups.rename(gId, newName);
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('mousedown', ev => ev.stopPropagation());
+    input.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      if (ev.key === 'Escape') { input.value = oldName; input.blur(); }
+      ev.stopPropagation();
+    });
   },
 
   /* ── Create an individual sprite row ── */

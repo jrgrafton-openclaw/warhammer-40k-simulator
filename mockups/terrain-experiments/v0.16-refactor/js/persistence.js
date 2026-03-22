@@ -332,11 +332,13 @@ Editor.Persistence = {
     var shadowControls = document.getElementById('fxShadowControls');
     if (shadowControls) {
       var sliders = shadowControls.querySelectorAll('input[type=range]');
-      // Order: blur, opacity, dx, dy (matches index.html)
+      // Order: blur, opacity, dx, dy, distance (matches index.html)
       if (sliders[0]) { sliders[0].value = E.shadow.blur; var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = E.shadow.blur + 'px'; }
       if (sliders[1]) { sliders[1].value = Math.round(E.shadow.opacity * 100); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = Math.round(E.shadow.opacity * 100) + '%'; }
       if (sliders[2]) { sliders[2].value = E.shadow.dx; var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = E.shadow.dx + 'px'; }
       if (sliders[3]) { sliders[3].value = E.shadow.dy; var sp = sliders[3].nextElementSibling; if (sp) sp.textContent = E.shadow.dy + 'px'; }
+      var dist = E.shadow.distance != null ? E.shadow.distance : 1.0;
+      if (sliders[4]) { sliders[4].value = Math.round(dist * 100); var sp = sliders[4].nextElementSibling; if (sp) sp.textContent = Math.round(dist * 100) + '%'; }
     }
     // Feather slider
     var featherControls = document.getElementById('fxFeatherControls');
