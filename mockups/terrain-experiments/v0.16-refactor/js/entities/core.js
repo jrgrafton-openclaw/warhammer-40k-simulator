@@ -139,8 +139,7 @@ Editor.Core = {
       })),
       settings: {
         bg: document.getElementById('bgSel')?.value,
-        ruinsOpacity: parseInt(document.querySelectorAll('input[type=range]')[0]?.value || 92),
-        roofOpacity: parseInt(document.querySelectorAll('input[type=range]')[1]?.value || 85)
+        ruinsOpacity: parseInt(document.querySelectorAll('input[type=range]')[0]?.value || 92)
       }
     };
     this.debug.value = JSON.stringify(config, null, 1);

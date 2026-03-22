@@ -29,7 +29,6 @@ Editor.State = {
   settings: {
     bg: 'svg-gradient',
     ruinsOpacity: 100,
-    roofOpacity: 100,
   },
 
   // ── Effects ──

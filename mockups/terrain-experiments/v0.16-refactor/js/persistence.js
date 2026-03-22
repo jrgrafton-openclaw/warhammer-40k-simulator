@@ -72,7 +72,6 @@ Editor.Persistence = {
       },
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ranges[0] ? ranges[0].value : 92,
-      roofOpacity: ranges[1] ? ranges[1].value : 85,
       // Explicit zOrder array (Phase 1)
       zOrder: S.zOrder.slice(),
       // Keep layerOrder for backward compat with older versions
@@ -159,11 +158,6 @@ Editor.Persistence = {
         document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
         ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
       }
-      if (data.roofOpacity && ranges[1]) {
-        ranges[1].value = data.roofOpacity;
-        C._savedRoofOpacity = data.roofOpacity / 100;
-        ranges[1].nextElementSibling.textContent = data.roofOpacity + '%';
-      }
 
       // Restore effects state
       if (data.effects) {
@@ -184,7 +178,9 @@ Editor.Persistence = {
         if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
         var fxGradeControls = document.getElementById('fxGradeControls');
         if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
-        if (E._ready) E._flush();
+        // Update slider values to match restored params
+        this._syncEffectSliders(E);
+        // NOTE: E._flush() is deferred until AFTER sprites exist (see below)
       }
 
       // Restore sprites — use saved ID (_forceId) so zOrder references stay valid
@@ -275,13 +271,8 @@ Editor.Persistence = {
       // Re-apply crop clips BEFORE layer order restore (creates wrappers)
       Editor.Crop.reapplyAll();
 
-      // Apply saved roof opacity per-sprite (after sprites are created)
-      if (C._savedRoofOpacity != null) {
-        C.allSprites.filter(function(s) { return s.layerType === 'top'; }).forEach(function(s) {
-          s.el.style.opacity = C._savedRoofOpacity;
-        });
-        delete C._savedRoofOpacity;
-      }
+      // Flush effects AFTER sprites + crops exist so filters apply to all sprites
+      if (data.effects && Editor.Effects._ready) Editor.Effects._flush();
 
       // Restore z-order: prefer explicit zOrder array (Phase 1), fallback to layerOrder
       if (data.zOrder && data.zOrder.length) {
@@ -303,6 +294,35 @@ Editor.Persistence = {
       Editor.Selection.deselect();
     } catch (e) {
       console.warn('Failed to load layout', e);
+    }
+  },
+
+  /** Sync effect slider DOM values from restored params. */
+  _syncEffectSliders(E) {
+    // Shadow sliders
+    var shadowControls = document.getElementById('fxShadowControls');
+    if (shadowControls) {
+      var sliders = shadowControls.querySelectorAll('input[type=range]');
+      // Order: blur, opacity, dx, dy (matches index.html)
+      if (sliders[0]) { sliders[0].value = E.shadow.blur; var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = E.shadow.blur + 'px'; }
+      if (sliders[1]) { sliders[1].value = Math.round(E.shadow.opacity * 100); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = Math.round(E.shadow.opacity * 100) + '%'; }
+      if (sliders[2]) { sliders[2].value = E.shadow.dx; var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = E.shadow.dx + 'px'; }
+      if (sliders[3]) { sliders[3].value = E.shadow.dy; var sp = sliders[3].nextElementSibling; if (sp) sp.textContent = E.shadow.dy + 'px'; }
+    }
+    // Feather slider
+    var featherControls = document.getElementById('fxFeatherControls');
+    if (featherControls) {
+      var sliders = featherControls.querySelectorAll('input[type=range]');
+      if (sliders[0]) { sliders[0].value = E.feather.radius; var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = E.feather.radius + 'px'; }
+    }
+    // Grade sliders
+    var gradeControls = document.getElementById('fxGradeControls');
+    if (gradeControls) {
+      var sliders = gradeControls.querySelectorAll('input[type=range]');
+      // Order: brightness, saturation, sepia (matches index.html)
+      if (sliders[0]) { sliders[0].value = Math.round(E.grade.brightness * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.brightness * 100) + '%'; }
+      if (sliders[1]) { sliders[1].value = Math.round(E.grade.saturation * 100); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.saturation * 100) + '%'; }
+      if (sliders[2]) { sliders[2].value = Math.round(E.grade.sepia * 100); var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.sepia * 100) + '%'; }
     }
   },
 

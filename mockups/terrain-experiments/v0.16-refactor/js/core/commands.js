@@ -507,7 +507,7 @@ Editor.Commands = {
     }
   },
 
-  /** SET_SETTING — editor setting change (bg, ruinsOpacity, roofOpacity) */
+  /** SET_SETTING — editor setting change (bg, ruinsOpacity) */
   SetSetting: {
     create: function(prop, fromVal, toVal) {
       return {
