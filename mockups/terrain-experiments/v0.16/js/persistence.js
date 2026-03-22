@@ -81,6 +81,8 @@ Editor.Persistence = {
         svgRuins: document.getElementById('svgRuins')?.style.display !== 'none',
         svgScatter: document.getElementById('svgScatter')?.style.display !== 'none',
         deployZones: document.getElementById('deployZones')?.style.display !== 'none',
+        'deploy-imperium': document.getElementById('deploy-imperium')?.style.display !== 'none',
+        'deploy-ork': document.getElementById('deploy-ork')?.style.display !== 'none',
         modelLayer: document.getElementById('modelLayer')?.style.display !== 'none',
         objectives: document.getElementById('objectiveRings')?.style.display !== 'none',
         lightLayer: document.getElementById('lightLayer')?.style.display !== 'none',
@@ -251,6 +253,13 @@ Editor.Persistence = {
         if (el) el.style.display = 'none';
         var btn = document.querySelector('button[onclick*="' + id + '"]');
         if (btn) btn.classList.remove('on');
+      }
+    });
+    // Restore individual deploy zone visibility
+    ['deploy-imperium','deploy-ork'].forEach(function(id) {
+      if (data.toggles[id] === false) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
       }
     });
     if (data.toggles.objectives === false) {
