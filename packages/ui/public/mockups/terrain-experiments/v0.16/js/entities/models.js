@@ -39,7 +39,7 @@ Editor.Models = {
     }
   },
 
-  addCircle(cx, cy, r, s, f, iconType) {
+  addCircle(cx, cy, r, s, f, iconType, restoreId) {
     const C = Editor.Core, NS = C.NS;
     const g = document.createElementNS(NS, 'g'); g.style.cursor = 'grab';
     const c = document.createElementNS(NS, 'circle');
@@ -47,7 +47,7 @@ Editor.Models = {
     c.setAttribute('stroke-width', '1.5'); c.setAttribute('filter', f); g.appendChild(c);
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
-    const id = 'm' + (this.mid++);
+    const id = restoreId || ('m' + (this.mid++));
     const m = { id, kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig };
     C.allModels.push(m);
     this.applyModel(m);
@@ -55,7 +55,7 @@ Editor.Models = {
     return m;
   },
 
-  addRect(x, y, w, h, s, f) {
+  addRect(x, y, w, h, s, f, restoreId) {
     const C = Editor.Core, NS = C.NS;
     const g = document.createElementNS(NS, 'g'); g.style.cursor = 'grab';
     const r = document.createElementNS(NS, 'rect');
@@ -64,7 +64,7 @@ Editor.Models = {
     r.setAttribute('stroke-width', '1.5'); r.setAttribute('filter', f); g.appendChild(r);
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('color', '#006688'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
-    const id = 'm' + (this.mid++);
+    const id = restoreId || ('m' + (this.mid++));
     const m = { id, kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig };
     C.allModels.push(m);
     this.applyModel(m);
@@ -95,12 +95,12 @@ Editor.Models = {
     const C = Editor.Core;
     const idx = C.allModels.findIndex(m => m.id === id);
     if (idx === -1) return;
-    Editor.Undo.push();
     const m = C.allModels[idx];
-    m.el.remove();
-    C.allModels.splice(idx, 1);
-    if (this.selectedModel === m) this.deselectModel();
-    Editor.Persistence.save();
+    const data = Editor.Commands._captureModel(m);
+    const cmd = Editor.Commands.DeleteModel.create(data);
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.State.dispatch({ type: 'SET_PROPERTY' });
     Editor.Layers.rebuild();
   },
 
@@ -108,10 +108,16 @@ Editor.Models = {
     e.stopPropagation(); e.preventDefault();
     this.selectModel(m);
     const C = Editor.Core;
-    Editor.Undo.push();
+    const fromX = m.x, fromY = m.y;
     const p0 = C.svgPt(e.clientX, e.clientY), ox = p0.x - m.x, oy = p0.y - m.y;
     const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); m.x = p.x - ox; m.y = p.y - oy; this.applyModel(m); };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => {
+      document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+      if (m.x !== fromX || m.y !== fromY) {
+        Editor.Undo.record(Editor.Commands.MoveModel.create(m.id, fromX, fromY, m.x, m.y));
+      }
+      Editor.State.dispatch({ type: 'SET_PROPERTY' });
+    };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   }
 };

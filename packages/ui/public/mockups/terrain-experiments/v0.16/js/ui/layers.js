@@ -9,9 +9,51 @@ Editor.Layers = {
   draggedId: null,
   expandedGroups: { modelLayer: false, lightLayer: false },
 
-  /* ── Build the unified z-order list from SVG DOM ── */
+  /* ── Build the unified z-order list ── */
+  /* Phase 1: Uses EditorState.zOrder when available, falls back to DOM walk. */
   _buildZOrder() {
     const C = Editor.Core;
+    const S = Editor.State;
+
+    // If EditorState has a populated zOrder, use it (Phase 1 path)
+    if (S.zOrder.length > 0) {
+      return this._buildZOrderFromState(S, C);
+    }
+    // Fallback: walk the DOM (legacy path)
+    return this._buildZOrderFromDOM(C);
+  },
+
+  /* Build z-order items from EditorState.zOrder array */
+  _buildZOrderFromState(S, C) {
+    const groupMeta = {
+      modelLayer:      { name: 'Models',      icon: 'models' },
+      lightLayer:      { name: 'Lights',      icon: 'lights' },
+      objectiveRings:  { name: 'Obj Rings',   icon: 'obj-rings' },
+      objectiveHexes:  { name: 'Obj Hexes',   icon: 'obj-hexes' },
+      svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
+      svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
+    };
+    const items = [];
+    for (var i = 0; i < S.zOrder.length; i++) {
+      var entry = S.zOrder[i];
+      if (entry.type === 'sprite') {
+        var sp = S.findSprite(entry.id);
+        if (sp) items.push({ type: 'sprite', ref: sp, svgEl: S.getSpriteRootEl(sp) });
+      } else if (entry.type === 'group') {
+        var el = document.getElementById(entry.id);
+        if (el) items.push({ type: 'custom-group', groupId: entry.id, svgEl: el });
+      } else if (entry.type === 'builtin') {
+        var el2 = document.getElementById(entry.id);
+        if (el2 && groupMeta[entry.id]) {
+          items.push({ type: 'group', groupId: entry.id, svgEl: el2, meta: groupMeta[entry.id] });
+        }
+      }
+    }
+    return items;
+  },
+
+  /* Legacy DOM-walking z-order builder (fallback) */
+  _buildZOrderFromDOM(C) {
     const svg = document.getElementById('battlefield');
     const items = [];
 
@@ -23,19 +65,16 @@ Editor.Layers = {
       svgRuins:        { name: 'SVG Ruins',   icon: 'ruins' },
       svgScatter:      { name: 'SVG Scatter', icon: 'scatter' }
     };
-    // Skip old containers and background elements
     const skipIds = new Set(['selUI', 'dragRect', 'deployZones', 'bgImg',
       'svgGroundGradient', 'svgGroundWarm', 'svgGroundDual', 'svgGroundHaze',
       'svgGroundConcrete', 'svgGroundTactical', 'cropOverlay']);
-    // Legacy container IDs — scan their children for sprites placed by old code
     const legacyContainers = new Set(['spriteFloor', 'spriteTop']);
 
     Array.from(svg.children).forEach(el => {
-      if (!el.id && el.tagName === 'rect' && !el.classList.contains('sel-rect')) return; // bg rect
+      if (!el.id && el.tagName === 'rect' && !el.classList.contains('sel-rect')) return;
       if (!el.id && el.tagName === 'defs') return;
       if (skipIds.has(el.id)) return;
       if (legacyContainers.has(el.id)) {
-        // Scan children of old spriteFloor/spriteTop for sprites (backward compat)
         Array.from(el.children).forEach(child => {
           const sp = C.allSprites.find(s => s.el === child);
           if (sp) items.push({ type: 'sprite', ref: sp, svgEl: child });
@@ -47,12 +86,10 @@ Editor.Layers = {
       } else if (el.id && el.id.startsWith('group-')) {
         items.push({ type: 'custom-group', groupId: el.id, svgEl: el });
       } else {
-        // Individual sprite (direct SVG child, or inside a crop wrapper <g>)
         let sp = C.allSprites.find(s => s.el === el);
         if (sp) {
           items.push({ type: 'sprite', ref: sp, svgEl: el });
         } else if (el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
-          // Crop wrapper <g> — find the sprite inside
           sp = C.allSprites.find(s => s._clipWrap === el);
           if (sp) items.push({ type: 'sprite', ref: sp, svgEl: el });
         }
@@ -75,13 +112,13 @@ Editor.Layers = {
     // Drop zone at top — dragging a group here puts it in front of everything
     const topZone = document.createElement('div');
     topZone.className = 'layer-drop-top';
-    topZone.style.cssText = 'height:4px;border-radius:2px;margin-bottom:2px;';
-    topZone.addEventListener('dragover', e => { e.preventDefault(); topZone.style.background = '#00d4ff'; topZone.style.height = '8px'; });
-    topZone.addEventListener('dragleave', () => { topZone.style.background = ''; topZone.style.height = '4px'; });
+    topZone.style.cssText = 'height:6px;border-radius:2px;margin-bottom:2px;position:relative;z-index:1;';
+    topZone.addEventListener('dragover', e => { e.preventDefault(); e.stopPropagation(); topZone.style.background = '#00d4ff'; topZone.style.height = '8px'; });
+    topZone.addEventListener('dragleave', () => { topZone.style.background = ''; topZone.style.height = '6px'; });
     topZone.addEventListener('drop', e => {
-      e.preventDefault(); topZone.style.background = ''; topZone.style.height = '4px';
+      e.preventDefault(); e.stopPropagation(); topZone.style.background = ''; topZone.style.height = '6px';
       if (!this.draggedId) return;
-      Editor.Undo.push();
+      var beforeOrder = Editor.Commands.captureDOMOrder();
       const selUI = document.getElementById('selUI');
 
       let dragItem = zItems.find(z => this._itemId(z) === this.draggedId);
@@ -90,7 +127,7 @@ Editor.Layers = {
       if (!dragItem) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
         if (!sp) return;
-        const elToMove = sp._clipWrap || sp.el;
+        const elToMove = sp.rootEl;
         if (sp.groupId) {
           const oldGroupEl = document.getElementById(sp.groupId);
           if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
@@ -101,7 +138,7 @@ Editor.Layers = {
         // Multi-select batch move: if dragged sprite is in multiSel, move all
         const dragSp = dragItem.type === 'sprite' ? dragItem.ref : null;
         if (dragSp && C.multiSel.length > 1 && C.multiSel.includes(dragSp)) {
-          const selEls = C.multiSel.map(s => s._clipWrap || s.el).filter(el => el.parentNode === svg);
+          const selEls = C.multiSel.map(s => s.rootEl).filter(el => el.parentNode === svg);
           const allChildren = Array.from(svg.children);
           selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
           selEls.forEach(el => svg.insertBefore(el, selUI));
@@ -114,7 +151,10 @@ Editor.Layers = {
       const _dragRect = document.getElementById('dragRect');
       if (_selUI) svg.appendChild(_selUI);
       if (_dragRect) svg.appendChild(_dragRect);
-      Editor.Persistence.save(); this.rebuild();
+      Editor.State.syncZOrderFromDOM();
+      var afterOrder = Editor.Commands.captureDOMOrder();
+      Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+      Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
     });
     list.appendChild(topZone);
 
@@ -184,9 +224,11 @@ Editor.Layers = {
     row.addEventListener('dragleave', () => { row.classList.remove('drop-above', 'drop-below'); });
     row.addEventListener('drop', e => {
       e.preventDefault();
+      const rect = row.getBoundingClientRect();
+      const dropAbove = e.clientY < rect.top + rect.height / 2;
       row.classList.remove('drop-above', 'drop-below');
       if (this.draggedId && this.draggedId !== itemId) {
-        this._handleDrop(this.draggedId, itemId, zItems);
+        this._handleDrop(this.draggedId, itemId, zItems, dropAbove);
       }
     });
   },
@@ -299,44 +341,20 @@ Editor.Layers = {
     const row = document.createElement('div');
     row.className = 'layer-row group-row custom-group-row';
     row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
-      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}" title="Double-click to rename">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <button class="lbtn group-rename-btn" title="Rename group" onclick="event.stopPropagation();Editor.Layers._startGroupRename('${gId}',this)">✏️</button>
       <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)" onmousedown="event.stopPropagation();this.parentElement.draggable=false" onmouseup="this.parentElement.draggable=true">
       <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>
       <button class="lbtn" title="Delete group + sprites" onclick="event.stopPropagation();Editor.Groups.deleteGroup('${gId}')">🗑</button>
       <span class="drag-hint" title="Drag to reorder">⠿</span>`;
 
-    // Double-click to rename
-    const nameEl = row.querySelector('.group-name');
-    // Prevent drag from starting when clicking on the name (allows dblclick to register)
-    nameEl.addEventListener('mousedown', e => { e.stopPropagation(); });
-    nameEl.addEventListener('dblclick', e => {
-      e.stopPropagation();
-      const input = document.createElement('input');
-      input.type = 'text'; input.value = name;
-      input.className = 'group-rename-input';
-      input.style.cssText = 'width:100%;background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff;border-radius:2px;font-size:9px;padding:1px 3px;outline:none;';
-      // Disable row dragging while editing
-      row.draggable = false;
-      nameEl.replaceWith(input);
-      input.focus(); input.select();
-      const commit = () => {
-        row.draggable = true;
-        const newName = input.value.trim() || name;
-        Editor.Groups.rename(gId, newName);
-      };
-      input.addEventListener('blur', commit);
-      input.addEventListener('mousedown', ev => ev.stopPropagation());
-      input.addEventListener('keydown', ev => {
-        if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
-        if (ev.key === 'Escape') { input.value = name; input.blur(); }
-        ev.stopPropagation();
-      });
-    });
-
     // Make group row draggable for z-order reordering
     row.draggable = true;
     row.dataset.layerId = gId;
-    row.addEventListener('dragstart', () => { this.draggedId = gId; row.classList.add('dragging'); });
+    row.addEventListener('dragstart', (e) => {
+      if (e.target.closest('.group-rename-input')) { e.preventDefault(); return; }
+      this.draggedId = gId; row.classList.add('dragging');
+    });
     row.addEventListener('dragend', () => { row.classList.remove('dragging'); this.draggedId = null; });
 
     // Accept drops: sprites → add to group, groups/built-ins → z-order reorder
@@ -345,36 +363,58 @@ Editor.Layers = {
       e.stopImmediatePropagation();
       if (!this.draggedId || this.draggedId === gId) return;
       const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
-      if (isSpriteDrag) {
-        row.classList.add('drop-above');
-        row.classList.remove('drop-below');
-      } else {
-        const rect = row.getBoundingClientRect();
-        const mid = rect.top + rect.height / 2;
-        row.classList.toggle('drop-above', e.clientY < mid);
-        row.classList.toggle('drop-below', e.clientY >= mid);
-      }
+      const rect = row.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      row.classList.toggle('drop-above', e.clientY < mid);
+      row.classList.toggle('drop-below', e.clientY >= mid);
     });
     row.addEventListener('dragleave', () => { row.classList.remove('drop-above', 'drop-below'); });
     row.addEventListener('drop', e => {
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
+      const rect = row.getBoundingClientRect();
+      const dropAbove = e.clientY < rect.top + rect.height / 2;
       row.classList.remove('drop-above', 'drop-below');
       if (!this.draggedId || this.draggedId === gId) return;
       const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg');
       if (isSpriteDrag) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
-        if (sp && sp.groupId !== gId) {
+        if (!sp) return;
+        if (dropAbove) {
+          // Drop above group row = insert BEFORE the group <g> in SVG (between items, not into group)
+          const svg = document.getElementById('battlefield');
+          const gEl = document.getElementById(gId);
+          if (!gEl) return;
+          var beforeOrder = Editor.Commands.captureDOMOrder();
+          const elToMove = sp.rootEl;
+          // Remove from current group if needed
+          if (sp.groupId) {
+            const oldGroupEl = document.getElementById(sp.groupId);
+            if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
+            delete sp.groupId;
+          }
+          // "Drop above" in layer panel = in front = after in DOM
+          svg.insertBefore(elToMove, gEl.nextElementSibling);
+          const selUI = document.getElementById('selUI');
+          const dragRect = document.getElementById('dragRect');
+          if (selUI) svg.appendChild(selUI);
+          if (dragRect) svg.appendChild(dragRect);
+          Editor.State.syncZOrderFromDOM();
+          var afterOrder = Editor.Commands.captureDOMOrder();
+          Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+          Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
+        } else if (sp.groupId !== gId) {
+          // Drop below/on group = add sprite into group
           Editor.Groups.addToGroup(gId, sp);
         }
       } else if (zItems) {
-        this._handleDrop(this.draggedId, gId, zItems);
+        this._handleDrop(this.draggedId, gId, zItems, dropAbove);
       }
     });
 
     row.onclick = e => {
-      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-name')) return;
+      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-rename-btn')) return;
       const sprites = C.allSprites.filter(s => s.groupId === gId);
       if (sprites.length) {
         C.multiSel = sprites;
@@ -385,6 +425,35 @@ Editor.Layers = {
     };
 
     return row;
+  },
+
+  /* ── Start inline rename for a custom group ── */
+  _startGroupRename(gId, btn) {
+    const row = btn.closest('.layer-row');
+    if (!row) return;
+    const nameEl = row.querySelector('.group-name');
+    if (!nameEl) return;
+    const group = (Editor.Core.groups || []).find(g => g.id === gId);
+    const oldName = group ? group.name : gId;
+    const input = document.createElement('input');
+    input.type = 'text'; input.value = oldName;
+    input.className = 'group-rename-input';
+    input.style.cssText = 'width:100%;background:#0a0e18;color:#00d4ff;border:1px solid #00d4ff;border-radius:2px;font-size:9px;padding:1px 3px;outline:none;';
+    row.draggable = false;
+    nameEl.replaceWith(input);
+    input.focus(); input.select();
+    const commit = () => {
+      row.draggable = true;
+      const newName = input.value.trim() || oldName;
+      Editor.Groups.rename(gId, newName);
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('mousedown', ev => ev.stopPropagation());
+    input.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      if (ev.key === 'Escape') { input.value = oldName; input.blur(); }
+      ev.stopPropagation();
+    });
   },
 
   /* ── Create an individual sprite row ── */
@@ -399,7 +468,7 @@ Editor.Layers = {
     const displayName = isDataUrl ? (sp._fileName || 'Dropped image').replace(/\.(png|jpg|jpeg|webp)$/i, '') : sp.file.replace(/\.(png|jpg)/, '');
     row.innerHTML = `<img src="${thumbSrc}">
       <div style="flex:1;min-width:0"><div class="lname">${displayName}</div><div class="lmeta">${sp.layerType === 'top' ? 'roof' : 'floor'} · ${Math.round(sp.x)},${Math.round(sp.y)}</div>
-      <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation();Editor.Undo.push();this.closest('.layer-row').draggable=false" onmouseup="this.closest('.layer-row').draggable=true"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
+      <div class="lmeta sprite-shadow-row" style="display:flex;align-items:center;gap:3px;margin-top:2px"><span style="color:#607080;font-size:8px">Shadow</span><input type="range" min="0" max="100" value="${sMulPct}" style="width:50px;height:10px;accent-color:#00d4ff" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Effects.setSpriteShadowMul('${sp.id}',this.value/100);this.nextElementSibling.textContent=this.value+'%'" onmousedown="event.stopPropagation();Editor.Commands.captureShadow('${sp.id}',this.value/100);this.closest('.layer-row').draggable=false" onmouseup="Editor.Commands.commitShadow();this.closest('.layer-row').draggable=true"><span style="font-size:8px;color:#4f6476;width:24px">${sMulPct}%</span></div></div>
       <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleVis('${sp.id}')">${sp.hidden ? '🔇' : '👁'}</button>
       ${(sp.cropL || sp.cropT || sp.cropR || sp.cropB) ? `<button class="lbtn" title="Reset crop" onclick="event.stopPropagation();Editor.Crop.resetCrop(Editor.Core.allSprites.find(s=>s.id==='${sp.id}'))">✂️</button>` : ''}
       <button class="lbtn" title="Duplicate" onclick="event.stopPropagation();Editor.Layers.dupSprite('${sp.id}')">📋</button>
@@ -416,7 +485,8 @@ Editor.Layers = {
   },
 
   /* ── Handle drop: reorder sprites and/or groups ── */
-  _handleDrop(draggedId, targetId, zItems) {
+  /* dropAbove: true = user dropped above target row (= in front visually = after in DOM) */
+  _handleDrop(draggedId, targetId, zItems, dropAbove) {
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
 
@@ -429,19 +499,23 @@ Editor.Layers = {
       const sp = C.allSprites.find(s => s.id === draggedId);
       if (!sp || !sp.groupId) return;
       // Remove from current group
-      Editor.Undo.push();
+      var beforeOrder = Editor.Commands.captureDOMOrder();
       const oldGroupEl = document.getElementById(sp.groupId);
-      let elToMove = sp._clipWrap || sp.el;
+      let elToMove = sp.rootEl;
       if (oldGroupEl) oldGroupEl.removeChild(elToMove);
       delete sp.groupId;
       // Guard: ensure target is a current direct child of svg
       let targetEl = targetItem.svgEl;
       if (targetEl.parentNode !== svg) {
         const tSp = C.allSprites.find(s => s.id === targetId);
-        targetEl = tSp ? (tSp._clipWrap || tSp.el) : null;
+        targetEl = tSp ? tSp.rootEl : null;
       }
       if (targetEl && targetEl.parentNode === svg) {
-        svg.insertBefore(elToMove, targetEl);
+        if (dropAbove) {
+          svg.insertBefore(elToMove, targetEl.nextElementSibling);
+        } else {
+          svg.insertBefore(elToMove, targetEl);
+        }
       } else {
         const selUI = document.getElementById('selUI');
         svg.insertBefore(elToMove, selUI);
@@ -453,11 +527,14 @@ Editor.Layers = {
         if (dragRect) svg.appendChild(dragRect);
       };
       _fix();
-      Editor.Persistence.save(); this.rebuild();
+      Editor.State.syncZOrderFromDOM();
+      var afterOrder = Editor.Commands.captureDOMOrder();
+      Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+      Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
       return;
     }
 
-    Editor.Undo.push();
+    var beforeOrder = Editor.Commands.captureDOMOrder();
 
     const _fixTrailingEls = () => {
       const selUI = document.getElementById('selUI');
@@ -474,7 +551,7 @@ Editor.Layers = {
     let targetEl = targetItem.svgEl;
     if (targetEl.parentNode !== svg) {
       const tSp = C.allSprites.find(s => s.id === targetId);
-      targetEl = tSp ? (tSp._clipWrap || tSp.el) : null;
+      targetEl = tSp ? tSp.rootEl : null;
     }
     if (!targetEl || targetEl.parentNode !== svg) return;
 
@@ -483,31 +560,38 @@ Editor.Layers = {
     const dragSp = dragItem.type === 'sprite' ? dragItem.ref : null;
     if (dragSp && C.multiSel.length > 1 && C.multiSel.includes(dragSp)) {
       // Collect SVG elements for all selected sprites
-      const selEls = C.multiSel.map(s => s._clipWrap || s.el).filter(el => el.parentNode === svg);
+      const selEls = C.multiSel.map(s => s.rootEl).filter(el => el.parentNode === svg);
       // Sort by current DOM position to preserve relative order
       const allChildren = Array.from(svg.children);
       selEls.sort((a, b) => allChildren.indexOf(a) - allChildren.indexOf(b));
       // The layer panel is reversed: top of panel = last in DOM = in front.
       // "Drop above" in UI means "insert after" in DOM.
-      // insertBefore(el, target) puts el just before target in DOM (= behind target visually).
-      // We insert all selected elements before the target, in order.
+      const insertRef = dropAbove ? targetEl.nextElementSibling : targetEl;
       selEls.forEach(el => {
-        if (el !== targetEl) svg.insertBefore(el, targetEl);
+        if (el !== targetEl) svg.insertBefore(el, insertRef);
       });
     } else {
       // Single item move
       let dragEl = dragItem.svgEl;
       if (dragEl.parentNode !== svg) {
         const dSp = C.allSprites.find(s => s.id === draggedId);
-        dragEl = dSp ? (dSp._clipWrap || dSp.el) : null;
+        dragEl = dSp ? dSp.rootEl : null;
       }
       if (dragEl && dragEl.parentNode === svg) {
-        svg.insertBefore(dragEl, targetEl);
+        if (dropAbove) {
+          // Drop above in layer panel = in front visually = after target in DOM
+          svg.insertBefore(dragEl, targetEl.nextElementSibling);
+        } else {
+          svg.insertBefore(dragEl, targetEl);
+        }
       }
     }
 
     _fixTrailingEls();
-    Editor.Persistence.save(); this.rebuild();
+    Editor.State.syncZOrderFromDOM();
+    var afterOrder = Editor.Commands.captureDOMOrder();
+    Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+    Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
   },
 
   /* ── Drag reorder within a custom group ── */
@@ -552,7 +636,7 @@ Editor.Layers = {
       const srcSp = C.allSprites.find(s => s.id === this._dragGroupChild);
       if (!srcSp) return;
 
-      Editor.Undo.push();
+      var beforeOrder = Editor.Commands.captureDOMOrder();
       const gEl = document.getElementById(groupId);
       if (!gEl) return;
 
@@ -563,17 +647,21 @@ Editor.Layers = {
 
       if (dropAbove) {
         // UI above = in front = after in DOM
-        if (sp.el.nextElementSibling) {
-          gEl.insertBefore(srcSp.el, sp.el.nextElementSibling);
+        var targetRoot = sp.rootEl;
+        if (targetRoot.nextElementSibling) {
+          gEl.insertBefore(srcSp.rootEl, targetRoot.nextElementSibling);
         } else {
-          gEl.appendChild(srcSp.el);
+          gEl.appendChild(srcSp.rootEl);
         }
       } else {
         // UI below = behind = before in DOM
-        gEl.insertBefore(srcSp.el, sp.el);
+        gEl.insertBefore(srcSp.rootEl, sp.rootEl);
       }
 
-      Editor.Persistence.save();
+      Editor.State.syncZOrderFromDOM();
+      var afterOrder = Editor.Commands.captureDOMOrder();
+      Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+      Editor.State.dispatch({ type: 'REORDER' });
       this.rebuild();
     });
   },
@@ -583,35 +671,43 @@ Editor.Layers = {
     const src = C.allSprites.find(s => s.id === srcId);
     const target = C.allSprites.find(s => s.id === targetId);
     if (!src || !target) return;
-    Editor.Undo.push();
+    var beforeOrder = Editor.Commands.captureDOMOrder();
     // Both sprites are direct SVG children — just reorder
-    target.el.parentNode.insertBefore(src.el, target.el);
+    target.rootEl.parentNode.insertBefore(src.rootEl, target.rootEl);
     C.allSprites = C.allSprites.filter(s => s !== src);
     const idx = C.allSprites.indexOf(target);
     C.allSprites.splice(idx, 0, src);
-    Editor.Persistence.save(); this.rebuild();
+    Editor.State.syncZOrderFromDOM();
+    var afterOrder = Editor.Commands.captureDOMOrder();
+    Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+    Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
   },
 
   toggleLightVis(id) {
     const C = Editor.Core;
     const l = C.allLights.find(x => x.id === id); if (!l) return;
-    const hidden = l.el.style.display === 'none';
-    l.el.style.display = hidden ? '' : 'none';
+    const wasHidden = l.el.style.display === 'none';
+    l.el.style.display = wasHidden ? '' : 'none';
+    Editor.Undo.record(Editor.Commands.ToggleLightVis.create(id, wasHidden));
+    Editor.State.dispatch({ type: 'TOGGLE_LIGHT_VIS' });
     this.rebuild();
   },
 
   toggleVis(id) {
     const C = Editor.Core;
     const sp = C.allSprites.find(s => s.id === id); if (!sp) return;
+    const from = { hidden: sp.hidden };
     sp.hidden = !sp.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
-    this.rebuild(); Editor.Persistence.save();
+    const to = { hidden: sp.hidden };
+    Editor.Undo.record(Editor.Commands.SetProperty.create(id, from, to));
+    this.rebuild(); Editor.State.dispatch({ type: 'TOGGLE_SPRITE_VIS' });
   },
 
   dupSprite(id) {
     const s = Editor.Core.allSprites.find(x => x.id === id);
     if (s) {
-      Editor.Undo.push();
-      Editor.Sprites.addSprite(s.file, s.x + 15, s.y + 15, s.w, s.h, s.rot, s.layer);
+      const dup = Editor.Sprites.addSprite(s.file, s.x + 15, s.y + 15, s.w, s.h, s.rot, s.layerType);
+      Editor.Undo.record(Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(dup)));
       this.rebuild();
     }
   },
@@ -619,9 +715,11 @@ Editor.Layers = {
   delSprite(id) {
     const C = Editor.Core;
     const sp = C.allSprites.find(s => s.id === id); if (!sp) return;
-    Editor.Undo.push();
-    sp.el.remove(); C.allSprites = C.allSprites.filter(s => s !== sp);
+    const data = Editor.Commands._captureSprite(sp);
+    const cmd = Editor.Commands.DeleteSprite.create(data);
+    cmd.apply();
+    Editor.Undo.record(cmd);
     if (C.selected === sp) Editor.Selection.deselect();
-    C.updateDebug(); Editor.Persistence.save(); this.rebuild();
+    C.updateDebug(); Editor.State.dispatch({ type: 'DELETE_SPRITE' }); this.rebuild();
   }
 };
