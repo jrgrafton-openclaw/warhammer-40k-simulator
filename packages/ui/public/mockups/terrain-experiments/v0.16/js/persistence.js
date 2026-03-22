@@ -132,6 +132,7 @@ Editor.Persistence = {
       S.syncFromCore();
       S.syncZOrderFromDOM();
       this._syncEffectSliders(Editor.Effects);
+      Editor.Layers._loadUIState();
       Editor.Layers.rebuild();
       this._restoreToggles(data);
       Editor.Selection.deselect();
