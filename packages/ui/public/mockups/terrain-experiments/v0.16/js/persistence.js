@@ -153,7 +153,7 @@ Editor.Persistence = {
       if (data.bg) { document.getElementById('bgSel').value = data.bg; C.setBg(data.bg); }
 
       var ranges = document.querySelectorAll('input[type=range]');
-      if (data.ruinsOpacity && ranges[0]) {
+      if (data.ruinsOpacity != null && ranges[0]) {
         ranges[0].value = data.ruinsOpacity;
         document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
         ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
