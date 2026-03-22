@@ -2,12 +2,13 @@
    Editor Layers — right sidebar panel with drag-to-reorder.
    All item types (sprites, models-group, lights-group, obj-rings, obj-hexes,
    custom groups) can be reordered via drag in a unified z-order list.
-   Models and Lights groups are expandable to show individual items.
+   Models, Lights, and custom sprite groups are expandable/collapsible.
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Layers = {
   draggedId: null,
   expandedGroups: { modelLayer: false, lightLayer: false },
+  // Custom groups default to expanded (true). Keyed by groupId.
 
   /* ── Build the unified z-order list from SVG DOM ── */
   _buildZOrder() {
@@ -140,24 +141,27 @@ Editor.Layers = {
       } else if (item.type === 'custom-group') {
         row = this._createCustomGroupRow(item, C, zItems);
         list.appendChild(row);
-        // Show child sprites (in DOM order = z-order)
+        // Show child sprites only if group is expanded
         const gId = item.groupId;
-        const gEl = document.getElementById(gId);
-        const childSprites = gEl
-          ? Array.from(gEl.children).map(el => {
-              // Direct match or inside a crop wrapper <g>
-              let sp = C.allSprites.find(s => s.el === el);
-              if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
-                sp = C.allSprites.find(s => s._clipWrap === el);
-              }
-              return sp;
-            }).filter(Boolean).reverse()
-          : C.allSprites.filter(s => s.groupId === gId);
-        childSprites.forEach(sp => {
-          const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
-          this._setupGroupChildDrag(child, sp, gId);
-          list.appendChild(child);
-        });
+        const isExpanded = this.expandedGroups[gId] !== false; // default expanded
+        if (isExpanded) {
+          const gEl = document.getElementById(gId);
+          const childSprites = gEl
+            ? Array.from(gEl.children).map(el => {
+                // Direct match or inside a crop wrapper <g>
+                let sp = C.allSprites.find(s => s.el === el);
+                if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
+                  sp = C.allSprites.find(s => s._clipWrap === el);
+                }
+                return sp;
+              }).filter(Boolean).reverse()
+            : C.allSprites.filter(s => s.groupId === gId);
+          childSprites.forEach(sp => {
+            const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
+            this._setupGroupChildDrag(child, sp, gId);
+            list.appendChild(child);
+          });
+        }
       } else {
         // Ungrouped sprite
         if (!item.ref.groupId) {
@@ -295,11 +299,12 @@ Editor.Layers = {
     const name = group ? group.name : gId;
     const opacity = group ? Math.round(group.opacity * 100) : 100;
     const childCount = C.allSprites.filter(s => s.groupId === gId).length;
+    const isExpanded = this.expandedGroups[gId] !== false; // default expanded
 
     const row = document.createElement('div');
     row.className = 'layer-row group-row custom-group-row';
     row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
-      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}" title="Double-click to rename">${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}" title="Double-click to rename"><span class="expand-toggle">${isExpanded ? '▾' : '▸'}</span>${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
       <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)" onmousedown="event.stopPropagation();this.parentElement.draggable=false" onmouseup="this.parentElement.draggable=true">
       <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>
       <button class="lbtn" title="Delete group + sprites" onclick="event.stopPropagation();Editor.Groups.deleteGroup('${gId}')">🗑</button>
@@ -374,14 +379,18 @@ Editor.Layers = {
     });
 
     row.onclick = e => {
-      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-name')) return;
-      const sprites = C.allSprites.filter(s => s.groupId === gId);
-      if (sprites.length) {
-        C.multiSel = sprites;
-        C.selected = sprites[0];
-        Editor.Selection.drawSelectionUI();
+      if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint')) return;
+      // Click on expand toggle → collapse/expand
+      if (e.target.closest('.expand-toggle')) {
+        this.expandedGroups[gId] = !isExpanded;
         this.rebuild();
+        return;
       }
+      // Click on group name → ignore (let dblclick rename handler work)
+      if (e.target.closest('.group-name')) return;
+      // Click on row body → toggle expand/collapse (matches built-in group behavior)
+      this.expandedGroups[gId] = !isExpanded;
+      this.rebuild();
     };
 
     return row;
