@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.4b — THE BRIEFING</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../shared/tokens/typography.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="briefing">
+  <div class="grain"></div>
+  <div class="embers" id="embers"></div>
+
+  <!-- Nav chrome -->
+  <a class="nav-back" href="../../start-game/index.html">&larr; Back</a>
+  <a class="nav-mockups" href="../../index.html#battle-forge">&larr; Mockups</a>
+  <div class="version-badge">v0.4b &middot; THE BRIEFING</div>
+
+  <div class="column">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-title">Battle Forge</div>
+      <div class="header-sub">Mission Briefing</div>
+    </div>
+
+    <!-- SECTION 1: YOUR FORCES -->
+    <div class="section sec-1" id="sec1">
+      <div class="section-label">&#9656; Your Forces</div>
+
+      <!-- Empty state -->
+      <div class="army-slot-empty" id="slot1Empty" onclick="openBrowser(1)">
+        <div class="slot-plus">+</div>
+        <div class="slot-title">Select Your Faction</div>
+        <div class="slot-hint">Choose from available factions or upload a custom army list</div>
+      </div>
+
+      <!-- Selected state -->
+      <div class="army-card" id="card1">
+        <div class="army-faction-header">
+          <div class="army-faction-info">
+            <span class="army-emblem" id="card1Emblem"></span>
+            <span class="army-faction-name imp-text" id="card1Name"></span>
+          </div>
+          <button class="army-change-btn" onclick="openBrowser(1)">Change &#9662;</button>
+        </div>
+        <div class="army-select-row">
+          <div class="army-dropdown" id="card1Army"></div>
+        </div>
+        <div class="army-stats" id="card1Stats"></div>
+        <div class="roster-list" id="card1Roster"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: ENEMY FORCES -->
+    <div class="section sec-2" id="sec2">
+      <div class="section-label">&#9656; Enemy Forces</div>
+
+      <div class="army-slot-empty" id="slot2Empty" onclick="openBrowser(2)">
+        <div class="slot-plus ork-plus">+</div>
+        <div class="slot-title">Select Enemy Faction</div>
+        <div class="slot-hint">Choose an opponent from available factions</div>
+      </div>
+
+      <div class="army-card ork-card" id="card2">
+        <div class="army-faction-header">
+          <div class="army-faction-info">
+            <span class="army-emblem" id="card2Emblem"></span>
+            <span class="army-faction-name ork-text" id="card2Name"></span>
+          </div>
+          <button class="army-change-btn" onclick="openBrowser(2)">Change &#9662;</button>
+        </div>
+        <div class="army-select-row">
+          <div class="army-dropdown" id="card2Army"></div>
+        </div>
+        <div class="army-stats" id="card2Stats"></div>
+        <div class="roster-list" id="card2Roster"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: BATTLEFIELD -->
+    <div class="section sec-3" id="sec3">
+      <div class="section-label">&#9656; Battlefield</div>
+
+      <div class="battlefield-split">
+        <!-- Map -->
+        <div class="bf-panel">
+          <div class="bf-panel-label">Map</div>
+          <div class="map-card">
+            <div class="map-card-name">Battlefield Alpha</div>
+            <div class="map-card-size">60&Prime; &times; 44&Prime;</div>
+            <div class="map-card-terrain">&#9650; Terrain Preview</div>
+          </div>
+          <div class="map-coming-soon">Other maps &mdash; Coming Soon</div>
+        </div>
+
+        <!-- Deployment Layout -->
+        <div class="bf-panel">
+          <div class="bf-panel-label">Deployment Layout</div>
+          <div class="deploy-options">
+            <div class="deploy-card active">
+              <div class="deploy-diagram">
+                <div class="zone zone-l"></div>
+                <div class="zone zone-r"></div>
+              </div>
+              <span class="deploy-name">Hammer &amp; Anvil</span>
+            </div>
+            <div class="deploy-card coming-soon">
+              <div class="deploy-diagram">
+                <div class="zone zone-t"></div>
+                <div class="zone zone-b"></div>
+              </div>
+              <span class="deploy-name">Dawn of War</span>
+              <span class="deploy-badge">Soon</span>
+            </div>
+            <div class="deploy-card coming-soon">
+              <div class="deploy-diagram"></div>
+              <span class="deploy-name">Search &amp; Destroy</span>
+              <span class="deploy-badge">Soon</span>
+            </div>
+            <div class="deploy-card coming-soon">
+              <div class="deploy-diagram"></div>
+              <span class="deploy-name">Sweeping Engagement</span>
+              <span class="deploy-badge">Soon</span>
+            </div>
+            <div class="deploy-card coming-soon">
+              <div class="deploy-diagram"></div>
+              <span class="deploy-name">Crucible of Battle</span>
+              <span class="deploy-badge">Soon</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Large deployment diagram -->
+      <div class="deploy-preview">
+        <div class="zone-left"></div>
+        <div class="zone-right"></div>
+        <span class="zone-label lbl-l">Player 1</span>
+        <span class="zone-label lbl-r">Player 2</span>
+        <div class="midline"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: MISSION & SETTINGS -->
+    <div class="section sec-4" id="sec4">
+      <div class="section-label">&#9656; Mission &amp; Settings</div>
+
+      <div class="mission-row">
+        <span class="mission-label">Mission:</span>
+        <span class="mission-value">Take and Hold</span>
+      </div>
+
+      <div class="settings-row">
+        <div class="setting-chip">Turns: 5</div>
+        <div class="setting-chip">First Turn: Roll-off</div>
+        <div class="setting-chip">Strike Force</div>
+      </div>
+
+      <div class="mode-row">
+        <button class="mode-btn active">Single Player</button>
+        <button class="mode-btn coming-soon">Multiplayer</button>
+      </div>
+    </div>
+
+  </div><!-- /column -->
+
+  <!-- BEGIN BATTLE sticky footer -->
+  <div class="begin-footer">
+    <a class="begin-btn disabled" id="beginBtn" href="../../phases/deploy/v0.4/index.html">
+      Begin Battle &rarr;
+    </a>
+  </div>
+
+</div><!-- /briefing -->
+
+<!-- Faction Browser Overlay -->
+<div class="faction-overlay" id="factionOverlay">
+  <button class="browser-close" onclick="closeBrowser()">&times; ESC</button>
+  <div class="faction-browser">
+    <div class="browser-title" id="browserTitle">Select Faction</div>
+    <div class="browser-grid" id="browserGrid"></div>
+  </div>
+</div>
+
+<script>
+// ── Error display ──
+window.onerror = function(msg, src, line) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#cc2020;color:#fff;padding:8px 16px;font:13px monospace;z-index:9999';
+  d.textContent = 'ERROR: ' + msg + ' (' + src + ':' + line + ')';
+  document.body.appendChild(d);
+};
+
+// ── Faction Data ──
+var FACTIONS = [
+  {
+    id: 'custodes', emblem: '\u269C', name: 'Adeptus Custodes',
+    army: 'Shield Host', pts: 1985, maxPts: 2000, unitCount: 13, modelCount: 45,
+    available: true,
+    roster: [
+      { name: 'Blade Champion', qty: 2, models: 1, pts: 120 },
+      { name: 'Custodian Guard', qty: 4, models: 5, pts: 190 },
+      { name: 'Allarus Custodians', qty: 1, models: 3, pts: 165 },
+      { name: 'Allarus Custodians', qty: 1, models: 2, pts: 110 },
+      { name: 'Prosecutors', qty: 2, models: 5, pts: 85 },
+      { name: 'Caladius Grav-tank', qty: 2, models: 1, pts: 215 },
+      { name: 'Inquisitor Draxus', qty: 1, models: 1, pts: 95 },
+    ],
+  },
+  {
+    id: 'orks', emblem: '\u2620', name: 'Orks',
+    army: "Waaagh! Tribe", pts: 1960, maxPts: 2000, unitCount: 16, modelCount: 75,
+    available: true,
+    roster: [
+      { name: 'Warboss', qty: 1, models: 1, pts: 90 },
+      { name: 'Boss Nob', qty: 1, models: 1, pts: 95 },
+      { name: 'Boyz Mob', qty: 2, models: 10, pts: 150 },
+      { name: 'Mekboy', qty: 1, models: 1, pts: 75 },
+      { name: 'Nobz Mob', qty: 2, models: 5, pts: 115 },
+      { name: 'Gretchin', qty: 2, models: 10, pts: 50 },
+      { name: 'Deff Dread', qty: 1, models: 1, pts: 150 },
+      { name: 'Battlewagon', qty: 1, models: 1, pts: 185 },
+      { name: 'Lootas', qty: 1, models: 5, pts: 100 },
+      { name: 'Stormboyz', qty: 1, models: 5, pts: 80 },
+      { name: 'Weirdboy', qty: 1, models: 1, pts: 70 },
+      { name: 'Meganobz', qty: 1, models: 3, pts: 200 },
+      { name: 'Trukk', qty: 1, models: 1, pts: 65 },
+    ],
+  },
+  { id: 'space_marines', emblem: '\uD83E\uDD85', name: 'Space Marines', available: false },
+  { id: 'chaos_marines', emblem: '\u26E7', name: 'Chaos Marines', available: false },
+  { id: 'aeldari', emblem: '\uD83C\uDF00', name: 'Aeldari', available: false },
+  { id: 'tyranids', emblem: '\uD83E\uDDB7', name: 'Tyranids', available: false },
+  { id: 'necrons', emblem: '\uD83D\uDC80', name: 'Necrons', available: false },
+  { id: 'tau', emblem: '\uD83D\uDD37', name: "T'au Empire", available: false },
+  { id: 'death_guard', emblem: '\u2623', name: 'Death Guard', available: false },
+  { id: 'thousand_sons', emblem: '\uD83D\uDD2E', name: 'Thousand Sons', available: false },
+];
+
+// ── State ──
+var selections = { 1: null, 2: null };
+var browserTarget = 1; // which slot the browser is selecting for
+
+// ── Faction lookup ──
+function getFaction(id) {
+  for (var i = 0; i < FACTIONS.length; i++) {
+    if (FACTIONS[i].id === id) return FACTIONS[i];
+  }
+  return null;
+}
+
+// ── Open/Close Browser ──
+function openBrowser(slot) {
+  browserTarget = slot;
+  var overlay = document.getElementById('factionOverlay');
+  var title = document.getElementById('browserTitle');
+  title.textContent = slot === 1 ? 'Select Your Faction' : 'Select Enemy Faction';
+  buildBrowserGrid();
+  overlay.classList.add('open');
+}
+
+function closeBrowser() {
+  document.getElementById('factionOverlay').classList.remove('open');
+}
+
+// ── Build Browser Grid ──
+function buildBrowserGrid() {
+  var grid = document.getElementById('browserGrid');
+  var html = '';
+  var otherSlot = browserTarget === 1 ? 2 : 1;
+  var otherSelection = selections[otherSlot];
+
+  for (var i = 0; i < FACTIONS.length; i++) {
+    var f = FACTIONS[i];
+    var locked = !f.available || f.id === otherSelection;
+    var cls = 'browser-tile' + (locked ? ' locked' : '');
+    var sub = '';
+    if (!f.available) sub = '<span class="browser-tile-lock">LOCKED</span>';
+    else if (f.id === otherSelection) sub = '<span class="browser-tile-sub">Already selected</span>';
+    else if (f.pts) sub = '<span class="browser-tile-sub">' + f.pts + ' pts</span>';
+
+    html += '<div class="' + cls + '" data-id="' + f.id + '"'
+      + (locked ? '' : ' onclick="selectFaction(\'' + f.id + '\')"')
+      + '>'
+      + '<div class="browser-tile-emblem">' + f.emblem + '</div>'
+      + '<div class="browser-tile-name">' + f.name + '</div>'
+      + sub
+      + '</div>';
+  }
+
+  // Upload tile
+  html += '<div class="browser-tile locked">'
+    + '<div class="browser-tile-emblem">\uD83D\uDCCB</div>'
+    + '<div class="browser-tile-name">Upload .ros</div>'
+    + '<span class="browser-tile-lock">COMING SOON</span>'
+    + '</div>';
+
+  grid.innerHTML = html;
+}
+
+// ── Select Faction ──
+function selectFaction(id) {
+  var faction = getFaction(id);
+  if (!faction || !faction.available) return;
+
+  selections[browserTarget] = id;
+  closeBrowser();
+  renderSlot(browserTarget);
+  updateProgression();
+  updateBeginButton();
+}
+
+// ── Render a slot ──
+function renderSlot(slot) {
+  var id = selections[slot];
+  var emptyEl = document.getElementById('slot' + slot + 'Empty');
+  var cardEl = document.getElementById('card' + slot);
+
+  if (!id) {
+    emptyEl.style.display = '';
+    cardEl.classList.remove('visible');
+    return;
+  }
+
+  var f = getFaction(id);
+  emptyEl.style.display = 'none';
+  cardEl.classList.add('visible');
+
+  document.getElementById('card' + slot + 'Emblem').textContent = f.emblem;
+  document.getElementById('card' + slot + 'Name').textContent = f.name;
+  document.getElementById('card' + slot + 'Army').textContent = f.army + ' \u2014 ' + f.pts + 'pts';
+  document.getElementById('card' + slot + 'Stats').innerHTML =
+    '<span><span class="stat-val">' + f.pts + '</span>/' + f.maxPts + ' pts</span>'
+    + '<span>\u00B7</span>'
+    + '<span><span class="stat-val">' + f.unitCount + '</span> units</span>'
+    + '<span>\u00B7</span>'
+    + '<span><span class="stat-val">' + f.modelCount + '</span> models</span>';
+
+  var rosterHtml = '';
+  for (var i = 0; i < f.roster.length; i++) {
+    var u = f.roster[i];
+    var label = u.qty > 1 ? u.name + ' \u00D7' + u.qty : u.name;
+    var models = u.models * u.qty;
+    rosterHtml += '<div class="roster-row">'
+      + '<span class="roster-unit-name">' + label + '</span>'
+      + '<span class="roster-unit-qty">' + models + ' model' + (models > 1 ? 's' : '') + '</span>'
+      + '<span class="roster-unit-pts">' + u.pts + 'pts</span>'
+      + '</div>';
+  }
+  document.getElementById('card' + slot + 'Roster').innerHTML = rosterHtml;
+}
+
+// ── Progressive Disclosure ──
+function updateProgression() {
+  var sec2 = document.getElementById('sec2');
+  var sec3 = document.getElementById('sec3');
+  var sec4 = document.getElementById('sec4');
+
+  if (selections[1]) {
+    sec2.classList.add('unlocked');
+  } else {
+    sec2.classList.remove('unlocked');
+  }
+
+  if (selections[1] && selections[2]) {
+    sec3.classList.add('unlocked');
+    sec4.classList.add('unlocked');
+  } else {
+    sec3.classList.remove('unlocked');
+    sec4.classList.remove('unlocked');
+  }
+}
+
+// ── Begin Button State ──
+function updateBeginButton() {
+  var btn = document.getElementById('beginBtn');
+  if (selections[1] && selections[2]) {
+    btn.classList.remove('disabled');
+  } else {
+    btn.classList.add('disabled');
+  }
+}
+
+// ── Ember Particles ──
+function createEmbers() {
+  var container = document.getElementById('embers');
+  var colors = ['#ff8c20', '#ff6a10', '#ffa040', '#00d4ff', '#00b8e0'];
+  for (var i = 0; i < 15; i++) {
+    var ember = document.createElement('span');
+    ember.className = 'ember';
+    var size = 2 + Math.random() * 3;
+    ember.style.cssText =
+      'left:' + (3 + Math.random() * 94) + '%;'
+      + 'width:' + size + 'px;height:' + size + 'px;'
+      + '--dur:' + (8 + Math.random() * 12) + 's;'
+      + '--delay:' + (Math.random() * 10) + 's;'
+      + '--drift:' + (-30 + Math.random() * 60) + 'px;'
+      + '--peak:' + (0.15 + Math.random() * 0.35) + ';'
+      + '--ember-color:' + colors[Math.floor(Math.random() * colors.length)] + ';';
+    container.appendChild(ember);
+  }
+}
+
+// ── Keyboard ──
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeBrowser();
+});
+
+// ── Init ──
+function init() {
+  createEmbers();
+  updateBeginButton();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

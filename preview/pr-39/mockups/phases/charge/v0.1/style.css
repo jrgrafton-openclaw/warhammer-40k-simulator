@@ -1,0 +1,85 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1 Charge Phase — Styles
+   All shared styles are in ../../shared/components/*.css
+   Target highlighting uses shared shoot-valid/shoot-invalid/shoot-target
+   classes from battlefield.css. This file contains ONLY charge-specific
+   overrides & additions.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Charge zone overlay (per-model move radius after roll) ── */
+.charge-zone-ring {
+  fill: rgba(255,140,0,0.03);
+  stroke: rgba(255,140,0,0.2);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 3;
+  pointer-events: none;
+}
+
+/* ── Engagement range rings around target models ── */
+.engagement-ring {
+  fill: none;
+  stroke: rgba(255,140,0,0.3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  pointer-events: none;
+}
+.engagement-ring.reached {
+  stroke: rgba(0,200,80,0.6);
+  stroke-width: 1.5;
+  fill: rgba(0,200,80,0.04);
+}
+
+/* ── Ghost circles at start positions ── */
+.charge-ghost {
+  fill: none;
+  stroke: rgba(0,212,255,0.2);
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+/* ── Charge ruler lines (distance moved per model) ── */
+.charge-ruler {
+  stroke: rgba(0,212,255,0.35);
+  stroke-width: 1;
+  pointer-events: none;
+}
+.charge-ruler.over-range {
+  stroke: rgba(255,50,50,0.5);
+}
+.charge-ruler-label {
+  fill: rgba(0,212,255,0.6);
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  pointer-events: none;
+}
+.charge-ruler-label.over-range {
+  fill: rgba(255,50,50,0.7);
+}
+
+/* ── State pills for roster ── */
+.rail-unit.charged .roster-state-pill {
+  display: inline-flex;
+  border-color: #cc8800;
+  color: #cc8800;
+}
+.rail-unit.charged .roster-state-pill::before { content: 'CHARGED'; }
+
+.rail-unit.charge-failed .roster-state-pill {
+  display: inline-flex;
+  border-color: #882020;
+  color: #882020;
+}
+.rail-unit.charge-failed .roster-state-pill::before { content: 'FAILED'; }
+
+/* ── Unit state badge overrides ── */
+.unit-state-badge.charged {
+  display: inline-flex;
+  border-color: #cc8800;
+  background: rgba(204,136,0,0.12);
+  color: #cc8800;
+}
+.unit-state-badge.charge-failed {
+  display: inline-flex;
+  border-color: #882020;
+  background: rgba(136,32,32,0.12);
+  color: #882020;
+}

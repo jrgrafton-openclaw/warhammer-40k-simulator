@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.3a — Orbital Strike v2</title>
+  <link rel="stylesheet" href="../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../shared/tokens/typography.css">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ HOLOGRAPHIC MAP BACKGROUND ═══ -->
+<div class="holo-map">
+  <div class="holo-grid"></div>
+  <div class="holo-scanlines"></div>
+  <div class="holo-vignette"></div>
+  <div class="holo-grain"></div>
+
+  <!-- Deployment zones -->
+  <div class="dz dz-imp"><span class="dz-label">IMPERIUM<br>DEPLOYMENT</span></div>
+  <div class="dz dz-ork"><span class="dz-label">ORK<br>DEPLOYMENT</span></div>
+
+  <!-- Objectives -->
+  <span class="obj" style="left:35%; top:25%"></span>
+  <span class="obj" style="left:65%; top:25%"></span>
+  <span class="obj obj-centre" style="left:50%; top:50%"></span>
+  <span class="obj" style="left:35%; top:75%"></span>
+  <span class="obj" style="left:65%; top:75%"></span>
+
+  <!-- Terrain outlines -->
+  <div class="terrain terrain-ruin" style="left:28%;top:18%;width:80px;height:50px"><span class="terrain-tag">RUIN ALPHA</span></div>
+  <div class="terrain terrain-ruin" style="left:68%;top:70%;width:70px;height:55px"><span class="terrain-tag">RUIN BETA</span></div>
+  <div class="terrain terrain-crate" style="left:45%;top:40%;width:40px;height:30px"><span class="terrain-tag">CRATES</span></div>
+  <div class="terrain terrain-ruin" style="left:50%;top:60%;width:90px;height:40px"><span class="terrain-tag">CHAPEL</span></div>
+  <div class="terrain terrain-crate" style="left:38%;top:52%;width:35px;height:25px"><span class="terrain-tag">BARRELS</span></div>
+
+  <!-- Compass -->
+  <div class="compass"><span class="compass-n">N</span></div>
+  <div class="map-dims">60" × 44"</div>
+</div>
+
+<!-- ═══ NAVIGATION CHROME ═══ -->
+<a class="nav-back" href="../../start-game/index.html">← Back</a>
+<a class="nav-mockups" href="../../index.html#battle-forge">← Mockups</a>
+<div class="version-badge">v0.3a · Orbital Strike v2</div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="os-header anim-fade">
+  <div class="os-title">Battle Forge</div>
+  <div class="os-subtitle">Orbital Command · Strike Force Configuration</div>
+</header>
+
+<!-- ═══ ARMY SELECTION — CENTRED FACTION CARDS ═══ -->
+<div class="army-select anim-cards">
+
+  <!-- YOUR FORCES -->
+  <div class="faction-card faction-imp" onclick="openBrowser('imp')">
+    <div class="card-corner tl"></div>
+    <div class="card-corner tr"></div>
+    <div class="card-corner bl"></div>
+    <div class="card-corner br"></div>
+    <div class="card-tag imp-tag">YOUR FORCES</div>
+    <div class="card-icon">⚜</div>
+    <div class="card-name">Adeptus Custodes</div>
+    <div class="card-sub">Shield Host</div>
+    <div class="card-pts">1985 / 2000 pts</div>
+    <div class="card-hint">Click to change faction</div>
+  </div>
+
+  <!-- VS DIVIDER -->
+  <div class="vs-divider">
+    <span class="vs-text">VS</span>
+  </div>
+
+  <!-- ENEMY FORCES -->
+  <div class="faction-card faction-ork" onclick="openBrowser('ork')">
+    <div class="card-corner tl"></div>
+    <div class="card-corner tr"></div>
+    <div class="card-corner bl"></div>
+    <div class="card-corner br"></div>
+    <div class="card-tag ork-tag">ENEMY FORCES</div>
+    <div class="card-icon">☠</div>
+    <div class="card-name">Orks</div>
+    <div class="card-sub">Waaagh! Tribe</div>
+    <div class="card-pts">1960 / 2000 pts</div>
+    <div class="card-hint">Click to change faction</div>
+  </div>
+</div>
+
+<!-- ═══ EXPANDABLE ROSTERS ═══ -->
+<div class="roster-panels anim-cards-delay">
+
+  <div class="roster-panel roster-imp">
+    <button class="roster-toggle" onclick="toggleRoster('imp')">
+      <span class="roster-toggle-icon" id="roster-icon-imp">▸</span>
+      <span>Custodes Roster</span>
+      <span class="roster-count">13 units · 45 models</span>
+    </button>
+    <div class="roster-list" id="roster-imp" style="display:none">
+      <div class="ru"><span class="ru-name">Blade Champion</span><span class="ru-meta">×2 · 120pts ea</span></div>
+      <div class="ru"><span class="ru-name">Custodian Guard</span><span class="ru-meta">×4 · 5mdl · 190pts ea</span></div>
+      <div class="ru"><span class="ru-name">Allarus Custodians</span><span class="ru-meta">3mdl · 165pts</span></div>
+      <div class="ru"><span class="ru-name">Allarus Custodians</span><span class="ru-meta">2mdl · 110pts</span></div>
+      <div class="ru"><span class="ru-name">Prosecutors</span><span class="ru-meta">×2 · 5mdl · 85pts ea</span></div>
+      <div class="ru"><span class="ru-name">Caladius Grav-tank</span><span class="ru-meta">×2 · 215pts ea</span></div>
+      <div class="ru"><span class="ru-name">Inquisitor Draxus</span><span class="ru-meta">1mdl · 95pts</span></div>
+    </div>
+  </div>
+
+  <div class="roster-panel roster-ork">
+    <button class="roster-toggle" onclick="toggleRoster('ork')">
+      <span class="roster-toggle-icon" id="roster-icon-ork">▸</span>
+      <span>Orks Roster</span>
+      <span class="roster-count">16 units · 75 models</span>
+    </button>
+    <div class="roster-list" id="roster-ork" style="display:none">
+      <div class="ru"><span class="ru-name">Warboss</span><span class="ru-meta">1mdl · 90pts</span></div>
+      <div class="ru"><span class="ru-name">Boss Nob</span><span class="ru-meta">1mdl · 95pts</span></div>
+      <div class="ru"><span class="ru-name">Boyz Mob</span><span class="ru-meta">×2 · 10mdl · 150pts ea</span></div>
+      <div class="ru"><span class="ru-name">Mekboy</span><span class="ru-meta">1mdl · 75pts</span></div>
+      <div class="ru"><span class="ru-name">Nobz Mob</span><span class="ru-meta">×2 · 5mdl · 115pts ea</span></div>
+      <div class="ru"><span class="ru-name">Gretchin</span><span class="ru-meta">×2 · 10mdl · 50pts ea</span></div>
+      <div class="ru"><span class="ru-name">Deff Dread</span><span class="ru-meta">1mdl · 150pts</span></div>
+      <div class="ru"><span class="ru-name">Battlewagon</span><span class="ru-meta">1mdl · 185pts</span></div>
+      <div class="ru"><span class="ru-name">Lootas</span><span class="ru-meta">5mdl · 100pts</span></div>
+      <div class="ru"><span class="ru-name">Stormboyz</span><span class="ru-meta">5mdl · 80pts</span></div>
+      <div class="ru"><span class="ru-name">Weirdboy</span><span class="ru-meta">1mdl · 70pts</span></div>
+      <div class="ru"><span class="ru-name">Meganobz</span><span class="ru-meta">3mdl · 200pts</span></div>
+      <div class="ru"><span class="ru-name">Trukk</span><span class="ru-meta">1mdl · 65pts</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM SECTION ═══ -->
+<div class="bottom-section anim-rise">
+
+  <!-- Map selector -->
+  <div class="map-select">
+    <div class="section-label">MAP</div>
+    <div class="map-thumbs">
+      <div class="map-thumb map-thumb-active">
+        <div class="thumb-visual thumb-ha"></div>
+        <div class="thumb-name">Hammer &amp; Anvil</div>
+        <div class="thumb-info">60" × 44" · Layout 1</div>
+      </div>
+      <div class="map-thumb map-thumb-disabled">
+        <div class="thumb-visual thumb-sd"></div>
+        <div class="thumb-name">Search &amp; Destroy</div>
+        <div class="thumb-info">Coming Soon</div>
+      </div>
+      <div class="map-thumb map-thumb-disabled">
+        <div class="thumb-visual thumb-se"></div>
+        <div class="thumb-name">Sweeping Engagement</div>
+        <div class="thumb-info">Coming Soon</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings row -->
+  <div class="settings-row">
+    <div class="setting-group">
+      <div class="section-label">MISSION</div>
+      <div class="setting-value">Take and Hold</div>
+    </div>
+    <div class="setting-divider"></div>
+    <div class="setting-group">
+      <div class="section-label">MODE</div>
+      <div class="mode-toggle">
+        <button class="mode-btn mode-active">Single Player</button>
+        <button class="mode-btn mode-disabled" disabled>Multiplayer <span class="soon-tag">Soon</span></button>
+      </div>
+    </div>
+    <div class="setting-divider"></div>
+    <div class="setting-chips">
+      <span class="chip chip-dis">Turn 5</span>
+      <span class="chip chip-dis">Roll-off</span>
+      <span class="chip chip-dis">Strike Force</span>
+    </div>
+  </div>
+
+  <!-- BEGIN BATTLE -->
+  <a class="begin-btn" href="../../phases/deploy/v0.4/index.html">BEGIN BATTLE</a>
+</div>
+
+<!-- ═══ FACTION BROWSER OVERLAY ═══ -->
+<div class="faction-overlay" id="factionOverlay">
+  <div class="overlay-backdrop" onclick="closeBrowser()"></div>
+  <div class="overlay-content">
+    <div class="overlay-header">
+      <div class="overlay-title" id="overlayTitle">SELECT FACTION</div>
+      <button class="overlay-close" onclick="closeBrowser()">✕</button>
+    </div>
+    <div class="faction-grid">
+      <div class="fg-card fg-active" data-faction="custodes" onclick="selectFaction(this)">
+        <div class="fg-icon">⚜</div>
+        <div class="fg-name">Adeptus Custodes</div>
+        <div class="fg-pts">2000 pts</div>
+        <div class="fg-check">✓</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">🦅</div>
+        <div class="fg-name">Space Marines</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">⛧</div>
+        <div class="fg-name">Chaos Marines</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-active" data-faction="orks" onclick="selectFaction(this)">
+        <div class="fg-icon">☠</div>
+        <div class="fg-name">Orks</div>
+        <div class="fg-pts">2000 pts</div>
+        <div class="fg-check">✓</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">☽</div>
+        <div class="fg-name">Aeldari</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">🕷</div>
+        <div class="fg-name">Tyranids</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">☥</div>
+        <div class="fg-name">Necrons</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">⬡</div>
+        <div class="fg-name">T'au Empire</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">☣</div>
+        <div class="fg-name">Death Guard</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-locked">
+        <div class="fg-icon">✦</div>
+        <div class="fg-name">Thousand Sons</div>
+        <div class="fg-lock">Coming Soon</div>
+      </div>
+      <div class="fg-card fg-upload fg-locked">
+        <div class="fg-icon">⬆</div>
+        <div class="fg-name">Upload Army List</div>
+        <div class="fg-lock">.ros · Coming Soon</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Error display ── */
+  window.onerror = function(msg, src, line) {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;bottom:8px;right:8px;background:#cc2020;color:#fff;padding:8px 14px;font:12px/1.4 Rajdhani,sans-serif;border-radius:4px;z-index:9999;max-width:400px';
+    d.textContent = msg + ' (line ' + line + ')';
+    document.body.appendChild(d);
+  };
+
+  /* ── Roster toggle ── */
+  function toggleRoster(id) {
+    var list = document.getElementById('roster-' + id);
+    var icon = document.getElementById('roster-icon-' + id);
+    if (list.style.display === 'none') {
+      list.style.display = 'block';
+      icon.textContent = '▾';
+    } else {
+      list.style.display = 'none';
+      icon.textContent = '▸';
+    }
+  }
+
+  /* ── Faction browser overlay ── */
+  var currentSlot = null; // 'imp' or 'ork'
+
+  function openBrowser(slot) {
+    currentSlot = slot;
+    var overlay = document.getElementById('factionOverlay');
+    var title = document.getElementById('overlayTitle');
+    title.textContent = slot === 'imp' ? 'SELECT YOUR FORCES' : 'SELECT ENEMY FORCES';
+    overlay.classList.add('open');
+  }
+
+  function closeBrowser() {
+    document.getElementById('factionOverlay').classList.remove('open');
+    currentSlot = null;
+  }
+
+  function selectFaction(el) {
+    if (el.classList.contains('fg-locked')) return;
+    // Visual feedback — brief flash
+    el.style.outline = '2px solid var(--imp)';
+    setTimeout(function() { el.style.outline = ''; }, 300);
+    closeBrowser();
+  }
+
+  // Close overlay on Escape
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeBrowser();
+  });
+
+  // Expose for inline onclick
+  window.toggleRoster = toggleRoster;
+  window.openBrowser = openBrowser;
+  window.closeBrowser = closeBrowser;
+  window.selectFaction = selectFaction;
+</script>
+</body>
+</html>

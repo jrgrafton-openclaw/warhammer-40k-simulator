@@ -1,0 +1,692 @@
+/* ═══════════════════════════════════════════════
+   THE BRIEFING — Battle Forge v0.4b
+   Military briefing document, progressive disclosure
+   ═══════════════════════════════════════════════ */
+
+/* ── Background & Void ── */
+html, body { overflow: auto; height: auto; min-height: 100vh; }
+
+.briefing {
+  position: relative;
+  min-height: 100vh;
+  background: #040608;
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+}
+
+/* Vignette */
+.briefing::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 30%, #040608 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* Scanlines */
+.briefing::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0, transparent 3px,
+    rgba(0, 180, 255, 0.008) 3px, rgba(0, 180, 255, 0.008) 4px
+  );
+  pointer-events: none; z-index: 1;
+}
+
+/* Grain */
+.grain {
+  position: fixed; inset: 0; z-index: 1;
+  opacity: 0.03; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ── Embers ── */
+.embers {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+
+.ember {
+  position: absolute;
+  bottom: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ember-color, #ff8c20) 0%, transparent 70%);
+  animation: float-up var(--dur, 8s) var(--delay, 0s) linear infinite;
+  opacity: 0;
+}
+
+@keyframes float-up {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10%  { opacity: var(--peak, 0.4); }
+  70%  { opacity: var(--peak, 0.4); }
+  100% { transform: translateY(calc(-100vh - 40px)) translateX(var(--drift, 20px)) scale(0.3); opacity: 0; }
+}
+
+/* ── Nav Chrome ── */
+.nav-back, .nav-mockups {
+  position: fixed; top: 16px; z-index: 100;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  letter-spacing: 0.5px;
+}
+.nav-back { left: 20px; }
+.nav-mockups { right: 20px; }
+.nav-back:hover, .nav-mockups:hover { color: var(--text-primary); }
+
+.version-badge {
+  position: fixed; bottom: 12px; left: 16px; z-index: 100;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Column Layout ── */
+.column {
+  position: relative; z-index: 10;
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 52px 24px 120px;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: fade-in 0.4s 0.15s ease forwards;
+}
+
+.header-title {
+  font: 400 36px/1 'Anton', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: 0 0 40px rgba(0, 212, 255, 0.12);
+}
+
+.header-sub {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ── Section Cards ── */
+.section {
+  position: relative;
+  background: rgba(10, 16, 22, 0.92);
+  border: 1px solid var(--border);
+  padding: 24px;
+  margin-bottom: 20px;
+  transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Corner brackets */
+.section::before, .section::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border-color: var(--text-muted);
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0.3;
+}
+.section::before {
+  top: -1px; left: -1px;
+  border-width: 1px 0 0 1px;
+}
+.section::after {
+  bottom: -1px; right: -1px;
+  border-width: 0 1px 1px 0;
+}
+
+.section-label {
+  font: 400 12px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  margin-bottom: 16px;
+}
+
+/* Section entrance animation */
+.section.sec-1 {
+  opacity: 0; transform: translateY(16px);
+  animation: slide-up 0.35s 0.1s ease forwards;
+}
+.section.sec-2,
+.section.sec-3,
+.section.sec-4 {
+  opacity: 0.35;
+  filter: brightness(0.6);
+  pointer-events: none;
+  transform: translateY(0);
+}
+.section.unlocked {
+  opacity: 1 !important;
+  filter: brightness(1) !important;
+  pointer-events: auto !important;
+  animation: unlock 0.5s ease forwards;
+}
+
+@keyframes slide-up {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes unlock {
+  from { opacity: 0.35; filter: brightness(0.6); transform: translateY(12px); }
+  to   { opacity: 1; filter: brightness(1); transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  to { opacity: 1; }
+}
+
+/* ── Empty Army Slot ── */
+.army-slot-empty {
+  border: 1px dashed var(--border);
+  min-height: 160px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.25s;
+  padding: 32px 20px;
+}
+
+.army-slot-empty:hover {
+  border-color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.slot-plus {
+  font-size: 48px;
+  line-height: 1;
+  color: var(--imp);
+  font-weight: 300;
+  transition: transform 0.2s;
+}
+
+.army-slot-empty:hover .slot-plus { transform: scale(1.1); }
+
+.slot-plus.ork-plus { color: var(--ork); }
+
+.slot-title {
+  font: 400 16px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+}
+
+.slot-hint {
+  font: 500 11px/1.4 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 300px;
+}
+
+/* ── Selected Army Card ── */
+.army-card {
+  display: none;
+  border-left: 3px solid var(--imp);
+  padding-left: 16px;
+}
+
+.army-card.ork-card { border-left-color: var(--ork); }
+
+.army-card.visible { display: block; }
+
+.army-faction-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.army-faction-info {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.army-emblem {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.army-faction-name {
+  font: 400 20px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.imp-text { color: var(--imp); }
+.ork-text { color: var(--ork); }
+
+.army-change-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none; border: none;
+  transition: color 0.2s;
+  text-transform: uppercase;
+}
+.army-change-btn:hover { color: var(--text-primary); }
+
+/* Army dropdown */
+.army-select-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+
+.army-dropdown {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  padding: 8px 12px;
+  letter-spacing: 0.5px;
+  cursor: default;
+  appearance: none;
+}
+
+/* Stats bar */
+.army-stats {
+  display: flex; gap: 16px;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.stat-val { color: var(--text-sec); }
+
+/* Roster list */
+.roster-list { padding: 0; }
+
+.roster-row {
+  display: flex; align-items: center;
+  padding: 4px 0;
+  font: 500 12px/1.4 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  gap: 8px;
+}
+
+.roster-row:hover { background: rgba(255, 255, 255, 0.01); }
+.roster-unit-name { flex: 1; color: var(--text-primary); }
+.roster-unit-qty { color: var(--text-muted); font-size: 11px; }
+.roster-unit-pts { color: var(--text-muted); font-size: 11px; min-width: 44px; text-align: right; }
+
+/* ── Battlefield Section ── */
+.battlefield-split {
+  display: flex; gap: 16px;
+  margin-bottom: 16px;
+}
+
+.bf-panel {
+  flex: 1;
+}
+
+.bf-panel-label {
+  font: 400 11px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+/* Map card */
+.map-card {
+  border: 1px solid var(--text-muted);
+  padding: 14px;
+  background: var(--bg-surface);
+  cursor: default;
+}
+
+.map-card-name {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.map-card-size {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.map-card-terrain {
+  margin-top: 10px;
+  height: 48px;
+  background: var(--bg-raised);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dis);
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+}
+
+.map-coming-soon {
+  opacity: 0.3;
+  margin-top: 8px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 1px;
+}
+
+/* Deployment layout cards */
+.deploy-options {
+  display: flex; flex-direction: column; gap: 8px;
+}
+
+.deploy-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  cursor: default;
+  transition: all 0.2s;
+}
+
+.deploy-card.active {
+  border-color: var(--text-muted);
+  background: var(--bg-raised);
+}
+
+.deploy-card.coming-soon {
+  opacity: 0.3;
+}
+
+.deploy-diagram {
+  width: 40px; height: 28px;
+  border: 1px solid var(--text-dis);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.deploy-diagram .zone {
+  position: absolute;
+  top: 2px; bottom: 2px;
+}
+
+.deploy-diagram .zone-l { left: 2px; width: 30%; background: rgba(0, 212, 255, 0.15); border: 1px solid rgba(0, 212, 255, 0.3); }
+.deploy-diagram .zone-r { right: 2px; width: 30%; background: rgba(255, 64, 32, 0.12); border: 1px solid rgba(255, 64, 32, 0.25); }
+.deploy-diagram .zone-t { top: 2px; left: 2px; right: 2px; height: 30%; background: rgba(0, 212, 255, 0.15); border: 1px solid rgba(0, 212, 255, 0.3); }
+.deploy-diagram .zone-b { bottom: 2px; left: 2px; right: 2px; height: 30%; background: rgba(255, 64, 32, 0.12); border: 1px solid rgba(255, 64, 32, 0.25); }
+
+.deploy-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+}
+
+.deploy-card.coming-soon .deploy-name { color: var(--text-dis); }
+
+.deploy-badge {
+  margin-left: auto;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-dis);
+  text-transform: uppercase;
+}
+
+/* Large deployment preview */
+.deploy-preview {
+  margin-top: 16px;
+  height: 100px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  position: relative;
+  overflow: hidden;
+}
+
+.deploy-preview .zone-left {
+  position: absolute;
+  top: 8px; bottom: 8px; left: 8px;
+  width: 25%;
+  border: 1px solid rgba(0, 212, 255, 0.25);
+  background: rgba(0, 212, 255, 0.06);
+}
+
+.deploy-preview .zone-right {
+  position: absolute;
+  top: 8px; bottom: 8px; right: 8px;
+  width: 25%;
+  border: 1px solid rgba(255, 64, 32, 0.2);
+  background: rgba(255, 64, 32, 0.04);
+}
+
+.deploy-preview .zone-label {
+  position: absolute;
+  top: 50%; transform: translateY(-50%);
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+.deploy-preview .zone-label.lbl-l { left: 4%; color: var(--imp); }
+.deploy-preview .zone-label.lbl-r { right: 4%; color: var(--ork); }
+
+.deploy-preview .midline {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  border-left: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+/* ── Mission & Settings Section ── */
+.mission-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mission-label {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mission-value {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+
+.settings-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.setting-chip {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 0.5px;
+}
+
+.mode-row {
+  display: flex; gap: 0;
+  border: 1px solid var(--border);
+  width: fit-content;
+  overflow: hidden;
+}
+
+.mode-btn {
+  padding: 8px 18px;
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  background: transparent;
+  color: var(--text-dis);
+  cursor: default;
+  transition: all 0.2s;
+}
+
+.mode-btn.active {
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--imp);
+}
+
+.mode-btn.coming-soon {
+  opacity: 0.3;
+}
+
+/* ── BEGIN BATTLE (sticky footer) ── */
+.begin-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 50;
+  padding: 16px 24px 20px;
+  background: linear-gradient(to top, #040608 60%, transparent);
+  display: flex; justify-content: center;
+  margin-top: -40px;
+}
+
+.begin-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; max-width: 700px; height: 56px;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px; text-transform: uppercase;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none;
+}
+.begin-btn:hover { background: #18eaff; box-shadow: 0 0 30px rgba(0,212,255,0.4); }
+.begin-btn:active { background: var(--imp-dim); }
+.begin-btn.disabled {
+  opacity: 0.3; pointer-events: none; cursor: not-allowed;
+  background: var(--text-dis); border-color: var(--text-dis);
+  color: var(--bg-primary);
+}
+
+/* ── Faction Browser Overlay ── */
+.faction-overlay {
+  position: fixed; inset: 0;
+  z-index: 200;
+  background: rgba(4, 6, 8, 0.92);
+  backdrop-filter: blur(16px);
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.faction-overlay.open {
+  opacity: 1; pointer-events: auto;
+}
+
+.faction-browser {
+  max-width: 520px; width: 90%;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.faction-overlay.open .faction-browser {
+  transform: scale(1) translateY(0);
+}
+
+.browser-title {
+  font: 400 18px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-sec);
+  margin-bottom: 20px;
+}
+
+.browser-close {
+  position: absolute; top: 24px; right: 24px;
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  cursor: pointer; background: none; border: none;
+  letter-spacing: 1px;
+  transition: color 0.2s;
+}
+.browser-close:hover { color: var(--text-primary); }
+
+.browser-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.browser-tile {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 18px 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 110px;
+}
+
+.browser-tile:hover:not(.locked) {
+  border-color: var(--text-muted);
+  background: var(--bg-raised);
+  transform: translateY(-2px);
+}
+
+.browser-tile.locked {
+  opacity: 0.3; cursor: default;
+}
+
+.browser-tile-emblem {
+  font-size: 32px; line-height: 1;
+  margin-bottom: 8px;
+}
+
+.browser-tile-name {
+  font: 600 11px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  text-align: center;
+}
+
+.browser-tile-sub {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+
+.browser-tile.locked .browser-tile-name { color: var(--text-dis); }
+
+.browser-tile-lock {
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-dis);
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+/* ── Responsive ── */
+@media (max-width: 740px) {
+  .column { padding: 52px 16px 120px; }
+  .header-title { font-size: 28px; letter-spacing: 4px; }
+  .battlefield-split { flex-direction: column; }
+  .browser-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .section { padding: 16px; }
+  .army-faction-name { font-size: 16px; }
+  .deploy-preview { height: 70px; }
+}

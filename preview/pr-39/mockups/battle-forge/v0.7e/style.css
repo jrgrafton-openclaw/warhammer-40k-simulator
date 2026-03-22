@@ -1,0 +1,901 @@
+/* ══════════════════════════════════════════════════════════════
+   Battle Forge v0.7a — Definitive
+   Full-screen battlefield, sliding side panels, centred dock
+══════════════════════════════════════════════════════════════ */
+
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--bg-primary); color: var(--text-primary); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   BATTLEFIELD — full viewport, behind everything
+══════════════════════════════════════════════════════════════ */
+.battlefield {
+  position: fixed; inset: 0; z-index: 0;
+  transition: filter 1.5s ease;
+  filter: brightness(0.5);
+  opacity: 0; animation: fade-in 0.5s ease-out 0s both;
+}
+.battlefield.bf-active { filter: brightness(0.75); }
+.battlefield.bf-full   { filter: brightness(1); }
+
+#battlefield-inner {
+  position: absolute; inset: 0;
+}
+
+/* Grid overlay */
+#battlefield-inner::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0px, transparent 11px, rgba(201,163,82,.025) 11px, rgba(201,163,82,.025) 12px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 11px, rgba(201,163,82,.025) 11px, rgba(201,163,82,.025) 12px),
+    repeating-linear-gradient(0deg, transparent 0px, transparent 59px, rgba(201,163,82,.055) 59px, rgba(201,163,82,.055) 60px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 59px, rgba(201,163,82,.055) 59px, rgba(201,163,82,.055) 60px);
+  pointer-events: none;
+}
+#bf-svg-terrain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+/* SVG zone styles */
+.deploy-zone-bg.imp-zone { fill: rgba(0,80,160,0.08); }
+.deploy-zone-bg.ork-zone { fill: rgba(255,64,32,0.08); }
+.nml-zone-bg { fill: rgba(0,0,0,0.12); }
+.deploy-zone-border.imp-border { stroke: rgba(0,212,255,0.2); stroke-width: 2; stroke-dasharray: 8 4; vector-effect: non-scaling-stroke; }
+.deploy-zone-border.ork-border { stroke: rgba(255,64,32,0.2); stroke-width: 2; stroke-dasharray: 8 4; vector-effect: non-scaling-stroke; }
+.deploy-zone-label { font-family: 'Anton', sans-serif; font-size: 18px; font-weight: 400; letter-spacing: 4px; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.deploy-zone-sublabel { font-family: 'Rajdhani', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 3px; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+.deploy-zone-label.imp-label, .deploy-zone-sublabel.imp-label { fill: rgba(0,212,255,0.1); }
+.deploy-zone-label.ork-label, .deploy-zone-sublabel.ork-label { fill: rgba(255,64,32,0.1); }
+.nml-label { font-family: 'Anton', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 4px; text-anchor: middle; dominant-baseline: middle; fill: rgba(201,163,82,0.06); pointer-events: none; }
+
+/* Objectives */
+.obj-hex-wrap { position: absolute; transform: translate(-50%,-50%); width: 84px; height: 97px; z-index: 4; opacity: 0; transition: opacity 1s ease; }
+.obj-hex-wrap.obj-visible { opacity: 1; }
+.obj-svg { display: block; overflow: visible; }
+.obj-bg { fill: rgba(8,12,16,.92); }
+.obj-ring { fill: none; stroke-width: 1.5; }
+.obj-n { font-family: 'Anton', sans-serif; font-size: 22px; font-weight: 400; text-anchor: middle; dominant-baseline: central; }
+.obj-l { font-family: 'Rajdhani', sans-serif; font-size: 7px; font-weight: 700; letter-spacing: 2.5px; text-anchor: middle; dominant-baseline: central; }
+.obj-hex-wrap.neutral .obj-ring { stroke: rgba(74,96,128,.55); }
+.obj-hex-wrap.neutral .obj-n { fill: var(--text-sec); }
+.obj-hex-wrap.neutral .obj-l { fill: var(--text-dis); }
+
+/* Atmospheric overlays */
+.bf-vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.6) 100%);
+}
+.bf-scanlines {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: repeating-linear-gradient(
+    0deg, transparent 0, transparent 2px,
+    rgba(0,212,255,0.012) 2px, rgba(0,212,255,0.012) 4px
+  );
+}
+.bf-grain {
+  position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  opacity: 0.025;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Scanning line */
+.scan-line {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 6;
+  overflow: hidden;
+}
+.scan-line::before {
+  content: ''; position: absolute; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--imp), transparent);
+  opacity: 0.15;
+  animation: scan-sweep 12s linear 1.5s infinite;
+}
+@keyframes scan-sweep { 0% { top: -2px; } 100% { top: 100%; } }
+
+/* Ambient glow */
+.battlefield::after {
+  content: ''; position: absolute; inset: 0; z-index: 6;
+  background: radial-gradient(circle at 50% 45%, rgba(0,212,255,0.03) 0%, transparent 60%);
+  animation: glow-pulse 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes glow-pulse { 0% { opacity: .5; } 100% { opacity: 1; } }
+
+
+/* ══════════════════════════════════════════════════════════════
+   HEADER — centred, above battlefield
+══════════════════════════════════════════════════════════════ */
+.os-header {
+  position: fixed; top: 24px;
+  left: 50%; transform: translateX(-50%);
+  z-index: 30; text-align: center;
+  pointer-events: none;
+  animation: anim-fade-down 0.8s ease-out 0.2s both;
+}
+.os-title {
+  font: 700 32px/1 'Anton', sans-serif;
+  color: var(--text-primary); letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(0,212,255,0.25);
+}
+.os-subtitle {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 4px;
+  text-transform: uppercase; margin-top: 6px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FACTION CARDS — centred floating over battlefield
+══════════════════════════════════════════════════════════════ */
+.faction-cards {
+  position: fixed; z-index: 20;
+  top: 80px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; align-items: center; justify-content: center;
+  gap: 24px;
+  animation: cards-in 0.7s cubic-bezier(0.22,1,0.36,1) 0.5s both;
+}
+
+.faction-card {
+  position: relative; width: 240px; padding: 24px 20px 18px;
+  background: rgba(10,16,22,0.88);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.25s;
+  text-align: center;
+}
+.faction-card:hover {
+  background: rgba(20,28,42,0.9);
+  border-color: var(--text-muted);
+  transform: translateY(-2px);
+}
+
+/* Card corner brackets */
+.card-corner {
+  position: absolute; width: 14px; height: 14px;
+  pointer-events: none;
+}
+.card-corner.tl { top: -1px; left: -1px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.card-corner.tr { top: -1px; right: -1px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.card-corner.bl { bottom: -1px; left: -1px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.card-corner.br { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+.card-imp .card-corner { border-color: var(--imp); }
+.card-ork .card-corner { border-color: var(--ork); }
+.card-empty .card-corner { border-color: rgba(26,37,53,0.5); }
+.card-empty.card-imp .card-corner { border-color: rgba(0,212,255,0.15); }
+.card-empty.card-ork .card-corner { border-color: rgba(255,64,32,0.15); }
+.card-empty.card-imp:hover .card-corner { border-color: rgba(0,212,255,0.4); }
+.card-empty.card-ork:hover .card-corner { border-color: rgba(255,64,32,0.4); }
+
+.card-tag {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.card-tag-imp { color: var(--imp-dim); }
+.card-tag-ork { color: var(--ork-dim); }
+
+/* Empty card */
+.card-empty { border-style: dashed; }
+.card-empty-plus {
+  width: 48px; height: 48px; margin: 0 auto 10px;
+  display: flex; align-items: center; justify-content: center;
+  font: 300 32px/1 'Rajdhani', sans-serif;
+  border: 1.5px dashed var(--border); border-radius: 4px;
+}
+.card-imp .card-empty-plus {
+  color: var(--imp); border-color: rgba(0,212,255,0.2);
+  animation: plus-pulse-imp 3s ease-in-out infinite;
+}
+.card-ork .card-empty-plus {
+  color: var(--ork); border-color: rgba(255,64,32,0.2);
+  animation: plus-pulse-ork 3s ease-in-out infinite;
+}
+@keyframes plus-pulse-imp {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 16px rgba(0,212,255,0.15); }
+}
+@keyframes plus-pulse-ork {
+  0%,100% { box-shadow: none; }
+  50% { box-shadow: 0 0 16px rgba(255,64,32,0.15); }
+}
+
+.card-empty-label {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-sec);
+}
+.card-empty-sub {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 5px;
+}
+
+/* Filled card */
+.card-filled-icon {
+  font-size: 36px; line-height: 1; margin-bottom: 8px;
+}
+.card-imp .card-filled-icon { filter: drop-shadow(0 0 12px rgba(0,212,255,0.3)); }
+.card-ork .card-filled-icon { filter: drop-shadow(0 0 12px rgba(255,64,32,0.3)); }
+.card-filled-name {
+  font: 700 16px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.card-filled-sub {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); margin-top: 3px;
+}
+.card-filled-pts {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--gold); margin-top: 8px; letter-spacing: 1px;
+}
+.card-filled-change {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 10px;
+  cursor: pointer; transition: color 0.2s;
+}
+.faction-card:hover .card-filled-change { color: var(--text-sec); }
+
+/* Card compact state when panel slides in — stays visible */
+.faction-card.card-docking {
+  width: 180px; padding: 10px 12px 8px;
+  transition: all 0.4s ease;
+}
+.faction-card.card-docking .card-filled-icon { font-size: 20px; margin-bottom: 4px; }
+.faction-card.card-docking .card-filled-name { font-size: 12px; }
+.faction-card.card-docking .card-filled-sub { display: none; }
+.faction-card.card-docking .card-filled-pts { font-size: 10px; margin-top: 4px; }
+.faction-card.card-docking .card-filled-change { margin-top: 6px; }
+
+/* VS divider */
+.vs-divider {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  position: relative;
+}
+.vs-text { display: none; }
+.vs-divider::before {
+  content: '';
+  width: 18px; height: 18px;
+  border: 1.5px solid var(--border);
+  transform: rotate(45deg);
+  transition: all 0.6s ease;
+}
+.vs-divider.vs-active::before {
+  border-color: var(--imp);
+  box-shadow: 0 0 12px rgba(0,212,255,0.3), inset 0 0 6px rgba(0,212,255,0.1);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   SIDE PANELS — hidden by default, slide in on selection
+══════════════════════════════════════════════════════════════ */
+.side-panel {
+  position: fixed; top: 0; bottom: 0; width: 260px;
+  z-index: 10;
+  background: rgba(10,16,22,0.92);
+  backdrop-filter: blur(20px) saturate(1.2);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transition: transform 0.5s cubic-bezier(0.22,1,0.36,1);
+}
+.side-panel-left {
+  left: 0;
+  border-right: 1px solid var(--border);
+  transform: translateX(-100%);
+}
+.side-panel-right {
+  right: 0;
+  border-left: 1px solid var(--border);
+  transform: translateX(100%);
+}
+
+/* Slide in when filled */
+.side-panel-left.panel-filled  { transform: translateX(0); border-top: 2px solid var(--imp); }
+.side-panel-right.panel-filled { transform: translateX(0); border-top: 2px solid var(--ork); }
+
+/* Corner brackets — bottom only (top has faction-color border) */
+.panel-bracket {
+  position: absolute; width: 14px; height: 14px;
+  pointer-events: none; z-index: 2;
+}
+.panel-bracket.tl, .panel-bracket.tr { display: none; }
+.panel-bracket.bl { bottom: -1px; left: -1px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.panel-bracket.br { bottom: -1px; right: -1px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+.side-panel-left .panel-bracket  { border-color: var(--imp); }
+.side-panel-right .panel-bracket { border-color: var(--ork); }
+
+/* Filled panel header */
+.panel-filled-content { display: flex; flex-direction: column; height: 100%; }
+
+.panel-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-header-top {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 6px;
+}
+.panel-faction-icon {
+  font-size: 32px; line-height: 1;
+}
+.side-panel-left .panel-faction-icon  { filter: drop-shadow(0 0 12px rgba(0,212,255,0.3)); }
+.side-panel-right .panel-faction-icon { filter: drop-shadow(0 0 12px rgba(255,64,32,0.3)); }
+
+.panel-header-text { flex: 1; min-width: 0; }
+.panel-faction-name {
+  font: 700 14px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.panel-army-name {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); margin-top: 2px;
+}
+
+.panel-stats {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 0.5px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(26,37,53,0.5);
+}
+
+/* Roster list */
+.panel-roster {
+  flex: 1; overflow-y: auto;
+  padding: 4px 0;
+}
+.panel-roster::-webkit-scrollbar { width: 3px; }
+.panel-roster::-webkit-scrollbar-thumb { background: var(--border); }
+
+.ru {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 16px;
+  border-bottom: 1px solid rgba(26,37,53,0.5);
+}
+.ru:last-child { border-bottom: none; }
+.ru-name {
+  font: 500 12px/1.3 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+}
+.ru-meta {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); white-space: nowrap;
+}
+
+/* Change faction link at bottom of panel */
+.panel-change {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+.panel-change-btn {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 1px;
+  text-transform: uppercase;
+  background: none; border: none;
+  cursor: pointer; transition: color 0.2s;
+}
+.side-panel-left .panel-change-btn:hover  { color: var(--imp); }
+.side-panel-right .panel-change-btn:hover { color: var(--ork); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   NAVIGATION CHROME
+══════════════════════════════════════════════════════════════ */
+.nav-back, .nav-mockups {
+  position: fixed; z-index: 50;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); text-decoration: none;
+  letter-spacing: 1px; transition: color 0.2s;
+  opacity: 0; animation: fade-in 0.4s ease-out 0.8s both;
+}
+.nav-back:hover, .nav-mockups:hover { color: var(--imp); }
+.nav-back    { top: 14px; left: 16px; }
+.nav-mockups { top: 14px; right: 16px; }
+.version-badge {
+  position: fixed; bottom: 12px; left: 16px; z-index: 50;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 1px;
+  opacity: 0; animation: fade-in 0.4s ease-out 0.8s both;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BOTTOM DOCK — narrow, centred
+══════════════════════════════════════════════════════════════ */
+.bottom-dock {
+  position: fixed; z-index: 30;
+  bottom: 16px;
+  left: 50%; transform: translateX(-50%);
+  width: 700px; max-width: calc(100% - 32px);
+  display: flex; flex-direction: column; gap: 8px;
+  animation: rise-up 0.6s ease-out 0.7s both;
+}
+
+/* Row 1: Deployment Type + Layout */
+.dock-row1 {
+  display: flex; gap: 8px;
+}
+.dock-row1 > div { flex: 1; min-width: 0; }
+
+.dock-panel {
+  background: rgba(10,16,22,0.88);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--border);
+  padding: 10px 14px;
+}
+
+.dock-label {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+
+/* Deployment type thumbnails */
+.deploy-thumbs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.deploy-card {
+  flex: 0 0 auto; width: 50px; text-align: center;
+  cursor: pointer; padding: 3px;
+  border: 1px solid transparent; transition: all 0.2s;
+}
+.deploy-card:hover:not(.deploy-locked) { border-color: rgba(0,212,255,0.15); }
+.deploy-active { border-color: rgba(0,212,255,0.3) !important; background: rgba(0,212,255,0.04); }
+.deploy-locked { opacity: 0.3; cursor: not-allowed; }
+
+.deploy-thumb {
+  width: 100%; height: 24px;
+  background: rgba(8,12,16,0.9); border: 1px solid var(--border);
+  position: relative; overflow: hidden; margin-bottom: 2px;
+}
+.deploy-active .deploy-thumb { border-color: rgba(0,212,255,0.25); }
+.deploy-thumb-locked {
+  background: repeating-linear-gradient(
+    45deg, rgba(8,12,16,0.9), rgba(8,12,16,0.9) 3px,
+    rgba(26,37,53,0.2) 3px, rgba(26,37,53,0.2) 6px
+  );
+}
+.dt-zone { position: absolute; top: 0; bottom: 0; width: 22%; }
+.dt-imp { left: 0; background: rgba(0,212,255,0.15); border-right: 1px dashed rgba(0,212,255,0.3); }
+.dt-ork { right: 0; background: rgba(255,64,32,0.15); border-left: 1px dashed rgba(255,64,32,0.3); }
+
+.deploy-name {
+  font: 600 7px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-sec);
+}
+.deploy-active .deploy-name { color: var(--imp); }
+.deploy-locked .deploy-name { color: var(--text-dis); }
+.deploy-soon {
+  font: 600 6px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis); letter-spacing: 1px; text-transform: uppercase; margin-top: 1px;
+}
+
+/* Layout grid */
+.layout-grid {
+  display: flex; gap: 4px; flex-wrap: wrap;
+}
+.layout-cell {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  cursor: not-allowed; transition: all 0.2s;
+}
+.layout-cell.layout-active {
+  border-color: rgba(0,212,255,0.3);
+  background: rgba(0,212,255,0.04);
+  color: var(--imp);
+  cursor: pointer;
+}
+
+
+/* Row 2: Mission + Mode + Settings */
+.dock-row2 {
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(10,16,22,0.88);
+  backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid var(--border);
+  padding: 8px 16px;
+  min-height: 44px;
+}
+.setting-group {
+  display: flex; align-items: center; gap: 8px;
+}
+.setting-label {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.setting-value {
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 0.5px;
+}
+.setting-divider {
+  width: 1px; height: 28px;
+  background: var(--border); flex-shrink: 0;
+}
+
+.mode-toggle { display: flex; gap: 6px; }
+.mode-btn {
+  padding: 5px 12px; border: 1px solid var(--border);
+  background: var(--bg-surface); cursor: pointer;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 0.5px;
+  transition: all 0.2s; min-height: 30px;
+}
+.mode-active {
+  border-color: var(--imp-dim);
+  color: var(--imp);
+  background: rgba(0,212,255,0.06);
+}
+.mode-disabled {
+  opacity: 0.4; cursor: not-allowed; color: var(--text-muted);
+}
+.soon-tag {
+  font-size: 8px; color: var(--text-muted);
+  vertical-align: super; margin-left: 2px;
+}
+
+.setting-chips {
+  display: flex; gap: 6px; margin-left: auto;
+}
+.chip {
+  padding: 4px 10px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; text-transform: uppercase;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+}
+.chip-dis { color: var(--text-muted); opacity: 0.5; }
+
+
+/* Row 3: BEGIN BATTLE */
+.begin-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 48px;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px; text-transform: uppercase;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none;
+}
+.begin-btn:hover:not(.disabled) {
+  background: #18eaff;
+  box-shadow: 0 0 30px rgba(0,212,255,0.4);
+}
+.begin-btn:active:not(.disabled) {
+  background: var(--imp-dim);
+}
+.begin-btn.disabled {
+  opacity: 0.3; pointer-events: none; cursor: not-allowed;
+}
+/* Power-surge pulse on activation */
+@keyframes power-surge {
+  0% { box-shadow: 0 0 0 rgba(0,212,255,0); }
+  50% { box-shadow: 0 0 60px rgba(0,212,255,0.6), inset 0 0 20px rgba(255,255,255,0.2); }
+  100% { box-shadow: 0 0 0 rgba(0,212,255,0); }
+}
+.begin-btn.btn-surge {
+  animation: power-surge 0.5s ease-out;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   FACTION BROWSER OVERLAY
+══════════════════════════════════════════════════════════════ */
+.faction-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.faction-overlay.open {
+  opacity: 1; pointer-events: auto;
+}
+
+.overlay-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(4,6,8,0.88);
+  backdrop-filter: blur(8px);
+}
+
+.overlay-content {
+  position: relative; z-index: 1;
+  width: min(720px, calc(100% - 40px));
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 24px;
+  transform: scale(0.95);
+  transition: transform 0.25s;
+}
+.faction-overlay.open .overlay-content {
+  transform: scale(1);
+}
+.overlay-content::-webkit-scrollbar { width: 4px; }
+.overlay-content::-webkit-scrollbar-thumb { background: var(--border); }
+
+.overlay-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.overlay-title {
+  font: 700 20px/1 'Anton', sans-serif;
+  color: var(--text-primary); letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.overlay-close {
+  width: 36px; height: 36px;
+  background: none; border: 1px solid var(--border);
+  color: var(--text-sec); font-size: 16px;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.overlay-close:hover {
+  border-color: var(--ork); color: var(--ork);
+}
+
+/* Phase transitions */
+.overlay-phase { display: none; }
+.overlay-phase.phase-active { display: block; }
+
+/* Faction Grid */
+.faction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.fg-card {
+  position: relative;
+  padding: 20px 14px 16px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  text-align: center;
+  cursor: pointer; transition: all 0.2s;
+  min-height: 44px;
+  opacity: 0;
+  animation: card-pop 0.4s ease-out both;
+}
+.fg-card:hover:not(.fg-locked) {
+  border-color: var(--imp-dim);
+  background: var(--bg-selected);
+  transform: translateY(-2px);
+}
+.fg-locked {
+  opacity: 0; cursor: not-allowed;
+  animation: card-pop-dim 0.4s ease-out both;
+}
+@keyframes card-pop {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes card-pop-dim {
+  from { opacity: 0; transform: scale(0.9) translateY(8px); }
+  to   { opacity: 0.35; transform: scale(1) translateY(0); }
+}
+
+.fg-icon {
+  font-size: 28px; line-height: 1; margin-bottom: 8px;
+}
+.fg-card:not(.fg-locked) .fg-icon { filter: drop-shadow(0 0 10px rgba(0,212,255,0.25)); }
+.fg-locked .fg-icon { opacity: 0.4; }
+
+.fg-name {
+  font: 600 13px/1.2 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.fg-pts {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--gold); margin-top: 6px;
+}
+.fg-lock {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); margin-top: 6px;
+  letter-spacing: 0.5px;
+}
+.fg-locked .fg-name { color: var(--text-muted); }
+.fg-upload { border-style: dashed; }
+
+/* Phase 2: Army Selection */
+.phase2-back {
+  display: flex; align-items: center; gap: 6px;
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 1px;
+  text-transform: uppercase;
+  background: none; border: none; cursor: pointer;
+  padding: 0; margin-bottom: 20px; transition: color 0.2s;
+}
+.phase2-back:hover { color: var(--imp); }
+
+.phase2-header {
+  text-align: center; margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.phase2-icon {
+  font-size: 60px; line-height: 1; margin-bottom: 8px;
+  filter: drop-shadow(0 0 16px rgba(0,212,255,0.3));
+}
+.phase2-faction-name {
+  font: 400 20px/1 'Anton', sans-serif;
+  color: var(--text-primary); letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.phase2-faction-sub {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); letter-spacing: 2px;
+  text-transform: uppercase; margin-top: 6px;
+}
+
+.army-list {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.army-card {
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  cursor: pointer; transition: all 0.25s;
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 56px;
+}
+.army-card:hover:not(.army-locked) {
+  border-color: var(--imp-dim);
+  background: var(--bg-selected);
+  transform: translateX(4px);
+}
+.army-card:active:not(.army-locked) { background: rgba(0,212,255,0.08); }
+.army-locked { opacity: 0.35; cursor: not-allowed; }
+
+.army-card-left { display: flex; flex-direction: column; gap: 3px; }
+.army-card-name {
+  font: 600 15px/1 'Rajdhani', sans-serif;
+  color: var(--text-primary); letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.army-card-info {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); letter-spacing: 0.5px;
+}
+.army-card-pts {
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  color: var(--gold); letter-spacing: 1px;
+  white-space: nowrap;
+}
+.army-locked .army-card-name { color: var(--text-muted); }
+.army-locked .army-card-pts  { color: var(--text-dis); }
+.army-card-badge {
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis); letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.army-upload { border-style: dashed; justify-content: center; text-align: center; }
+.army-upload .army-card-left { align-items: center; }
+.army-upload-icon { font-size: 20px; margin-bottom: 2px; opacity: 0.5; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+══════════════════════════════════════════════════════════════ */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+@keyframes anim-fade-down {
+  from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes cards-in {
+  from { opacity: 0; transform: translateX(-50%) scale(0.92); }
+  to   { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+@keyframes rise-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(30px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   BATTLEFIELD EDGE FADE
+══════════════════════════════════════════════════════════════ */
+.bf-edge-fade {
+  position: fixed; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg,
+    rgba(8,12,16,1) 0%,
+    rgba(8,12,16,0.85) 10%,
+    rgba(8,12,16,0.4) 20%,
+    transparent 35%,
+    transparent 65%,
+    rgba(8,12,16,0.4) 80%,
+    rgba(8,12,16,0.85) 90%,
+    rgba(8,12,16,1) 100%
+  );
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   ROSTER COMPONENT (from shared/components/roster.css)
+══════════════════════════════════════════════════════════════ */
+.roster-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+.roster-scroll::-webkit-scrollbar { width: 2px; }
+.roster-scroll::-webkit-scrollbar-thumb { background: rgba(0,212,255,.07); }
+.faction-section { border-top: 1px solid var(--border); }
+.faction-header { display: flex; align-items: center; gap: 6px; padding: 7px 10px; cursor: pointer; user-select: none; }
+.faction-header:hover { background: rgba(255,255,255,.03); }
+.faction-band { width: 2px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+.faction-band.imp { background: var(--imp-dim); }
+.faction-band.ork { background: var(--ork-dim); }
+.faction-label { flex: 1; font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+.faction-label.imp { color: var(--imp); }
+.faction-label.ork { color: var(--ork); }
+.faction-chevron { font-size: 8px; color: var(--text-dis); }
+.faction-body { overflow: hidden; }
+.rail-unit { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-left: 2px solid transparent; border-bottom: 1px solid var(--border); transition: background .12s; }
+.rail-unit:hover { background: rgba(255,255,255,.04); border-left-color: var(--text-dis); }
+.ri { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ri.pl { background: var(--imp-tint); border: 1px solid var(--imp-dim); color: var(--imp); }
+.ri.en { background: var(--ork-tint); border: 1px solid var(--ork-dim); color: var(--ork); }
+.ri svg { width: 12px; height: 12px; }
+.rn { flex: 1; font: 500 13px/1 'Rajdhani', sans-serif; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc { font-size: 11px; font-weight: 600; color: var(--text-sec); flex-shrink: 0; }
+.ru-pts { font: 600 10px/1 'Rajdhani', sans-serif; color: var(--gold); flex-shrink: 0; margin-left: 2px; }
+/* Army abilities */
+.aa-section { border-top: 1px solid var(--border); }
+.aa-header { display: flex; align-items: center; gap: 5px; padding: 5px 10px; cursor: pointer; user-select: none; background: rgba(255,255,255,.02); font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; transition: color 0.15s; }
+.aa-header:hover { color: var(--text-sec); }
+.aa-chev { font-size: 8px; margin-left: auto; transition: transform 0.25s; }
+.aa-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+.aa-body.open { max-height: 300px; }
+.aa-row {
+  display: flex; align-items: center; padding: 5px 10px 5px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.03); gap: 6px; cursor: help;
+  transition: background 0.12s;
+}
+.aa-row:hover { background: rgba(255,255,255,.04); }
+.aa-name { font: 600 11px/1 'Rajdhani', sans-serif; color: var(--imp); flex: 1; text-transform: uppercase; }
+.aa-timing {
+  font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 1px;
+  padding: 2px 5px; background: rgba(255,255,255,.04);
+  border: 1px solid var(--text-dis); color: var(--text-muted);
+  text-transform: uppercase; white-space: nowrap;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   PANEL HEADER STATS
+══════════════════════════════════════════════════════════════ */
+.panel-stats-pts { color: var(--gold); }
+.panel-change-link {
+  font: 400 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); cursor: pointer;
+  transition: color 0.2s; margin-top: 4px;
+  letter-spacing: 0.5px;
+}
+.side-panel-left .panel-change-link:hover { color: var(--imp); }
+.side-panel-right .panel-change-link:hover { color: var(--ork); }
+
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .side-panel { width: 220px; }
+  .bottom-dock { width: 560px; }
+  .faction-card { width: 200px; padding: 18px 14px 14px; }
+  .setting-chips { display: none; }
+  .faction-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 700px) {
+  .side-panel { width: 180px; }
+  .bottom-dock { width: 100%; max-width: calc(100% - 32px); }
+  .faction-card { width: 170px; padding: 14px 10px 12px; }
+}

@@ -1,0 +1,240 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1b Game End — War Room Debrief
+   Data-dense, compact, no ceremony.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Dark backdrop ── */
+.game-end-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 6, 8, 0.82);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: backdrop-fade 0.4s ease-out;
+}
+
+@keyframes backdrop-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Debrief panel ── */
+.debrief-panel {
+  width: 480px;
+  max-width: 94vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: rgba(10, 16, 22, 0.96);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  backdrop-filter: blur(10px);
+  padding: 24px 28px 20px;
+  animation: panel-rise 0.35s ease-out 0.15s both;
+}
+
+@keyframes panel-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* scrollbar styling */
+.debrief-panel::-webkit-scrollbar { width: 4px; }
+.debrief-panel::-webkit-scrollbar-track { background: transparent; }
+.debrief-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Header ── */
+.debrief-header {
+  margin-bottom: 20px;
+}
+
+.debrief-title {
+  font: 400 32px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.debrief-title .imp {
+  color: var(--imp);
+}
+
+.debrief-score {
+  color: var(--text-sec);
+  font-size: 28px;
+  letter-spacing: 2px;
+  margin-left: 4px;
+}
+
+.debrief-subtitle {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* ── VP by Round — bar chart ── */
+.vp-chart {
+  margin-bottom: 16px;
+}
+
+.vp-chart-label,
+.kill-feed-label {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.vp-round-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.round-id {
+  font: 400 13px/1 'Anton', sans-serif;
+  color: var(--text-muted);
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.bar-pair {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bar-track {
+  height: 12px;
+  position: relative;
+}
+
+.bar {
+  height: 100%;
+  min-width: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  transition: width 0.4s ease-out;
+}
+
+.bar.imp {
+  background: var(--imp);
+  background: linear-gradient(90deg, var(--imp-dim), var(--imp));
+}
+
+.bar.ork {
+  background: var(--ork);
+  background: linear-gradient(90deg, var(--ork-dim), var(--ork));
+}
+
+.bar-val {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  color: var(--bg-primary);
+  letter-spacing: 0.5px;
+}
+
+/* ── Kill Feed ── */
+.kill-feed {
+  margin-bottom: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.kill-entry {
+  font: 500 12px/1.6 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+}
+
+.kill-entry .skull {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.kill-entry .killed {
+  text-decoration: line-through;
+  text-decoration-color: var(--text-dis);
+}
+
+.kill-entry .imp {
+  color: var(--imp-dim);
+}
+
+.kill-entry .ork {
+  color: var(--ork-dim);
+}
+
+.kill-entry .round-tag {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── MVP line ── */
+.mvp-line {
+  font: 500 12px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  border-top: 1px solid var(--border);
+  padding: 10px 0;
+  margin-bottom: 16px;
+}
+
+.mvp-line .imp {
+  font: 400 14px/1 'Anton', sans-serif;
+  color: var(--imp);
+  letter-spacing: 1px;
+}
+
+.mvp-stats {
+  color: var(--text-muted);
+}
+
+/* ── Action buttons ── */
+.debrief-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.debrief-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 10px 22px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  flex: 1;
+}
+
+.debrief-btn.primary {
+  border-color: var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  font-weight: 700;
+}
+.debrief-btn.primary:hover {
+  background: #18eaff;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.25);
+}
+
+.debrief-btn.secondary {
+  border-color: var(--text-muted);
+  color: var(--text-sec);
+}
+.debrief-btn.secondary:hover {
+  border-color: var(--imp-dim);
+  color: var(--text-primary);
+}
+
+.debrief-btn.disabled {
+  border-color: var(--border);
+  color: var(--text-dis);
+  cursor: default;
+  pointer-events: none;
+}

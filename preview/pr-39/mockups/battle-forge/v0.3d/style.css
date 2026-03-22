@@ -1,0 +1,638 @@
+/* ═══════════════════════════════════════════════
+   THE ARMOURY — Battle Forge v0.3d
+   Fighting game character select × WH40K darkness
+   ═══════════════════════════════════════════════ */
+
+/* ── Background & Void ── */
+.armoury {
+  position: fixed; inset: 0;
+  background: #040608;
+  overflow: hidden;
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+  display: flex; flex-direction: column;
+}
+
+/* Split radial: cyan left, red right */
+.armoury::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 15% 50%, rgba(0, 212, 255, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 85% 50%, rgba(255, 64, 32, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(255, 255, 255, 0.01) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* Scanlines */
+.armoury::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0, transparent 3px,
+    rgba(0, 180, 255, 0.01) 3px, rgba(0, 180, 255, 0.01) 4px
+  );
+  pointer-events: none; z-index: 1;
+}
+
+/* Grain overlay */
+.grain {
+  position: absolute; inset: 0; z-index: 1;
+  opacity: 0.03; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* Vignette */
+.vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, #040608 100%);
+  pointer-events: none; z-index: 1;
+}
+
+/* ── Navigation Chrome ── */
+.nav-back, .nav-mockups {
+  position: fixed; top: 16px; z-index: 100;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  letter-spacing: 0.5px;
+}
+.nav-back { left: 20px; }
+.nav-mockups { right: 20px; }
+.nav-back:hover, .nav-mockups:hover { color: var(--text-primary); }
+
+.version-badge {
+  position: fixed; bottom: 12px; left: 16px; z-index: 100;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Header ── */
+.header {
+  position: relative; z-index: 10;
+  text-align: center;
+  padding: 52px 20px 16px;
+  flex-shrink: 0;
+}
+
+.header-title {
+  font: 400 42px/1 'Anton', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  text-shadow: 0 0 40px rgba(0, 212, 255, 0.15);
+}
+
+.header-sub {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+/* ── Main Content Area ── */
+.main {
+  position: relative; z-index: 10;
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  padding: 0 20px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ── Faction Grid ── */
+.faction-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 140px);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.faction-tile {
+  position: relative;
+  width: 140px; height: 160px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  overflow: hidden;
+  /* Stagger entrance */
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  animation: tile-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.faction-tile:nth-child(1) { animation-delay: 0.05s; }
+.faction-tile:nth-child(2) { animation-delay: 0.1s; }
+.faction-tile:nth-child(3) { animation-delay: 0.15s; }
+.faction-tile:nth-child(4) { animation-delay: 0.2s; }
+.faction-tile:nth-child(5) { animation-delay: 0.25s; }
+.faction-tile:nth-child(6) { animation-delay: 0.3s; }
+.faction-tile:nth-child(7) { animation-delay: 0.35s; }
+.faction-tile:nth-child(8) { animation-delay: 0.4s; }
+.faction-tile:nth-child(9) { animation-delay: 0.45s; }
+.faction-tile:nth-child(10) { animation-delay: 0.5s; }
+
+@keyframes tile-pop {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.faction-tile:hover:not(.locked) {
+  transform: translateY(-4px) scale(1.02);
+  border-color: var(--text-muted);
+  background: var(--bg-raised);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Selected states */
+.faction-tile.selected-p1 {
+  border-color: var(--imp);
+  box-shadow:
+    0 0 20px rgba(0, 212, 255, 0.2),
+    0 0 60px rgba(0, 212, 255, 0.08),
+    inset 0 0 30px rgba(0, 212, 255, 0.04);
+  transform: scale(1.05);
+  background: var(--bg-raised);
+}
+
+.faction-tile.selected-p2 {
+  border-color: var(--ork);
+  box-shadow:
+    0 0 20px rgba(255, 64, 32, 0.2),
+    0 0 60px rgba(255, 64, 32, 0.08),
+    inset 0 0 30px rgba(255, 64, 32, 0.04);
+  transform: scale(1.05);
+  background: var(--bg-raised);
+}
+
+.faction-tile.selected-p1:hover,
+.faction-tile.selected-p2:hover {
+  transform: scale(1.05);
+}
+
+/* Locked tiles */
+.faction-tile.locked {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.faction-tile.locked:hover {
+  transform: translateY(0) scale(1);
+  border-color: var(--border);
+  background: var(--bg-surface);
+  box-shadow: none;
+}
+
+.tile-emblem {
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 8px;
+  user-select: none;
+  transition: text-shadow 0.3s;
+}
+
+.selected-p1 .tile-emblem {
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5), 0 0 40px rgba(0, 212, 255, 0.2);
+}
+
+.selected-p2 .tile-emblem {
+  text-shadow: 0 0 20px rgba(255, 64, 32, 0.5), 0 0 40px rgba(255, 64, 32, 0.2);
+}
+
+.tile-name {
+  font: 600 11px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  text-align: center;
+  padding: 0 8px;
+}
+
+.tile-pts {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 1px;
+}
+
+/* Player markers */
+.player-marker {
+  position: absolute;
+  top: 6px;
+  font: 700 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  padding: 2px 6px;
+  border-radius: 1px;
+  z-index: 2;
+  animation: marker-pulse 2s ease-in-out infinite;
+}
+
+.player-marker.p1 {
+  left: 6px;
+  background: var(--imp);
+  color: var(--bg-primary);
+}
+
+.player-marker.p2 {
+  right: 6px;
+  background: var(--ork);
+  color: var(--bg-primary);
+}
+
+@keyframes marker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Locked badge */
+.locked-badge {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-dis);
+  background: rgba(8, 12, 16, 0.7);
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Lock icon */
+.tile-lock {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-size: 12px;
+  color: var(--text-dis);
+  opacity: 0.6;
+}
+
+/* Upload tile */
+.faction-tile.upload-tile {
+  border-style: dashed;
+  border-color: var(--text-dis);
+  opacity: 0.35;
+  cursor: default;
+}
+
+.upload-icon {
+  font-size: 32px;
+  margin-bottom: 6px;
+  color: var(--text-dis);
+}
+
+/* ── VS Splash ── */
+.vs-splash {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+  min-height: 60px;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vs-splash.active {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.vs-p1, .vs-p2 {
+  display: flex; align-items: center; gap: 10px;
+}
+
+.vs-emblem {
+  font-size: 36px;
+  line-height: 1;
+}
+
+.vs-p1 .vs-emblem {
+  text-shadow: 0 0 16px rgba(0, 212, 255, 0.4);
+}
+
+.vs-p2 .vs-emblem {
+  text-shadow: 0 0 16px rgba(255, 64, 32, 0.4);
+}
+
+.vs-faction-name {
+  font: 400 20px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.vs-p1 .vs-faction-name { color: var(--imp); }
+.vs-p2 .vs-faction-name { color: var(--ork); }
+
+.vs-divider {
+  position: relative;
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.vs-text {
+  font: 400 36px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  color: var(--text-primary);
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.3),
+    0 0 60px rgba(201, 163, 82, 0.2);
+  z-index: 1;
+  animation: vs-throb 1.5s ease-in-out infinite;
+}
+
+@keyframes vs-throb {
+  0%, 100% { transform: scale(1); text-shadow: 0 0 20px rgba(255,255,255,0.3), 0 0 60px rgba(201,163,82,0.2); }
+  50% { transform: scale(1.08); text-shadow: 0 0 30px rgba(255,255,255,0.5), 0 0 80px rgba(201,163,82,0.3); }
+}
+
+/* Energy burst behind VS */
+.vs-divider::before {
+  content: '';
+  position: absolute;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle,
+    rgba(201, 163, 82, 0.15) 0%,
+    rgba(201, 163, 82, 0.05) 40%,
+    transparent 70%
+  );
+  animation: vs-burst 2s ease-in-out infinite;
+}
+
+@keyframes vs-burst {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+/* ── Roster Panels ── */
+.roster-split {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  max-width: 620px;
+  margin-bottom: 16px;
+}
+
+.roster-panel {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.roster-panel.p1 { border-top: 2px solid rgba(0, 212, 255, 0.3); }
+.roster-panel.p2 { border-top: 2px solid rgba(255, 64, 32, 0.3); }
+
+.roster-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.roster-header-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.roster-panel.p1 .roster-header-name { color: var(--imp); }
+.roster-panel.p2 .roster-header-name { color: var(--ork); }
+
+.roster-header-pts {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.roster-list {
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  padding: 4px 0;
+}
+
+.roster-row {
+  display: flex; align-items: center;
+  padding: 4px 12px;
+  font: 500 11px/1.4 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  gap: 6px;
+}
+
+.roster-row:hover {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.roster-unit-name { flex: 1; color: var(--text-primary); font-size: 12px; }
+.roster-unit-qty { color: var(--text-muted); font-size: 10px; }
+.roster-unit-pts { color: var(--text-muted); font-size: 10px; min-width: 40px; text-align: right; }
+
+/* ── Bottom Bar ── */
+.bottom-bar {
+  position: relative; z-index: 10;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: rgba(8, 12, 16, 0.8);
+  backdrop-filter: blur(12px);
+  padding: 12px 24px;
+}
+
+.bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 800px;
+  margin: 0 auto;
+  gap: 16px;
+}
+
+/* Map selector */
+.map-chips {
+  display: flex; gap: 8px; align-items: center;
+}
+
+.map-chip {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  cursor: default;
+  transition: all 0.2s;
+}
+
+.map-chip.active {
+  color: var(--text-sec);
+  border-color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.map-chip.coming-soon {
+  opacity: 0.35;
+}
+
+/* Settings chips */
+.setting-chips {
+  display: flex; gap: 6px;
+}
+
+.setting-chip {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 0.5px;
+}
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex; gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mode-btn {
+  padding: 6px 14px;
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  color: var(--text-dis);
+}
+
+.mode-btn.active {
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--imp);
+}
+
+.mode-btn.disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ── BEGIN BATTLE Button ── */
+.begin-bar {
+  position: relative; z-index: 10;
+  flex-shrink: 0;
+  padding: 12px 24px 16px;
+  text-align: center;
+}
+
+.begin-btn {
+  display: inline-block;
+  width: 100%;
+  max-width: 500px;
+  padding: 16px 40px;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.begin-btn:hover {
+  background: #18eaff;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+}
+
+/* Hover text swap */
+.begin-btn .btn-text-default,
+.begin-btn .btn-text-hover {
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.begin-btn .btn-text-hover {
+  position: absolute;
+  inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.begin-btn:hover .btn-text-default {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.begin-btn:hover .btn-text-hover {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Ember Particles ── */
+.embers {
+  position: absolute; inset: 0;
+  pointer-events: none; z-index: 0;
+  overflow: hidden;
+}
+
+.ember {
+  position: absolute;
+  bottom: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--ember-color, #ff8c20) 0%, transparent 70%);
+  animation: float-up var(--dur, 8s) var(--delay, 0s) linear infinite;
+  opacity: 0;
+}
+
+@keyframes float-up {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+  10%  { opacity: var(--peak, 0.6); }
+  70%  { opacity: var(--peak, 0.6); }
+  100% { transform: translateY(calc(-100vh - 40px)) translateX(var(--drift, 20px)) scale(0.3); opacity: 0; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .faction-grid {
+    grid-template-columns: repeat(3, 110px);
+    gap: 8px;
+  }
+  .faction-tile {
+    width: 110px; height: 130px;
+  }
+  .tile-emblem { font-size: 36px; }
+  .tile-name { font-size: 10px; }
+  .roster-split { flex-direction: column; }
+  .vs-faction-name { font-size: 14px; }
+  .bottom-row { flex-wrap: wrap; justify-content: center; }
+  .header-title { font-size: 28px; letter-spacing: 4px; }
+}
+
+@media (max-width: 400px) {
+  .faction-grid {
+    grid-template-columns: repeat(2, 120px);
+  }
+}

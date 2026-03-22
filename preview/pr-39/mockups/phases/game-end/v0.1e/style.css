@@ -1,0 +1,367 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1e Game End — Clean Slate (Dedicated Results Screen)
+   No battlefield, no overlay — full-page results layout.
+   Shared tokens: colors.css (variables), typography.css (reset).
+══════════════════════════════════════════════════════════════ */
+
+/* ── Page layout ── */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-page {
+  max-width: 600px;
+  width: 100%;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Backlink ── */
+.backlink {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-decoration: none;
+  z-index: 10;
+}
+
+.backlink:hover {
+  color: var(--imp);
+}
+
+/* ── Faction watermark ── */
+.faction-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 360px;
+  color: rgba(0, 212, 255, 0.025);
+  pointer-events: none;
+  line-height: 1;
+  z-index: 0;
+  animation: watermark-in 1s ease-out 0.5s both, watermark-pulse 8s ease-in-out 1.5s infinite;
+}
+
+@keyframes watermark-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes watermark-pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50%      { transform: translate(-50%, -50%) scale(1.03); }
+}
+
+/* ── Aquila icon ── */
+.aquila-icon {
+  font-size: 24px;
+  color: var(--text-dis);
+  margin-bottom: 16px;
+  animation: fade-down 0.5s ease-out 0.2s both;
+}
+
+/* ── Victory title ── */
+.victory-title {
+  font: 400 56px/1 'Anton', sans-serif;
+  letter-spacing: 8px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-align: center;
+  text-shadow: 0 0 40px rgba(0, 212, 255, 0.5);
+  animation: fade-down 0.6s ease-out 0.3s both, title-glow 3s ease-in-out 0.9s infinite alternate;
+}
+
+.victory-subtitle {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  text-align: center;
+  margin-top: 8px;
+  animation: fade-down 0.5s ease-out 0.4s both;
+}
+
+@keyframes fade-down {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes title-glow {
+  from { filter: brightness(1); }
+  to   { filter: brightness(1.2); }
+}
+
+/* ── Score section ── */
+.score-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 40px;
+  animation: fade-down 0.5s ease-out 0.5s both;
+}
+
+.score-side {
+  text-align: center;
+  min-width: 120px;
+}
+
+.score-side--imp { animation: slide-left 0.5s ease-out 0.5s both; }
+.score-side--ork { animation: slide-right 0.5s ease-out 0.6s both; }
+
+@keyframes slide-left {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.score-faction-name {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.score-faction-name.imp { color: var(--imp-dim); }
+.score-faction-name.ork { color: var(--ork-dim); }
+
+.score-value {
+  font: 400 64px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  margin-top: 4px;
+}
+
+.score-value.imp { color: var(--imp); }
+.score-value.ork { color: var(--ork); }
+
+.score-vs {
+  font: 400 14px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  color: var(--text-muted);
+  padding-top: 16px;
+  animation: fade-down 0.4s ease-out 0.55s both;
+}
+
+/* ── VP breakdown table ── */
+.vp-breakdown {
+  margin-top: 40px;
+  width: 100%;
+  max-width: 400px;
+  animation: fade-down 0.5s ease-out 0.7s both;
+}
+
+.vp-breakdown-title {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  color: var(--text-dis);
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.vp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 500 12px/1.8 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.vp-table th {
+  font: 400 10px/1 'Anton', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-dis);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.vp-table td {
+  text-align: center;
+  padding: 6px 8px;
+  color: var(--text-sec);
+  border-bottom: 1px solid rgba(26, 37, 53, 0.5);
+}
+
+.vp-faction-cell {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-align: left !important;
+  width: 40px;
+}
+
+.vp-faction-cell.imp { color: var(--imp-dim); }
+.vp-faction-cell.ork { color: var(--ork-dim); }
+
+.vp-total-col {
+  font-weight: 700;
+}
+
+td.vp-total-col.imp { color: var(--imp); }
+td.vp-total-col.ork { color: var(--ork); }
+
+/* ── Unit statistics ── */
+.unit-stats {
+  display: flex;
+  gap: 24px;
+  margin-top: 36px;
+  width: 100%;
+  max-width: 460px;
+  animation: fade-down 0.5s ease-out 0.85s both;
+}
+
+.unit-stats-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit-stats-header {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.unit-stats-header.imp { color: var(--imp-dim); }
+.unit-stats-header.ork { color: var(--ork-dim); }
+
+.unit-stats-divider {
+  width: 1px;
+  background: var(--border);
+  align-self: stretch;
+  margin-top: 4px;
+}
+
+.unit-entry {
+  font: 500 11px/2 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.unit-entry.destroyed {
+  color: var(--text-dis);
+  text-decoration: line-through;
+}
+
+.model-count {
+  font: 400 11px/1 'Anton', sans-serif;
+  letter-spacing: 0.5px;
+}
+
+.model-count.imp { color: var(--imp-dim); }
+.model-count.ork { color: var(--ork-dim); }
+
+.unit-entry.destroyed .model-count {
+  color: var(--text-dis);
+}
+
+/* ── MVP callout ── */
+.mvp-callout {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+  padding: 10px 20px;
+  border: 1px solid rgba(0, 212, 255, 0.15);
+  border-left: 3px solid var(--imp-dim);
+  background: rgba(0, 212, 255, 0.03);
+  max-width: 460px;
+  width: 100%;
+  animation: fade-down 0.5s ease-out 1.0s both;
+}
+
+.mvp-label {
+  font: 400 14px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  color: var(--imp);
+}
+
+.mvp-detail {
+  font: 500 11px/1.4 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+}
+
+.mvp-name {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.mvp-reason {
+  color: var(--text-muted);
+}
+
+/* ── Action buttons ── */
+.victory-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 40px;
+  animation: fade-down 0.5s ease-out 1.15s both;
+}
+
+.victory-btn {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  padding: 12px 28px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+
+.victory-btn.primary {
+  border-color: var(--imp);
+  color: #080c10;
+  background: var(--imp);
+}
+
+.victory-btn.primary:hover {
+  background: #18eaff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.victory-btn.secondary {
+  border-color: var(--text-muted);
+  color: var(--text-sec);
+}
+
+.victory-btn.secondary:hover {
+  border-color: var(--imp-dim);
+  color: var(--text-primary);
+}
+
+.victory-btn.disabled {
+  border-color: var(--border);
+  color: var(--text-dis);
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ── Version badge ── */
+.vshoot-badge {
+  position: fixed;
+  bottom: 8px;
+  right: 12px;
+  font: 500 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-dis);
+  z-index: 10;
+}

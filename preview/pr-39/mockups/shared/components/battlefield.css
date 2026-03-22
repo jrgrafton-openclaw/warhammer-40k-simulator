@@ -1,0 +1,221 @@
+/* ══════════════════════════════════════════════════════════════
+   Component — Battlefield
+   Extracted from shoot/v0.4/style.css + v0.8a overrides
+══════════════════════════════════════════════════════════════ */
+
+#battlefield { grid-column: 2; position: relative; overflow: hidden; background: var(--bg-primary); }
+
+/* ── Back to archive link ── */
+.backlink {
+  position: absolute; top: 8px; left: 8px; z-index: 60;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  font: 700 9px/1 'Rajdhani', sans-serif; letter-spacing: 1.8px; text-transform: uppercase;
+  color: var(--text-sec); text-decoration: none;
+  border: 1px solid rgba(0,212,255,.16);
+  background: rgba(8,12,16,.72);
+  backdrop-filter: blur(4px);
+  transition: all .15s;
+}
+.backlink:hover {
+  color: var(--imp);
+  border-color: rgba(0,212,255,.45);
+  background: rgba(8,12,16,.9);
+  box-shadow: 0 0 14px rgba(0,212,255,.18);
+}
+
+/* ── Phase Header Pill ── */
+#phase-header {
+  position: absolute; top: 32px; left: 50%; transform: translateX(-50%);
+  width: 350px;
+  background: transparent; display: flex; flex-direction: column; align-items: stretch;
+  gap: 0px;
+  z-index: 10; pointer-events: none;
+}
+.phase-pill {
+  margin-top: 8px;
+  background: rgba(8,12,16,.92);
+  border: 1px solid rgba(0,212,255,.2);
+  border-top: 2px solid var(--imp);
+  padding: 8px 28px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  pointer-events: auto;
+  box-shadow: 0 0 20px rgba(0,212,255,.08), 0 2px 20px rgba(0,0,0,.8);
+  backdrop-filter: blur(6px);
+}
+.phase-title {
+  font: normal 400 15px/1 'Anton', sans-serif;
+  letter-spacing: 4px; color: var(--imp); text-transform: uppercase;
+}
+.phase-subtitle {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase;
+}
+
+/* ── Battlefield inner (pan/zoom container) ── */
+#battlefield-inner {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  transform-origin: center; cursor: grab;
+}
+#battlefield-inner.dragging { cursor: grabbing !important; }
+#battlefield-inner.zoom-easing { transition: transform 0.15s cubic-bezier(0.25,0.46,0.45,0.94); }
+
+/* Battlefield grid */
+#battlefield-inner::before {
+  content: ''; position: absolute; inset: 0; z-index: 0;
+  background-image:
+    repeating-linear-gradient(0deg,   transparent 0px, transparent 11px, rgba(201,163,82,.025) 11px, rgba(201,163,82,.025) 12px),
+    repeating-linear-gradient(90deg,  transparent 0px, transparent 11px, rgba(201,163,82,.025) 11px, rgba(201,163,82,.025) 12px),
+    repeating-linear-gradient(0deg,   transparent 0px, transparent 59px, rgba(201,163,82,.055) 59px, rgba(201,163,82,.055) 60px),
+    repeating-linear-gradient(90deg,  transparent 0px, transparent 59px, rgba(201,163,82,.055) 59px, rgba(201,163,82,.055) 60px);
+  pointer-events: none;
+}
+
+/* ── SVG layers ── */
+#bf-svg-terrain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+#bf-svg         { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 6; }
+.model-base  { pointer-events: all; cursor: grab; transform-box: fill-box; transform-origin: center; }
+.unit-hull   { pointer-events: all; cursor: grab; transform-box: fill-box; transform-origin: center; }
+
+/* ── Terrain ── */
+.tp-scatter {
+  background: rgba(40,50,80,.4);
+  border: 1px solid rgba(60,80,120,.2);
+  position: absolute;
+}
+
+/* ── Objective area rings ── */
+.obj-area-ring {
+  position: absolute;
+  width: 12.5%; aspect-ratio: 1/1;
+  transform: translate(-50%,-50%);
+  border-radius: 50%;
+  border: 1.5px dashed rgba(74,96,128,.5);
+  background: rgba(8,16,8,.1);
+  pointer-events: none; z-index: 3;
+}
+
+/* ── SVG Range rings (per-model, shared component) ── */
+.range-ring { vector-effect: non-scaling-stroke; mix-blend-mode: screen; }
+
+/* ── CSS Range circles ── */
+.range-circle {
+  position: absolute; border-radius: 50%; pointer-events: none;
+  display: none; z-index: 2; transition: opacity 0.15s ease;
+}
+.rc-move    { border: 2px dashed rgba(0,212,255,.45); }
+.rc-advance { border: 1.5px dashed rgba(204,136,0,.45); }
+.rc-charge  { border: 1.5px dashed rgba(204,100,0,.4); }
+.range-label {
+  position: absolute; pointer-events: none; display: none; z-index: 2;
+  font: 700 10px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+  transform: translateX(-50%);
+  background: rgba(8,12,16,.75); padding: 1px 5px; border-radius: 2px;
+}
+.rl-move    { color: rgba(0,212,255,.8); }
+.rl-advance { color: rgba(204,136,0,.8); }
+.rl-charge  { color: rgba(204,100,0,.8); }
+
+/* ── Objectives (SVG hex) ── */
+.obj-hex-wrap {
+  position: absolute; transform: translate(-50%,-50%);
+  width: 5.7%; aspect-ratio: 84/97; z-index: 4; cursor: default;
+}
+.obj-hex-wrap.controlled { filter: drop-shadow(0 0 8px rgba(0,212,255,.5)); }
+.obj-hex-wrap.enemy      { filter: drop-shadow(0 0 8px rgba(255,64,32,.5)); }
+.obj-svg { display: block; overflow: visible; width: 100%; height: 100%; }
+.obj-bg  { fill: rgba(8,12,16,.92); }
+.obj-ring { fill: none; stroke-width: 1.5; }
+.obj-n {
+  font-family: 'Anton', sans-serif; font-size: 22px; font-weight: 400;
+  text-anchor: middle; dominant-baseline: central;
+}
+.obj-l {
+  font-family: 'Rajdhani', sans-serif; font-size: 7px; font-weight: 700;
+  letter-spacing: 2.5px; text-anchor: middle; dominant-baseline: central;
+}
+/* Neutral */
+.obj-hex-wrap.neutral .obj-ring { stroke: rgba(74,96,128,.55); }
+.obj-hex-wrap.neutral .obj-n    { fill: var(--text-sec); }
+.obj-hex-wrap.neutral .obj-l    { fill: var(--text-dis); }
+/* Player held */
+.obj-hex-wrap.controlled .obj-ring { stroke: var(--imp); }
+.obj-hex-wrap.controlled .obj-bg   { fill: rgba(0,212,255,.07); }
+.obj-hex-wrap.controlled .obj-n    { fill: var(--imp); }
+.obj-hex-wrap.controlled .obj-l    { fill: rgba(0,212,255,.65); }
+/* Enemy held */
+.obj-hex-wrap.enemy .obj-ring { stroke: var(--ork); }
+.obj-hex-wrap.enemy .obj-bg   { fill: rgba(255,64,32,.07); }
+.obj-hex-wrap.enemy .obj-n    { fill: var(--ork); }
+.obj-hex-wrap.enemy .obj-l    { fill: rgba(255,64,32,.65); }
+
+/* ── Shooting overlays (hull states) ── */
+.unit-hull.shoot-attacker { stroke: #00d4ff !important; stroke-width: 2.4 !important; stroke-opacity: 1 !important; }
+.unit-hull.shoot-valid { stroke: #44d17a !important; stroke-width: 2.4 !important; stroke-dasharray: none !important; stroke-opacity: 1 !important; fill: rgba(68,209,122,.10) !important; filter: drop-shadow(0 0 6px rgba(68,209,122,.4)); }
+.unit-hull.shoot-invalid { stroke: #8a3a3a !important; stroke-width: 1.5 !important; stroke-dasharray: 4 3 !important; stroke-opacity: .65 !important; fill: rgba(138,58,58,.06) !important; }
+.unit-hull.shoot-target { stroke: #ff4020 !important; stroke-width: 2.6 !important; stroke-dasharray: none !important; stroke-opacity: 1 !important; fill: rgba(255,64,32,.10) !important; filter: drop-shadow(0 0 8px rgba(255,64,32,.45)); }
+.unit-hull.shoot-partial { stroke: #d4a93a !important; stroke-dasharray: 8 3 !important; fill: rgba(212,169,58,.08) !important; }
+
+/* ── Movement specifics ── */
+.move-ghost { pointer-events: none; fill: none; stroke-dasharray: 4 3; opacity: .3; }
+.move-zone { pointer-events: none; stroke-dasharray: 6 4; }
+.move-zone.zone-move    { fill: rgba(0,212,255,.04); stroke: rgba(0,212,255,.2); stroke-width: 1.5; }
+.move-zone.zone-advance { fill: rgba(204,136,0,.04); stroke: rgba(204,136,0,.2); stroke-width: 1.5; }
+.move-ruler       { pointer-events: none; stroke-width: 1; stroke-dasharray: 4 3; fill: none; opacity: .6; }
+.move-ruler-label { pointer-events: none; font: 600 9px/1 'Rajdhani', sans-serif; fill: rgba(224,232,240,.45); }
+
+/* ── Cohesion / fight banners (flow inside #phase-header column) ── */
+#cohesion-banner,
+#fight-invalid-banner {
+  position: static !important;
+  transform: none !important;
+  /* Stretch to parent, inset slightly from pill edges */
+  margin: 0 6px;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 6px 12px !important;
+  font: 700 10px/1 'Rajdhani', sans-serif !important;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.5);
+}
+#cohesion-banner {
+  background: rgba(204,32,32,.96);
+  color: #fff;
+  border: 2px solid #ff4040;
+}
+#fight-invalid-banner {
+  background: rgba(255,140,0,.96);
+  color: #fff;
+  border: 2px solid #ffaa40;
+}
+
+/* ── Version badge ── */
+.vshoot-badge {
+  position: absolute; top: 32px; right: 12px; z-index: 50;
+  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--imp); /* v0.8a override */
+  padding: 3px 8px;
+  border: 1px solid rgba(0,212,255,.18); /* v0.8a override */
+}
+
+/* ── Global Tooltip ── */
+#global-tooltip {
+  position: fixed; z-index: 9999; visibility: hidden; opacity: 0;
+  background: var(--bg-raised);
+  border: 1px solid rgba(0,212,255,.15);
+  border-top: 2px solid var(--imp);
+  color: var(--text-sec); font: 400 12px/1.5 'Rajdhani', sans-serif;
+  padding: 7px 12px; pointer-events: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,.9); max-width: 260px;
+  transition: opacity .15s;
+}
+#global-tooltip .tip-title {
+  font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 1px;
+  color: var(--imp); text-transform: uppercase; margin-bottom: 6px;
+}
+#global-tooltip ul { padding-left: 12px; }
+#global-tooltip ul li { margin-bottom: 3px; }
