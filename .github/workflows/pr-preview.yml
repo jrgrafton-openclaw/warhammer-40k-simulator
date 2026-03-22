@@ -1,0 +1,31 @@
+name: PR Preview
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: 'pnpm' }
+      - run: pnpm install --frozen-lockfile
+      - run: GITHUB_PAGES=true pnpm --filter @wh40k/ui build
+        env: { GITHUB_PAGES: 'true' }
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          destination_dir: preview/pr-${{ github.event.pull_request.number }}
+          keep_files: true
+      - uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            🔍 **Preview deployed:** https://jrgrafton-openclaw.github.io/warhammer-40k-simulator/preview/pr-${{ github.event.pull_request.number }}/mockups/terrain-experiments/v0.16/index.html

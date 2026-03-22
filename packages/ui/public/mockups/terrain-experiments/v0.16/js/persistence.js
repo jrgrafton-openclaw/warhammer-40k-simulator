@@ -68,7 +68,8 @@ Editor.Persistence = {
       effects: {
         shadow: Object.assign({}, S.effects.shadow),
         feather: Object.assign({}, S.effects.feather),
-        grade: Object.assign({}, S.effects.grade)
+        grade: Object.assign({}, S.effects.grade),
+        modelShadow: Object.assign({}, S.effects.modelShadow)
       },
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ruinsSlider ? ruinsSlider.value : 92,
@@ -170,6 +171,9 @@ Editor.Persistence = {
       if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
       var fxGradeControls = document.getElementById('fxGradeControls');
       if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
+      if (data.effects.modelShadow) Object.assign(E.modelShadow, data.effects.modelShadow);
+      var modelShadowBtn = document.getElementById('fxModelShadowBtn');
+      if (modelShadowBtn) modelShadowBtn.classList.toggle('on', E.modelShadow.on);
     }
   },
 
