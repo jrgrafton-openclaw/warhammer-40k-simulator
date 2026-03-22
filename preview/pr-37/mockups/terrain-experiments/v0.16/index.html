@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Terrain Sprite Editor v0.16</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/tokens/colors.css">
+<link rel="stylesheet" href="../../shared/components/battlefield.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/effects.css">
+<link rel="stylesheet" href="css/canvas.css">
+<link rel="stylesheet" href="css/layers.css">
+<link rel="stylesheet" href="css/config.css">
+<link rel="stylesheet" href="css/shortcuts.css">
+</head><body>
+<div class="main">
+<div class="sidebar left">
+  <h3>Background</h3>
+  <div class="bg-row">
+    <select id="bgSel" onchange="Editor.Core.setBg(this.value);Editor.Persistence.save()">
+      <option value="v16-ground-better.png">v16-ground-better</option>
+      <option value="bg-variation-1.png">bg-variation-1</option>
+      <option value="bg-variation-2.png">bg-variation-2</option>
+      <option value="bg-variation-3.png">bg-variation-3</option>
+      <option value="bg-variation-4.png">bg-variation-4 (oil)</option>
+      <option value="bg-variation-5.png">bg-variation-5 (wet)</option>
+      <option value="bg-dark-navy.png">bg-dark-navy</option>
+      <option value="bg-dark-charcoal.png">bg-dark-charcoal</option>
+      <option value="svg-gradient">— SVG: Gradient Depth —</option>
+      <option value="svg-warm">— SVG: Warm Core —</option>
+      <option value="svg-dual">— SVG: Dual Light Pools —</option>
+      <option value="svg-haze">— SVG: Atmospheric Haze —</option>
+      <option value="svg-concrete">— SVG: Concrete Slabs —</option>
+      <option value="svg-tactical">— SVG: Frozen Synapse —</option>
+    </select>
+  </div>
+  <h3>Toggles</h3>
+  <div class="toggle-row">
+    <button class="tbtn on" onclick="Editor.Core.tgl(this,'svgRuins')">SVG Ruins</button>
+    <button class="tbtn on" onclick="Editor.Core.tgl(this,'svgScatter')">SVG Scatter</button>
+    <button class="tbtn on" onclick="Editor.Core.tgl(this,'deployZones')">Deploy</button>
+    <button class="tbtn on" onclick="Editor.Core.tgl(this,'modelLayer')">Models</button>
+    <button class="tbtn on" onclick="Editor.Core.tglMulti(this,['objectiveRings','objectiveHexes'])">Obj</button>
+    <button class="tbtn on" onclick="Editor.Core.tgl(this,'lightLayer')">Lights</button>
+  </div>
+  <h3>SVG Ruins Opacity</h3>
+  <div class="bg-row">
+    <input id="ruinsOpacitySlider" type="range" min="0" max="100" value="92" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('svgRuins').style.opacity=this.value/100;document.getElementById('svgScatter').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'" onchange="Editor.Persistence.save()"><span style="font-size:10px;width:30px">92%</span>
+  </div>
+<h3>Sprite Grounding</h3>
+  <div class="fx-section">
+    <div class="toggle-row">
+      <button class="tbtn on" id="fxShadowBtn" onclick="Editor.Effects.toggleShadow(this)">Drop Shadow</button>
+      <button class="tbtn" id="fxFeatherBtn" onclick="Editor.Effects.toggleFeather(this)">Feathered Edges</button>
+      <button class="tbtn on" id="fxGradeBtn" onclick="Editor.Effects.toggleGrade(this)">Color Grade</button>
+    </div>
+    <div class="fx-controls" id="fxShadowControls">
+      <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="20" value="6" oninput="Editor.Effects.setShadowParam('blur',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">6px</span></label>
+      <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55" oninput="Editor.Effects.setShadowParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">55%</span></label>
+      <label><span class="fx-lbl">Offset X</span><input type="range" min="-10" max="10" value="3" oninput="Editor.Effects.setShadowParam('dx',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
+      <label><span class="fx-lbl">Offset Y</span><input type="range" min="-10" max="10" value="3" oninput="Editor.Effects.setShadowParam('dy',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
+      <label><span class="fx-lbl">Distance</span><input type="range" min="0" max="300" value="100" oninput="Editor.Effects.setShadowParam('distance',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">100%</span></label>
+    </div>
+    <div class="fx-controls" id="fxFeatherControls" style="display:none">
+      <label><span class="fx-lbl">Feather Radius</span><input type="range" min="1" max="30" value="10" oninput="Editor.Effects.setFeatherRadius(+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">10px</span></label>
+    </div>
+    <div class="fx-controls" id="fxGradeControls">
+      <label><span class="fx-lbl">Brightness</span><input type="range" min="20" max="120" value="75" oninput="Editor.Effects.setGradeParam('brightness',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">75%</span></label>
+      <label><span class="fx-lbl">Saturation</span><input type="range" min="0" max="150" value="70" oninput="Editor.Effects.setGradeParam('saturation',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">70%</span></label>
+      <label><span class="fx-lbl">Sepia</span><input type="range" min="0" max="50" value="8" oninput="Editor.Effects.setGradeParam('sepia',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">8%</span></label>
+    </div>
+  </div>
+  <h3>Ruins — Floor</h3>
+  <div class="thumb-grid" id="tRuinsFloor"></div>
+  <h3>Ruins — Top</h3>
+  <div class="thumb-grid" id="tRuinsTop"></div>
+  <h3>Scatter</h3>
+  <div class="thumb-grid" id="tScatter"></div>
+</div>
+<div class="canvas-wrap">
+  <div class="map-wrapper" id="mapWrap">
+    <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <radialGradient id="mg-fill" cx="38%" cy="32%" r="62%"><stop offset="0%" stop-color="#0a1020"/><stop offset="60%" stop-color="#060c14"/><stop offset="100%" stop-color="#030609"/></radialGradient>
+        <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        <filter id="wallShadow"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity=".5"/></filter>
+        <pattern id="floor-pat" width="24" height="24" patternUnits="userSpaceOnUse">
+          <rect width="24" height="24" fill="#3a4044"/><rect x=".5" y=".5" width="11" height="11" fill="#424a4e" rx=".3"/>
+          <rect x="12.5" y=".5" width="11" height="11" fill="#3e4648" rx=".3"/><rect x=".5" y="12.5" width="11" height="11" fill="#404848" rx=".3"/>
+          <rect x="12.5" y="12.5" width="11" height="11" fill="#444c50" rx=".3"/>
+          <line x1="0" y1="12" x2="24" y2="12" stroke="#2e3438" stroke-width=".5"/>
+          <line x1="12" y1="0" x2="12" y2="24" stroke="#2e3438" stroke-width=".5"/>
+        </pattern>
+        <pattern id="wall-pat" width="16" height="10" patternUnits="userSpaceOnUse">
+          <rect width="16" height="10" fill="#505a60"/><rect x="0" y="0" width="7" height="4" fill="#586268" rx=".3"/>
+          <rect x="9" y="0" width="7" height="4" fill="#4e585e" rx=".3"/><rect x="4" y="6" width="7" height="4" fill="#545e64" rx=".3"/>
+          <line x1="0" y1="5" x2="16" y2="5" stroke="#3a4044" stroke-width=".8"/>
+          <line x1="8" y1="0" x2="8" y2="5" stroke="#3a4044" stroke-width=".8"/>
+          <line x1="4" y1="5" x2="4" y2="10" stroke="#3a4044" stroke-width=".8"/>
+          <line x1="12" y1="5" x2="12" y2="10" stroke="#3a4044" stroke-width=".8"/>
+        </pattern>
+        <radialGradient id="grd-depth" cx="50%" cy="45%" r="65%"><stop offset="0%" stop-color="#0e1822"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>
+        <radialGradient id="grd-warm" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#14181e"/><stop offset="50%" stop-color="#0c1018"/><stop offset="100%" stop-color="#060a0e"/></radialGradient>
+        <radialGradient id="grd-warm-tint" cx="50%" cy="40%" r="50%"><stop offset="0%" stop-color="rgba(40,30,15,0.06)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <radialGradient id="grd-imp-pool" cx="22%" cy="50%" r="35%"><stop offset="0%" stop-color="rgba(0,80,120,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <radialGradient id="grd-ork-pool" cx="78%" cy="50%" r="35%"><stop offset="0%" stop-color="rgba(120,30,10,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></radialGradient>
+        <linearGradient id="grd-haze-band" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="35%" stop-color="rgba(15,20,28,0.04)"/><stop offset="55%" stop-color="rgba(15,20,28,0.04)"/><stop offset="100%" stop-color="rgba(0,0,0,0)"/></linearGradient>
+        <pattern id="slab-pat" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#0b1018"/>
+          <rect x="1" y="1" width="58" height="58" fill="#0d1420" rx="1"/>
+          <line x1="0" y1="0" x2="60" y2="0" stroke="#0a0e14" stroke-width="1.5"/>
+          <line x1="0" y1="0" x2="0" y2="60" stroke="#0a0e14" stroke-width="1.5"/>
+        </pattern>
+        <pattern id="tac-grid" width="60" height="60" patternUnits="userSpaceOnUse">
+          <rect width="60" height="60" fill="#060c14"/>
+          <line x1="0" y1="0" x2="60" y2="0" stroke="#00d4ff" stroke-width="0.4" opacity="0.06"/>
+          <line x1="0" y1="0" x2="0" y2="60" stroke="#00d4ff" stroke-width="0.4" opacity="0.06"/>
+          <line x1="0" y1="12" x2="60" y2="12" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="12" y1="0" x2="12" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="0" y1="24" x2="60" y2="24" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="24" y1="0" x2="24" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="0" y1="36" x2="60" y2="36" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="36" y1="0" x2="36" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="0" y1="48" x2="60" y2="48" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+          <line x1="48" y1="0" x2="48" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
+        </pattern>
+      </defs>
+      <rect width="720" height="528" fill="#0c1218"/>
+      <g id="svgGroundGradient" style="display:none"><rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.15"/></g>
+      <g id="svgGroundWarm" style="display:none"><rect width="720" height="528" fill="url(#grd-warm)"/><rect width="720" height="528" fill="url(#grd-warm-tint)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.1"/></g>
+      <g id="svgGroundDual" style="display:none"><rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#grd-imp-pool)"/><rect width="720" height="528" fill="url(#grd-ork-pool)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.08"/></g>
+      <g id="svgGroundHaze" style="display:none"><rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#grd-haze-band)"/><circle cx="180" cy="140" r="60" fill="#0e1822" opacity="0.3"/><circle cx="540" cy="400" r="70" fill="#0e1822" opacity="0.25"/><circle cx="360" cy="280" r="50" fill="#0e1822" opacity="0.2"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.1"/></g>
+      <g id="svgGroundConcrete" style="display:none"><rect width="720" height="528" fill="url(#slab-pat)"/><path d="M50,80 Q180,90 300,75 Q450,60 600,85" fill="none" stroke="#080c12" stroke-width="1.5" opacity="0.6"/><path d="M100,250 Q250,240 400,260 Q550,280 700,255" fill="none" stroke="#080c12" stroke-width="1" opacity="0.5"/><path d="M20,400 Q200,410 380,395 Q500,385 680,405" fill="none" stroke="#080c12" stroke-width="1.2" opacity="0.5"/><circle cx="200" cy="150" r="15" fill="url(#grd-depth)" opacity="0.3"/><circle cx="550" cy="380" r="20" fill="url(#grd-depth)" opacity="0.25"/><circle cx="400" cy="480" r="12" fill="url(#grd-depth)" opacity="0.2"/></g>
+      <g id="svgGroundTactical" style="display:none"><rect width="720" height="528" fill="url(#tac-grid)"/><circle cx="200" cy="180" r="80" fill="#00d4ff" opacity="0.012"/><circle cx="520" cy="350" r="100" fill="#00d4ff" opacity="0.01"/><circle cx="360" cy="264" r="120" fill="#00d4ff" opacity="0.008"/><rect x="0" y="0" width="720" height="1" fill="#00d4ff" opacity="0.03"><animate attributeName="y" from="0" to="528" dur="8s" repeatCount="indefinite"/></rect></g>
+      <image id="bgImg" href="img/v16-ground-better.png" x="0" y="0" width="720" height="528" preserveAspectRatio="none"/>
+      <g id="deployZones">
+        <g id="deploy-imperium">
+          <rect x="0" y="0" width="240" height="528" fill="rgba(0,140,200,0.06)"/>
+          <line x1="240" y1="0" x2="240" y2="528" stroke="rgba(0,212,255,0.3)" stroke-width="1" stroke-dasharray="8,4"/>
+          <text x="120" y="15" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" letter-spacing="3" fill="rgba(0,212,255,0.15)">IMPERIUM DEPLOY</text>
+        </g>
+        <g id="deploy-ork">
+          <rect x="480" y="0" width="240" height="528" fill="rgba(255,64,32,0.06)"/>
+          <line x1="480" y1="0" x2="480" y2="528" stroke="rgba(255,64,32,0.3)" stroke-width="1" stroke-dasharray="8,4"/>
+          <text x="600" y="15" text-anchor="middle" font-family="Anton,sans-serif" font-size="10" letter-spacing="3" fill="rgba(255,64,32,0.15)">ORK DEPLOY</text>
+        </g>
+      </g>
+      <g id="lightLayer"></g>
+      <g id="spriteFloor"></g>
+      <g id="spriteTop"></g>
+      <g id="svgRuins" opacity="0.92" style="pointer-events:none">
+        <g transform="translate(144,60) rotate(90) translate(-144,-60)"><path d="M 144 60 L 288 60 L 288 132 L 144 132 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(264,336) rotate(90) translate(-264,-336)"><path d="M 264 336 L 408 336 L 408 408 L 264 408 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(192,264) scale(-1,1) rotate(0) translate(-192,-264)"><path d="M 192 264 L 288 264 L 288 336 L 192 336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(360,204) scale(-1,1) rotate(-45) translate(-360,-204)"><path d="M 360 204 L 438 204 L 438 264 L 360 264 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 205.2 L 436.8 205.2 L 436.8 211.2 L 367.2 211.2 L 367.2 262.8 L 361.2 262.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(576,468) rotate(-90) translate(-576,-468)"><path d="M 576 468 L 720 468 L 720 540 L 576 540 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 577.2 469.2 L 673.2 469.2 L 673.2 475.2 L 583.2 475.2 L 583.2 517.2 L 577.2 517.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(456,192) rotate(-90) translate(-456,-192)"><path d="M 456 192 L 600 192 L 600 264 L 456 264 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(528,264) scale(-1,1) rotate(-180) translate(-528,-264)"><path d="M 528 264 L 624 264 L 624 336 L 528 336 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(360,324) scale(-1,1) rotate(-225) translate(-360,-324)"><path d="M 360 324 L 438 324 L 438 384 L 360 384 Z" fill="rgba(58,64,64,0.75)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/><path d="M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 Z" fill="rgba(106,114,114,0.85)" stroke="rgba(0,0,0,0.35)" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      </g>
+      <g id="svgScatter" style="pointer-events:none">
+        <g transform="translate(48,264) rotate(0) translate(-48,-264)"><path d="M 48 264 L 96 264 L 96 336 L 48 336 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(336,0) rotate(0) translate(-336,0)"><path d="M 336 0 L 384 0 L 384 72 L 336 72 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(304.8,148.8) scale(-1,1) rotate(-45) translate(-304.8,-148.8)"><path d="M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(317.76,247.2) scale(-1,1) rotate(-45) translate(-317.76,-247.2)"><path d="M 317.76 247.2 L 365.76 247.2 L 365.76 319.2 L 317.76 319.2 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(672,264) rotate(-180) translate(-672,-264)"><path d="M 672 264 L 720 264 L 720 336 L 672 336 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(384,528) rotate(-180) translate(-384,-528)"><path d="M 384 528 L 432 528 L 432 600 L 384 600 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(415.2,379.2) scale(-1,1) rotate(-225) translate(-415.2,-379.2)"><path d="M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+        <g transform="translate(402.24,280.8) scale(-1,1) rotate(-225) translate(-402.24,-280.8)"><path d="M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 Z" fill="rgba(58,48,24,0.85)" stroke="#2e3020" stroke-width="1" vector-effect="non-scaling-stroke"/></g>
+      </g>
+      <g id="objectiveRings"></g>
+      <g id="objectiveHexes"></g>
+      <g id="modelLayer"></g>
+      <g id="selUI" style="display:none"></g>
+      <rect id="dragRect" class="sel-rect" style="display:none"/>
+    </svg>
+    <div id="objectives"></div>
+  </div>
+</div>
+<div class="sidebar right">
+  <div class="layers-panel">
+    <h3>Layers</h3>
+    <div class="layer-note">Drag rows to reorder. ⌘C/V copy/paste. ⌘G group.</div>
+    <div id="layersList"></div>
+  </div>
+  <div class="shortcuts-row" style="margin-top:8px;display:flex;gap:4px">
+    <button class="tbtn" onclick="Editor.Shortcuts.toggle()" style="flex:1">? Shortcuts</button>
+    <button class="tbtn" onclick="Editor.Mirror.mirrorXY()" title="Mirror all terrain sprites 180° around map center">Mirror XY</button>
+    <button class="tbtn" onclick="Editor.Zoom.reset()">Reset Zoom</button>
+  </div>
+  <div class="config-panel">
+    <h3>Scene Config</h3>
+    <textarea id="debug" readonly></textarea>
+    <div class="config-actions">
+      <button class="tbtn" onclick="navigator.clipboard.writeText(debug.value)">Copy JSON</button>
+      <button class="tbtn" onclick="Editor.Persistence.importJSON()">Import JSON</button>
+      <button class="tbtn" onclick="if(confirm('Clear all placed sprites?')){localStorage.removeItem('wh40k-editor-v016-layout');location.reload()}" style="color:#cc4444;border-color:#cc444433">Clear All</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<script src="js/core/bus.js?v=t1742528400"></script>
+<script src="js/core/state.js?v=t1742528400"></script>
+<script src="js/core/commands.js?v=t1742528400"></script>
+<script src="js/entities/core.js?v=t1742528400"></script>
+<script src="js/core/undo.js?v=t1742528400"></script>
+<script src="js/entities/models.js?v=t1742528400"></script>
+<script src="js/entities/sprites.js?v=t1742528400"></script>
+<script src="js/entities/objectives.js?v=t1742528400"></script>
+<script src="js/entities/lights.js?v=t1742528400"></script>
+<script src="js/tools/groups.js?v=t1742528400"></script>
+<script src="js/tools/crop.js?v=t1742528400"></script>
+<script src="js/tools/mirror.js?v=t1742528400"></script>
+<script src="js/ui/zoom.js?v=t1742528400"></script>
+<script src="js/ui/shortcuts.js?v=t1742528400"></script>
+<script src="js/tools/selection.js?v=t1742528400"></script>
+<script src="js/ui/layers.js?v=t1742528400"></script>
+<script src="js/tools/effects.js?v=t1742528400"></script>
+<script src="js/persistence.js?v=t1742528400"></script>
+<script>
+Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();
+window.addEventListener('beforeunload', function() { Editor.State.flush(); });
+</script>
+</body></html>

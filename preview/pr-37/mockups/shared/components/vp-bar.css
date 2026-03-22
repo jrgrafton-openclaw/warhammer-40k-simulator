@@ -1,0 +1,29 @@
+/* ══════════════════════════════════════════════════════════════
+   Component — VP Bar (top score bar)
+   Extracted from shoot/v0.4/style.css
+══════════════════════════════════════════════════════════════ */
+
+#vp-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 32px;
+  background: rgba(8,12,16,0.94);
+  border-bottom: 1px solid rgba(0,212,255,.08);
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; z-index: 50; backdrop-filter: blur(8px);
+}
+.vp-faction { display: flex; align-items: center; gap: 8px; font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+.vp-name-imp { color: var(--imp); font-family: 'Rajdhani', sans-serif; }
+.vp-name-ork { color: var(--ork); font-family: 'Rajdhani', sans-serif; }
+.vp-score { font: 700 20px/1 'Anton', sans-serif; }
+.vp-score.imp { color: var(--imp); text-shadow: 0 0 10px rgba(0,212,255,.35); }
+.vp-score.ork { color: var(--ork); text-shadow: 0 0 10px rgba(255,64,32,.4); }
+.vp-vs { font: 600 9px/1 'Rajdhani', sans-serif; color: var(--text-dis); letter-spacing: 3px; }
+.vp-round { font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-dis); text-transform: uppercase; position: absolute; right: 12px; }
+.vp-cp { font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-dis); text-transform: uppercase; position: absolute; left: 12px; }
+.vp-cp span { color: var(--imp); font: 700 16px/1 'Anton', sans-serif; margin-left: 4px; }
+#reset-btn {
+  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase;
+  background: rgba(8,12,16,.7); border: 1px solid rgba(0,212,255,.08); color: var(--text-dis);
+  padding: 3px 8px; cursor: pointer; border-radius: 2px; transition: all .15s;
+  position: absolute; right: 80px;
+}
+#reset-btn:hover { border-color: rgba(0,212,255,.3); color: var(--imp); }

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.16 · Movement Range Enforcement</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../shared/battle-ui.css">
+  <style>
+    /* ── v0.16 MOVEMENT OVERLAY STYLES ── */
+    .move-ghost {
+      pointer-events: none;
+      fill: none;
+      stroke-dasharray: 4 3;
+      opacity: 0.35;
+    }
+    .move-zone {
+      pointer-events: none;
+      stroke-dasharray: 6 4;
+    }
+    .move-zone.zone-move {
+      fill: rgba(0,200,168,0.04);
+      stroke: rgba(0,200,168,0.2);
+      stroke-width: 1.5;
+    }
+    .move-zone.zone-advance {
+      fill: rgba(201,163,82,0.04);
+      stroke: rgba(201,163,82,0.2);
+      stroke-width: 1.5;
+    }
+
+    /* ── CONFIRM / CANCEL buttons ── */
+    .action-btn.confirm-move {
+      background: rgba(0,200,168,.15);
+      border: 1px solid rgba(0,200,168,.6);
+      color: #00c8a8;
+    }
+    .action-btn.confirm-move:disabled {
+      background: transparent;
+      border: 1px solid #222;
+      color: #333;
+      cursor: default;
+    }
+    .action-btn.cancel-move {
+      background: rgba(204,34,34,.1);
+      border: 1px solid rgba(204,34,34,.4);
+      color: #cc4444;
+    }
+    .action-btn.cancel-move:disabled {
+      background: transparent;
+      border: 1px solid #222;
+      color: #333;
+      cursor: default;
+    }
+
+    /* ── Move mode indicator in action bar ── */
+    #move-mode-label {
+      font: 700 9px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(201,163,82,0.5);
+      padding: 0 4px;
+    }
+    #move-mode-label.active-move    { color: #00c8a8; }
+    #move-mode-label.active-advance { color: #c9a352; }
+
+    /* ── D6 advance indicator ── */
+    .advance-d6-badge {
+      position: absolute;
+      top: -10px; right: -10px;
+      background: rgba(201,163,82,0.9);
+      color: #060504;
+      font: 700 8px/1 'Share Tech Mono', monospace;
+      padding: 2px 4px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── v0.16 version badge ── */
+    .v16-badge {
+      position: fixed;
+      top: 38px; right: 12px;
+      z-index: 60;
+      font: 700 9px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      background: rgba(0,200,168,0.1);
+      border: 1px solid rgba(0,200,168,0.3);
+      color: #00c8a8;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════════════ ROSTER ═══════════════════ -->
+  <aside id="roster">
+    <div class="roster-header">
+      <span class="roster-title">ARMY ROSTER</span>
+      <button class="roster-collapse-btn" id="roster-btn">◄</button>
+    </div>
+    <div class="roster-scroll">
+
+      <!-- IMPERIUM -->
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band imp"></div>
+          <span class="faction-icon">✠</span>
+          <span class="faction-label imp">IMPERIUM</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit active" data-unit="assault-intercessors">
+            <div class="unit-icon imp">✠<div class="model-badge">5</div></div>
+            <div class="unit-name">Assault Intercessors</div>
+          </div>
+          <div class="rail-unit" data-unit="primaris-lieutenant">
+            <div class="unit-icon char">★</div>
+            <div class="unit-name">Primaris Lieutenant</div>
+          </div>
+          <div class="rail-unit" data-unit="intercessor-squad-a">
+            <div class="unit-icon imp">✠<div class="model-badge">5</div></div>
+            <div class="unit-name">Intercessor Squad A</div>
+          </div>
+          <div class="rail-unit" data-unit="hellblasters">
+            <div class="unit-icon imp">✠<div class="model-badge">5</div></div>
+            <div class="unit-name">Hellblasters</div>
+          </div>
+          <div class="rail-unit" data-unit="redemptor-dreadnought">
+            <div class="unit-icon imp" style="border-radius:4px;font-size:11px;">⬡</div>
+            <div class="unit-name">Redemptor Dreadnought</div>
+          </div>
+          <div class="aa-section">
+            <div class="aa-header" onclick="toggleAA(this)">
+              <span class="aa-label">ARMY ABILITIES</span>
+              <span class="aa-chev">▸</span>
+            </div>
+            <div class="aa-body">
+              <div class="aa-row" data-tip="Re-roll wound rolls of 1 for friendly ADEPTUS ASTARTES units."><span class="aa-name">AND THEY SHALL KNOW NO FEAR</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row" data-tip="Pick one enemy unit at start of your turn. Friendly ADEPTUS ASTARTES units re-roll hit rolls against it."><span class="aa-name">OATH OF MOMENT</span><span class="aa-timing">COMMAND</span></div>
+              <div class="aa-row phase-active" data-tip="Units that charged this turn get +1 Attack until end of Fight phase."><span class="aa-name">SHOCK ASSAULT</span><span class="aa-timing">FIGHT PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORKS -->
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band ork"></div>
+          <span class="faction-icon">☠</span>
+          <span class="faction-label ork">ORKS</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit" data-unit="boss-nob">
+            <div class="unit-icon char" style="color:rgba(201,163,82,.7);">☠</div>
+            <div class="unit-name">Boss Nob</div>
+          </div>
+          <div class="rail-unit" data-unit="boyz-mob">
+            <div class="unit-icon ork">☠<div class="model-badge">10</div></div>
+            <div class="unit-name">Boyz Mob</div>
+          </div>
+          <div class="rail-unit" data-unit="mekboy">
+            <div class="unit-icon char" style="color:rgba(201,163,82,.7);">⚙</div>
+            <div class="unit-name">Mekboy</div>
+          </div>
+          <div class="aa-section">
+            <div class="aa-header" onclick="toggleAA(this)" style="color:var(--red-enemy);">
+              <span class="aa-label">ARMY ABILITIES</span>
+              <span class="aa-chev">▸</span>
+            </div>
+            <div class="aa-body">
+              <div class="aa-row" data-tip="Ork units can make a charge move after Advancing."><span class="aa-name">'ERE WE GO</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row" data-tip="Once per game, any phase. Until end of turn: Ork units get +1 Attack and +1 to charge rolls."><span class="aa-name">WAAAGH!</span><span class="aa-timing">ANY PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
+  <main id="battlefield">
+
+    <div id="vp-bar">
+      <div class="vp-cp">CP <span id="cp-val">5</span></div>
+      <div class="vp-faction">
+        <span class="vp-name-imp">IMPERIUM</span>
+        <span class="vp-score imp">10</span>
+      </div>
+      <span class="vp-vs">VS</span>
+      <div class="vp-faction">
+        <span class="vp-score ork">4</span>
+        <span class="vp-name-ork">ORKS</span>
+      </div>
+      <span class="vp-round">RND 2 / 5</span>
+      <button id="reset-btn" title="Reset view [R]">↺ RESET</button>
+    </div>
+
+    <div id="phase-header">
+      <div class="phase-pill">
+        <div class="phase-title">MOVEMENT PHASE</div>
+        <div class="phase-subtitle">Imperium Active · Round 2</div>
+      </div>
+    </div>
+
+    <div class="v16-badge">v0.16 · MOVEMENT</div>
+
+    <div id="battlefield-inner">
+      <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;">
+        <path d="M 0,0 L 216,0 L 216,528 L 0,528 Z"
+              fill="rgba(25,70,190,0.08)" stroke="rgba(25,70,190,0.22)" stroke-width="1"
+              vector-effect="non-scaling-stroke" pointer-events="none"/>
+        <path d="M 504,0 L 720,0 L 720,528 L 504,528 Z"
+              fill="rgba(160,30,30,0.08)" stroke="rgba(160,30,30,0.22)" stroke-width="1"
+              vector-effect="non-scaling-stroke" pointer-events="none"/>
+        <line x1="360" y1="0" x2="360" y2="528" stroke="rgba(201,163,82,.07)" stroke-width="1" stroke-dasharray="8,8" pointer-events="none"/>
+        <line x1="0" y1="264" x2="720" y2="264" stroke="rgba(201,163,82,.04)" stroke-width="1" stroke-dasharray="4,12" pointer-events="none"/>
+        <text x="108" y="264" font-size="18" font-family="Rajdhani" font-weight="700"
+              fill="rgba(25,70,190,0.12)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
+              pointer-events="none">IMPERIUM</text>
+        <text x="612" y="264" font-size="18" font-family="Rajdhani" font-weight="700"
+              fill="rgba(160,30,30,0.12)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
+              pointer-events="none">ORKS</text>
+        <g id="terrain-layer"></g>
+        <!-- Movement overlays: zones first, then ghosts, then hulls, then models -->
+        <g id="layer-move-zones"></g>
+        <g id="layer-move-ghosts"></g>
+        <g id="layer-hulls"></g>
+        <g id="layer-models"></g>
+      </svg>
+
+      <!-- Objective area rings -->
+      <div class="obj-area-ring" style="left:50%;top:13.64%;"></div>
+      <div class="obj-area-ring" style="left:16.67%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:83.33%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:86.36%;"></div>
+
+      <!-- Objectives -->
+      <div class="obj-hex-wrap" style="left:50%;top:13.64%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">01</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:16.67%;top:50%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer controlled"><div class="obj-hex-inner"><div class="obj-num">02</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:50%;top:50%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer contested"><div class="obj-hex-inner"><div class="obj-num">03</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:83.33%;top:50%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">04</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:50%;top:86.36%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">05</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+
+    </div><!-- /battlefield-inner -->
+
+    <!-- Range circles -->
+    <div id="range-move"    class="range-circle rc-move"   ></div>
+    <div id="range-advance" class="range-circle rc-advance"></div>
+    <div id="range-charge"  class="range-circle rc-charge" ></div>
+    <div id="range-move-label"    class="range-label rl-move"   >MOVE</div>
+    <div id="range-advance-label" class="range-label rl-advance">ADV</div>
+    <div id="range-charge-label"  class="range-label rl-charge" >CHARGE</div>
+
+    <!-- Unit Card -->
+    <div id="unit-card" class="visible">
+      <div class="card-hdr">
+        <div style="min-width:0;flex:1;">
+          <div class="card-name" id="card-name">ASSAULT INTERCESSORS</div>
+          <div class="card-faction" id="card-faction">✠ SPACE MARINES · ADEPTUS ASTARTES</div>
+        </div>
+        <button class="card-close" id="card-close">×</button>
+      </div>
+      <div class="card-stats" id="card-stats"></div>
+      <div class="card-ranges" id="card-ranges">
+        <button class="range-toggle move" id="rt-move" data-range-type="move">MOVE 6"</button>
+        <button class="range-toggle advance" id="rt-advance" data-range-type="advance">ADVANCE ~9"</button>
+        <button class="range-toggle charge" id="rt-charge" data-range-type="charge">CHARGE ~13"</button>
+      </div>
+      <div id="card-wargear"></div>
+      <div class="card-weapons" id="card-weapons"></div>
+      <div class="card-abilities" id="card-abilities"></div>
+    </div>
+
+    <!-- Action Bar (v0.16: extended with move controls) -->
+    <div id="action-bar">
+      <div class="ps-step done"><div class="ps-dot"></div>CMD</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step active"><div class="ps-dot"></div>MOVE</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>SHOOT</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>CHARGE</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>FIGHT</div>
+      <div class="ab-sep"></div>
+      <button class="action-btn" id="btn-move" data-shortcut="M">NORMAL MOVE</button>
+      <button class="action-btn" id="btn-advance" data-shortcut="A">ADVANCE</button>
+      <span id="move-mode-label">— NO UNIT —</span>
+      <div class="ab-sep"></div>
+      <button class="action-btn confirm-move" id="btn-confirm-move" disabled>✓ CONFIRM MOVE</button>
+      <button class="action-btn cancel-move"  id="btn-cancel-move"  disabled>✕ CANCEL</button>
+      <div class="ab-sep"></div>
+      <button class="action-btn stratagem" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
+      <button class="action-btn end-phase" id="btn-end" data-shortcut="E">END MOVEMENT →</button>
+    </div>
+
+  </main>
+</div><!-- /app -->
+
+<!-- Stratagem Modal -->
+<div id="modal-bg">
+  <div id="strat-modal">
+    <div class="modal-hdr">
+      <span class="modal-title">SELECT STRATAGEM</span>
+      <button class="modal-x" id="modal-close">×</button>
+    </div>
+    <div class="strat-list">
+      <div class="strat-item">
+        <div class="strat-top"><span class="strat-name">COMMAND RE-ROLL</span><span class="strat-cp">1 CP</span><span class="strat-timing">ANY PHASE</span></div>
+        <p class="strat-desc">Re-roll one dice result.</p>
+      </div>
+      <div class="strat-item">
+        <div class="strat-top"><span class="strat-name">INSANE BRAVERY</span><span class="strat-cp">1 CP</span><span class="strat-timing">COMMAND PHASE</span></div>
+        <p class="strat-desc">A unit automatically passes a Battle-shock test.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Global Tooltip -->
+<div id="global-tooltip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="../../../shared/battle-terrain.js"></script>
+<script src="../../../shared/battle-units.js"></script>
+<script src="../../../shared/battle-board.js"></script>
+<script src="../../../shared/battle-models.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   V0.16 — Movement Range Enforcement
+   Mechanic: NORMAL MOVE / ADVANCE enters move mode.
+   Ghost circles show start position, zones show max range.
+   Dragging beyond M" (or M+3.5" advance) snaps to boundary.
+   CONFIRM commits, CANCEL snaps back.
+══════════════════════════════════════════════════════════ */
+
+const { mmR, R32, R40, simState, initBoard, initBattleControls,
+        initModelInteraction, renderTerrain, renderModels, buildCard,
+        initAllTooltips, PX_PER_INCH, UNITS } = BattleUI;
+
+// ── Army positions (same as v0.15) ───────────────────────
+simState.units = [
+  {
+    id: 'assault-intercessors', rosterIndex: 0, faction: 'imp',
+    models: [
+      {id:'ai1', x:165, y:233, r:R32}, {id:'ai2', x:182, y:228, r:R32}, {id:'ai3', x:199, y:233, r:R32},
+      {id:'ai4', x:173, y:249, r:R32}, {id:'ai5', x:190, y:249, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'primaris-lieutenant', rosterIndex: 1, faction: 'imp',
+    models: [ {id:'pl1', x:125, y:312, r:R40} ], broken: false
+  },
+  {
+    id: 'intercessor-squad-a', rosterIndex: 2, faction: 'imp',
+    models: [
+      {id:'isa1', x:222, y:200, r:R32}, {id:'isa2', x:239, y:195, r:R32}, {id:'isa3', x:256, y:200, r:R32},
+      {id:'isa4', x:230, y:216, r:R32}, {id:'isa5', x:248, y:216, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'hellblasters', rosterIndex: 3, faction: 'imp',
+    models: [
+      {id:'hb1', x:80, y:200, r:R32}, {id:'hb2', x:97, y:195, r:R32}, {id:'hb3', x:114, y:200, r:R32},
+      {id:'hb4', x:88, y:216, r:R32}, {id:'hb5', x:105, y:216, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'redemptor-dreadnought', rosterIndex: 4, faction: 'imp',
+    models: [ {id:'rd1', x:150, y:278, r:22, shape:'rect', w:43, h:25} ], broken: false
+  },
+  {
+    id: 'boss-nob', rosterIndex: 6, faction: 'ork',
+    models: [ {id:'bn1', x:548, y:132, r:R32} ], broken: false
+  },
+  {
+    id: 'boyz-mob', rosterIndex: 7, faction: 'ork',
+    models: [
+      {id:'bm1', x:518, y:195, r:R32}, {id:'bm2', x:535, y:195, r:R32}, {id:'bm3', x:552, y:195, r:R32}, {id:'bm4', x:569, y:195, r:R32},
+      {id:'bm5', x:526, y:212, r:R32}, {id:'bm6', x:543, y:212, r:R32}, {id:'bm7', x:560, y:212, r:R32},
+      {id:'bm8', x:518, y:229, r:R32}, {id:'bm9', x:535, y:229, r:R32}, {id:'bm10', x:552, y:229, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'mekboy', rosterIndex: 8, faction: 'ork',
+    models: [ {id:'mb1', x:480, y:272, r:R32} ], broken: false
+  }
+];
+
+// ── Movement state ────────────────────────────────────────
+const moveState = {
+  mode: null,       // null | 'move' | 'advance'
+  starts: {},       // modelId → {x, y} recorded when mode starts
+  moved: false,     // true once any model has moved from start
+};
+
+// ── Get movement range limit in SVG px ──────────────────
+function getMoveRangePx(unitId, isAdvance) {
+  const u = UNITS[unitId];
+  if (!u) return 0;
+  const inches = isAdvance ? (u.M + 3.5) : u.M;
+  return inches * PX_PER_INCH;
+}
+
+// ── Faction colour for zone/ghost ───────────────────────
+function getFactionColor(unitId) {
+  const u = UNITS[unitId];
+  if (!u) return '#888';
+  return u.faction_side === 'imp' ? '#2266ee' : '#cc2222';
+}
+
+// ── Enter move mode ───────────────────────────────────────
+function enterMoveMode(mode) {
+  const uid = BattleUI.currentUnit;
+  if (!uid) return;
+  const unit = simState.units.find(u => u.id === uid);
+  if (!unit) return;
+
+  // Exit any existing mode cleanly (without confirm/cancel)
+  if (moveState.mode !== null) {
+    clearMoveOverlays();
+  }
+
+  moveState.mode = mode;
+  moveState.moved = false;
+  moveState.starts = {};
+  // Record start positions
+  unit.models.forEach(m => {
+    moveState.starts[m.id] = { x: m.x, y: m.y };
+  });
+
+  updateMoveButtons();
+  renderMoveOverlays(uid);
+  renderModels();
+}
+
+// ── Confirm move ─────────────────────────────────────────
+function confirmMove() {
+  moveState.mode = null;
+  moveState.starts = {};
+  moveState.moved = false;
+  clearMoveOverlays();
+  updateMoveButtons();
+  renderModels();
+}
+
+// ── Cancel move — snap back ──────────────────────────────
+function cancelMove() {
+  const uid = BattleUI.currentUnit;
+  if (!uid) { moveState.mode = null; clearMoveOverlays(); updateMoveButtons(); return; }
+  const unit = simState.units.find(u => u.id === uid);
+  if (unit) {
+    unit.models.forEach(m => {
+      const start = moveState.starts[m.id];
+      if (start) { m.x = start.x; m.y = start.y; }
+    });
+  }
+  moveState.mode = null;
+  moveState.starts = {};
+  moveState.moved = false;
+  clearMoveOverlays();
+  updateMoveButtons();
+  renderModels();
+}
+
+// ── Update action bar button states ──────────────────────
+function updateMoveButtons() {
+  const uid = BattleUI.currentUnit;
+  const hasUnit = !!uid;
+  const inMode = moveState.mode !== null;
+  const hasMoved = moveState.moved;
+
+  const btnMove    = document.getElementById('btn-move');
+  const btnAdvance = document.getElementById('btn-advance');
+  const btnConfirm = document.getElementById('btn-confirm-move');
+  const btnCancel  = document.getElementById('btn-cancel-move');
+  const modeLabel  = document.getElementById('move-mode-label');
+
+  if (btnMove) btnMove.classList.toggle('active', moveState.mode === 'move');
+  if (btnAdvance) btnAdvance.classList.toggle('active', moveState.mode === 'advance');
+  if (btnConfirm) btnConfirm.disabled = !(inMode && hasMoved);
+  if (btnCancel)  btnCancel.disabled  = !inMode;
+
+  if (modeLabel) {
+    modeLabel.className = '';
+    if (!hasUnit) {
+      modeLabel.textContent = '— NO UNIT —';
+    } else if (moveState.mode === 'move') {
+      modeLabel.textContent = '◉ MOVING';
+      modeLabel.className = 'active-move';
+    } else if (moveState.mode === 'advance') {
+      modeLabel.textContent = '◉ ADVANCING +D6"';
+      modeLabel.className = 'active-advance';
+    } else {
+      modeLabel.textContent = uid ? '— SELECT MOVE —' : '— NO UNIT —';
+    }
+  }
+}
+
+// ── Render movement zones and ghost circles ───────────────
+function renderMoveOverlays(uid) {
+  const layerZones  = document.getElementById('layer-move-zones');
+  const layerGhosts = document.getElementById('layer-move-ghosts');
+  if (!layerZones || !layerGhosts) return;
+  layerZones.innerHTML  = '';
+  layerGhosts.innerHTML = '';
+
+  if (!moveState.mode || !uid) return;
+
+  const unit = simState.units.find(u => u.id === uid);
+  if (!unit) return;
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const isAdvance = moveState.mode === 'advance';
+  const rangePx   = getMoveRangePx(uid, isAdvance);
+  const zoneClass = isAdvance ? 'move-zone zone-advance' : 'move-zone zone-move';
+  const color     = getFactionColor(uid);
+
+  unit.models.forEach(m => {
+    const start = moveState.starts[m.id];
+    if (!start) return;
+
+    // Movement zone circle (radius = movement range in SVG px)
+    const zone = document.createElementNS(NS, 'circle');
+    zone.setAttribute('cx', start.x);
+    zone.setAttribute('cy', start.y);
+    zone.setAttribute('r', rangePx);
+    zone.setAttribute('class', zoneClass);
+    if (isAdvance) {
+      zone.style.fill   = 'rgba(201,163,82,0.04)';
+      zone.style.stroke = 'rgba(201,163,82,0.2)';
+    } else {
+      zone.style.fill   = 'rgba(0,200,168,0.04)';
+      zone.style.stroke = 'rgba(0,200,168,0.2)';
+    }
+    zone.style.strokeWidth = '1.5';
+    zone.style.strokeDasharray = '6 4';
+    zone.style.pointerEvents = 'none';
+    layerZones.appendChild(zone);
+
+    // Ghost circle at start position
+    let ghost;
+    if (m.shape === 'rect') {
+      ghost = document.createElementNS(NS, 'rect');
+      ghost.setAttribute('x', start.x - m.w / 2);
+      ghost.setAttribute('y', start.y - m.h / 2);
+      ghost.setAttribute('width', m.w);
+      ghost.setAttribute('height', m.h);
+      ghost.setAttribute('rx', '5'); ghost.setAttribute('ry', '5');
+    } else {
+      ghost = document.createElementNS(NS, 'circle');
+      ghost.setAttribute('cx', start.x);
+      ghost.setAttribute('cy', start.y);
+      ghost.setAttribute('r', m.r);
+    }
+    ghost.setAttribute('class', 'move-ghost');
+    ghost.style.fill = 'none';
+    ghost.style.stroke = color;
+    ghost.style.strokeWidth = '1.5';
+    ghost.style.strokeDasharray = '4 3';
+    ghost.style.opacity = '0.35';
+    ghost.style.pointerEvents = 'none';
+    layerGhosts.appendChild(ghost);
+  });
+}
+
+function clearMoveOverlays() {
+  const lz = document.getElementById('layer-move-zones');
+  const lg = document.getElementById('layer-move-ghosts');
+  if (lz) lz.innerHTML = '';
+  if (lg) lg.innerHTML = '';
+}
+
+// ── Patch model drag to enforce movement range ────────────
+// We hook into the mousemove event on window AFTER shared init
+function patchModelDrag() {
+  // We wrap the base renderModels to also redraw overlays
+  const origRenderModels = BattleUI.renderModels;
+  BattleUI.renderModels = function() {
+    origRenderModels();
+    if (moveState.mode && BattleUI.currentUnit) {
+      renderMoveOverlays(BattleUI.currentUnit);
+    }
+  };
+
+  // Override mousemove on window to enforce range limit
+  window.addEventListener('mousemove', function(e) {
+    const drag = simState.drag;
+    if (!drag) return;
+    if (!moveState.mode) return;
+
+    const uid = BattleUI.currentUnit;
+    if (!uid) return;
+
+    if (drag.type === 'model') {
+      const model = drag.model;
+      const start = moveState.starts[model.id];
+      if (!start) return;
+
+      const rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+      const dx = model.x - start.x;
+      const dy = model.y - start.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist > rangePx) {
+        // Clamp to boundary
+        const scale = rangePx / dist;
+        model.x = start.x + dx * scale;
+        model.y = start.y + dy * scale;
+      }
+
+      // Check if any model has moved from start
+      const distFromStart = Math.hypot(model.x - start.x, model.y - start.y);
+      if (distFromStart > 0.5) { moveState.moved = true; updateMoveButtons(); }
+    }
+    else if (drag.type === 'unit') {
+      // For unit drag: clamp each model to its range
+      const unit = drag.unit;
+      const rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+      let anyMoved = false;
+      unit.models.forEach(function(m) {
+        const start = moveState.starts[m.id];
+        if (!start) return;
+        const dx = m.x - start.x;
+        const dy = m.y - start.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > rangePx) {
+          const sc = rangePx / dist;
+          m.x = start.x + dx * sc;
+          m.y = start.y + dy * sc;
+        }
+        if (Math.hypot(m.x - start.x, m.y - start.y) > 0.5) anyMoved = true;
+      });
+      if (anyMoved) { moveState.moved = true; updateMoveButtons(); }
+    }
+  }, true); // capture phase — runs before battle-models.js listener
+}
+
+// ── Wire action buttons ──────────────────────────────────
+document.getElementById('btn-move').addEventListener('click', function() {
+  if (!BattleUI.currentUnit) return;
+  enterMoveMode('move');
+});
+document.getElementById('btn-advance').addEventListener('click', function() {
+  if (!BattleUI.currentUnit) return;
+  enterMoveMode('advance');
+});
+document.getElementById('btn-confirm-move').addEventListener('click', confirmMove);
+document.getElementById('btn-cancel-move').addEventListener('click', cancelMove);
+
+// Update move buttons whenever selection changes
+const origSelectUnit = BattleUI.selectUnit.bind(BattleUI);
+BattleUI.selectUnit = function(uid) {
+  // If we change unit while in move mode, cancel
+  if (moveState.mode !== null && uid !== BattleUI.currentUnit) {
+    cancelMove();
+  }
+  origSelectUnit(uid);
+  updateMoveButtons();
+};
+window.selectUnit = BattleUI.selectUnit;
+
+// ── Initialise ───────────────────────────────────────────
+renderTerrain();
+buildCard('assault-intercessors');
+initAllTooltips();
+initBoard({ initialScale: 0.5 });
+initBattleControls();
+initModelInteraction();
+
+// Override the btn-move/advance handlers that initBattleControls wired
+// (we already added our own click handlers above which call enterMoveMode)
+// Note: initBattleControls wires btn-move to just toggle .active class;
+// our listener above overwrites the behavior we want.
+
+patchModelDrag();
+renderModels();
+updateMoveButtons();
+</script>
+</body>
+</html>

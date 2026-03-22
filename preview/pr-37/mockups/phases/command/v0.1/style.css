@@ -1,0 +1,168 @@
+/* ══════════════════════════════════════════════════════════════
+   v0.1 Command Phase — Overrides
+   All shared styles are in ../../shared/components/*.css
+   This file contains ONLY command-phase-specific overrides.
+══════════════════════════════════════════════════════════════ */
+
+/* ── Backlink lowered to avoid VP bar overlap ── */
+.backlink { top: 40px !important; }
+
+/* ── Override shared action-bar label ── */
+#move-mode-label {
+  flex: 0 0 auto !important;
+  color: var(--imp) !important;
+  min-width: auto !important;
+}
+#move-mode-label.cmd-battle-shock { color: #ffaa00 !important; }
+#move-mode-label.cmd-cp-gain     { color: #00d4ff !important; }
+#move-mode-label.cmd-vp-scoring  { color: #00ff80 !important; }
+#move-mode-label.cmd-done        { color: var(--text-sec) !important; }
+
+/* ── Roll overlay max width ── */
+#roll-overlay { max-width: 560px; }
+
+/* ── Battle-shock: amber pulse pill in roster ── */
+.roster-state-pill.needs-test {
+  background: rgba(255,170,0,0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255,170,0,0.4);
+  display: inline-flex !important;
+  animation: pill-pulse 1.2s ease-in-out infinite;
+}
+@keyframes pill-pulse {
+  0%, 100% { opacity: 0.8; box-shadow: 0 0 4px rgba(255,170,0,0.2); }
+  50%      { opacity: 1;   box-shadow: 0 0 12px rgba(255,170,0,0.5); }
+}
+
+/* ── Battle-shocked (failed test): red pill ── */
+.roster-state-pill.shocked {
+  background: rgba(204,32,32,0.2);
+  color: #cc2020;
+  border: 1px solid rgba(204,32,32,0.4);
+  display: inline-flex !important;
+}
+
+/* ── Battle-shock passed: green pill ── */
+.roster-state-pill.bs-passed {
+  background: rgba(0,200,80,0.15);
+  color: #00c850;
+  border: 1px solid rgba(0,200,80,0.4);
+  display: inline-flex !important;
+}
+
+/* ── Amber hull pulse for needs-test units on battlefield ── */
+.unit-hull.cmd-needs-test {
+  stroke: #ffaa00 !important;
+  stroke-width: 2.5 !important;
+  stroke-opacity: 1 !important;
+  fill: rgba(255,170,0,0.1) !important;
+  filter: drop-shadow(0 0 8px rgba(255,170,0,0.6));
+  animation: hull-amber-pulse 1.2s ease-in-out infinite;
+}
+@keyframes hull-amber-pulse {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(255,170,0,0.4)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(255,170,0,0.8)); }
+}
+
+/* ── Battleshocked model tokens — dim red flicker ── */
+.model-base.cmd-bs-token circle,
+.model-base.cmd-bs-token rect {
+  stroke: #992020 !important;
+}
+.model-base.cmd-bs-token {
+  opacity: 0.7;
+  animation: token-bs-dim 2.2s ease-in-out infinite;
+}
+@keyframes token-bs-dim {
+  0%, 100% { opacity: 0.65; }
+  50%      { opacity: 0.85; }
+}
+
+/* ── Battle-shock banner (matches #fight-invalid-banner from battlefield.css) ── */
+#bs-banner {
+  position: static !important;
+  transform: none !important;
+  margin: 0 6px;
+  box-sizing: border-box;
+  text-align: center;
+  padding: 6px 12px !important;
+  font: 700 10px/1 'Rajdhani', sans-serif !important;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  box-shadow: 0 0 12px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.5);
+  background: rgba(255,140,0,.96);
+  color: #fff;
+  border: 2px solid #ffaa40;
+}
+
+/* ── Score tick animations ── */
+@keyframes score-out {
+  0%   { opacity: 1; transform: scale(1) translateY(0); }
+  100% { opacity: 0; transform: scale(1.4) translateY(-8px); }
+}
+@keyframes score-in {
+  0%   { opacity: 0; transform: scale(.6) translateY(10px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes score-flash {
+  0%, 100% { color: var(--imp); }
+  40%      { color: #fff; text-shadow: 0 0 14px var(--imp), 0 0 30px var(--imp); }
+}
+.ticking-out { animation: score-out 0.2s ease-out forwards; }
+.ticking-in  { animation: score-in 0.2s ease-out forwards, score-flash 0.5s ease-out forwards; }
+
+/* ── Announce overlays — positioned inside #battlefield, centered on board ── */
+.cmd-announce {
+  position: absolute;
+  /* Center horizontally in battlefield (accounts for roster sidebar) */
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  pointer-events: none;
+  text-align: center;
+}
+.cmd-announce.hidden { display: none; }
+
+.cmd-announce-text {
+  font: 400 32px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  animation: announce-fade 1.5s ease-out forwards;
+}
+.cmd-announce-text.cp { color: #00d4ff; text-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 60px rgba(0,212,255,0.2); }
+.cmd-announce-text.vp { color: #00ff80; text-shadow: 0 0 30px rgba(0,255,128,0.5), 0 0 60px rgba(0,255,128,0.2); }
+
+@keyframes announce-fade {
+  0%   { opacity: 0; transform: scale(0.8); }
+  15%  { opacity: 1; transform: scale(1); }
+  70%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* ── Objective flash for VP scoring ── */
+.obj-hex-wrap.obj-scoring .obj-ring {
+  animation: obj-score-pulse 0.8s ease-out;
+}
+@keyframes obj-score-pulse {
+  0%   { stroke: rgba(0,255,128,0.2); stroke-width: 2; }
+  40%  { stroke: rgba(0,255,128,0.9); stroke-width: 4; }
+  100% { stroke: rgba(0,255,128,0.3); stroke-width: 2; }
+}
+
+/* ── No-tests flash message ── */
+.cmd-flash-msg {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 200;
+  font: 400 20px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  color: var(--text-sec);
+  text-shadow: 0 0 20px rgba(0,212,255,0.3);
+  pointer-events: none;
+  animation: announce-fade 1.5s ease-out forwards;
+}

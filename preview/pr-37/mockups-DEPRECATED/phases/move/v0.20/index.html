@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.20 · Terrain AABB + Continuous Unit Collision</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../shared/battle-ui.css">
+  <style>
+    /* ── v0.16 MOVEMENT OVERLAY STYLES ── */
+    .move-ghost {
+      pointer-events: none;
+      fill: none;
+      stroke-dasharray: 4 3;
+      opacity: 0.35;
+    }
+    .move-zone {
+      pointer-events: none;
+      stroke-dasharray: 6 4;
+    }
+    .move-zone.zone-move {
+      fill: rgba(0,200,168,0.04);
+      stroke: rgba(0,200,168,0.2);
+      stroke-width: 1.5;
+    }
+    .move-zone.zone-advance {
+      fill: rgba(201,163,82,0.04);
+      stroke: rgba(201,163,82,0.2);
+      stroke-width: 1.5;
+    }
+
+    /* ── v0.17: prevent text selection during drag ── */
+    html, body { user-select: none; -webkit-user-select: none; }
+
+    /* ── v0.18: terrain SVG sits below objectives; model SVG sits above ── */
+    #bf-svg-terrain { position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1; }
+    #bf-svg         { position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:6; }
+
+    /* ── v0.17: dashed ruler line ── */
+    .move-ruler {
+      pointer-events: none;
+      stroke-width: 1;
+      stroke-dasharray: 4 3;
+      fill: none;
+      opacity: 0.6;
+    }
+    .move-ruler-label {
+      pointer-events: none;
+      font: 600 9px/1 'Rajdhani', sans-serif;
+      fill: rgba(255,255,255,0.55);
+    }
+
+    /* ── v0.17: cohesion banner — compact top pill (override shared inline style) ── */
+    #cohesion-banner {
+      top: 88px !important; left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: auto !important; max-width: 280px !important;
+      padding: 5px 14px !important;
+      font-size: 11px !important;
+      border-radius: 3px !important;
+      white-space: nowrap !important;
+    }
+    /* ── v0.17: shake animation for blocked CONFIRM ── */
+    @keyframes shake-err {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+    .shake-error { animation: shake-err 0.4s ease; }
+
+    /* ── v0.17: Advance dice overlay ── */
+    #advance-dice-overlay {
+      position: fixed; inset: 0;
+      display: none; align-items: center; justify-content: center;
+      z-index: 500;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(3px);
+    }
+    #advance-dice-overlay.visible { display: flex; }
+    .dice-panel {
+      text-align: center;
+      animation: dice-panel-in 0.15s ease-out;
+    }
+    @keyframes dice-panel-in {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .dice-d6 {
+      width: 88px; height: 88px; margin: 0 auto 14px;
+      background: #0a0804;
+      border: 3px solid #c9a352;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font: 700 52px/1 'Share Tech Mono', monospace;
+      color: #c9a352;
+      box-shadow: 0 0 32px rgba(201,163,82,0.5);
+    }
+    .dice-d6.rolling { animation: dice-roll 0.65s cubic-bezier(0.18,0.89,0.32,1.28); }
+    @keyframes dice-roll {
+      0%   { transform: rotate(0deg)   scale(0.3);  opacity: 0; }
+      30%  { transform: rotate(540deg) scale(1.18); opacity: 1; }
+      60%  { transform: rotate(520deg) scale(0.94); }
+      78%  { transform: rotate(532deg) scale(1.06); }
+      90%  { transform: rotate(528deg) scale(0.98); }
+      100% { transform: rotate(530deg) scale(1);    }
+    }
+    .dice-result-label {
+      font: 700 13px/1 'Rajdhani', sans-serif;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #c9a352;
+    }
+    .dice-total-label {
+      font: 600 11px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px;
+      color: rgba(201,163,82,0.5);
+      margin-top: 6px;
+    }
+
+    /* ── CONFIRM / CANCEL buttons ── */
+    .action-btn.confirm-move {
+      background: rgba(0,200,168,.15);
+      border: 1px solid rgba(0,200,168,.6);
+      color: #00c8a8;
+    }
+    .action-btn.confirm-move:disabled {
+      background: transparent;
+      border: 1px solid #222;
+      color: #333;
+      cursor: default;
+    }
+    .action-btn.cancel-move {
+      background: rgba(204,34,34,.1);
+      border: 1px solid rgba(204,34,34,.4);
+      color: #cc4444;
+    }
+    .action-btn.cancel-move:disabled {
+      background: transparent;
+      border: 1px solid #222;
+      color: #333;
+      cursor: default;
+    }
+
+    /* ── Move mode indicator in action bar ── */
+    #move-mode-label {
+      font: 700 9px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: rgba(201,163,82,0.5);
+      padding: 0 4px;
+    }
+    #move-mode-label.active-move    { color: #00c8a8; }
+    #move-mode-label.active-advance { color: #c9a352; }
+
+    /* ── D6 advance indicator ── */
+    .advance-d6-badge {
+      position: absolute;
+      top: -10px; right: -10px;
+      background: rgba(201,163,82,0.9);
+      color: #060504;
+      font: 700 8px/1 'Share Tech Mono', monospace;
+      padding: 2px 4px;
+      border-radius: 2px;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* ── v0.16 version badge ── */
+    .v16-badge {
+      position: fixed;
+      top: 38px; right: 12px;
+      z-index: 60;
+      font: 700 9px/1 'Rajdhani', sans-serif;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      background: rgba(0,200,168,0.1);
+      border: 1px solid rgba(0,200,168,0.3);
+      color: #00c8a8;
+      border-radius: 2px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════════════ ROSTER ═══════════════════ -->
+  <aside id="roster">
+    <div class="roster-header">
+      <span class="roster-title">ARMY ROSTER</span>
+      <button class="roster-collapse-btn" id="roster-btn">◄</button>
+    </div>
+    <div class="roster-scroll">
+
+      <!-- IMPERIUM -->
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band imp"></div>
+          <span class="faction-icon">✠</span>
+          <span class="faction-label imp">IMPERIUM</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit active" data-unit="assault-intercessors">
+            <div class="unit-icon imp">✠<div class="model-badge">5</div></div>
+            <div class="unit-name">Assault Intercessors</div>
+          </div>
+          <div class="rail-unit" data-unit="primaris-lieutenant">
+            <div class="unit-icon char">★</div>
+            <div class="unit-name">Primaris Lieutenant</div>
+          </div>
+          <div class="rail-unit" data-unit="intercessor-squad-a">
+            <div class="unit-icon imp">✠<div class="model-badge">5</div></div>
+            <div class="unit-name">Intercessor Squad A</div>
+          </div>
+          <div class="rail-unit" data-unit="hellblasters">
+            <div class="unit-icon imp">✠<div class="model-badge">5</div></div>
+            <div class="unit-name">Hellblasters</div>
+          </div>
+          <div class="rail-unit" data-unit="redemptor-dreadnought">
+            <div class="unit-icon imp" style="border-radius:4px;font-size:11px;">⬡</div>
+            <div class="unit-name">Redemptor Dreadnought</div>
+          </div>
+          <div class="aa-section">
+            <div class="aa-header" onclick="toggleAA(this)">
+              <span class="aa-label">ARMY ABILITIES</span>
+              <span class="aa-chev">▸</span>
+            </div>
+            <div class="aa-body">
+              <div class="aa-row" data-tip="Re-roll wound rolls of 1 for friendly ADEPTUS ASTARTES units."><span class="aa-name">AND THEY SHALL KNOW NO FEAR</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row" data-tip="Pick one enemy unit at start of your turn. Friendly ADEPTUS ASTARTES units re-roll hit rolls against it."><span class="aa-name">OATH OF MOMENT</span><span class="aa-timing">COMMAND</span></div>
+              <div class="aa-row phase-active" data-tip="Units that charged this turn get +1 Attack until end of Fight phase."><span class="aa-name">SHOCK ASSAULT</span><span class="aa-timing">FIGHT PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORKS -->
+      <div class="faction-section">
+        <div class="faction-header" onclick="toggleFaction(this)">
+          <div class="faction-band ork"></div>
+          <span class="faction-icon">☠</span>
+          <span class="faction-label ork">ORKS</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit" data-unit="boss-nob">
+            <div class="unit-icon char" style="color:rgba(201,163,82,.7);">☠</div>
+            <div class="unit-name">Boss Nob</div>
+          </div>
+          <div class="rail-unit" data-unit="boyz-mob">
+            <div class="unit-icon ork">☠<div class="model-badge">10</div></div>
+            <div class="unit-name">Boyz Mob</div>
+          </div>
+          <div class="rail-unit" data-unit="mekboy">
+            <div class="unit-icon char" style="color:rgba(201,163,82,.7);">⚙</div>
+            <div class="unit-name">Mekboy</div>
+          </div>
+          <div class="aa-section">
+            <div class="aa-header" onclick="toggleAA(this)" style="color:var(--red-enemy);">
+              <span class="aa-label">ARMY ABILITIES</span>
+              <span class="aa-chev">▸</span>
+            </div>
+            <div class="aa-body">
+              <div class="aa-row" data-tip="Ork units can make a charge move after Advancing."><span class="aa-name">'ERE WE GO</span><span class="aa-timing">PASSIVE</span></div>
+              <div class="aa-row" data-tip="Once per game, any phase. Until end of turn: Ork units get +1 Attack and +1 to charge rolls."><span class="aa-name">WAAAGH!</span><span class="aa-timing">ANY PHASE</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ═══════════════════ BATTLEFIELD ═══════════════════ -->
+  <main id="battlefield">
+
+    <div id="vp-bar">
+      <div class="vp-cp">CP <span id="cp-val">5</span></div>
+      <div class="vp-faction">
+        <span class="vp-name-imp">IMPERIUM</span>
+        <span class="vp-score imp">10</span>
+      </div>
+      <span class="vp-vs">VS</span>
+      <div class="vp-faction">
+        <span class="vp-score ork">4</span>
+        <span class="vp-name-ork">ORKS</span>
+      </div>
+      <span class="vp-round">RND 2 / 5</span>
+      <button id="reset-btn" title="Reset view [R]">↺ RESET</button>
+    </div>
+
+    <div id="phase-header">
+      <div class="phase-pill">
+        <div class="phase-title">MOVEMENT PHASE</div>
+        <div class="phase-subtitle">Imperium Active · Round 2</div>
+      </div>
+    </div>
+
+    <div class="v16-badge">v0.20 · MOVEMENT</div>
+
+    <div id="battlefield-inner">
+      <!-- ── SVG 1: terrain + deployment zones (z-index:1, below objectives) ── -->
+      <svg id="bf-svg-terrain" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+        <path d="M 0,0 L 216,0 L 216,528 L 0,528 Z"
+              fill="rgba(25,70,190,0.08)" stroke="rgba(25,70,190,0.22)" stroke-width="1"
+              vector-effect="non-scaling-stroke" pointer-events="none"/>
+        <path d="M 504,0 L 720,0 L 720,528 L 504,528 Z"
+              fill="rgba(160,30,30,0.08)" stroke="rgba(160,30,30,0.22)" stroke-width="1"
+              vector-effect="non-scaling-stroke" pointer-events="none"/>
+        <line x1="360" y1="0" x2="360" y2="528" stroke="rgba(201,163,82,.07)" stroke-width="1" stroke-dasharray="8,8" pointer-events="none"/>
+        <line x1="0" y1="264" x2="720" y2="264" stroke="rgba(201,163,82,.04)" stroke-width="1" stroke-dasharray="4,12" pointer-events="none"/>
+        <text x="108" y="264" font-size="18" font-family="Rajdhani" font-weight="700"
+              fill="rgba(25,70,190,0.12)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
+              pointer-events="none">IMPERIUM</text>
+        <text x="612" y="264" font-size="18" font-family="Rajdhani" font-weight="700"
+              fill="rgba(160,30,30,0.12)" letter-spacing="4" text-anchor="middle" dominant-baseline="middle"
+              pointer-events="none">ORKS</text>
+        <g id="terrain-layer"></g>
+      </svg>
+
+      <!-- Objective area rings -->
+      <div class="obj-area-ring" style="left:50%;top:13.64%;"></div>
+      <div class="obj-area-ring" style="left:16.67%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:83.33%;top:50%;"></div>
+      <div class="obj-area-ring" style="left:50%;top:86.36%;"></div>
+
+      <!-- Objectives -->
+      <div class="obj-hex-wrap" style="left:50%;top:13.64%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">01</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:16.67%;top:50%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer controlled"><div class="obj-hex-inner"><div class="obj-num">02</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:50%;top:50%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer contested"><div class="obj-hex-inner"><div class="obj-num">03</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:83.33%;top:50%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">04</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:50%;top:86.36%;" data-terrain="area" data-tip-key="area">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-num">05</div><div class="obj-lbl">OBJ</div></div></div>
+      </div>
+
+      <!-- ── SVG 2: movement overlays + model hulls + bases (z-index:6, above objectives) ── -->
+      <!-- battle-models.js looks up #bf-svg → finds this; injects <defs> here. -->
+      <svg id="bf-svg" viewBox="0 0 720 528" preserveAspectRatio="xMidYMid slice">
+        <!-- Glow defs are injected here by initModelInteraction() -->
+        <g id="layer-move-zones"></g>
+        <g id="layer-move-ghosts"></g>
+        <g id="layer-hulls"></g>
+        <g id="layer-models"></g>
+        <!-- Rulers LAST = rendered on top of everything including model circles -->
+        <g id="layer-move-rulers"></g>
+      </svg>
+
+    </div><!-- /battlefield-inner -->
+
+    <!-- Range circles -->
+    <div id="range-move"    class="range-circle rc-move"   ></div>
+    <div id="range-advance" class="range-circle rc-advance"></div>
+    <div id="range-charge"  class="range-circle rc-charge" ></div>
+    <div id="range-move-label"    class="range-label rl-move"   >MOVE</div>
+    <div id="range-advance-label" class="range-label rl-advance">ADV</div>
+    <div id="range-charge-label"  class="range-label rl-charge" >CHARGE</div>
+
+    <!-- Unit Card -->
+    <div id="unit-card" class="visible">
+      <div class="card-hdr">
+        <div style="min-width:0;flex:1;">
+          <div class="card-name" id="card-name">ASSAULT INTERCESSORS</div>
+          <div class="card-faction" id="card-faction">✠ SPACE MARINES · ADEPTUS ASTARTES</div>
+        </div>
+        <button class="card-close" id="card-close">×</button>
+      </div>
+      <div class="card-stats" id="card-stats"></div>
+      <div class="card-ranges" id="card-ranges">
+        <button class="range-toggle move" id="rt-move" data-range-type="move">MOVE 6"</button>
+        <button class="range-toggle advance" id="rt-advance" data-range-type="advance">ADVANCE ~9"</button>
+        <button class="range-toggle charge" id="rt-charge" data-range-type="charge">CHARGE ~13"</button>
+      </div>
+      <div id="card-wargear"></div>
+      <div class="card-weapons" id="card-weapons"></div>
+      <div class="card-abilities" id="card-abilities"></div>
+    </div>
+
+    <!-- Action Bar (v0.16: extended with move controls) -->
+    <div id="action-bar">
+      <div class="ps-step done"><div class="ps-dot"></div>CMD</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step active"><div class="ps-dot"></div>MOVE</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>SHOOT</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>CHARGE</div>
+      <span class="ps-arr">›</span>
+      <div class="ps-step upcoming"><div class="ps-dot"></div>FIGHT</div>
+      <div class="ab-sep"></div>
+      <button class="action-btn" id="btn-move" data-shortcut="M">NORMAL MOVE</button>
+      <button class="action-btn" id="btn-advance" data-shortcut="A">ADVANCE</button>
+      <span id="move-mode-label">— NO UNIT —</span>
+      <div class="ab-sep"></div>
+      <button class="action-btn confirm-move" id="btn-confirm-move" disabled>✓ CONFIRM MOVE</button>
+      <button class="action-btn cancel-move"  id="btn-cancel-move"  disabled>✕ CANCEL</button>
+      <div class="ab-sep"></div>
+      <button class="action-btn stratagem" id="btn-strat" data-shortcut="S">USE STRATAGEM</button>
+      <button class="action-btn end-phase" id="btn-end" data-shortcut="E">END MOVEMENT →</button>
+    </div>
+
+  </main>
+</div><!-- /app -->
+
+<!-- Stratagem Modal -->
+<div id="modal-bg">
+  <div id="strat-modal">
+    <div class="modal-hdr">
+      <span class="modal-title">SELECT STRATAGEM</span>
+      <button class="modal-x" id="modal-close">×</button>
+    </div>
+    <div class="strat-list">
+      <div class="strat-item">
+        <div class="strat-top"><span class="strat-name">COMMAND RE-ROLL</span><span class="strat-cp">1 CP</span><span class="strat-timing">ANY PHASE</span></div>
+        <p class="strat-desc">Re-roll one dice result.</p>
+      </div>
+      <div class="strat-item">
+        <div class="strat-top"><span class="strat-name">INSANE BRAVERY</span><span class="strat-cp">1 CP</span><span class="strat-timing">COMMAND PHASE</span></div>
+        <p class="strat-desc">A unit automatically passes a Battle-shock test.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Global Tooltip -->
+<div id="global-tooltip"></div>
+
+<!-- ── Advance D6 dice overlay ── -->
+<div id="advance-dice-overlay">
+  <div class="dice-panel">
+    <div class="dice-d6" id="advance-die-face"><span id="advance-die-num">—</span></div>
+    <div class="dice-result-label" id="advance-die-label">ADVANCE ROLL</div>
+    <div class="dice-total-label" id="advance-die-total"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="../../../shared/battle-terrain.js"></script>
+<script src="../../../shared/battle-units.js"></script>
+<script src="../../../shared/battle-board.js"></script>
+<script src="../../../shared/battle-models.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   V0.16 — Movement Range Enforcement
+   Mechanic: NORMAL MOVE / ADVANCE enters move mode.
+   Ghost circles show start position, zones show max range.
+   Dragging beyond M" (or M+3.5" advance) snaps to boundary.
+   CONFIRM commits, CANCEL snaps back.
+══════════════════════════════════════════════════════════ */
+
+const { mmR, R32, R40, simState, initBoard, initBattleControls,
+        initModelInteraction, renderTerrain, renderModels, buildCard,
+        initAllTooltips, PX_PER_INCH, UNITS } = BattleUI;
+
+// ── Army positions (same as v0.15) ───────────────────────
+simState.units = [
+  {
+    id: 'assault-intercessors', rosterIndex: 0, faction: 'imp',
+    models: [
+      {id:'ai1', x:165, y:233, r:R32}, {id:'ai2', x:182, y:228, r:R32}, {id:'ai3', x:199, y:233, r:R32},
+      {id:'ai4', x:173, y:249, r:R32}, {id:'ai5', x:190, y:249, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'primaris-lieutenant', rosterIndex: 1, faction: 'imp',
+    models: [ {id:'pl1', x:125, y:312, r:R40} ], broken: false
+  },
+  {
+    id: 'intercessor-squad-a', rosterIndex: 2, faction: 'imp',
+    models: [
+      {id:'isa1', x:222, y:200, r:R32}, {id:'isa2', x:239, y:195, r:R32}, {id:'isa3', x:256, y:200, r:R32},
+      {id:'isa4', x:230, y:216, r:R32}, {id:'isa5', x:248, y:216, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'hellblasters', rosterIndex: 3, faction: 'imp',
+    models: [
+      {id:'hb1', x:80, y:200, r:R32}, {id:'hb2', x:97, y:195, r:R32}, {id:'hb3', x:114, y:200, r:R32},
+      {id:'hb4', x:88, y:216, r:R32}, {id:'hb5', x:105, y:216, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'redemptor-dreadnought', rosterIndex: 4, faction: 'imp',
+    models: [ {id:'rd1', x:150, y:278, r:22, shape:'rect', w:43, h:25} ], broken: false
+  },
+  {
+    id: 'boss-nob', rosterIndex: 6, faction: 'ork',
+    models: [ {id:'bn1', x:548, y:132, r:R32} ], broken: false
+  },
+  {
+    id: 'boyz-mob', rosterIndex: 7, faction: 'ork',
+    models: [
+      {id:'bm1', x:518, y:195, r:R32}, {id:'bm2', x:535, y:195, r:R32}, {id:'bm3', x:552, y:195, r:R32}, {id:'bm4', x:569, y:195, r:R32},
+      {id:'bm5', x:526, y:212, r:R32}, {id:'bm6', x:543, y:212, r:R32}, {id:'bm7', x:560, y:212, r:R32},
+      {id:'bm8', x:518, y:229, r:R32}, {id:'bm9', x:535, y:229, r:R32}, {id:'bm10', x:552, y:229, r:R32}
+    ], broken: false
+  },
+  {
+    id: 'mekboy', rosterIndex: 8, faction: 'ork',
+    models: [ {id:'mb1', x:480, y:272, r:R32} ], broken: false
+  }
+];
+
+// ── Phase turn-start positions (captured ONCE at phase init) ──
+// Movement range is always measured from here, not from drag-start
+const phaseTurnStarts = {}; // modelId → {x, y}
+
+function captureTurnStarts() {
+  simState.units.forEach(u => {
+    u.models.forEach(m => { phaseTurnStarts[m.id] = { x: m.x, y: m.y }; });
+  });
+}
+
+// ── Movement state ────────────────────────────────────────
+const moveState = {
+  mode: null,        // null | 'move' | 'advance'
+  advanceDie: null,  // 1–6 once ADVANCE declared, null before
+  unitsMoved: new Set(), // unit IDs that have committed a move this turn
+};
+
+// ── Get movement range limit in SVG px ──────────────────
+// Uses actual die roll when in advance mode; 3.5 average as fallback UI hint
+function getMoveRangePx(unitId, isAdvance) {
+  const u = UNITS[unitId];
+  if (!u) return 0;
+  if (isAdvance) {
+    const bonus = (moveState.advanceDie !== null) ? moveState.advanceDie : 3.5;
+    return (u.M + bonus) * PX_PER_INCH;
+  }
+  return u.M * PX_PER_INCH;
+}
+
+// ── Faction colour for zone/ghost ───────────────────────
+function getFactionColor(unitId) {
+  const u = UNITS[unitId];
+  if (!u) return '#888';
+  return u.faction_side === 'imp' ? '#2266ee' : '#cc2222';
+}
+
+// ── Enter move mode ───────────────────────────────────────
+function enterMoveMode(mode) {
+  const uid = BattleUI.currentUnit;
+  if (!uid) return;
+  if (moveState.unitsMoved.has(uid)) return; // already moved this turn
+  clearMoveOverlays();
+  moveState.mode = mode;
+  // Note: advanceDie stays null here; set only when dice are rolled
+  updateMoveButtons();
+  renderMoveOverlays(uid);
+  renderModels();
+}
+
+// ── Confirm move ─────────────────────────────────────────
+function confirmMove() {
+  const uid = BattleUI.currentUnit;
+  const unit = uid ? simState.units.find(u => u.id === uid) : null;
+
+  // Cohesion check — block confirm if broken at end of move
+  if (unit) {
+    BattleUI.checkCohesion(unit);
+    if (unit.broken) {
+      const btn = document.getElementById('btn-confirm-move');
+      if (btn) { btn.classList.add('shake-error'); setTimeout(() => btn.classList.remove('shake-error'), 450); }
+      return; // don't commit
+    }
+  }
+
+  if (uid) moveState.unitsMoved.add(uid);
+  moveState.mode = null;
+  moveState.advanceDie = null;
+  clearMoveOverlays();
+  updateMoveButtons();
+  BattleUI.selectUnit(null); // deselect after committing
+}
+
+// ── Cancel move — snap back to turn-start positions, then deselect ──────
+function cancelMove() {
+  const uid = BattleUI.currentUnit;
+  const unit = uid ? simState.units.find(u => u.id === uid) : null;
+  if (unit) {
+    unit.models.forEach(m => {
+      const ts = phaseTurnStarts[m.id];
+      if (ts) { m.x = ts.x; m.y = ts.y; }
+    });
+  }
+  moveState.mode = null;
+  moveState.advanceDie = null;
+  clearMoveOverlays();
+  updateMoveButtons();
+  renderModels();
+  origSelectUnit(null); // deselect without triggering cancelMove again
+}
+
+// ── Update action bar button states ──────────────────────
+function updateMoveButtons() {
+  const uid = BattleUI.currentUnit;
+  const inMode = moveState.mode !== null;
+  const alreadyMoved = uid && moveState.unitsMoved.has(uid);
+  const unit = uid ? simState.units.find(u => u.id === uid) : null;
+  const isEnemy = unit && unit.faction !== ACTIVE_PLAYER_FACTION;
+
+  const btnMove    = document.getElementById('btn-move');
+  const btnAdvance = document.getElementById('btn-advance');
+  const btnConfirm = document.getElementById('btn-confirm-move');
+  const btnCancel  = document.getElementById('btn-cancel-move');
+  const modeLabel  = document.getElementById('move-mode-label');
+
+  if (btnMove)    { btnMove.classList.toggle('active', moveState.mode === 'move');
+                    btnMove.disabled    = isEnemy || alreadyMoved || (moveState.mode === 'advance'); }
+  if (btnAdvance) { btnAdvance.classList.toggle('active', moveState.mode === 'advance');
+                    btnAdvance.disabled = isEnemy || alreadyMoved || inMode; }
+  if (btnConfirm) btnConfirm.disabled = isEnemy || !inMode;
+  if (btnCancel)  btnCancel.disabled  = isEnemy || !inMode;
+
+  if (modeLabel) {
+    modeLabel.className = '';
+    if (isEnemy) {
+      modeLabel.textContent = '— ENEMY UNIT —';
+    } else if (alreadyMoved) {
+      modeLabel.textContent = '✓ MOVED';
+    } else if (moveState.mode === 'move') {
+      modeLabel.textContent = '◉ MOVING'; modeLabel.className = 'active-move';
+    } else if (moveState.mode === 'advance') {
+      const d = moveState.advanceDie;
+      modeLabel.textContent = d !== null ? `◉ ADVANCING +${d}"` : '◉ ADVANCING +D6"';
+      modeLabel.className = 'active-advance';
+    } else {
+      modeLabel.textContent = uid ? '— SELECT MOVE —' : '— NO UNIT —';
+    }
+  }
+}
+
+// ── Render movement zones and ghost circles ───────────────
+function renderMoveOverlays(uid) {
+  const layerZones  = document.getElementById('layer-move-zones');
+  const layerGhosts = document.getElementById('layer-move-ghosts');
+  if (!layerZones || !layerGhosts) return;
+  layerZones.innerHTML  = '';
+  layerGhosts.innerHTML = '';
+
+  if (!moveState.mode || !uid) return;
+
+  const unit = simState.units.find(u => u.id === uid);
+  if (!unit) return;
+  if (unit.faction !== ACTIVE_PLAYER_FACTION) return; // no move overlays for enemy units
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const isAdvance = moveState.mode === 'advance';
+  const rangePx   = getMoveRangePx(uid, isAdvance);
+  const zoneClass = isAdvance ? 'move-zone zone-advance' : 'move-zone zone-move';
+  const color     = getFactionColor(uid);
+
+  unit.models.forEach(m => {
+    const start = phaseTurnStarts[m.id];  // always from turn start
+    if (!start) return;
+
+    // Movement zone circle (radius = movement range in SVG px)
+    const zone = document.createElementNS(NS, 'circle');
+    zone.setAttribute('cx', start.x);
+    zone.setAttribute('cy', start.y);
+    zone.setAttribute('r', rangePx);
+    zone.setAttribute('class', zoneClass);
+    if (isAdvance) {
+      zone.style.fill   = 'rgba(201,163,82,0.04)';
+      zone.style.stroke = 'rgba(201,163,82,0.2)';
+    } else {
+      zone.style.fill   = 'rgba(0,200,168,0.04)';
+      zone.style.stroke = 'rgba(0,200,168,0.2)';
+    }
+    zone.style.strokeWidth = '1.5';
+    zone.style.strokeDasharray = '6 4';
+    zone.style.pointerEvents = 'none';
+    layerZones.appendChild(zone);
+
+    // Ghost circle at start position
+    let ghost;
+    if (m.shape === 'rect') {
+      ghost = document.createElementNS(NS, 'rect');
+      ghost.setAttribute('x', start.x - m.w / 2);
+      ghost.setAttribute('y', start.y - m.h / 2);
+      ghost.setAttribute('width', m.w);
+      ghost.setAttribute('height', m.h);
+      ghost.setAttribute('rx', '5'); ghost.setAttribute('ry', '5');
+    } else {
+      ghost = document.createElementNS(NS, 'circle');
+      ghost.setAttribute('cx', start.x);
+      ghost.setAttribute('cy', start.y);
+      ghost.setAttribute('r', m.r);
+    }
+    ghost.setAttribute('class', 'move-ghost');
+    ghost.style.fill = 'none';
+    ghost.style.stroke = color;
+    ghost.style.strokeWidth = '1.5';
+    ghost.style.strokeDasharray = '4 3';
+    ghost.style.opacity = '0.35';
+    ghost.style.pointerEvents = 'none';
+    layerGhosts.appendChild(ghost);
+  });
+
+  // ── Ruler lines: turn-start → current model position ──
+  renderMoveRulers(uid);
+}
+
+function renderMoveRulers(uid) {
+  const layerRulers = document.getElementById('layer-move-rulers');
+  if (!layerRulers) return;
+  layerRulers.innerHTML = '';
+  if (!moveState.mode || !uid) return;
+  const unit = simState.units.find(u => u.id === uid);
+  if (!unit) return;
+  const NS = 'http://www.w3.org/2000/svg';
+  const color = getFactionColor(uid);
+  const rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+
+  unit.models.forEach(m => {
+    const ts = phaseTurnStarts[m.id];
+    if (!ts) return;
+    const dx = m.x - ts.x, dy = m.y - ts.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return; // don't draw ruler if at start
+
+    const overRange = dist > rangePx + 0.5;
+    const lineColor = overRange ? '#ff3333' : color;
+    const line = document.createElementNS(NS, 'line');
+    line.setAttribute('x1', ts.x); line.setAttribute('y1', ts.y);
+    line.setAttribute('x2', m.x);  line.setAttribute('y2', m.y);
+    line.setAttribute('class', 'move-ruler');
+    line.style.stroke = lineColor;
+    layerRulers.appendChild(line);
+
+    // Distance label at midpoint
+    const inches = (dist / PX_PER_INCH).toFixed(1);
+    const label = document.createElementNS(NS, 'text');
+    label.setAttribute('x', (ts.x + m.x) / 2);
+    label.setAttribute('y', (ts.y + m.y) / 2 - 4);
+    label.setAttribute('class', 'move-ruler-label');
+    label.setAttribute('text-anchor', 'middle');
+    label.textContent = inches + '"';
+    layerRulers.appendChild(label);
+  });
+}
+
+function clearMoveOverlays() {
+  ['layer-move-zones', 'layer-move-ghosts', 'layer-move-rulers'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+}
+
+// ── Helper: find unit ID of the currently dragged model/unit ───
+function getDragUnitId() {
+  if (!simState.drag) return null;
+  if (simState.drag.type === 'unit') return simState.drag.unit.id;
+  if (simState.drag.type === 'model') {
+    const m = simState.drag.model;
+    const unit = simState.units.find(u => u.models.includes(m));
+    return unit ? unit.id : null;
+  }
+  return null;
+}
+
+// ── Cross-unit collision for unit drag ──────────────────────
+// battle-models.js only resolveOverlaps for model-drag; unit-drag is raw.
+// This adds the same slide-around collision for the whole-unit drag.
+function resolveUnitDragCollisions(unit) {
+  for (let iter = 0; iter < 4; iter++) {
+    let anyPush = false;
+    unit.models.forEach(m => {
+      simState.units.forEach(other => {
+        if (other.id === unit.id) return; // skip self
+        other.models.forEach(otherModel => {
+          const minDist = m.r + otherModel.r + 1;
+          const dx = m.x - otherModel.x;
+          const dy = m.y - otherModel.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < minDist && dist > 0.001) {
+            const push = (minDist - dist) / dist;
+            const px = dx * push, py = dy * push;
+            // Push entire unit back by the overlap
+            unit.models.forEach(um => { um.x += px; um.y += py; });
+            anyPush = true;
+          }
+        });
+      });
+    });
+    if (!anyPush) break;
+  }
+}
+
+// ── Patch model drag to enforce movement range ────────────
+// Runs in bubbling phase so resolveOverlaps (cross-unit collision) fires first,
+// then we clamp to the movement zone boundary, then re-resolve any zone→collision.
+function patchModelDrag() {
+  // Wrap renderModels to also redraw overlays + lift dragged unit to z-top
+  const origRenderModels = BattleUI.renderModels;
+  BattleUI.renderModels = function() {
+    origRenderModels();
+    if (moveState.mode && BattleUI.currentUnit) {
+      renderMoveOverlays(BattleUI.currentUnit);
+    }
+    // Fix 6: lift dragged unit SVG elements to end of their groups (renders on top)
+    if (simState.drag) {
+      const dragUnitId = getDragUnitId();
+      if (dragUnitId) {
+        ['layer-hulls', 'layer-models'].forEach(layerId => {
+          const layer = document.getElementById(layerId);
+          if (!layer) return;
+          Array.from(layer.children).forEach(el => {
+            if (el.dataset && el.dataset.unitId === dragUnitId) layer.appendChild(el);
+          });
+        });
+      }
+    }
+  };
+
+  // bubbling (not capture) → runs AFTER battle-models.js resolveOverlaps
+  window.addEventListener('mousemove', function() {
+    const drag = simState.drag;
+    if (!drag || !moveState.mode) return;
+    const uid = BattleUI.currentUnit;
+    if (!uid) return;
+
+    // Fix 1: prevent drag if this unit has already confirmed its move
+    const dragUnitId = getDragUnitId();
+    if (dragUnitId && moveState.unitsMoved.has(dragUnitId)) {
+      simState.drag = null; // abort drag
+      return;
+    }
+
+    const rangePx = getMoveRangePx(uid, moveState.mode === 'advance');
+
+    if (drag.type === 'model') {
+      const m = drag.model;
+      const ts = phaseTurnStarts[m.id];
+      if (!ts) return;
+      // 1. Zone clamp (from turn-start; resolveOverlaps already ran before this)
+      const dx = m.x - ts.x, dy = m.y - ts.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist > rangePx) {
+        const sc = rangePx / dist;
+        m.x = ts.x + dx * sc; m.y = ts.y + dy * sc;
+        // Zone clamp may cause unit collision — resolve again
+        const reRes = BattleUI.resolveOverlaps(m, m.x, m.y);
+        m.x = reRes.x; m.y = reRes.y;
+      }
+      // 2. Terrain collision (continuous — models feel the wall while dragging)
+      const tr = resolveTerrainCollision(m.x, m.y, m.r);
+      m.x = tr.x; m.y = tr.y;
+    }
+    else if (drag.type === 'unit') {
+      // Unit drag: continuous collision during drag (consistent with model-drag behaviour)
+      resolveUnitDragCollisions(drag.unit);
+      // Zone clamp
+      drag.unit.models.forEach(function(m) {
+        const ts = phaseTurnStarts[m.id];
+        if (!ts) return;
+        const dx = m.x - ts.x, dy = m.y - ts.y, dist = Math.hypot(dx, dy);
+        if (dist > rangePx) { const sc = rangePx/dist; m.x = ts.x+dx*sc; m.y = ts.y+dy*sc; }
+      });
+      // Terrain collision per model
+      drag.unit.models.forEach(function(m) {
+        const tr = resolveTerrainCollision(m.x, m.y, m.r);
+        m.x = tr.x; m.y = tr.y;
+      });
+      // Final collision pass after terrain + zone adjustments
+      resolveUnitDragCollisions(drag.unit);
+    }
+    // Rulers update happens via the renderModels wrap above
+  }); // no third arg = bubbling
+}
+
+// ── Advance D6 dice animation ────────────────────────────
+function rollAdvanceDie(unitId, onComplete) {
+  const u = UNITS[unitId];
+  const result = Math.floor(Math.random() * 6) + 1;
+  const overlay = document.getElementById('advance-dice-overlay');
+  const face    = document.getElementById('advance-die-face');
+  const num     = document.getElementById('advance-die-num');
+  const lbl     = document.getElementById('advance-die-label');
+  const tot     = document.getElementById('advance-die-total');
+
+  num.textContent = result;
+  lbl.textContent = '+' + result + '" ADVANCE BONUS';
+  tot.textContent = u ? 'TOTAL MOVE: ' + (u.M + result) + '"' : '';
+
+  // Trigger spring animation
+  face.classList.remove('rolling');
+  void face.offsetWidth; // reflow
+  face.classList.add('rolling');
+
+  overlay.classList.add('visible');
+  setTimeout(function() {
+    overlay.classList.remove('visible');
+    onComplete(result);
+  }, 1600);
+}
+
+// ── Wire action buttons ──────────────────────────────────
+document.getElementById('btn-move').addEventListener('click', function() {
+  if (!BattleUI.currentUnit) return;
+  if (moveState.unitsMoved.has(BattleUI.currentUnit)) return;
+  enterMoveMode('move');
+});
+document.getElementById('btn-advance').addEventListener('click', function() {
+  const uid = BattleUI.currentUnit;
+  if (!uid) return;
+  if (moveState.unitsMoved.has(uid)) return;
+  if (moveState.mode !== null) return; // already in a mode
+
+  // Roll dice FIRST, then enter advance mode with the result
+  rollAdvanceDie(uid, function(die) {
+    moveState.advanceDie = die;
+    enterMoveMode('advance');
+    updateMoveButtons();
+  });
+});
+document.getElementById('btn-confirm-move').addEventListener('click', confirmMove);
+document.getElementById('btn-cancel-move').addEventListener('click', cancelMove);
+
+// Update move buttons + auto-enter normal move on selection
+const origSelectUnit = BattleUI.selectUnit.bind(BattleUI);
+BattleUI.selectUnit = function(uid) {
+  // If switching to a different unit while in move mode, cancel current
+  if (moveState.mode !== null && uid !== BattleUI.currentUnit) {
+    cancelMove();
+  }
+  origSelectUnit(uid);
+  updateMoveButtons();
+
+  if (uid) {
+    const unit = simState.units.find(u => u.id === uid);
+    // Auto-enter move mode ONLY for active player's unmoved units
+    if (unit && unit.faction === ACTIVE_PLAYER_FACTION &&
+        moveState.mode === null && !moveState.unitsMoved.has(uid)) {
+      enterMoveMode('move');
+    }
+    // Enemy units: just show info card (origSelectUnit already did this); no move zones
+  }
+};
+window.selectUnit = BattleUI.selectUnit;
+
+// ── Initialise ───────────────────────────────────────────
+renderTerrain();
+buildCard('assault-intercessors');
+initAllTooltips();
+initBoard({ initialScale: 0.5 });
+initBattleControls();
+initModelInteraction();
+captureTurnStarts(); // record all model positions as movement phase start
+
+// ── Active player (hardcoded for movement phase prototype) ───
+const ACTIVE_PLAYER_FACTION = 'imp'; // only Imperium can move this turn
+
+// ── Drag interceptor: block drag for already-moved or wrong-faction units ──
+// Object.defineProperty intercepts ALL simState.drag assignments including
+// battle-models.js, preventing the drag from ever starting. This is the only
+// reliable way — mousemove is too late as the model has already moved by then.
+(function() {
+  let _drag = null;
+  Object.defineProperty(simState, 'drag', {
+    configurable: true,
+    get: function() { return _drag; },
+    set: function(value) {
+      if (value !== null) {
+        // Identify the unit being dragged
+        let unit = null;
+        if (value.type === 'unit')  unit = value.unit;
+        else if (value.type === 'model') unit = simState.units.find(u => u.models.includes(value.model));
+        if (unit) {
+          if (moveState.unitsMoved.has(unit.id)) return;        // fix: already moved
+          if (unit.faction !== ACTIVE_PLAYER_FACTION) return;   // fix: wrong faction
+        }
+      }
+      _drag = value;
+    }
+  });
+})();
+
+// ── Terrain collision ─────────────────────────────────────────
+// Uses SVG g.transform.baseVal to apply piece transforms in SVG user space.
+// Line-segment approach: push model out from any terrain edge within model.r.
+// ── Terrain AABB collision (replaces line-segment approach) ──────────────────
+// Why AABB-in-local-space is correct:
+//   Line-segment normals push INWARD when model is already inside terrain
+//   (normal from closest edge points into terrain, not away from it).
+//   Correct approach: transform model to terrain's LOCAL space → AABB test →
+//   push along shortest axis → transform push vector back to SVG space.
+//   This handles interior cases and all rotate/scale transforms correctly.
+const terrainAABBs = [];
+
+function parsePathPoints(d) {
+  const pts = []; const re = /[ML]\s*([-\d.]+)[\s,]+([-\d.]+)/gi; let m;
+  while ((m = re.exec(d)) !== null) pts.push({ x: parseFloat(m[1]), y: parseFloat(m[2]) });
+  return pts;
+}
+
+function buildTerrainAABBs() {
+  const svgEl = document.getElementById('bf-svg');
+  const mapData = BattleUI.mapData; // always use BattleUI.X
+  if (!svgEl || !mapData) return;
+
+  mapData.terrain.forEach(piece => {
+    const ox = piece.origin[0], oy = piece.origin[1];
+    const tfStr = `translate(${ox},${oy}) ${piece.transform} translate(${-ox},${-oy})`;
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', tfStr);
+    svgEl.appendChild(g);
+    const consolidated = g.transform.baseVal.consolidate();
+    svgEl.removeChild(g);
+    if (!consolidated) return;
+
+    const m = consolidated.matrix; // forward: local → SVG
+    const det = m.a * m.d - m.b * m.c;
+    if (Math.abs(det) < 0.001) return;
+
+    // Inverse matrix (SVG → local)
+    const inv = {
+      a:  m.d / det, b: -m.b / det,
+      c: -m.c / det, d:  m.a / det,
+      e: (m.c * m.f - m.d * m.e) / det,
+      f: (m.b * m.e - m.a * m.f) / det
+    };
+
+    // Path vertices ARE the local coordinates (before the group transform)
+    const pts = parsePathPoints(piece.paths[0].d);
+    if (pts.length < 2) return;
+    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
+
+    terrainAABBs.push({
+      // Inverse matrix for transforming SVG point → local space
+      iA: inv.a, iB: inv.b, iC: inv.c, iD: inv.d, iE: inv.e, iF: inv.f,
+      // Forward linear part for transforming local push vector → SVG space
+      fA: m.a, fB: m.b, fC: m.c, fD: m.d,
+      // Local-space bounding box
+      minX: Math.min(...xs), minY: Math.min(...ys),
+      maxX: Math.max(...xs), maxY: Math.max(...ys)
+    });
+  });
+}
+
+function resolveTerrainCollision(cx, cy, r) {
+  let x = cx, y = cy;
+  for (const box of terrainAABBs) {
+    // 1. Transform circle centre to terrain LOCAL space
+    const lx = box.iA * x + box.iC * y + box.iE;
+    const ly = box.iB * x + box.iD * y + box.iF;
+
+    // 2. Closest point in AABB (local space)
+    const cpx = Math.max(box.minX, Math.min(box.maxX, lx));
+    const cpy = Math.max(box.minY, Math.min(box.maxY, ly));
+    const dlx = lx - cpx, dly = ly - cpy;
+    const dist = Math.hypot(dlx, dly);
+    if (dist >= r) continue; // no overlap
+
+    // 3. Push direction in LOCAL space
+    let pushLX, pushLY;
+    if (dist < 0.001) {
+      // Centre is inside rect — push out along shortest axis
+      const dL = lx - box.minX, dR = box.maxX - lx;
+      const dT = ly - box.minY, dB = box.maxY - ly;
+      const minD = Math.min(dL, dR, dT, dB);
+      if      (minD === dL) { pushLX = -(dL + r); pushLY = 0; }
+      else if (minD === dR) { pushLX =  (dR + r); pushLY = 0; }
+      else if (minD === dT) { pushLX = 0; pushLY = -(dT + r); }
+      else                  { pushLX = 0; pushLY =  (dB + r); }
+    } else {
+      // Approaching from outside — push along normal from closest point
+      const nx = dlx / dist, ny = dly / dist;
+      pushLX = nx * (r - dist);
+      pushLY = ny * (r - dist);
+    }
+
+    // 4. Transform push VECTOR to SVG space (linear part only — no translation)
+    x += box.fA * pushLX + box.fC * pushLY;
+    y += box.fB * pushLX + box.fD * pushLY;
+  }
+  return { x, y };
+}
+
+// ── Visible error handler: init crashes show on screen instead of dying silently ──
+window.onerror = function(msg, src, line) {
+  const el = document.getElementById('cohesion-banner') || document.createElement('div');
+  el.style.cssText = 'position:fixed;top:8px;left:8px;right:8px;background:#cc2222;color:#fff;padding:8px 12px;font:700 11px/1.5 monospace;z-index:9999;border-radius:3px;';
+  el.textContent = '⚠ JS ERROR: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(el);
+};
+
+buildTerrainAABBs(); // build once after SVG + mapData are ready
+
+// Unit collision is now handled continuously in mousemove (see patchModelDrag).
+
+// ── Click outside: soft-exit (keep positions, just deselect) ─
+// Changed from fix-18 which called cancelMove (too aggressive — user accident)
+document.getElementById('battlefield').addEventListener('mousedown', function(e) {
+  if (e.target.closest('#bf-svg, #bf-svg-terrain, #unit-card, #vp-bar, #action-bar, #phase-header, .obj-hex-wrap, #advance-dice-overlay')) return;
+  // Soft deselect: clear move mode but keep model positions where they are
+  if (moveState.mode !== null) {
+    moveState.mode = null; moveState.advanceDie = null;
+    clearMoveOverlays(); updateMoveButtons(); renderModels();
+    origSelectUnit(null);
+  } else if (BattleUI.currentUnit) {
+    origSelectUnit(null); updateMoveButtons();
+  }
+}, true);
+
+// Override the btn-move/advance handlers that initBattleControls wired
+// (we already added our own click handlers above which call enterMoveMode)
+// Note: initBattleControls wires btn-move to just toggle .active class;
+// our listener above overwrites the behavior we want.
+
+patchModelDrag();
+renderModels();
+updateMoveButtons();
+</script>
+</body>
+</html>

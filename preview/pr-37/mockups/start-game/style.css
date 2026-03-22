@@ -1,0 +1,603 @@
+/* ══════════════════════════════════════════════════════════════
+   Start Game v0.3 — Cinematic Boot Sequence
+   Shared tokens via ../../shared/tokens/*.css
+══════════════════════════════════════════════════════════════ */
+
+/* ── Full-viewport layout ── */
+.splash-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #040608;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ENTER GATE — "Click to Enter" pre-screen
+═══════════════════════════════════════════════════════════ */
+.enter-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #040608;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.6s ease-out;
+}
+.enter-gate.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gate-aquila {
+  font-size: 48px;
+  color: var(--imp);
+  opacity: 0.3;
+  margin-bottom: 24px;
+  animation: gate-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gate-pulse {
+  0%, 100% { opacity: 0.2; filter: drop-shadow(0 0 8px rgba(0,212,255,0.1)); }
+  50%      { opacity: 0.5; filter: drop-shadow(0 0 20px rgba(0,212,255,0.3)); }
+}
+
+.gate-text {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  animation: gate-text-pulse 3s ease-in-out infinite;
+}
+
+@keyframes gate-text-pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BACKGROUND — cathedral with Ken Burns zoom
+═══════════════════════════════════════════════════════════ */
+.bg-image {
+  position: absolute;
+  inset: -80px; /* generous bleed for all aspect ratios */
+  background: url(assets/bg-far.webp) center/cover no-repeat;
+  opacity: 0;
+  transform: scale(1.08);
+  transition: opacity 1.2s ease-out;
+}
+.bg-image.active {
+  opacity: 1;
+  animation: ken-burns 60s ease-in-out infinite alternate;
+}
+
+@keyframes ken-burns {
+  from { transform: scale(1.08) translateX(-10px); }
+  to   { transform: scale(1.14) translateX(10px); }
+}
+
+/* Dim overlay */
+.bg-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 12, 16, 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHTNING FLASH
+═══════════════════════════════════════════════════════════ */
+.lightning-layer {
+  position: absolute;
+  inset: 0;
+  background: rgba(180, 210, 240, 0);
+  pointer-events: none;
+  z-index: 5;
+  transition: background 0.05s;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BOTTOM FADE — soft edge, NOT a letterbox bar
+═══════════════════════════════════════════════════════════ */
+.bottom-fade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    0deg,
+    rgba(4, 6, 8, 0.7) 0%,
+    rgba(4, 6, 8, 0.3) 8%,
+    transparent 20%
+  );
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   OVERLAYS: vignette + grain + scanlines
+═══════════════════════════════════════════════════════════ */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(4,6,8,0.6) 70%, rgba(4,6,8,0.95) 100%);
+  pointer-events: none;
+}
+
+.grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAABGdBTUEAALGPC/xhBQAAADhlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAAqACAAQAAAABAAAAMqADAAQAAAABAAAAMgAAAADDVAJpAAABqUlEQVRoBe2ZvQ3CQBBE7RJogQYogBIoIaED0wEdUAIl0AENUBRNQAd2CcaSD1laaXRr3+z6P5R8mdn93LdaoWKWZdn5PM8vWZY1HMcJGeMHq2Gr/iml1L0oim0cx7vBYJBm/VHDVjqUUr7v78qyfFksFmO0D/wTsqxhq7OiKMbX6/W+1+t10zQNEU9snCAk2+220Wazebrf76er1WrG8w1sxWq5XB77/f40TdMdjPFarXYwDCPyfb+dJInFGP0OcCIIgp7ruue6rpPdbvcYDAb7NE23VVVxDh7/hDSbzcLzvDPHOJ/Pb+f5fL6mf6qybDQavQyHwzWMcdeyLIVh2MFbQRynOE5gHMUxwMmx0WjEYJTHUVVVDJJwJXAkCACO58S/ByVVVeWsqqoOz/fwF7A+T8g+WFXVMU3T/a+truvjLMuKIAxHhmGUvu/Hnudh+xTHDZqmeZIk1vl8fp7NZhOe7+H0/6u3Xq/Xq0aj0VjXdZUkCU/6j6Io3MVicWi327PLYrFYPZhRt9t1oija4a26f2uK4/hIpyB27OyDKPCf/AI1r+0Cws0pIAAAAABJRU5ErkJggg==");
+  pointer-events: none;
+}
+
+.scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.025) 2px,
+    rgba(0, 0, 0, 0.025) 4px
+  );
+  pointer-events: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CANVAS PARTICLE LAYER
+═══════════════════════════════════════════════════════════ */
+#ember-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SPLASH PANEL
+═══════════════════════════════════════════════════════════ */
+.splash-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 480px;
+  max-width: 92vw;
+  background: rgba(10, 16, 22, 0.96);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  padding: 48px 40px 40px;
+  z-index: 10;
+
+  /* Hidden initially — cinematic reveal controls this */
+  opacity: 0;
+  pointer-events: none;
+}
+.splash-panel.visible {
+  pointer-events: auto;
+}
+
+/* Corner bracket draw-in animation */
+.splash-panel::before,
+.splash-panel::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  background: transparent;
+  pointer-events: none;
+  transition: width 0.4s ease-out, height 0.4s ease-out;
+}
+.splash-panel.visible::before {
+  top: -1px; left: -1px;
+  width: 24px; height: 24px;
+  border-top: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+}
+.splash-panel.visible::after {
+  bottom: -1px; right: -1px;
+  width: 24px; height: 24px;
+  border-bottom: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+}
+.splash-corners::before,
+.splash-corners::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  background: transparent;
+  pointer-events: none;
+  transition: width 0.4s ease-out 0.1s, height 0.4s ease-out 0.1s;
+}
+.splash-panel.visible .splash-corners::before {
+  top: -1px; right: -1px;
+  width: 24px; height: 24px;
+  border-top: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+}
+.splash-panel.visible .splash-corners::after {
+  bottom: -1px; left: -1px;
+  width: 24px; height: 24px;
+  border-bottom: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+}
+
+
+
+.splash-glow {
+  position: absolute;
+  top: -1px; left: -1px; right: -1px; bottom: -1px;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 60px rgba(0, 212, 255, 0.06),
+    0 0 80px rgba(0, 212, 255, 0.10),
+    0 0 160px rgba(0, 212, 255, 0.04);
+  border: 1px solid transparent;
+  animation: panel-glow-pulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes panel-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 60px rgba(0, 212, 255, 0.04),
+      0 0 60px rgba(0, 212, 255, 0.06),
+      0 0 120px rgba(0, 212, 255, 0.03);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 80px rgba(0, 212, 255, 0.08),
+      0 0 100px rgba(0, 212, 255, 0.14),
+      0 0 200px rgba(0, 212, 255, 0.06);
+  }
+}
+
+.splash-aquila {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 200px;
+  color: var(--imp);
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TITLE — with glow pulse on idle
+═══════════════════════════════════════════════════════════ */
+.splash-header {
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 32px;
+}
+
+.splash-label {
+  font: 400 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  opacity: 0;
+}
+
+.splash-title {
+  font: 400 36px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-shadow:
+    0 0 20px rgba(0, 212, 255, 0.4),
+    0 0 60px rgba(0, 212, 255, 0.15);
+  opacity: 0;
+  transform: scale(1.05);
+}
+
+/* Title stamp animation */
+.splash-title.stamp {
+  animation: title-stamp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes title-stamp {
+  0%   { opacity: 0; transform: scale(1.12); filter: brightness(2); }
+  40%  { opacity: 1; transform: scale(0.98); filter: brightness(1.4); }
+  70%  { transform: scale(1.01); filter: brightness(1.1); }
+  100% { opacity: 1; transform: scale(1); filter: brightness(1); }
+}
+
+/* Idle title glow */
+.splash-title.idle {
+  animation: title-glow 4s ease-in-out infinite alternate;
+}
+
+@keyframes title-glow {
+  from { text-shadow: 0 0 20px rgba(0,212,255,0.3), 0 0 60px rgba(0,212,255,0.1); }
+  to   { text-shadow: 0 0 30px rgba(0,212,255,0.5), 0 0 80px rgba(0,212,255,0.2); }
+}
+
+.splash-subtitle {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--imp-dim);
+  margin-top: 6px;
+  opacity: 0;
+}
+
+/* Fade-in utility */
+.fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Divider */
+.splash-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 28px;
+  opacity: 0;
+}
+.splash-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.splash-divider-ornament {
+  color: var(--imp-dim);
+  font-size: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MENU BUTTONS
+═══════════════════════════════════════════════════════════ */
+.splash-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 52px;
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+  position: relative;
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.menu-btn.slide-in {
+  animation: btn-slide-in 0.4s ease-out forwards;
+}
+
+@keyframes btn-slide-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.menu-btn.primary {
+  border-color: var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+}
+.menu-btn.primary:hover {
+  background: #18eaff;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+}
+.menu-btn.primary:active {
+  background: var(--imp-dim);
+}
+
+.menu-btn.disabled {
+  border-color: var(--border);
+  color: var(--text-dis);
+  cursor: not-allowed;
+}
+.menu-btn.disabled:hover {
+  border-color: var(--border);
+  background: transparent;
+  box-shadow: none;
+}
+.menu-btn.disabled .tooltip {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: -100px;
+  transform: translateY(-50%);
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 4px 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.menu-btn.disabled:hover .tooltip {
+  display: block;
+}
+
+.btn-icon {
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+.btn-icon svg { color: var(--text-muted); transition: color 0.2s, filter 0.2s; }
+.menu-btn:hover .btn-icon svg { color: var(--text-primary); filter: drop-shadow(0 0 4px rgba(0,212,255,0.3)); }
+.menu-btn.primary .btn-icon svg { color: var(--bg-primary); }
+.menu-btn.primary:hover .btn-icon svg { filter: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   UI CHROME — version, backlink, mute
+═══════════════════════════════════════════════════════════ */
+.mute-toggle {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(10, 16, 22, 0.8);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 20;
+  opacity: 0;
+}
+.mute-toggle.visible {
+  animation: fade-in 0.4s ease-out forwards;
+}
+.mute-toggle:hover {
+  border-color: var(--imp-dim);
+  color: var(--text-sec);
+}
+
+.version-badge {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  z-index: 20;
+  opacity: 0;
+}
+.version-badge.visible {
+  animation: fade-in 0.4s ease-out forwards;
+}
+
+.splash-backlink {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  z-index: 20;
+  opacity: 0;
+  transition: color 0.2s;
+}
+.splash-backlink.visible {
+  animation: fade-in 0.4s ease-out forwards;
+}
+.splash-backlink:hover {
+  color: var(--imp);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CINEMATIC BOOT TIMELINE — pure CSS via .boot class
+   Adding .boot to .splash-root triggers all animations.
+   Timing: bg 0s → panel 0.8s → label 0.9s → title 1.0s →
+           subtitle 1.3s → divider 1.4s → buttons 2.0-2.2s →
+           chrome 2.5s → title idle glow 3.0s
+═══════════════════════════════════════════════════════════ */
+
+/* Background reveal */
+.boot .bg-image {
+  opacity: 1;
+  animation: ken-burns 60s ease-in-out 0s infinite alternate;
+}
+
+/* Panel fade-in at 0.8s */
+.boot #panel {
+  animation: fade-in 0.6s ease-out 0.8s forwards;
+  pointer-events: auto;
+}
+/* Corner brackets draw in at 0.8s (via .visible) */
+.boot #panel { }
+.boot .splash-panel { }
+/* Trigger corner draw-in via the .visible animations already defined */
+.boot .splash-panel::before {
+  top: -1px; left: -1px;
+  width: 24px; height: 24px;
+  border-top: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+  transition-delay: 0.8s;
+}
+.boot .splash-panel::after {
+  bottom: -1px; right: -1px;
+  width: 24px; height: 24px;
+  border-bottom: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+  transition-delay: 0.8s;
+}
+.boot .splash-corners::before {
+  top: -1px; right: -1px;
+  width: 24px; height: 24px;
+  border-top: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+  transition-delay: 0.9s;
+}
+.boot .splash-corners::after {
+  bottom: -1px; left: -1px;
+  width: 24px; height: 24px;
+  border-bottom: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+  transition-delay: 0.9s;
+}
+
+/* Title sequence */
+.boot #label {
+  animation: fade-in 0.5s ease-out 0.9s forwards;
+}
+.boot #title {
+  animation: title-stamp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 1.0s forwards;
+}
+.boot #subtitle {
+  animation: fade-in 0.5s ease-out 1.3s forwards;
+}
+.boot #divider {
+  animation: fade-in 0.5s ease-out 1.4s forwards;
+}
+
+/* Menu buttons stagger */
+.boot #btn-new {
+  animation: btn-slide-in 0.4s ease-out 2.0s forwards;
+}
+.boot #btn-load {
+  animation: btn-slide-in 0.4s ease-out 2.1s forwards;
+}
+.boot #btn-settings {
+  animation: btn-slide-in 0.4s ease-out 2.2s forwards;
+}
+
+/* Chrome at 2.5s */
+.boot #version {
+  animation: fade-in 0.4s ease-out 2.5s forwards;
+}
+.boot .splash-backlink {
+  animation: fade-in 0.4s ease-out 2.5s forwards;
+}
+.boot .mute-toggle {
+  animation: fade-in 0.4s ease-out 2.5s forwards;
+}

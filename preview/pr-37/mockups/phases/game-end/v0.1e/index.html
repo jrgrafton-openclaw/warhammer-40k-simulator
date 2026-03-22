@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.1e · Game End · Clean Slate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../../shared/tokens/typography.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a class="backlink" href="../../../index.html#game-end" title="Back to mockup archive">← Mockups</a>
+
+<div class="faction-watermark">⚜</div>
+
+<div class="results-page">
+
+  <!-- Aquila icon -->
+  <div class="aquila-icon">⚜</div>
+
+  <!-- Victory title -->
+  <div class="victory-title">IMPERIUM VICTORY</div>
+  <div class="victory-subtitle">Decisive Victory · 13 VP Margin</div>
+
+  <!-- Score section -->
+  <div class="score-section">
+    <div class="score-side score-side--imp">
+      <div class="score-faction-name imp">IMPERIUM</div>
+      <div class="score-value imp">45</div>
+    </div>
+    <div class="score-vs">VS</div>
+    <div class="score-side score-side--ork">
+      <div class="score-faction-name ork">ORKS</div>
+      <div class="score-value ork">32</div>
+    </div>
+  </div>
+
+  <!-- VP breakdown -->
+  <div class="vp-breakdown">
+    <div class="vp-breakdown-title">VP BY ROUND</div>
+    <table class="vp-table">
+      <thead>
+        <tr>
+          <th></th><th>R1</th><th>R2</th><th>R3</th><th>R4</th><th>R5</th><th class="vp-total-col">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="vp-row-imp">
+          <td class="vp-faction-cell imp">IMP</td>
+          <td>8</td><td>9</td><td>13</td><td>7</td><td>8</td>
+          <td class="vp-total-col imp">45</td>
+        </tr>
+        <tr class="vp-row-ork">
+          <td class="vp-faction-cell ork">ORK</td>
+          <td>2</td><td>7</td><td>9</td><td>7</td><td>7</td>
+          <td class="vp-total-col ork">32</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Unit statistics -->
+  <div class="unit-stats">
+    <div class="unit-stats-col">
+      <div class="unit-stats-header imp">IMPERIUM</div>
+      <div class="unit-entry">Assault Intercessors <span class="model-count imp">×5</span></div>
+      <div class="unit-entry">Primaris Lieutenant <span class="model-count imp">×1</span></div>
+      <div class="unit-entry">Intercessor Squad A <span class="model-count imp">×5</span></div>
+      <div class="unit-entry">Hellblasters <span class="model-count imp">×5</span></div>
+      <div class="unit-entry destroyed">Redemptor Dreadnought <span class="model-count">×0</span></div>
+    </div>
+    <div class="unit-stats-divider"></div>
+    <div class="unit-stats-col">
+      <div class="unit-stats-header ork">ORKS</div>
+      <div class="unit-entry">Boss Nob <span class="model-count ork">×1</span></div>
+      <div class="unit-entry">Nobz Mob <span class="model-count ork">×3</span></div>
+      <div class="unit-entry destroyed">Mekboy <span class="model-count">×0</span></div>
+      <div class="unit-entry">Gretchin <span class="model-count ork">×3</span></div>
+    </div>
+  </div>
+
+  <!-- MVP callout -->
+  <div class="mvp-callout">
+    <div class="mvp-label">MVP</div>
+    <div class="mvp-detail">
+      <span class="mvp-name">Assault Intercessors</span>
+      <span class="mvp-reason">— 3 models killed, 2 objectives held</span>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="victory-actions">
+    <button class="victory-btn primary">NEW GAME</button>
+    <button class="victory-btn secondary">⟳ REMATCH</button>
+    <button class="victory-btn disabled">VIEW BATTLE REPORT</button>
+  </div>
+
+</div>
+
+<div class="vshoot-badge">v0.1e · GAME END · CLEAN SLATE</div>
+
+<script src="scene.js"></script>
+</body>
+</html>

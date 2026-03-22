@@ -1,0 +1,52 @@
+/* terrain-data.js — Terrain layout + rules (ES module) */
+
+export const mapData = {
+  terrain: [
+    { id:'t1',  type:'ruins',   origin:[144,60],      transform:'rotate(90)',
+      paths:[{d:'M 144 60 L 288 60 L 288 132 L 144 132 L 144 60',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 145.2 61.2 L 241.2 61.2 L 241.2 67.2 L 151.2 67.2 L 151.2 109.2 L 145.2 109.2 L 145.2 61.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t2',  type:'ruins',   origin:[264,336],     transform:'rotate(90)',
+      paths:[{d:'M 264 336 L 408 336 L 408 408 L 264 408 L 264 336',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 288 337.2 L 385.2 337.2 L 385.2 385.2 L 379.2 385.2 L 379.2 343.2 L 294 343.2 L 294 385.2 L 288 385.2 L 288 337.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t3',  type:'ruins',   origin:[192,264],     transform:'scale(-1,1) rotate(0)',
+      paths:[{d:'M 192 264 L 288 264 L 288 336 L 192 336 L 192 264',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 193.2 265.2 L 286.8 265.2 L 286.8 271.2 L 199.2 270 L 199.2 312 L 193.2 312 L 193.2 265.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t4',  type:'scatter', origin:[48,264],      transform:'rotate(0)',
+      paths:[{d:'M 48 264 L 96 264 L 96 336 L 48 336 L 48 264',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t5',  type:'scatter', origin:[336,0],       transform:'rotate(0)',
+      paths:[{d:'M 336 0 L 384 0 L 384 72 L 336 72 L 336 0',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t6',  type:'ruins',   origin:[360,204],     transform:'scale(-1,1) rotate(-45)',
+      paths:[{d:'M 360 204 L 438 204 L 438 264 L 360 264 L 360 204',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 361.2 205.2 L 436.8 205.2 L 436.8 211.2 L 367.2 211.2 L 367.2 262.8 L 361.2 262.8 L 361.2 205.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t7',  type:'scatter', origin:[304.8,148.8], transform:'scale(-1,1) rotate(-45)',
+      paths:[{d:'M 304.8 148.8 L 346.8 148.8 L 346.8 208.8 L 304.8 208.8 L 304.8 148.8',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t8',  type:'scatter', origin:[317.76,247.2],transform:'scale(-1,1) rotate(-45)',
+      paths:[{d:'M 317.76 247.2 L 365.76 247.2 L 365.76 319.2 L 317.76 319.2 L 317.76 247.2',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t9',  type:'ruins',   origin:[576,468],     transform:'rotate(-90)',
+      paths:[{d:'M 576 468 L 720 468 L 720 540 L 576 540 L 576 468',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 577.2 469.2 L 673.2 469.2 L 673.2 475.2 L 583.2 475.2 L 583.2 517.2 L 577.2 517.2 L 577.2 469.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t10', type:'ruins',   origin:[456,192],     transform:'rotate(-90)',
+      paths:[{d:'M 456 192 L 600 192 L 600 264 L 456 264 L 456 192',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 480 193.2 L 577.2 193.2 L 577.2 241.2 L 571.2 241.2 L 571.2 199.2 L 486 199.2 L 486 241.2 L 480 241.2 L 480 193.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t11', type:'ruins',   origin:[528,264],     transform:'scale(-1,1) rotate(-180)',
+      paths:[{d:'M 528 264 L 624 264 L 624 336 L 528 336 L 528 264',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 529.2 265.2 L 622.8 265.2 L 622.8 271.2 L 535.2 270 L 535.2 312 L 529.2 312 L 529.2 265.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t12', type:'scatter', origin:[672,264],     transform:'rotate(-180)',
+      paths:[{d:'M 672 264 L 720 264 L 720 336 L 672 336 L 672 264',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t13', type:'scatter', origin:[384,528],     transform:'rotate(-180)',
+      paths:[{d:'M 384 528 L 432 528 L 432 600 L 384 600 L 384 528',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t14', type:'ruins',   origin:[360,324],     transform:'scale(-1,1) rotate(-225)',
+      paths:[{d:'M 360 324 L 438 324 L 438 384 L 360 384 L 360 324',fill:'rgba(58,64,64,0.75)'},
+             {d:'M 361.2 325.2 L 436.8 325.2 L 436.8 331.2 L 367.2 331.2 L 367.2 382.8 L 361.2 382.8 L 361.2 325.2',fill:'rgba(106,114,114,0.85)'}]},
+    { id:'t15', type:'scatter', origin:[415.2,379.2], transform:'scale(-1,1) rotate(-225)',
+      paths:[{d:'M 415.2 379.2 L 457.2 379.2 L 457.2 439.2 L 415.2 439.2 L 415.2 379.2',fill:'rgba(90,70,40,0.75)'}]},
+    { id:'t16', type:'scatter', origin:[402.24,280.8],transform:'scale(-1,1) rotate(-225)',
+      paths:[{d:'M 402.24 280.8 L 450.24 280.8 L 450.24 352.8 L 402.24 352.8 L 402.24 280.8',fill:'rgba(90,70,40,0.75)'}]},
+  ]
+};
+
+export const TERRAIN_RULES = {
+  ruins:   { title:'TALL RUINS ≥4"',  type:'ruins', rules:['+1 to saving throw vs ranged attacks (except AP0 vs 3+ saves)','BLOCKS LINE OF SIGHT — units outside cannot see through'] },
+  scatter: { title:'LOW TERRAIN ≤2"', type:'scatter', rules:['+1 to saving throw vs ranged attacks (except AP0 vs 3+ saves)','Does NOT block line of sight (can see/shoot over)'] },
+  area:    { title:'OBJECTIVE AREA',  type:'area', rules:['Objective control radius: 3"','Unit within range with highest OC controls the objective'] },
+};
