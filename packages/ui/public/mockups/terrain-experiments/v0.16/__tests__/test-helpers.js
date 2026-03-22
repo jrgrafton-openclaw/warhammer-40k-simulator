@@ -22,6 +22,20 @@ export function loadEditor() {
       <div id="tRuinsFloor"></div><div id="tRuinsTop"></div><div id="tScatter"></div>
       <input type="range" min="0" max="100" value="92"><span>92%</span>
       <input type="range" min="0" max="100" value="85"><span>85%</span>
+      <div class="fx-controls" id="fxShadowControls">
+        <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="20" value="6"><span class="fx-val">6px</span></label>
+        <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55"><span class="fx-val">55%</span></label>
+        <label><span class="fx-lbl">Offset X</span><input type="range" min="-10" max="10" value="3"><span class="fx-val">3px</span></label>
+        <label><span class="fx-lbl">Offset Y</span><input type="range" min="-10" max="10" value="3"><span class="fx-val">3px</span></label>
+      </div>
+      <div class="fx-controls" id="fxFeatherControls" style="display:none">
+        <label><span class="fx-lbl">Feather Radius</span><input type="range" min="1" max="30" value="10"><span class="fx-val">10px</span></label>
+      </div>
+      <div class="fx-controls" id="fxGradeControls">
+        <label><span class="fx-lbl">Brightness</span><input type="range" min="20" max="120" value="75"><span class="fx-val">75%</span></label>
+        <label><span class="fx-lbl">Saturation</span><input type="range" min="0" max="150" value="70"><span class="fx-val">70%</span></label>
+        <label><span class="fx-lbl">Sepia</span><input type="range" min="0" max="50" value="8"><span class="fx-val">8%</span></label>
+      </div>
       <div id="objectives"></div>
       <div class="map-wrapper" id="mapWrap">
         <svg id="battlefield" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 528">

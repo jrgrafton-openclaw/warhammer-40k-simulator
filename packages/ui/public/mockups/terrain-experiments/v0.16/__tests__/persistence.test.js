@@ -246,6 +246,79 @@ describe('Round-trip persistence', () => {
     });
   });
 
+  it('effects (shadow/grade) are applied to sprites after load (Bug 1 regression)', () => {
+    const Editor = loadScene(fixture);
+    // Set non-default effects
+    Editor.Effects.shadow.dx = 8;
+    Editor.Effects.shadow.blur = 12;
+    Editor.Effects.grade.brightness = 0.5;
+    Editor.Effects.grade.saturation = 0.4;
+    Editor.Persistence.save();
+
+    // Nuke state
+    const C = Editor.Core;
+    C.allSprites.forEach(s => { if (s._clipWrap) s._clipWrap.remove(); else s.el.remove(); });
+    C.allSprites = [];
+    document.getElementById('modelLayer').innerHTML = '';
+    C.allModels = [];
+    C.allLights = [];
+    (C.groups || []).forEach(g => { const el = document.getElementById(g.id); if (el) el.remove(); });
+    C.groups = [];
+    C.sid = 0;
+    Editor.Groups.gid = 0;
+
+    // Reload
+    Editor.Persistence.load();
+
+    // Sprites should have filter attributes applied (not empty)
+    const spritesWithFilter = C.allSprites.filter(s => s.el.getAttribute('filter'));
+    expect(spritesWithFilter.length).toBeGreaterThan(0);
+    expect(spritesWithFilter.length).toBe(C.allSprites.length);
+  });
+
+  it('effect slider values match params after load (Bug 3 regression)', () => {
+    const Editor = loadScene(fixture);
+    // Set non-default effects
+    Editor.Effects.shadow.dx = 7;
+    Editor.Effects.shadow.dy = -2;
+    Editor.Effects.shadow.blur = 15;
+    Editor.Effects.shadow.opacity = 0.3;
+    Editor.Effects.grade.brightness = 0.6;
+    Editor.Effects.grade.saturation = 0.9;
+    Editor.Effects.grade.sepia = 0.25;
+    Editor.Effects.feather.radius = 18;
+    Editor.Persistence.save();
+
+    // Reset to defaults
+    Editor.Effects.shadow.dx = 3;
+    Editor.Effects.shadow.dy = 3;
+    Editor.Effects.shadow.blur = 6;
+    Editor.Effects.shadow.opacity = 0.55;
+    Editor.Effects.grade.brightness = 0.75;
+    Editor.Effects.grade.saturation = 0.7;
+    Editor.Effects.grade.sepia = 0.08;
+    Editor.Effects.feather.radius = 10;
+
+    Editor.Persistence.load();
+
+    // Check shadow sliders
+    var shadowSliders = document.getElementById('fxShadowControls').querySelectorAll('input[type=range]');
+    expect(Number(shadowSliders[0].value)).toBe(15);  // blur
+    expect(Number(shadowSliders[1].value)).toBe(30);   // opacity: 0.3 * 100
+    expect(Number(shadowSliders[2].value)).toBe(7);    // dx
+    expect(Number(shadowSliders[3].value)).toBe(-2);   // dy
+
+    // Check grade sliders
+    var gradeSliders = document.getElementById('fxGradeControls').querySelectorAll('input[type=range]');
+    expect(Number(gradeSliders[0].value)).toBe(60);    // brightness: 0.6 * 100
+    expect(Number(gradeSliders[1].value)).toBe(90);    // saturation: 0.9 * 100
+    expect(Number(gradeSliders[2].value)).toBe(25);    // sepia: 0.25 * 100
+
+    // Check feather slider
+    var featherSliders = document.getElementById('fxFeatherControls').querySelectorAll('input[type=range]');
+    expect(Number(featherSliders[0].value)).toBe(18);  // radius
+  });
+
   // Fixed in Phase 2: effects globals now persist via dispatch
   it('effects globals survive round-trip', () => {
     const Editor = loadScene(fixture);
