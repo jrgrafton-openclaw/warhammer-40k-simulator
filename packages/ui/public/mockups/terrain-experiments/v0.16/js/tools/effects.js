@@ -336,7 +336,14 @@ Editor.Effects = {
     const C = Editor.Core;
     const NS = C.NS;
     const shadowLayer = document.getElementById('modelShadowLayer');
-    if (!shadowLayer) return;
+    const modelLayer = document.getElementById('modelLayer');
+    if (!shadowLayer || !modelLayer) return;
+
+    // Ensure shadow layer is always immediately before model layer in DOM order,
+    // regardless of z-order reordering that places sprites as direct SVG children.
+    if (shadowLayer.nextElementSibling !== modelLayer) {
+      modelLayer.parentNode.insertBefore(shadowLayer, modelLayer);
+    }
 
     // Clear all existing shadows
     shadowLayer.innerHTML = '';
