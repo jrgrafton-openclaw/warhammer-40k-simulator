@@ -118,155 +118,147 @@ Editor.Persistence = {
     try {
       var data = JSON.parse(raw);
       data = this._normalize(data);
-      var C = Editor.Core;
       var S = Editor.State;
-
-      // Suppress dispatch/sync during load — we'll sync once at the end
       S._loading = true;
-
-      if (data.bg) { document.getElementById('bgSel').value = data.bg; C.setBg(data.bg); }
-
-      var ranges = document.querySelectorAll('input[type=range]');
-      if (data.ruinsOpacity != null && ranges[0]) {
-        ranges[0].value = data.ruinsOpacity;
-        document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
-        document.getElementById('svgScatter').style.opacity = data.ruinsOpacity / 100;
-        ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
-      }
-
-      // Restore effects state
-      if (data.effects) {
-        var E = Editor.Effects;
-        if (data.effects.shadow) Object.assign(E.shadow, data.effects.shadow);
-        if (data.effects.feather) Object.assign(E.feather, data.effects.feather);
-        if (data.effects.grade) Object.assign(E.grade, data.effects.grade);
-        // Update DOM controls if they exist
-        var shadowBtn = document.querySelector('[onclick*="toggleShadow"]');
-        if (shadowBtn) shadowBtn.classList.toggle('on', E.shadow.on);
-        var featherBtn = document.querySelector('[onclick*="toggleFeather"]');
-        if (featherBtn) featherBtn.classList.toggle('on', E.feather.on);
-        var gradeBtn = document.querySelector('[onclick*="toggleGrade"]');
-        if (gradeBtn) gradeBtn.classList.toggle('on', E.grade.on);
-        var fxShadowControls = document.getElementById('fxShadowControls');
-        if (fxShadowControls) fxShadowControls.style.display = E.shadow.on ? '' : 'none';
-        var fxFeatherControls = document.getElementById('fxFeatherControls');
-        if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
-        var fxGradeControls = document.getElementById('fxGradeControls');
-        if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
-        // Update slider values to match restored params
-        this._syncEffectSliders(E);
-        // NOTE: E._flush() is deferred until AFTER sprites exist (see below)
-      }
-
-      // Restore sprites — use saved ID (_forceId) so zOrder references stay valid
-      if (data.sprites) {
-        data.sprites.forEach(function(s) {
-          var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType, true, s.id || undefined);
-          sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
-          sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
-          if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
-          if (s.groupId) { sp.groupId = s.groupId; }
-          if (s.cropL || s.cropT || s.cropR || s.cropB) {
-            sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
-          }
-          sp.shadowMul = s.shadowMul;
-          if (s._fileName) sp._fileName = s._fileName;
-        });
-        // Update sid counter to avoid ID collisions with future sprites
-        var maxSid = 0;
-        C.allSprites.forEach(function(sp) {
-          var num = parseInt(sp.id.replace('s', ''));
-          if (!isNaN(num) && num >= maxSid) maxSid = num + 1;
-        });
-        C.sid = maxSid;
-      }
-
-      // Restore models (replace defaults)
-      if (data.models) {
-        document.getElementById('modelLayer').innerHTML = '';
-        C.allModels = [];
-        data.models.forEach(function(m) {
-          if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, m.s, m.f, m.iconType);
-          else Editor.Models.addRect(m.x, m.y, m.w, m.h, m.s, m.f);
-        });
-      }
-
-      // Restore lights
-      if (data.lights) {
-        data.lights.forEach(function(l) {
-          Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
-        });
-      }
-
-      // Restore custom groups
-      if (data.groups && data.groups.length) {
-        Editor.Groups.restore(data.groups);
-      }
-
-      // Restore objective positions
-      if (data.objectives) {
-        Editor.Objectives.restorePositions(data.objectives);
-      }
-
-      // Migrate any sprites still in old containers to be direct SVG children
-      var svgEl = document.getElementById('battlefield');
-      var selUIEl = document.getElementById('selUI');
-      ['spriteFloor', 'spriteTop'].forEach(function(cid) {
-        var container = document.getElementById(cid);
-        if (container) {
-          Array.from(container.children).forEach(function(child) {
-            container.removeChild(child);
-            svgEl.insertBefore(child, selUIEl);
-          });
-        }
-      });
-
-      // Re-apply crop clips BEFORE layer order restore (creates wrappers)
+      this._restoreSettings(data);
+      this._restoreSprites(data);
+      this._restoreModels(data);
+      this._restoreLights(data);
+      this._restoreGroups(data);
       Editor.Crop.reapplyAll();
-
-      // Flush effects AFTER sprites + crops exist so filters apply to all sprites
-      if (data.effects && Editor.Effects._ready) Editor.Effects._flush();
-
-      // Restore z-order: prefer explicit zOrder array (Phase 1), fallback to layerOrder
-      if (data.zOrder && data.zOrder.length) {
-        // Phase 1 format — explicit zOrder with type/id entries
-        this._restoreZOrderFromExplicit(data.zOrder, C);
-      } else if (data.layerOrder) {
-        // Legacy format — flat ID list
-        this._restoreZOrderFromLayerOrder(data.layerOrder, C);
-      }
-
-      // Re-enable dispatch and do final sync from the now-correct DOM state
+      this._restoreZOrder(data);
       S._loading = false;
+      Editor.Effects.rebuildAll();
       S.syncFromCore();
       S.syncZOrderFromDOM();
-
-      // Rebuild layers panel
+      this._syncEffectSliders(Editor.Effects);
       Editor.Layers.rebuild();
-
-      // Restore toggle visibility states
-      if (data.toggles) {
-        ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer'].forEach(function(id) {
-          if (data.toggles[id] === false) {
-            var el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-            var btn = document.querySelector('button[onclick*="' + id + '"]');
-            if (btn) btn.classList.remove('on');
-          }
-        });
-        if (data.toggles.objectives === false) {
-          ['objectiveRings','objectiveHexes'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.style.display = 'none';
-          });
-          var objBtn = document.querySelector('button[onclick*="objectiveRings"]');
-          if (objBtn) objBtn.classList.remove('on');
-        }
-      }
-
+      this._restoreToggles(data);
       Editor.Selection.deselect();
     } catch (e) {
       console.warn('Failed to load layout', e);
+    }
+  },
+
+  _restoreSettings(data) {
+    var C = Editor.Core;
+    if (data.bg) { document.getElementById('bgSel').value = data.bg; C.setBg(data.bg); }
+    var ranges = document.querySelectorAll('input[type=range]');
+    if (data.ruinsOpacity != null && ranges[0]) {
+      ranges[0].value = data.ruinsOpacity;
+      document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
+      document.getElementById('svgScatter').style.opacity = data.ruinsOpacity / 100;
+      ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
+    }
+    if (data.effects) {
+      var E = Editor.Effects;
+      if (data.effects.shadow) Object.assign(E.shadow, data.effects.shadow);
+      if (data.effects.feather) Object.assign(E.feather, data.effects.feather);
+      if (data.effects.grade) Object.assign(E.grade, data.effects.grade);
+      var shadowBtn = document.querySelector('[onclick*="toggleShadow"]');
+      if (shadowBtn) shadowBtn.classList.toggle('on', E.shadow.on);
+      var featherBtn = document.querySelector('[onclick*="toggleFeather"]');
+      if (featherBtn) featherBtn.classList.toggle('on', E.feather.on);
+      var gradeBtn = document.querySelector('[onclick*="toggleGrade"]');
+      if (gradeBtn) gradeBtn.classList.toggle('on', E.grade.on);
+      var fxShadowControls = document.getElementById('fxShadowControls');
+      if (fxShadowControls) fxShadowControls.style.display = E.shadow.on ? '' : 'none';
+      var fxFeatherControls = document.getElementById('fxFeatherControls');
+      if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
+      var fxGradeControls = document.getElementById('fxGradeControls');
+      if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
+    }
+  },
+
+  _restoreSprites(data) {
+    if (!data.sprites) return;
+    var C = Editor.Core;
+    data.sprites.forEach(function(s) {
+      var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType, true, s.id || undefined);
+      sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
+      sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
+      if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
+      if (s.groupId) { sp.groupId = s.groupId; }
+      if (s.cropL || s.cropT || s.cropR || s.cropB) {
+        sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
+      }
+      sp.shadowMul = s.shadowMul;
+      if (s._fileName) sp._fileName = s._fileName;
+    });
+    // Update sid counter to avoid ID collisions with future sprites
+    var maxSid = 0;
+    C.allSprites.forEach(function(sp) {
+      var num = parseInt(sp.id.replace('s', ''));
+      if (!isNaN(num) && num >= maxSid) maxSid = num + 1;
+    });
+    C.sid = maxSid;
+  },
+
+  _restoreModels(data) {
+    if (!data.models) return;
+    var C = Editor.Core;
+    document.getElementById('modelLayer').innerHTML = '';
+    C.allModels = [];
+    data.models.forEach(function(m) {
+      if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, m.s, m.f, m.iconType);
+      else Editor.Models.addRect(m.x, m.y, m.w, m.h, m.s, m.f);
+    });
+  },
+
+  _restoreLights(data) {
+    if (!data.lights) return;
+    data.lights.forEach(function(l) {
+      Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
+    });
+  },
+
+  _restoreGroups(data) {
+    if (data.groups && data.groups.length) {
+      Editor.Groups.restore(data.groups);
+    }
+    if (data.objectives) {
+      Editor.Objectives.restorePositions(data.objectives);
+    }
+    // Migrate any sprites still in old containers to be direct SVG children
+    var svgEl = document.getElementById('battlefield');
+    var selUIEl = document.getElementById('selUI');
+    ['spriteFloor', 'spriteTop'].forEach(function(cid) {
+      var container = document.getElementById(cid);
+      if (container) {
+        Array.from(container.children).forEach(function(child) {
+          container.removeChild(child);
+          svgEl.insertBefore(child, selUIEl);
+        });
+      }
+    });
+  },
+
+  _restoreZOrder(data) {
+    var C = Editor.Core;
+    if (data.zOrder && data.zOrder.length) {
+      this._restoreZOrderFromExplicit(data.zOrder, C);
+    } else if (data.layerOrder) {
+      this._restoreZOrderFromLayerOrder(data.layerOrder, C);
+    }
+  },
+
+  _restoreToggles(data) {
+    if (!data.toggles) return;
+    ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer'].forEach(function(id) {
+      if (data.toggles[id] === false) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+        var btn = document.querySelector('button[onclick*="' + id + '"]');
+        if (btn) btn.classList.remove('on');
+      }
+    });
+    if (data.toggles.objectives === false) {
+      ['objectiveRings','objectiveHexes'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      var objBtn = document.querySelector('button[onclick*="objectiveRings"]');
+      if (objBtn) objBtn.classList.remove('on');
     }
   },
 
