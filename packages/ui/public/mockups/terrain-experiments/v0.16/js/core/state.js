@@ -106,11 +106,11 @@ Editor.State = {
     const newOrder = [];
 
     const builtinIds = new Set([
-      'modelLayer', 'lightLayer', 'objectiveRings', 'objectiveHexes',
+      'deployZones', 'modelLayer', 'lightLayer', 'objectiveRings', 'objectiveHexes',
       'svgRuins', 'svgScatter'
     ]);
     const skipIds = new Set([
-      'selUI', 'dragRect', 'deployZones', 'bgImg',
+      'selUI', 'dragRect', 'bgImg',
       'svgGroundGradient', 'svgGroundWarm', 'svgGroundDual', 'svgGroundHaze',
       'svgGroundConcrete', 'svgGroundTactical', 'cropOverlay',
       'spriteFloor', 'spriteTop'

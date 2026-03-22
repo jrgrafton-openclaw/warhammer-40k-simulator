@@ -42,7 +42,18 @@ export function loadEditor() {
           <defs></defs>
           <rect width="720" height="528" fill="#0c1218"/>
           <image id="bgImg" href="" x="0" y="0" width="720" height="528"/>
-          <g id="deployZones"></g>
+          <g id="deployZones">
+            <g id="deploy-imperium">
+              <rect x="0" y="0" width="240" height="528" fill="rgba(0,140,200,0.06)"/>
+              <line x1="240" y1="0" x2="240" y2="528" stroke="rgba(0,212,255,0.3)"/>
+              <text x="120" y="15" fill="rgba(0,212,255,0.15)">IMPERIUM DEPLOY</text>
+            </g>
+            <g id="deploy-ork">
+              <rect x="480" y="0" width="240" height="528" fill="rgba(255,64,32,0.06)"/>
+              <line x1="480" y1="0" x2="480" y2="528" stroke="rgba(255,64,32,0.3)"/>
+              <text x="600" y="15" fill="rgba(255,64,32,0.15)">ORK DEPLOY</text>
+            </g>
+          </g>
           <g id="lightLayer"></g>
           <g id="spriteFloor"></g>
           <g id="spriteTop"></g>
