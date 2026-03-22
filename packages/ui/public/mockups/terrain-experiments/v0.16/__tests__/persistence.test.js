@@ -279,8 +279,11 @@ describe('Round-trip persistence', () => {
     // Reload
     Editor.Persistence.load();
 
-    // Sprites should have filter attributes applied (not empty)
-    const spritesWithFilter = C.allSprites.filter(s => s.el.getAttribute('filter'));
+    // Sprites should have filter attributes applied (on wrapper if cropped, on image if not)
+    const spritesWithFilter = C.allSprites.filter(s => {
+      const target = s._clipWrap || s.el;
+      return target.getAttribute('filter');
+    });
     expect(spritesWithFilter.length).toBeGreaterThan(0);
     expect(spritesWithFilter.length).toBe(C.allSprites.length);
   });

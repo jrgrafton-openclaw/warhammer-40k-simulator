@@ -247,11 +247,12 @@ describe('Editor Crop — wrapper approach', () => {
 
     Editor.Crop._applyClip(sp);
 
-    // Sprite should be inside a wrapper <g>
+    // Double-wrapper: outer _clipWrap (filter) → inner _clipGroup (clip) → <image>
     expect(sp._clipWrap).toBeTruthy();
     expect(sp._clipWrap.tagName).toBe('g');
-    expect(sp.el.parentNode).toBe(sp._clipWrap);
-    expect(sp._clipWrap.getAttribute('clip-path')).toContain('url(#');
+    expect(sp._clipGroup).toBeTruthy();
+    expect(sp.el.parentNode).toBe(sp._clipGroup);
+    expect(sp._clipGroup.getAttribute('clip-path')).toContain('url(#');
   });
 
   it('removeClip unwraps sprite back to direct parent', () => {
@@ -633,8 +634,9 @@ describe('Integration — James layout JSON', () => {
         : svg.contains(sp.el);
       expect(elInSvg).toBe(true);
 
-      // Every sprite should have a filter applied
-      expect(sp.el.getAttribute('filter')).toBeTruthy();
+      // Every sprite should have a filter applied (on wrapper if cropped, on image if not)
+      const filterTarget = sp._clipWrap || sp.el;
+      expect(filterTarget.getAttribute('filter')).toBeTruthy();
     });
 
     // Verify cropped sprites have correct wrapper structure
@@ -643,8 +645,9 @@ describe('Integration — James layout JSON', () => {
 
     cropped.forEach(sp => {
       expect(sp._clipWrap).toBeTruthy();
-      expect(sp._clipWrap.getAttribute('clip-path')).toBeTruthy();
-      expect(sp.el.parentNode).toBe(sp._clipWrap);
+      expect(sp._clipGroup).toBeTruthy();
+      expect(sp._clipGroup.getAttribute('clip-path')).toBeTruthy();
+      expect(sp.el.parentNode).toBe(sp._clipGroup);
     });
 
     // Verify uncropped sprites are direct SVG children (not wrapped)
