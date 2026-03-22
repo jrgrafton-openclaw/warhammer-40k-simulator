@@ -100,43 +100,7 @@ Editor.Persistence = {
         try {
           var data = JSON.parse(ev.target.result);
           if (!confirm('This will clear all current sprites, models, and lights. Continue?')) return;
-          // If data has the "output" format (layerType on sprites, stroke on models), convert it
-          if (data.sprites && data.sprites[0] && ('layerType' in data.sprites[0]) && !('cropL' in data.sprites[0])) {
-            data.sprites = data.sprites.map(function(s) {
-              return {
-                file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
-                layerType: s.layerType || 'floor', hidden: s.hidden || false,
-                flipX: s.flipX || false, flipY: s.flipY || false,
-                groupId: s.groupId || null,
-                cropL: s.crop ? s.crop.l || 0 : 0, cropT: s.crop ? s.crop.t || 0 : 0,
-                cropR: s.crop ? s.crop.r || 0 : 0, cropB: s.crop ? s.crop.b || 0 : 0,
-                shadowMul: s.shadowMul != null ? s.shadowMul : 1.0
-              };
-            });
-            if (data.models) {
-              data.models = data.models.map(function(m) {
-                return m.kind === 'circle'
-                  ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)', iconType: m.icon || m.iconType }
-                  : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.stroke || m.s, f: (m.stroke || m.s) === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)' };
-              });
-            }
-            if (data.settings) {
-              data.bg = data.settings.bg;
-              data.ruinsOpacity = data.settings.ruinsOpacity;
-              data.roofOpacity = data.settings.roofOpacity;
-            }
-          }
-          // Auto-create groups from sprite groupId references if missing
-          if (data.sprites) {
-            var groupIds = new Set(data.sprites.filter(function(s) { return s.groupId; }).map(function(s) { return s.groupId; }));
-            if (!data.groups) data.groups = [];
-            groupIds.forEach(function(gId) {
-              if (!data.groups.find(function(g) { return g.id === gId; })) {
-                var num = parseInt(gId.replace('group-g', '')) || 0;
-                data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
-              }
-            });
-          }
+          data = Editor.Persistence._normalize(data);
           localStorage.setItem(Editor.Persistence.STORAGE_KEY, JSON.stringify(data));
           location.reload();
         } catch (err) {
@@ -153,6 +117,7 @@ Editor.Persistence = {
     if (!raw) return;
     try {
       var data = JSON.parse(raw);
+      data = this._normalize(data);
       var C = Editor.Core;
       var S = Editor.State;
 
@@ -196,21 +161,15 @@ Editor.Persistence = {
       // Restore sprites — use saved ID (_forceId) so zOrder references stay valid
       if (data.sprites) {
         data.sprites.forEach(function(s) {
-          var lt = s.layerType || (s.layer === 'spriteTop' ? 'top' : 'floor');
-          var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, lt, true, s.id || undefined);
+          var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType, true, s.id || undefined);
           sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
           sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
           if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
           if (s.groupId) { sp.groupId = s.groupId; }
-          // Handle both internal format (cropL/T/R/B) and output format (crop: {l,t,r,b})
-          var cL = s.cropL || (s.crop ? s.crop.l || 0 : 0);
-          var cT = s.cropT || (s.crop ? s.crop.t || 0 : 0);
-          var cR = s.cropR || (s.crop ? s.crop.r || 0 : 0);
-          var cB = s.cropB || (s.crop ? s.crop.b || 0 : 0);
-          if (cL || cT || cR || cB) {
-            sp.cropL = cL; sp.cropT = cT; sp.cropR = cR; sp.cropB = cB;
+          if (s.cropL || s.cropT || s.cropR || s.cropB) {
+            sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
           }
-          sp.shadowMul = s.shadowMul != null ? s.shadowMul : 1.0;
+          sp.shadowMul = s.shadowMul;
           if (s._fileName) sp._fileName = s._fileName;
         });
         // Update sid counter to avoid ID collisions with future sprites
@@ -227,12 +186,8 @@ Editor.Persistence = {
         document.getElementById('modelLayer').innerHTML = '';
         C.allModels = [];
         data.models.forEach(function(m) {
-          // Handle both internal format (s, f, iconType) and output format (stroke, icon)
-          var stroke = m.s || m.stroke;
-          var fill = m.f || (stroke ? (stroke === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)') : 'url(#mf-imp)');
-          var iconType = m.iconType || m.icon;
-          if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, stroke, fill, iconType);
-          else Editor.Models.addRect(m.x, m.y, m.w, m.h, stroke, fill);
+          if (m.kind === 'circle') Editor.Models.addCircle(m.x, m.y, m.r, m.s, m.f, m.iconType);
+          else Editor.Models.addRect(m.x, m.y, m.w, m.h, m.s, m.f);
         });
       }
 
@@ -240,18 +195,6 @@ Editor.Persistence = {
       if (data.lights) {
         data.lights.forEach(function(l) {
           Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
-        });
-      }
-
-      // Auto-create groups from sprite groupId references if missing from groups array
-      if (data.sprites) {
-        var groupIds = new Set(data.sprites.filter(function(s) { return s.groupId; }).map(function(s) { return s.groupId; }));
-        if (!data.groups) data.groups = [];
-        groupIds.forEach(function(gId) {
-          if (!data.groups.find(function(g) { return g.id === gId; })) {
-            var num = parseInt(gId.replace('group-g', '')) || 0;
-            data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
-          }
         });
       }
 
@@ -325,6 +268,58 @@ Editor.Persistence = {
     } catch (e) {
       console.warn('Failed to load layout', e);
     }
+  },
+
+  /** Normalize any JSON format (output or internal) to the internal format used by load(). */
+  _normalize(data) {
+    // Sprites: convert crop.l → cropL, ensure all fields present
+    if (data.sprites) {
+      data.sprites = data.sprites.map(function(s) {
+        var cL = s.cropL || (s.crop ? s.crop.l || 0 : 0);
+        var cT = s.cropT || (s.crop ? s.crop.t || 0 : 0);
+        var cR = s.cropR || (s.crop ? s.crop.r || 0 : 0);
+        var cB = s.cropB || (s.crop ? s.crop.b || 0 : 0);
+        return {
+          id: s.id || undefined,
+          file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot || 0,
+          layerType: s.layerType || (s.layer === 'spriteTop' ? 'top' : 'floor'),
+          hidden: s.hidden || false,
+          flipX: s.flipX || false, flipY: s.flipY || false,
+          groupId: s.groupId || null,
+          cropL: cL, cropT: cT, cropR: cR, cropB: cB,
+          shadowMul: s.shadowMul != null ? s.shadowMul : 1.0,
+          _fileName: s._fileName || null
+        };
+      });
+    }
+    // Models: convert stroke → s, icon → iconType, derive fill
+    if (data.models) {
+      data.models = data.models.map(function(m) {
+        var stroke = m.s || m.stroke;
+        var fill = m.f || (stroke ? (stroke === '#0088aa' ? 'url(#mf-imp)' : 'url(#mf-ork)') : 'url(#mf-imp)');
+        var iconType = m.iconType || m.icon;
+        return m.kind === 'circle'
+          ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: stroke, f: fill, iconType: iconType }
+          : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: stroke, f: fill };
+      });
+    }
+    // Settings: flatten data.settings into top-level
+    if (data.settings) {
+      if (data.settings.bg && !data.bg) data.bg = data.settings.bg;
+      if (data.settings.ruinsOpacity != null && data.ruinsOpacity == null) data.ruinsOpacity = data.settings.ruinsOpacity;
+    }
+    // Groups: ensure array exists, auto-create from sprite groupId refs
+    if (!data.groups) data.groups = [];
+    if (data.sprites) {
+      var groupIds = new Set(data.sprites.filter(function(s) { return s.groupId; }).map(function(s) { return s.groupId; }));
+      groupIds.forEach(function(gId) {
+        if (!data.groups.find(function(g) { return g.id === gId; })) {
+          var num = parseInt(gId.replace('group-g', '')) || 0;
+          data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
+        }
+      });
+    }
+    return data;
   },
 
   /** Sync effect slider DOM values from restored params. */
