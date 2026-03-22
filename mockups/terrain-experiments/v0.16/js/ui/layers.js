@@ -9,6 +9,28 @@ Editor.Layers = {
   draggedId: null,
   expandedGroups: { modelLayer: false, lightLayer: false },
   // Custom groups default to expanded (true). Keyed by groupId.
+  UI_STORAGE_KEY: 'wh40k-editor-v016-ui',
+
+  /** Save editor UI state (expand/collapse) to localStorage. */
+  _saveUIState() {
+    try {
+      localStorage.setItem(this.UI_STORAGE_KEY, JSON.stringify({
+        expandedGroups: this.expandedGroups
+      }));
+    } catch (e) { /* quota exceeded — ignore */ }
+  },
+
+  /** Load editor UI state from localStorage. */
+  _loadUIState() {
+    try {
+      const raw = localStorage.getItem(this.UI_STORAGE_KEY);
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (data.expandedGroups) {
+        this.expandedGroups = data.expandedGroups;
+      }
+    } catch (e) { /* corrupt data — ignore */ }
+  },
 
   /* ── Build the unified z-order list ── */
   /* Phase 1: Uses EditorState.zOrder when available, falls back to DOM walk. */
@@ -292,6 +314,7 @@ Editor.Layers = {
       row.onclick = e => {
         if (e.target.closest('.drag-hint')) return;
         this.expandedGroups[item.groupId] = !this.expandedGroups[item.groupId];
+        this._saveUIState();
         this.rebuild();
       };
     }
@@ -423,6 +446,7 @@ Editor.Layers = {
       if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-rename-btn')) return;
       // Everything else (expand toggle, group name, row body) → toggle collapse/expand
       this.expandedGroups[gId] = !isExpanded;
+      this._saveUIState();
       this.rebuild();
     };
 

@@ -40,6 +40,7 @@ Editor.Core = {
     Editor.Selection.init();
     Editor.Sprites.initFileDrop();
     Editor.Persistence.load();
+    Editor.Layers._loadUIState();
     Editor.State.syncFromCore();
     Editor.State.syncZOrderFromDOM();
     Editor.Layers.rebuild();
