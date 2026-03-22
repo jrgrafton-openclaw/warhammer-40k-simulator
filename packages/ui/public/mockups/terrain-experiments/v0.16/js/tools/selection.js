@@ -56,6 +56,7 @@ Editor.Selection = {
     const C = Editor.Core;
     C.selected = sp; C.multiSel = [sp];
     Editor.Lights.deselectLight();
+    Editor.Models.deselectModel();
     this.drawSelectionUI(); Editor.Layers.rebuild();
   },
 
@@ -383,7 +384,7 @@ Editor.Selection = {
         Editor.State.dispatch({ type: 'DELETE_LIGHT' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
-      if (Editor.Models.selectedModel) {
+      if (!C.selected && Editor.Models.selectedModel) {
         const data = Editor.Commands._captureModel(Editor.Models.selectedModel);
         Editor.Commands._removeModel(Editor.Models.selectedModel.id);
         Editor.Undo.record(Editor.Commands.DeleteModel.create(data));
@@ -400,8 +401,8 @@ Editor.Selection = {
       }
     }
 
-    // Arrow keys — move selected model
-    if (Editor.Models.selectedModel && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+    // Arrow keys — move selected model (only when no sprite is actively selected)
+    if (!C.selected && Editor.Models.selectedModel && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
       e.preventDefault();
       const m = Editor.Models.selectedModel;
       const step = e.shiftKey ? 10 : 1;

@@ -117,6 +117,29 @@ describe('Model keyboard controls', () => {
     expect(Editor.Undo.undoStack.length).toBe(undoBefore + 1);
   });
 
+  it('sprite selection takes priority over stale model selection for arrow keys', () => {
+    const m = addAndSelectModel(100, 100);
+    // Now select a sprite — this should deselect the model
+    const sp = Editor.Sprites.addSprite('img/test.png', 50, 50, 40, 40, 0, 'floor', true);
+    Editor.Selection.select(sp);
+    fireKey('ArrowRight');
+    // Sprite should move, model should not
+    expect(sp.x).toBe(51);
+    expect(m.x).toBe(100);
+  });
+
+  it('sprite selection takes priority over stale model selection for Delete', () => {
+    const m = addAndSelectModel(100, 100);
+    const sp = Editor.Sprites.addSprite('img/test.png', 50, 50, 40, 40, 0, 'floor', true);
+    Editor.Selection.select(sp);
+    const modelCount = Editor.Core.allModels.length;
+    const spriteCount = Editor.Core.allSprites.length;
+    fireKey('Delete');
+    // Sprite should be deleted, model should remain
+    expect(Editor.Core.allSprites.length).toBe(spriteCount - 1);
+    expect(Editor.Core.allModels.length).toBe(modelCount);
+  });
+
   it('Delete key still removes sprites when no model is selected', () => {
     const sp = Editor.Sprites.addSprite('img/test.png', 50, 50, 40, 40, 0, 'floor', true);
     Editor.Core.selected = sp;
