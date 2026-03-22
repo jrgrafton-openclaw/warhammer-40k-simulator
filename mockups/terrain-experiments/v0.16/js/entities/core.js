@@ -91,7 +91,7 @@ Editor.Core = {
     const thumbs = {
       tRuinsFloor: ['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','layer-bottom-v6.png','layer-bottom-v7.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],
       tRuinsTop: ['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','layer-top-v4.png','layer-top-v5.png','layer-top-v6.png','layer-top-v7.png','t10-layer-top.png'],
-      tScatter: ['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png']
+      tScatter: ['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png','rubble-edge-1.png','rubble-edge-2.png','rubble-edge-3.png','rubble-edge-4.png']
     };
     const base = this.spriteBasePath;
     Object.entries(thumbs).forEach(([id, files]) => {
