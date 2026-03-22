@@ -1,23 +1,7 @@
 {
  "sprites": [
   {
-   "id": "s0",
-   "file": "scatter-v5.png",
-   "x": 317,
-   "y": 455,
-   "w": 85,
-   "h": 76,
-   "rot": 45,
-   "layerType": "floor",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s1",
+   "id": "s5",
    "file": "t10-layer-bottom.png",
    "x": 92,
    "y": 262,
@@ -28,12 +12,12 @@
    "hidden": false,
    "flipX": false,
    "flipY": false,
-   "groupId": null,
-   "shadowMul": 0.08,
+   "groupId": "group-g3",
+   "shadowMul": 0.05,
    "crop": null
   },
   {
-   "id": "s2",
+   "id": "s11",
    "file": "layer-bottom-aligned.png",
    "x": 174,
    "y": 331,
@@ -44,15 +28,20 @@
    "hidden": false,
    "flipX": true,
    "flipY": true,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
+   "groupId": "group-g3",
+   "shadowMul": 0.07,
+   "crop": {
+    "l": 0,
+    "t": 0.162,
+    "r": 0,
+    "b": 0
+   }
   },
   {
    "id": "s3",
    "file": "layer-bottom-aligned.png",
    "x": 174,
-   "y": 403,
+   "y": 404,
    "w": 91,
    "h": 85,
    "rot": 1.7763568394002505e-15,
@@ -60,8 +49,72 @@
    "hidden": false,
    "flipX": true,
    "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
+   "groupId": "group-g3",
+   "shadowMul": 0.07,
+   "crop": null
+  },
+  {
+   "id": "s10",
+   "file": "scatter-v6.png",
+   "x": 34,
+   "y": 259,
+   "w": 96,
+   "h": 84,
+   "rot": -8,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g3",
+   "shadowMul": 0.07,
+   "crop": null
+  },
+  {
+   "id": "s8",
+   "file": "t10-layer-bottom.png",
+   "x": 275,
+   "y": 172,
+   "w": 72,
+   "h": 57,
+   "rot": 45,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g2",
+   "shadowMul": 0,
+   "crop": null
+  },
+  {
+   "id": "s2",
+   "file": "scatter-layer.png",
+   "x": 234,
+   "y": 206,
+   "w": 100,
+   "h": 80,
+   "rot": 60,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g2",
+   "shadowMul": 0.07,
+   "crop": null
+  },
+  {
+   "id": "s6",
+   "file": "scatter-layer.png",
+   "x": 220,
+   "y": 121,
+   "w": 100,
+   "h": 80,
+   "rot": 195,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g2",
+   "shadowMul": 0.07,
    "crop": null
   },
   {
@@ -77,115 +130,14 @@
    "flipX": false,
    "flipY": false,
    "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s5",
-   "file": "layer-top-v3.png",
-   "x": 214,
-   "y": 360,
-   "w": 53,
-   "h": 57,
-   "rot": 1.7763568394002505e-15,
-   "layerType": "floor",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s6",
-   "file": "layer-top-v3.png",
-   "x": 213,
-   "y": 398,
-   "w": 53,
-   "h": 60,
-   "rot": 1.7763568394002505e-15,
-   "layerType": "floor",
-   "hidden": false,
-   "flipX": false,
-   "flipY": true,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": {
-    "l": 0,
-    "t": 0,
-    "r": 0,
-    "b": 0.156
-   }
-  },
-  {
-   "id": "s7",
-   "file": "layer-top-v4.png",
-   "x": 99,
-   "y": 260,
-   "w": 100,
-   "h": 75,
-   "rot": 0,
-   "layerType": "floor",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s8",
-   "file": "layer-top-v2.png",
-   "x": 73,
-   "y": 67,
-   "w": 92,
-   "h": 63,
-   "rot": 90,
-   "layerType": "top",
-   "hidden": false,
-   "flipX": true,
-   "flipY": false,
-   "groupId": "group-g1",
-   "shadowMul": 1,
+   "shadowMul": 0.05,
    "crop": null
   },
   {
    "id": "s9",
-   "file": "layer-top-aligned.png",
-   "x": 267,
-   "y": 166,
-   "w": 78,
-   "h": 63,
-   "rot": 45,
-   "layerType": "top",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s10",
-   "file": "scatter-v6.png",
-   "x": 34,
-   "y": 259,
-   "w": 96,
-   "h": 84,
-   "rot": -8,
-   "layerType": "top",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 0.18,
-   "crop": null
-  },
-  {
-   "id": "s11",
    "file": "layer-bottom-v5.png",
-   "x": 55,
-   "y": 73,
+   "x": 49,
+   "y": 71,
    "w": 100,
    "h": 80,
    "rot": 90,
@@ -194,14 +146,14 @@
    "flipX": false,
    "flipY": false,
    "groupId": "group-g1",
-   "shadowMul": 0.04,
+   "shadowMul": 0.06,
    "crop": null
   },
   {
-   "id": "s12",
+   "id": "s7",
    "file": "layer-bottom-v5.png",
-   "x": 56,
-   "y": 119,
+   "x": 50,
+   "y": 117,
    "w": 100,
    "h": 80,
    "rot": 90,
@@ -210,7 +162,7 @@
    "flipX": false,
    "flipY": true,
    "groupId": "group-g1",
-   "shadowMul": 0.04,
+   "shadowMul": 0,
    "crop": {
     "l": 0.107,
     "t": 0,
@@ -219,10 +171,10 @@
    }
   },
   {
-   "id": "s13",
+   "id": "s1",
    "file": "scatter-v2.png",
-   "x": 80,
-   "y": 86,
+   "x": 74,
+   "y": 84,
    "w": 64,
    "h": 64,
    "rot": -45,
@@ -240,10 +192,26 @@
    }
   },
   {
+   "id": "s13",
+   "file": "scatter-v3.png",
+   "x": 50,
+   "y": 123,
+   "w": 93,
+   "h": 74,
+   "rot": 69,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g1",
+   "shadowMul": 0,
+   "crop": null
+  },
+  {
    "id": "s14",
    "file": "scatter-v2.png",
-   "x": 82,
-   "y": 90,
+   "x": 76,
+   "y": 88,
    "w": 64,
    "h": 64,
    "rot": 7,
@@ -256,61 +224,13 @@
    "crop": null
   },
   {
-   "id": "s15",
-   "file": "scatter-v3.png",
-   "x": 56,
-   "y": 125,
-   "w": 93,
-   "h": 74,
-   "rot": 24,
-   "layerType": "floor",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": "group-g1",
-   "shadowMul": 0.03,
-   "crop": null
-  },
-  {
-   "id": "s16",
-   "file": "layer-top-v5.png",
-   "x": 268,
-   "y": 167,
-   "w": 81,
-   "h": 64,
-   "rot": 45,
-   "layerType": "top",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s17",
-   "file": "t10-layer-bottom.png",
-   "x": 272,
-   "y": 172,
-   "w": 72,
-   "h": 57,
-   "rot": 45,
-   "layerType": "floor",
-   "hidden": false,
-   "flipX": false,
-   "flipY": false,
-   "groupId": null,
-   "shadowMul": 1,
-   "crop": null
-  },
-  {
-   "id": "s18",
-   "file": "scatter-layer.png",
-   "x": 221,
-   "y": 116,
-   "w": 100,
-   "h": 80,
-   "rot": 60,
+   "id": "s12",
+   "file": "scatter-v5.png",
+   "x": 317,
+   "y": 455,
+   "w": 85,
+   "h": 76,
+   "rot": 0,
    "layerType": "floor",
    "hidden": false,
    "flipX": false,
@@ -320,35 +240,170 @@
    "crop": null
   },
   {
-   "id": "s19",
-   "file": "scatter-layer.png",
-   "x": 230,
-   "y": 206,
-   "w": 100,
-   "h": 80,
-   "rot": 60,
+   "id": "s15",
+   "file": "layer-top-v3.png",
+   "x": 214,
+   "y": 360,
+   "w": 53,
+   "h": 57,
+   "rot": 1.7763568394002505e-15,
    "layerType": "floor",
    "hidden": false,
    "flipX": false,
    "flipY": false,
-   "groupId": null,
+   "groupId": "group-g0",
    "shadowMul": 1,
    "crop": null
+  },
+  {
+   "id": "s0",
+   "file": "layer-top-v3.png",
+   "x": 214,
+   "y": 402,
+   "w": 53,
+   "h": 57,
+   "rot": 1.7763568394002505e-15,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": true,
+   "groupId": "group-g0",
+   "shadowMul": 1,
+   "crop": {
+    "l": 0,
+    "t": 0,
+    "r": 0,
+    "b": 0.123
+   }
+  },
+  {
+   "id": "s16",
+   "file": "layer-top-v4.png",
+   "x": 99,
+   "y": 260,
+   "w": 100,
+   "h": 75,
+   "rot": 0,
+   "layerType": "floor",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g0",
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s17",
+   "file": "layer-top-v5.png",
+   "x": 271,
+   "y": 167,
+   "w": 81,
+   "h": 64,
+   "rot": 45,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": false,
+   "flipY": false,
+   "groupId": "group-g0",
+   "shadowMul": 1,
+   "crop": null
+  },
+  {
+   "id": "s19",
+   "file": "layer-top-v2.png",
+   "x": 71,
+   "y": 86,
+   "w": 92,
+   "h": 63,
+   "rot": 90,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": true,
+   "flipY": false,
+   "groupId": "group-g0",
+   "shadowMul": 1,
+   "crop": {
+    "l": 0,
+    "t": 0,
+    "r": 0.69,
+    "b": 0
+   }
+  },
+  {
+   "id": "s18",
+   "file": "layer-top-v2.png",
+   "x": 72,
+   "y": 69,
+   "w": 92,
+   "h": 63,
+   "rot": 90,
+   "layerType": "top",
+   "hidden": false,
+   "flipX": true,
+   "flipY": false,
+   "groupId": "group-g0",
+   "shadowMul": 1,
+   "crop": {
+    "l": 0.108,
+    "t": 0,
+    "r": 0,
+    "b": 0
+   }
   }
  ],
  "models": [
   {
    "kind": "circle",
-   "x": 100,
-   "y": 64,
+   "x": 64,
+   "y": 49,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "cross"
   },
   {
    "kind": "circle",
-   "x": 117,
-   "y": 64,
+   "x": 122,
+   "y": 82,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 127,
+   "y": 107,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 41,
+   "y": 68,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 121,
+   "y": 40,
+   "r": 8,
+   "stroke": "#0088aa",
+   "icon": "cross"
+  },
+  {
+   "kind": "circle",
+   "x": 36,
+   "y": 147,
+   "r": 9,
+   "stroke": "#0088aa",
+   "icon": "star"
+  },
+  {
+   "kind": "circle",
+   "x": 142,
+   "y": 299,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "cross"
@@ -356,47 +411,7 @@
   {
    "kind": "circle",
    "x": 134,
-   "y": 64,
-   "r": 8,
-   "stroke": "#0088aa",
-   "icon": "cross"
-  },
-  {
-   "kind": "circle",
-   "x": 108,
-   "y": 81,
-   "r": 8,
-   "stroke": "#0088aa",
-   "icon": "cross"
-  },
-  {
-   "kind": "circle",
-   "x": 125,
-   "y": 81,
-   "r": 8,
-   "stroke": "#0088aa",
-   "icon": "cross"
-  },
-  {
-   "kind": "circle",
-   "x": 120,
-   "y": 160,
-   "r": 9,
-   "stroke": "#0088aa",
-   "icon": "star"
-  },
-  {
-   "kind": "circle",
-   "x": 80,
-   "y": 300,
-   "r": 8,
-   "stroke": "#0088aa",
-   "icon": "cross"
-  },
-  {
-   "kind": "circle",
-   "x": 97,
-   "y": 300,
+   "y": 317,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "cross"
@@ -411,8 +426,8 @@
   },
   {
    "kind": "circle",
-   "x": 88,
-   "y": 317,
+   "x": 171,
+   "y": 301,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "cross"
@@ -427,40 +442,40 @@
   },
   {
    "kind": "circle",
-   "x": 150,
-   "y": 400,
+   "x": 172,
+   "y": 285,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "diamond"
   },
   {
    "kind": "circle",
-   "x": 167,
-   "y": 400,
+   "x": 249,
+   "y": 377,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "diamond"
   },
   {
    "kind": "circle",
-   "x": 184,
-   "y": 400,
+   "x": 248,
+   "y": 394,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "diamond"
   },
   {
    "kind": "circle",
-   "x": 158,
-   "y": 417,
+   "x": 229,
+   "y": 403,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "diamond"
   },
   {
    "kind": "circle",
-   "x": 175,
-   "y": 417,
+   "x": 229,
+   "y": 385,
    "r": 8,
    "stroke": "#0088aa",
    "icon": "diamond"
@@ -563,15 +578,62 @@
   },
   {
    "kind": "circle",
-   "x": 560,
-   "y": 350,
+   "x": 549,
+   "y": 312,
    "r": 8,
    "stroke": "#aa2810",
    "icon": "diamond"
   }
  ],
  "lights": [],
- "groups": [{"id": "group-g1", "name": "Ruins NW", "opacity": 1}],
+ "groups": [
+  {
+   "id": "group-g1",
+   "name": "Corner-Building",
+   "opacity": 1,
+   "spriteIds": [
+    "s9",
+    "s7",
+    "s1",
+    "s13",
+    "s14"
+   ]
+  },
+  {
+   "id": "group-g2",
+   "name": "Center-Building",
+   "opacity": 1,
+   "spriteIds": [
+    "s8",
+    "s2",
+    "s6"
+   ]
+  },
+  {
+   "id": "group-g3",
+   "name": "Dual-Building",
+   "opacity": 1,
+   "spriteIds": [
+    "s5",
+    "s11",
+    "s3",
+    "s10"
+   ]
+  },
+  {
+   "id": "group-g0",
+   "name": "Roofs",
+   "opacity": 0.78,
+   "spriteIds": [
+    "s15",
+    "s0",
+    "s16",
+    "s17",
+    "s19",
+    "s18"
+   ]
+  }
+ ],
  "objectives": [
   {
    "idx": 0,
@@ -601,7 +663,6 @@
  ],
  "settings": {
   "bg": "svg-gradient",
-  "ruinsOpacity": 100,
-  "roofOpacity": 100
+  "ruinsOpacity": 0
  }
 }
