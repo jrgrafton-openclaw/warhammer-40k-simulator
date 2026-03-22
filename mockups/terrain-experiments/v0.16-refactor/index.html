@@ -210,5 +210,8 @@
 <script src="js/ui/layers.js?v=t1742528400"></script>
 <script src="js/tools/effects.js?v=t1742528400"></script>
 <script src="js/persistence.js?v=t1742528400"></script>
-<script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();</script>
+<script>
+Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();
+window.addEventListener('beforeunload', function() { Editor.State.flush(); });
+</script>
 </body></html>
