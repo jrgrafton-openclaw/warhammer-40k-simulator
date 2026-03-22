@@ -68,29 +68,15 @@
       <label><span class="fx-lbl">Saturation</span><input type="range" min="0" max="150" value="70" oninput="Editor.Effects.setGradeParam('saturation',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">70%</span></label>
       <label><span class="fx-lbl">Sepia</span><input type="range" min="0" max="50" value="8" oninput="Editor.Effects.setGradeParam('sepia',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">8%</span></label>
     </div>
-    <div class="toggle-row" style="margin-top:6px">
-      <button class="tbtn" id="fxScatterBtn" onclick="Editor.Effects.toggleScatterGlow(this)">Scatter Glow</button>
-      <button class="tbtn" id="fxRoofBtn" onclick="Editor.Effects.toggleRoofTint(this)">Roof Tint</button>
-    </div>
-    <div class="fx-controls" id="fxScatterControls" style="display:none">
-      <label><span class="fx-lbl">Glow Intensity</span><input type="range" min="0" max="100" value="50" oninput="Editor.Effects.setScatterParam('intensity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">50%</span></label>
-      <label><span class="fx-lbl">Glow Blur</span><input type="range" min="1" max="8" value="3" oninput="Editor.Effects.setScatterParam('blur',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
-    </div>
-    <div class="fx-controls" id="fxRoofControls" style="display:none">
-      <label><span class="fx-lbl">Tint Strength</span><input type="range" min="0" max="50" value="20" oninput="Editor.Effects.setRoofParam('strength',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">20%</span></label>
-    </div>
-    <div class="toggle-row" style="margin-top:6px">
-      <button class="tbtn" id="fxPatchBtn" onclick="Editor.Effects.toggleGroundPatch(this)">Ground Patches</button>
-      <button class="tbtn" id="fxModelShadowBtn" onclick="Editor.Effects.toggleModelShadow(this)">Model Shadows</button>
-    </div>
-    <div class="fx-controls" id="fxPatchControls" style="display:none">
-      <label><span class="fx-lbl">Patch Opacity</span><input type="range" min="0" max="100" value="30" oninput="Editor.Effects.setGroundParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">30%</span></label>
-      <label><span class="fx-lbl">Patch Extend</span><input type="range" min="5" max="30" value="15" oninput="Editor.Effects.setGroundParam('extend',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">15px</span></label>
-    </div>
-    <div class="fx-controls" id="fxModelShadowControls" style="display:none">
-      <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="25" oninput="Editor.Effects.setModelShadowParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">25%</span></label>
-      <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="10" value="3" oninput="Editor.Effects.setModelShadowParam('blur',this.value/2);this.nextElementSibling.textContent=(this.value/2)+'px'"><span class="fx-val">1.5px</span></label>
-    </div>
+  </div>
+  <div class="toggle-row" style="margin-top:6px">
+    <button class="tbtn on" id="fxModelShadowBtn" onclick="Editor.Effects.toggleModelShadow(this)">Model Shadows</button>
+  </div>
+  <div class="fx-controls" id="fxModelShadowControls">
+    <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="25" oninput="Editor.Effects.setModelShadowParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">25%</span></label>
+    <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="10" value="3" oninput="Editor.Effects.setModelShadowParam('blur',this.value/2);this.nextElementSibling.textContent=(this.value/2)+'px'"><span class="fx-val">1.5px</span></label>
+    <label><span class="fx-lbl">Offset X</span><input type="range" min="-5" max="5" value="1" oninput="Editor.Effects.setModelShadowParam('dx',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">1px</span></label>
+    <label><span class="fx-lbl">Offset Y</span><input type="range" min="-5" max="5" value="2" oninput="Editor.Effects.setModelShadowParam('dy',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">2px</span></label>
   </div>
   <h3>Ruins — Floor</h3>
   <div class="thumb-grid" id="tRuinsFloor"></div>
@@ -107,6 +93,7 @@
         <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="wallShadow"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity=".5"/></filter>
+        <filter id="mf-model-shadow" x="-50%" y="-30%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.5"/></filter>
         <pattern id="floor-pat" width="24" height="24" patternUnits="userSpaceOnUse">
           <rect width="24" height="24" fill="#3a4044"/><rect x=".5" y=".5" width="11" height="11" fill="#424a4e" rx=".3"/>
           <rect x="12.5" y=".5" width="11" height="11" fill="#3e4648" rx=".3"/><rect x=".5" y="12.5" width="11" height="11" fill="#404848" rx=".3"/>
@@ -147,13 +134,6 @@
           <line x1="0" y1="48" x2="60" y2="48" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
           <line x1="48" y1="0" x2="48" y2="60" stroke="#00d4ff" stroke-width="0.2" opacity="0.02"/>
         </pattern>
-        <radialGradient id="terrain-ground-grad" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="rgba(40,35,25,1)"/>
-          <stop offset="100%" stop-color="rgba(40,35,25,0)"/>
-        </radialGradient>
-        <filter id="mf-model-shadow" x="-50%" y="-30%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="1.5"/>
-        </filter>
       </defs>
       <rect width="720" height="528" fill="#0c1218"/>
       <g id="svgGroundGradient" style="display:none"><rect width="720" height="528" fill="url(#grd-depth)"/><rect width="720" height="528" fill="url(#slab-pat)" opacity="0.15"/></g>

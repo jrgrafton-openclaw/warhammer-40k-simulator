@@ -9,10 +9,7 @@ Editor.Effects = {
   shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55, distance: 1.0 },
   feather: { on: false, radius: 10 },
   grade:   { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
-  scatterGlow: { on: false, color: '#8B6914', intensity: 0.5, blur: 3 },
-  roofTint: { on: false, strength: 0.2 },
-  groundPatch: { on: false, opacity: 0.3, extend: 15 },
-  modelShadow: { on: false, blur: 1.5, opacity: 0.25, dx: 1, dy: 2 },
+  modelShadow: { on: true, blur: 1.5, opacity: 0.25, dx: 1, dy: 2 },
 
   // Filter cache: key = quantised params string → filter id
   _filterCache: {},
@@ -28,7 +25,6 @@ Editor.Effects = {
   rebuildAll() {
     const sprites = Editor.Core.allSprites;
     sprites.forEach(sp => this._applyToSprite(sp));
-    this.rebuildGroundPatches();
   },
 
   // ── Apply correct filter to a single sprite ──
@@ -37,8 +33,6 @@ Editor.Effects = {
     const rot = sp.rot || 0;
     const flipX = sp.flipX ? -1 : 1;
     const flipY = sp.flipY ? -1 : 1;
-    const isScatter = !!(sp.file && (sp.file.includes('scatter') || sp.file.includes('rubble')));
-    const isTop = sp.layerType === 'top';
 
     // Cropped sprites: filter goes on the outer wrapper <g> which is in
     // PARENT space (no transform). Use raw dx/dy — no counter-rotation needed.
@@ -46,8 +40,8 @@ Editor.Effects = {
     // transform. Counter-rotate the offset so shadow appears correct in screen space.
     const isCropped = !!sp._clipWrap;
     const filterId = isCropped
-      ? this._getOrCreateFilter(mul, 0, 1, 1, isScatter, isTop)    // no counter-rotation for wrapper
-      : this._getOrCreateFilter(mul, rot, flipX, flipY, isScatter, isTop); // counter-rotate for image
+      ? this._getOrCreateFilter(mul, 0, 1, 1)    // no counter-rotation for wrapper
+      : this._getOrCreateFilter(mul, rot, flipX, flipY); // counter-rotate for image
 
     const filterVal = filterId ? `url(#${filterId})` : null;
     const filterTarget = isCropped ? sp._clipWrap : sp.el;
@@ -65,7 +59,7 @@ Editor.Effects = {
   },
 
   // ── Get or create a filter for given shadow multiplier + rotation ──
-  _getOrCreateFilter(rawMul, rot, flipX, flipY, isScatter, isTop) {
+  _getOrCreateFilter(rawMul, rot, flipX, flipY) {
     // Quantise multiplier to nearest 0.1 to limit filter count
     const mul = Math.round((rawMul || 0) * 10) / 10;
     // Quantise rotation to nearest 5° to limit filter count
@@ -74,18 +68,14 @@ Editor.Effects = {
     const hasShadow = this.shadow.on && mul > 0;
     const hasFeather = this.feather.on;
     const hasGrade = this.grade.on;
-    const hasScatterGlow = this.scatterGlow.on && isScatter;
-    const hasRoofTint = this.roofTint.on && isTop;
 
-    if (!hasShadow && !hasFeather && !hasGrade && !hasScatterGlow && !hasRoofTint) return null;
+    if (!hasShadow && !hasFeather && !hasGrade) return null;
 
     // Build cache key including rotation + flip for shadow direction
     const key = [
       hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${this.shadow.distance},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
       hasFeather ? `f${this.feather.radius}` : '',
-      hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : '',
-      hasScatterGlow ? `sg${this.scatterGlow.color},${this.scatterGlow.intensity},${this.scatterGlow.blur}` : '',
-      hasRoofTint ? `rt${this.roofTint.strength}` : ''
+      hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : ''
     ].join('|');
 
     if (this._filterCache[key]) return this._filterCache[key];
@@ -108,14 +98,14 @@ Editor.Effects = {
     const localDy = flipY * (-dx * Math.sin(rad) + dy * Math.cos(rad));
 
     const id = `spFx${this._filterId++}`;
-    this._buildFilter(id, hasShadow, hasFeather, hasGrade, mul, localDx, localDy, hasScatterGlow, hasRoofTint);
+    this._buildFilter(id, hasShadow, hasFeather, hasGrade, mul, localDx, localDy);
     this._filterCache[key] = id;
     return id;
   },
 
   // ── Build a combined SVG filter ──
   // localDx/localDy: counter-rotated shadow offset for screen-space consistency
-  _buildFilter(id, hasShadow, hasFeather, hasGrade, shadowMul, localDx, localDy, hasScatterGlow, hasRoofTint) {
+  _buildFilter(id, hasShadow, hasFeather, hasGrade, shadowMul, localDx, localDy) {
     const NS = Editor.Core.NS;
     const defs = Editor.Core.svg.querySelector('defs');
 
@@ -159,23 +149,7 @@ Editor.Effects = {
       currentInput = 'feathered';
     }
 
-    // ── Step 2a: Roof Tint (blue-grey shift for top/roof sprites) ──
-    if (hasRoofTint) {
-      const s = this.roofTint.strength;
-      // Lerp between identity and blue-grey matrix
-      const I = [1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,1,0];
-      const B = [0.8,0,0.1,0,-0.02, 0,0.85,0.15,0,0, 0.1,0.1,1.1,0,0.03, 0,0,0,1,0];
-      const vals = I.map((v, i) => (v * (1 - s) + B[i] * s).toFixed(4)).join(' ');
-      const cm = document.createElementNS(NS, 'feColorMatrix');
-      cm.setAttribute('in', currentInput);
-      cm.setAttribute('type', 'matrix');
-      cm.setAttribute('values', vals);
-      cm.setAttribute('result', 'roofTinted');
-      f.appendChild(cm);
-      currentInput = 'roofTinted';
-    }
-
-    // ── Step 2b: Color grading via feColorMatrix ──
+    // ── Step 2: Color grading via feColorMatrix ──
     if (hasGrade) {
       // Build a combined matrix: brightness × saturation × sepia
       const matrix = this._gradeMatrix(this.grade.brightness, this.grade.saturation, this.grade.sepia);
@@ -229,7 +203,6 @@ Editor.Effects = {
 
       // Merge: shadow behind sprite
       const merge = document.createElementNS(NS, 'feMerge');
-      merge.setAttribute('result', 'shadowMerged');
       const mn1 = document.createElementNS(NS, 'feMergeNode');
       mn1.setAttribute('in', 'shadow');
       const mn2 = document.createElementNS(NS, 'feMergeNode');
@@ -237,46 +210,6 @@ Editor.Effects = {
       merge.appendChild(mn1);
       merge.appendChild(mn2);
       f.appendChild(merge);
-      currentInput = 'shadowMerged';
-    }
-
-    // ── Step 4: Scatter Glow (warm edge glow for scatter/rubble sprites) ──
-    if (hasScatterGlow) {
-      const sg = this.scatterGlow;
-      const glFlood = document.createElementNS(NS, 'feFlood');
-      glFlood.setAttribute('flood-color', sg.color);
-      glFlood.setAttribute('flood-opacity', sg.intensity);
-      glFlood.setAttribute('result', 'glowColor');
-      f.appendChild(glFlood);
-
-      const glComp = document.createElementNS(NS, 'feComposite');
-      glComp.setAttribute('in', 'glowColor');
-      glComp.setAttribute('in2', 'SourceAlpha');
-      glComp.setAttribute('operator', 'in');
-      glComp.setAttribute('result', 'glowClipped');
-      f.appendChild(glComp);
-
-      const glMorph = document.createElementNS(NS, 'feMorphology');
-      glMorph.setAttribute('in', 'glowClipped');
-      glMorph.setAttribute('operator', 'dilate');
-      glMorph.setAttribute('radius', sg.blur);
-      glMorph.setAttribute('result', 'glowExpanded');
-      f.appendChild(glMorph);
-
-      const glBlur = document.createElementNS(NS, 'feGaussianBlur');
-      glBlur.setAttribute('in', 'glowExpanded');
-      glBlur.setAttribute('stdDeviation', sg.blur);
-      glBlur.setAttribute('result', 'glowBlurred');
-      f.appendChild(glBlur);
-
-      const glMerge = document.createElementNS(NS, 'feMerge');
-      const gmn1 = document.createElementNS(NS, 'feMergeNode');
-      gmn1.setAttribute('in', 'glowBlurred');
-      const gmn2 = document.createElementNS(NS, 'feMergeNode');
-      gmn2.setAttribute('in', currentInput);
-      glMerge.appendChild(gmn1);
-      glMerge.appendChild(gmn2);
-      f.appendChild(glMerge);
     }
 
     defs.appendChild(f);
@@ -377,105 +310,17 @@ Editor.Effects = {
     Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
-  // ── Scatter Glow toggle/set ──
-  toggleScatterGlow(btn) {
-    this.scatterGlow.on = !this.scatterGlow.on;
-    btn.classList.toggle('on', this.scatterGlow.on);
-    const ctrl = document.getElementById('fxScatterControls');
-    if (ctrl) ctrl.style.display = this.scatterGlow.on ? '' : 'none';
-    this._flush();
+  // ── Per-sprite shadow multiplier ──
+  setSpriteShadowMul(spriteId, val) {
+    const sp = Editor.Core.allSprites.find(s => s.id === spriteId);
+    if (!sp) return;
+    sp.shadowMul = val;
+    this._applyToSprite(sp);
+    Editor.Core.updateDebug();
     Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
-  setScatterParam(param, value) {
-    this.scatterGlow[param] = value;
-    this._flush();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  // ── Roof Tint toggle/set ──
-  toggleRoofTint(btn) {
-    this.roofTint.on = !this.roofTint.on;
-    btn.classList.toggle('on', this.roofTint.on);
-    const ctrl = document.getElementById('fxRoofControls');
-    if (ctrl) ctrl.style.display = this.roofTint.on ? '' : 'none';
-    this._flush();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  setRoofParam(param, value) {
-    this.roofTint[param] = value;
-    this._flush();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  // ── Ground Patches toggle/set ──
-  toggleGroundPatch(btn) {
-    this.groundPatch.on = !this.groundPatch.on;
-    btn.classList.toggle('on', this.groundPatch.on);
-    const ctrl = document.getElementById('fxPatchControls');
-    if (ctrl) ctrl.style.display = this.groundPatch.on ? '' : 'none';
-    this.rebuildGroundPatches();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  setGroundParam(param, value) {
-    this.groundPatch[param] = value;
-    this.rebuildGroundPatches();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  rebuildGroundPatches() {
-    const NS = Editor.Core.NS;
-    const svg = document.getElementById('battlefield');
-    // Remove all existing ground patches
-    svg.querySelectorAll('[data-ground-for]').forEach(el => el.remove());
-
-    if (!this.groundPatch.on) return;
-
-    const sprites = Editor.Core.allSprites;
-    const ext = this.groundPatch.extend;
-    const opacity = this.groundPatch.opacity;
-
-    sprites.forEach(sp => {
-      if (sp.hidden) return;
-      const rect = document.createElementNS(NS, 'rect');
-      rect.setAttribute('x', sp.x - ext);
-      rect.setAttribute('y', sp.y - ext);
-      rect.setAttribute('width', sp.w + 2 * ext);
-      rect.setAttribute('height', sp.h + 2 * ext);
-      rect.setAttribute('fill', 'url(#terrain-ground-grad)');
-      rect.setAttribute('opacity', opacity);
-      rect.style.pointerEvents = 'none';
-      rect.setAttribute('data-ground-for', sp.id);
-
-      // Apply same transform as sprite
-      const cx = sp.x + sp.w / 2;
-      const cy = sp.y + sp.h / 2;
-      const parts = [];
-      if (sp.rot) parts.push(`rotate(${sp.rot} ${cx} ${cy})`);
-      if (sp.flipX || sp.flipY) {
-        const sx = sp.flipX ? -1 : 1;
-        const sy = sp.flipY ? -1 : 1;
-        parts.push(`translate(${cx} ${cy}) scale(${sx} ${sy}) translate(${-cx} ${-cy})`);
-      }
-      if (parts.length) rect.setAttribute('transform', parts.join(' '));
-
-      // Insert before the sprite's root element
-      const rootEl = sp._clipWrap || sp.el;
-      if (rootEl.parentNode === svg) {
-        svg.insertBefore(rect, rootEl);
-      } else {
-        // Sprite might be in a group — insert before the group
-        const parent = rootEl.parentNode;
-        if (parent && parent.parentNode === svg) {
-          svg.insertBefore(rect, parent);
-        }
-      }
-    });
-  },
-
-  // ── Model Shadows toggle/set ──
+  // ── Model Shadow toggle/set/rebuild ──
   toggleModelShadow(btn) {
     this.modelShadow.on = !this.modelShadow.on;
     btn.classList.toggle('on', this.modelShadow.on);
@@ -487,59 +332,47 @@ Editor.Effects = {
 
   setModelShadowParam(param, value) {
     this.modelShadow[param] = value;
-    // Update the filter stdDeviation
-    const filterEl = document.getElementById('mf-model-shadow');
-    if (filterEl) {
-      const blur = filterEl.querySelector('feGaussianBlur');
-      if (blur) blur.setAttribute('stdDeviation', this.modelShadow.blur);
+    // Update the SVG filter blur if blur changed
+    if (param === 'blur') {
+      const f = document.getElementById('mf-model-shadow');
+      if (f) {
+        const blur = f.querySelector('feGaussianBlur');
+        if (blur) blur.setAttribute('stdDeviation', value);
+      }
     }
     this.rebuildModelShadows();
     Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   rebuildModelShadows() {
-    const NS = Editor.Core.NS;
-    const models = Editor.Core.allModels;
-    // Remove all existing shadow elements
-    models.forEach(m => {
-      if (m.shadowEl) {
-        m.shadowEl.remove();
-        m.shadowEl = null;
-      }
-    });
-
-    if (!this.modelShadow.on) return;
-
+    const C = Editor.Core;
+    const NS = C.NS;
     const ms = this.modelShadow;
-    models.forEach(m => {
+    C.allModels.forEach(m => {
+      // Remove existing shadow
+      if (m.shadowEl) { m.shadowEl.remove(); m.shadowEl = null; }
+      if (!ms.on) return;
+      // Create new shadow element
       const g = m.el;
-      const sh = document.createElementNS(NS, m.kind === 'circle' ? 'circle' : 'rect');
       if (m.kind === 'circle') {
-        sh.setAttribute('cx', m.x + ms.dx);
-        sh.setAttribute('cy', m.y + ms.dy);
+        const sh = document.createElementNS(NS, 'circle');
+        sh.setAttribute('cx', m.x + ms.dx); sh.setAttribute('cy', m.y + ms.dy);
         sh.setAttribute('r', m.r);
+        sh.setAttribute('fill', `rgba(0,0,0,${ms.opacity})`);
+        sh.setAttribute('filter', 'url(#mf-model-shadow)');
+        sh.style.pointerEvents = 'none';
+        g.insertBefore(sh, g.firstChild);
+        m.shadowEl = sh;
       } else {
-        sh.setAttribute('x', m.x + ms.dx);
-        sh.setAttribute('y', m.y + ms.dy);
-        sh.setAttribute('width', m.w);
-        sh.setAttribute('height', m.h);
-        sh.setAttribute('rx', '4');
+        const sh = document.createElementNS(NS, 'rect');
+        sh.setAttribute('x', m.x + ms.dx); sh.setAttribute('y', m.y + ms.dy);
+        sh.setAttribute('width', m.w); sh.setAttribute('height', m.h); sh.setAttribute('rx', '4');
+        sh.setAttribute('fill', `rgba(0,0,0,${ms.opacity})`);
+        sh.setAttribute('filter', 'url(#mf-model-shadow)');
+        sh.style.pointerEvents = 'none';
+        g.insertBefore(sh, g.firstChild);
+        m.shadowEl = sh;
       }
-      sh.setAttribute('fill', `rgba(0,0,0,${ms.opacity})`);
-      sh.setAttribute('filter', 'url(#mf-model-shadow)');
-      sh.style.pointerEvents = 'none';
-      g.insertBefore(sh, g.firstChild);
-      m.shadowEl = sh;
     });
-  },
-
-  // ── Per-sprite shadow multiplier ──
-  setSpriteShadowMul(spriteId, val) {
-    const sp = Editor.Core.allSprites.find(s => s.id === spriteId);
-    if (!sp) return;
-    sp.shadowMul = val;
-    this._applyToSprite(sp);
-    Editor.Core.updateDebug();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
   }
 };

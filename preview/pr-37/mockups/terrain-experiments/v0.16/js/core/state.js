@@ -33,13 +33,10 @@ Editor.State = {
 
   // ── Effects ──
   effects: {
-    shadow:  { on: true,  dx: 3, dy: 3, blur: 6, opacity: 0.55, distance: 1.0 },
+    shadow:  { on: true,  dx: 3, dy: 3, blur: 6, opacity: 0.55 },
     feather: { on: false, radius: 10 },
     grade:   { on: true,  brightness: 0.75, saturation: 0.7, sepia: 0.08 },
-    scatterGlow: { on: false, color: '#8B6914', intensity: 0.5, blur: 3 },
-    roofTint: { on: false, strength: 0.2 },
-    groundPatch: { on: false, opacity: 0.3, extend: 15 },
-    modelShadow: { on: false, blur: 1.5, opacity: 0.25, dx: 1, dy: 2 },
+    modelShadow: { on: true, blur: 1.5, opacity: 0.25, dx: 1, dy: 2 },
   },
 
   // ── Counters ──
@@ -203,10 +200,6 @@ Editor.State = {
       this.effects.shadow = Editor.Effects.shadow;
       this.effects.feather = Editor.Effects.feather;
       this.effects.grade = Editor.Effects.grade;
-      this.effects.scatterGlow = Editor.Effects.scatterGlow;
-      this.effects.roofTint = Editor.Effects.roofTint;
-      this.effects.groundPatch = Editor.Effects.groundPatch;
-      this.effects.modelShadow = Editor.Effects.modelShadow;
     }
   },
 
@@ -228,10 +221,6 @@ Editor.State = {
       Editor.Effects.shadow = this.effects.shadow;
       Editor.Effects.feather = this.effects.feather;
       Editor.Effects.grade = this.effects.grade;
-      Editor.Effects.scatterGlow = this.effects.scatterGlow;
-      Editor.Effects.roofTint = this.effects.roofTint;
-      Editor.Effects.groundPatch = this.effects.groundPatch;
-      Editor.Effects.modelShadow = this.effects.modelShadow;
     }
   },
 
