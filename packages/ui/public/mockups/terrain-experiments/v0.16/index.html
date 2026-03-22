@@ -87,7 +87,7 @@
         <filter id="mf-imp" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#00d4ff" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="mf-ork" x="-120%" y="-120%" width="340%" height="340%" color-interpolation-filters="sRGB"><feFlood flood-color="#ff4020" flood-opacity="0.7" result="col"/><feComposite in="col" in2="SourceGraphic" operator="in" result="clipped"/><feGaussianBlur in="clipped" stdDeviation="2.2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
         <filter id="wallShadow"><feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity=".5"/></filter>
-        <filter id="mf-model-shadow" x="-50%" y="-30%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.5"/></filter>
+        <filter id="mf-model-shadow" x="-50%" y="-50%" width="200%" height="200%" color-interpolation-filters="sRGB"><feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur"/></filter>
         <pattern id="floor-pat" width="24" height="24" patternUnits="userSpaceOnUse">
           <rect width="24" height="24" fill="#3a4044"/><rect x=".5" y=".5" width="11" height="11" fill="#424a4e" rx=".3"/>
           <rect x="12.5" y=".5" width="11" height="11" fill="#3e4648" rx=".3"/><rect x=".5" y="12.5" width="11" height="11" fill="#404848" rx=".3"/>

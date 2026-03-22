@@ -344,14 +344,16 @@ Editor.Effects = {
 
     if (!this.modelShadow.on) return;
 
-    // Use sprite grounding shadow settings
+    // Use sprite shadow DIRECTION (dx, dy, distance) but scale blur for model size.
+    // Sprite blur (6px) is tuned for ~100px sprites. Model tokens are ~8-9px radius.
+    // Cap blur at 2px for models so shadows stay crisp and visible.
     const dist = this.shadow.distance != null ? this.shadow.distance : 1.0;
     const dx = this.shadow.dx * dist;
     const dy = this.shadow.dy * dist;
-    const opacity = this.shadow.opacity;
-    const blur = this.shadow.blur;
+    const opacity = Math.min(this.shadow.opacity, 0.55);
+    const blur = Math.min(this.shadow.blur * 0.35, 2.5);
 
-    // Update the SVG filter blur
+    // Update the SVG filter blur for models
     const f = document.getElementById('mf-model-shadow');
     if (f) {
       const blurEl = f.querySelector('feGaussianBlur');
