@@ -40,6 +40,8 @@ Editor.Core = {
     Editor.Selection.init();
     Editor.Sprites.initFileDrop();
     Editor.Persistence.load();
+    Editor.State.syncFromCore();
+    Editor.State.syncZOrderFromDOM();
     Editor.Layers.rebuild();
     this.updateDebug();
   },
@@ -56,12 +58,14 @@ Editor.Core = {
     btn.classList.toggle('on');
     const el = document.getElementById(id);
     if (el) el.style.display = btn.classList.contains('on') ? '' : 'none';
+    Editor.State.dispatch('toggle');
   },
 
   tglMulti(btn, ids) {
     btn.classList.toggle('on');
     const show = btn.classList.contains('on');
     ids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = show ? '' : 'none'; });
+    Editor.State.dispatch('toggle');
   },
 
   // ── Background switcher ──
@@ -137,8 +141,7 @@ Editor.Core = {
       })),
       settings: {
         bg: document.getElementById('bgSel')?.value,
-        ruinsOpacity: parseInt(document.querySelectorAll('input[type=range]')[0]?.value || 92),
-        roofOpacity: parseInt(document.querySelectorAll('input[type=range]')[1]?.value || 85)
+        ruinsOpacity: parseInt(document.getElementById('ruinsOpacitySlider')?.value || 92)
       }
     };
     this.debug.value = JSON.stringify(config, null, 1);

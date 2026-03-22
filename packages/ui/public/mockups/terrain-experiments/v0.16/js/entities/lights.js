@@ -18,9 +18,9 @@ Editor.Lights = {
     const btn = document.createElement('button'); btn.className = 'tbtn';
     btn.textContent = '+ Add Light';
     btn.onclick = () => {
-      Editor.Undo.push();
-      this.addLight(360, 264, '#ffaa44', 80, 0.3);
-      Editor.Persistence.save();
+      const light = this.addLight(360, 264, '#ffaa44', 80, 0.3);
+      Editor.Undo.record(Editor.Commands.AddLight.create(Editor.Commands._captureLight(light)));
+      Editor.State.dispatch({ type: 'ADD_LIGHT' });
       Editor.Layers.rebuild();
     };
     row.appendChild(btn);
@@ -47,7 +47,7 @@ Editor.Lights = {
     this.selectedLight[prop] = val;
     this.applyLight(this.selectedLight);
     this.refreshControls();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'UPDATE_LIGHT' });
   },
 
   selectLight(light) {
@@ -97,9 +97,9 @@ Editor.Lights = {
     document.getElementById('lcIntensityVal').textContent = l.intensity.toFixed(2);
   },
 
-  addLight(x, y, color, radius, intensity, skipSelect) {
+  addLight(x, y, color, radius, intensity, skipSelect, restoreId) {
     const C = Editor.Core, NS = C.NS;
-    const id = 'l' + (this.lid++);
+    const id = restoreId || ('l' + (this.lid++));
 
     // Create SVG group with radial gradient glow
     const g = document.createElementNS(NS, 'g');
@@ -172,14 +172,20 @@ Editor.Lights = {
   startDrag(e, light) {
     e.preventDefault();
     const C = Editor.Core;
-    Editor.Undo.push();
+    const fromX = light.x, fromY = light.y;
     const p0 = C.svgPt(e.clientX, e.clientY), ox = p0.x - light.x, oy = p0.y - light.y;
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY);
       light.x = p.x - ox; light.y = p.y - oy;
       this.applyLight(light);
     };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Persistence.save(); };
+    const up = () => {
+      document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
+      if (light.x !== fromX || light.y !== fromY) {
+        Editor.Undo.record(Editor.Commands.MoveLight.create(light.id, fromX, fromY, light.x, light.y));
+      }
+      Editor.State.dispatch({ type: 'MOVE_LIGHT' });
+    };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
@@ -187,13 +193,12 @@ Editor.Lights = {
     const C = Editor.Core;
     const idx = C.allLights.findIndex(l => l.id === id);
     if (idx === -1) return;
-    Editor.Undo.push();
     const light = C.allLights[idx];
-    light.el.remove();
-    light.grad.remove();
-    C.allLights.splice(idx, 1);
-    if (this.selectedLight === light) this.deselectLight();
-    Editor.Persistence.save();
+    const data = Editor.Commands._captureLight(light);
+    const cmd = Editor.Commands.DeleteLight.create(data);
+    cmd.apply();
+    Editor.Undo.record(cmd);
+    Editor.State.dispatch({ type: 'DELETE_LIGHT' });
     Editor.Layers.rebuild();
   },
 

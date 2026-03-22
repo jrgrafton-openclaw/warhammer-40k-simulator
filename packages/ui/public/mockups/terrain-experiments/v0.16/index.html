@@ -4,7 +4,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../../shared/tokens/colors.css">
 <link rel="stylesheet" href="../../shared/components/battlefield.css">
-<link rel="stylesheet" href="editor.css?v=t1742528400">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/sidebar.css">
+<link rel="stylesheet" href="css/effects.css">
+<link rel="stylesheet" href="css/canvas.css">
+<link rel="stylesheet" href="css/layers.css">
+<link rel="stylesheet" href="css/config.css">
+<link rel="stylesheet" href="css/shortcuts.css">
 </head><body>
 <div class="main">
 <div class="sidebar left">
@@ -36,13 +42,9 @@
   </div>
   <h3>SVG Ruins Opacity</h3>
   <div class="bg-row">
-    <input type="range" min="0" max="100" value="92" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('svgRuins').style.opacity=this.value/100;document.getElementById('svgScatter').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'" onchange="Editor.Persistence.save()"><span style="font-size:10px;width:30px">92%</span>
+    <input id="ruinsOpacitySlider" type="range" min="0" max="100" value="92" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('svgRuins').style.opacity=this.value/100;document.getElementById('svgScatter').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'" onchange="Editor.Persistence.save()"><span style="font-size:10px;width:30px">92%</span>
   </div>
-  <h3>Roof Opacity</h3>
-  <div class="bg-row">
-    <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="Editor.Core.allSprites.filter(s=>s.layerType==='top').forEach(s=>s.el.style.opacity=this.value/100);this.nextElementSibling.textContent=this.value+'%'" onchange="Editor.Persistence.save()"><span style="font-size:10px;width:30px">85%</span>
-  </div>
-  <h3>Sprite Grounding</h3>
+<h3>Sprite Grounding</h3>
   <div class="fx-section">
     <div class="toggle-row">
       <button class="tbtn on" id="fxShadowBtn" onclick="Editor.Effects.toggleShadow(this)">Drop Shadow</button>
@@ -54,6 +56,7 @@
       <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55" oninput="Editor.Effects.setShadowParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">55%</span></label>
       <label><span class="fx-lbl">Offset X</span><input type="range" min="-10" max="10" value="3" oninput="Editor.Effects.setShadowParam('dx',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
       <label><span class="fx-lbl">Offset Y</span><input type="range" min="-10" max="10" value="3" oninput="Editor.Effects.setShadowParam('dy',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">3px</span></label>
+      <label><span class="fx-lbl">Distance</span><input type="range" min="0" max="300" value="100" oninput="Editor.Effects.setShadowParam('distance',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">100%</span></label>
     </div>
     <div class="fx-controls" id="fxFeatherControls" style="display:none">
       <label><span class="fx-lbl">Feather Radius</span><input type="range" min="1" max="30" value="10" oninput="Editor.Effects.setFeatherRadius(+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">10px</span></label>
@@ -176,6 +179,7 @@
   </div>
   <div class="shortcuts-row" style="margin-top:8px;display:flex;gap:4px">
     <button class="tbtn" onclick="Editor.Shortcuts.toggle()" style="flex:1">? Shortcuts</button>
+    <button class="tbtn" onclick="Editor.Mirror.mirrorXY()" title="Mirror all terrain sprites 180° around map center">Mirror XY</button>
     <button class="tbtn" onclick="Editor.Zoom.reset()">Reset Zoom</button>
   </div>
   <div class="config-panel">
@@ -190,19 +194,26 @@
 </div>
 </div>
 
-<script src="editor-core.js?v=t1742528400"></script>
-<script src="editor-undo.js?v=t1742528400"></script>
-<script src="editor-models.js?v=t1742528400"></script>
-<script src="editor-sprites.js?v=t1742528400"></script>
-<script src="editor-objectives.js?v=t1742528400"></script>
-<script src="editor-lights.js?v=t1742528400"></script>
-<script src="editor-groups.js?v=t1742528400"></script>
-<script src="editor-crop.js?v=t1742528400"></script>
-<script src="editor-zoom.js?v=t1742528400"></script>
-<script src="editor-shortcuts.js?v=t1742528400"></script>
-<script src="editor-selection.js?v=t1742528400"></script>
-<script src="editor-layers.js?v=t1742528400"></script>
-<script src="editor-effects.js?v=t1742528400"></script>
-<script src="editor-persistence.js?v=t1742528400"></script>
-<script>Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();</script>
+<script src="js/core/bus.js?v=t1742528400"></script>
+<script src="js/core/state.js?v=t1742528400"></script>
+<script src="js/core/commands.js?v=t1742528400"></script>
+<script src="js/entities/core.js?v=t1742528400"></script>
+<script src="js/core/undo.js?v=t1742528400"></script>
+<script src="js/entities/models.js?v=t1742528400"></script>
+<script src="js/entities/sprites.js?v=t1742528400"></script>
+<script src="js/entities/objectives.js?v=t1742528400"></script>
+<script src="js/entities/lights.js?v=t1742528400"></script>
+<script src="js/tools/groups.js?v=t1742528400"></script>
+<script src="js/tools/crop.js?v=t1742528400"></script>
+<script src="js/tools/mirror.js?v=t1742528400"></script>
+<script src="js/ui/zoom.js?v=t1742528400"></script>
+<script src="js/ui/shortcuts.js?v=t1742528400"></script>
+<script src="js/tools/selection.js?v=t1742528400"></script>
+<script src="js/ui/layers.js?v=t1742528400"></script>
+<script src="js/tools/effects.js?v=t1742528400"></script>
+<script src="js/persistence.js?v=t1742528400"></script>
+<script>
+Editor.Shortcuts.init(); Editor.Core.init(); Editor.Effects.init(); Editor.Zoom.init();
+window.addEventListener('beforeunload', function() { Editor.State.flush(); });
+</script>
 </body></html>

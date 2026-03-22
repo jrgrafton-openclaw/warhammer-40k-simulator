@@ -6,7 +6,7 @@
 
 Editor.Effects = {
   // Global state
-  shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55 },
+  shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55, distance: 1.0 },
   feather: { on: false, radius: 10 },
   grade:   { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
 
@@ -29,14 +29,28 @@ Editor.Effects = {
   // ── Apply correct filter to a single sprite ──
   _applyToSprite(sp) {
     const mul = sp.shadowMul != null ? sp.shadowMul : 1.0;
-    // Counter-rotate shadow offset so shadows are consistent in screen space
     const rot = sp.rot || 0;
     const flipX = sp.flipX ? -1 : 1;
     const flipY = sp.flipY ? -1 : 1;
-    const filterId = this._getOrCreateFilter(mul, rot, flipX, flipY);
-    if (filterId) {
-      sp.el.setAttribute('filter', `url(#${filterId})`);
+
+    // Cropped sprites: filter goes on the outer wrapper <g> which is in
+    // PARENT space (no transform). Use raw dx/dy — no counter-rotation needed.
+    // Uncropped sprites: filter goes on the <image> which has rotate+scale
+    // transform. Counter-rotate the offset so shadow appears correct in screen space.
+    const isCropped = !!sp._clipWrap;
+    const filterId = isCropped
+      ? this._getOrCreateFilter(mul, 0, 1, 1)    // no counter-rotation for wrapper
+      : this._getOrCreateFilter(mul, rot, flipX, flipY); // counter-rotate for image
+
+    const filterVal = filterId ? `url(#${filterId})` : null;
+    const filterTarget = isCropped ? sp._clipWrap : sp.el;
+    if (filterVal) {
+      filterTarget.setAttribute('filter', filterVal);
     } else {
+      filterTarget.removeAttribute('filter');
+    }
+    // Ensure filter is NOT on the wrong element
+    if (isCropped && sp.el.hasAttribute('filter')) {
       sp.el.removeAttribute('filter');
     }
     // Remove any lingering CSS filter
@@ -58,7 +72,7 @@ Editor.Effects = {
 
     // Build cache key including rotation + flip for shadow direction
     const key = [
-      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
+      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${this.shadow.distance},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
       hasFeather ? `f${this.feather.radius}` : '',
       hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : ''
     ].join('|');
@@ -69,8 +83,16 @@ Editor.Effects = {
     // The SVG filter operates in pre-transform (local) space, so we must inverse-rotate
     // the desired screen-space offset to get the correct local offset.
     const rad = (qRot || 0) * Math.PI / 180;
-    const dx = this.shadow.dx;
-    const dy = this.shadow.dy;
+    const dist = this.shadow.distance != null ? this.shadow.distance : 1.0;
+    const dx = this.shadow.dx * dist;
+    const dy = this.shadow.dy * dist;
+    // Counter-rotate AND counter-flip the shadow offset.
+    // feOffset operates in LOCAL space (pre-transform). The element's transform
+    // (rotate + scale/flip) is applied AFTER the filter. So we must inverse-transform
+    // the desired screen-space offset to get correct local values.
+    // For target screen offset (dx, dy) with transform rotate(rot) + scale(flipX, flipY):
+    //   localDx = (dx*cos(rot) + dy*sin(rot)) / flipX = flipX * (dx*cos + dy*sin)
+    //   localDy = (-dx*sin(rot) + dy*cos(rot)) / flipY = flipY * (-dx*sin + dy*cos)
     const localDx = flipX * (dx * Math.cos(rad) + dy * Math.sin(rad));
     const localDy = flipY * (-dx * Math.sin(rad) + dy * Math.cos(rad));
 
@@ -88,8 +110,8 @@ Editor.Effects = {
 
     const f = document.createElementNS(NS, 'filter');
     f.id = id;
-    f.setAttribute('x', '-25%'); f.setAttribute('y', '-25%');
-    f.setAttribute('width', '150%'); f.setAttribute('height', '150%');
+    f.setAttribute('x', '-100%'); f.setAttribute('y', '-100%');
+    f.setAttribute('width', '300%'); f.setAttribute('height', '300%');
     f.setAttribute('color-interpolation-filters', 'sRGB');
 
     let currentInput = 'SourceGraphic';
@@ -248,13 +270,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxShadowControls');
     if (ctrl) ctrl.style.display = this.shadow.on ? '' : 'none';
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   setShadowParam(param, value) {
     this.shadow[param] = value;
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   toggleFeather(btn) {
@@ -263,13 +285,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxFeatherControls');
     if (ctrl) ctrl.style.display = this.feather.on ? '' : 'none';
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   setFeatherRadius(val) {
     this.feather.radius = val;
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   toggleGrade(btn) {
@@ -278,13 +300,13 @@ Editor.Effects = {
     const ctrl = document.getElementById('fxGradeControls');
     if (ctrl) ctrl.style.display = this.grade.on ? '' : 'none';
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   setGradeParam(param, value) {
     this.grade[param] = value;
     this._flush();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   },
 
   // ── Per-sprite shadow multiplier ──
@@ -294,6 +316,6 @@ Editor.Effects = {
     sp.shadowMul = val;
     this._applyToSprite(sp);
     Editor.Core.updateDebug();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_EFFECT' });
   }
 };

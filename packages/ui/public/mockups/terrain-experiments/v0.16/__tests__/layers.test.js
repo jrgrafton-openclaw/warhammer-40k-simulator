@@ -139,6 +139,69 @@ describe('Layer drag reordering', () => {
     expect(found.svgEl).toBe(sp._clipWrap);
   });
 
+  it('grouping preserves relative z-order of sprites (Bug 2)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    // DOM order before grouping: sp1, sp2, sp3 (sp1 behind, sp3 in front)
+    // Select in reverse order (sp3 first) — group should still preserve DOM order
+    const group = Editor.Groups.createGroup([sp3, sp1, sp2]);
+    const gEl = document.getElementById(group.id);
+    const children = Array.from(gEl.children);
+
+    // Inside group, relative order should match original DOM: sp1, sp2, sp3
+    expect(children.indexOf(sp1.el)).toBeLessThan(children.indexOf(sp2.el));
+    expect(children.indexOf(sp2.el)).toBeLessThan(children.indexOf(sp3.el));
+  });
+
+  it('ungrouping preserves relative z-order of sprites (Bug 3)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    const group = Editor.Groups.createGroup([sp1, sp2, sp3]);
+    Editor.Groups.ungroup(group.id);
+
+    // After ungrouping, sprites should be direct SVG children in original order
+    const svgChildren = Array.from(svg.children);
+    const idx1 = svgChildren.indexOf(sp1.el);
+    const idx2 = svgChildren.indexOf(sp2.el);
+    const idx3 = svgChildren.indexOf(sp3.el);
+    expect(idx1).toBeLessThan(idx2);
+    expect(idx2).toBeLessThan(idx3);
+  });
+
+  it('drop above target moves sprite after target in DOM (Bug 4)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+
+    const zItems = Editor.Layers._buildZOrder();
+    // dropAbove=true: user drops sp1 above sp2 row → sp1 should go after sp2 in DOM (in front)
+    Editor.Layers._handleDrop(sp1.id, sp2.id, zItems, true);
+
+    const children = Array.from(svg.children);
+    expect(children.indexOf(sp1.el)).toBeGreaterThan(children.indexOf(sp2.el));
+  });
+
+  it('drop below target moves sprite before target in DOM (existing behavior)', () => {
+    const svg = document.getElementById('battlefield');
+    const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
+    const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);
+    const sp3 = Editor.Sprites.addSprite('c.png', 130, 10, 50, 50, 0, 'floor', true);
+
+    const zItems = Editor.Layers._buildZOrder();
+    // dropAbove=false (or undefined): insert before target
+    Editor.Layers._handleDrop(sp1.id, sp3.id, zItems, false);
+
+    const children = Array.from(svg.children);
+    expect(children.indexOf(sp1.el)).toBeLessThan(children.indexOf(sp3.el));
+    expect(children.indexOf(sp1.el)).toBeGreaterThan(children.indexOf(sp2.el));
+  });
+
   it('reorder within group changes child order', () => {
     const sp1 = Editor.Sprites.addSprite('a.png', 10, 10, 50, 50, 0, 'floor', true);
     const sp2 = Editor.Sprites.addSprite('b.png', 70, 10, 50, 50, 0, 'floor', true);

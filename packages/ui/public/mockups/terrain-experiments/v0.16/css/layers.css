@@ -1,0 +1,28 @@
+/* Layers panel (right sidebar) — row styles, groups, drag indicators */
+.layers-panel{margin-top:8px;padding-top:6px}
+.layer-row{display:flex;align-items:center;gap:4px;padding:4px;border-radius:3px;cursor:pointer;font-size:9px;border:1px solid transparent;margin-bottom:3px}
+.layer-row:hover{background:#1a2a3a}
+.layer-row.sel{border-color:#00d4ff;background:#0a1828}
+.layer-row.dragging{opacity:.45}
+.layer-row img{width:24px;height:24px;object-fit:cover;border-radius:2px;flex-shrink:0}
+.layer-row .lname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8090a0}
+.layer-row .lmeta{font-size:8px;color:#4f6476}
+.layer-row .lbtn{background:none;border:none;color:#607080;cursor:pointer;font-size:11px;padding:0 2px}
+.layer-row .lbtn:hover{color:#00d4ff}
+.layer-row.hidden-sprite .lname{opacity:0.4;text-decoration:line-through}
+
+/* Group rows */
+.layer-row.group-row{background:#0a1018;border-color:#1a2a3a;cursor:grab}
+.layer-row.group-row .lname{color:#00d4ff;font-weight:600}
+.layer-row.drop-above{border-top:2px solid #00d4ff}
+.layer-row.drop-below{border-bottom:2px solid #00d4ff}
+.layer-row .drag-hint{color:#304050;font-size:10px;cursor:grab;user-select:none;padding:0 2px}
+.layer-row.child-row{padding-left:20px;background:#080e16}
+.layer-row.child-row:hover{background:#0e1828}
+.layer-row .child-icon{width:24px;text-align:center;flex-shrink:0;font-size:12px}
+.expand-toggle{font-size:8px;margin-right:4px;color:#607080}
+.group-opacity{width:40px;height:12px;accent-color:#00d4ff}
+.layer-row.custom-group-row{min-height:36px}
+.layer-row.custom-group-row .lname{color:#00d4ff}
+.layer-row .group-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.layer-row .group-icon svg{width:16px;height:16px}

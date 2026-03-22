@@ -17,7 +17,7 @@ Editor.Groups = {
     if (!sprites || sprites.length < 2) return;
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
-    Editor.Undo.push();
+    const beforeDOM = Editor.Commands.captureDOMOrder();
 
     const id = 'group-g' + (this.gid++);
     const name = 'Group ' + this.gid;
@@ -34,7 +34,7 @@ Editor.Groups = {
     for (let i = svgChildren.length - 1; i >= 0; i--) {
       const child = svgChildren[i];
       if (sprites.some(s => {
-        const el = s._clipWrap || s.el;
+        const el = s.rootEl;
         return el.parentNode === child || el === child;
       })) {
         insertRef = child.nextElementSibling;
@@ -44,9 +44,13 @@ Editor.Groups = {
     if (insertRef) svg.insertBefore(g, insertRef);
     else svg.appendChild(g);
 
-    // Move sprites into the group <g> (handle crop wrappers)
-    sprites.forEach(sp => {
-      const elToMove = sp._clipWrap || sp.el;
+    // Move sprites into the group <g> in their current DOM z-order (not selection order)
+    const svgChildrenList = Array.from(svg.children);
+    const sorted = sprites.slice().sort((a, b) =>
+      svgChildrenList.indexOf(a.rootEl) - svgChildrenList.indexOf(b.rootEl)
+    );
+    sorted.forEach(sp => {
+      const elToMove = sp.rootEl;
       elToMove.parentNode.removeChild(elToMove);
       g.appendChild(elToMove);
       sp.groupId = id;
@@ -62,7 +66,9 @@ Editor.Groups = {
     C.groups.push(group);
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    const spriteIds = sprites.map(function(s) { return s.id; });
+    Editor.Undo.record(Editor.Commands.Group.create(id, name, 1.0, spriteIds, beforeDOM));
+    Editor.State.dispatch({ type: 'GROUP', id: id });
     Editor.Layers.rebuild();
     C.updateDebug();
     return group;
@@ -73,10 +79,11 @@ Editor.Groups = {
     const C = Editor.Core;
     const gEl = document.getElementById(groupId);
     if (!gEl || !sp) return;
-    Editor.Undo.push();
+    const beforeDOM = Editor.Commands.captureDOMOrder();
+    const oldGroupId = sp.groupId || null;
 
     // The element to move may be wrapped in a crop <g>
-    const elToMove = sp._clipWrap || sp.el;
+    const elToMove = sp.rootEl;
 
     // Remove from current group if in one
     if (sp.groupId && sp.groupId !== groupId) {
@@ -93,7 +100,8 @@ Editor.Groups = {
     sp.groupId = groupId;
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.Undo.record(Editor.Commands.AddToGroup.create(sp.id, oldGroupId, groupId, beforeDOM));
+    Editor.State.dispatch({ type: 'ADD_TO_GROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
   },
@@ -104,7 +112,7 @@ Editor.Groups = {
     const group = C.groups.find(g => g.id === groupId);
     if (!group) return;
     group.name = newName;
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'RENAME_GROUP', id: groupId });
     Editor.Layers.rebuild();
   },
 
@@ -116,23 +124,34 @@ Editor.Groups = {
     group.opacity = Math.max(0, Math.min(1, opacity));
     const el = document.getElementById(groupId);
     if (el) el.setAttribute('opacity', group.opacity);
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'SET_GROUP_OPACITY', id: groupId });
   },
 
   /* ── Ungroup — return sprites to original layers ── */
   ungroup(groupId) {
     const C = Editor.Core;
     const svg = document.getElementById('battlefield');
-    Editor.Undo.push();
+    const beforeDOM = Editor.Commands.captureDOMOrder();
 
     const gEl = document.getElementById(groupId);
     if (!gEl) return;
 
-    // Move sprites back to being direct SVG children at the group's current position
-    const sprites = C.allSprites.filter(s => s.groupId === groupId);
+    const group = C.groups.find(g => g.id === groupId);
+    const groupName = group ? group.name : groupId;
+    const opacity = group ? group.opacity : 1;
+
+    // Move sprites back to being direct SVG children at the group's current position.
+    // Iterate in DOM order within the group to preserve their relative z-order.
+    const childEls = Array.from(gEl.children);
+    const sprites = [];
+    childEls.forEach(el => {
+      let sp = C.allSprites.find(s => s.rootEl === el);
+      if (sp && sp.groupId === groupId) sprites.push(sp);
+    });
+    const spriteIds = sprites.map(s => s.id);
     const insertRef = gEl.nextElementSibling; // insert where the group was
     sprites.forEach(sp => {
-      const elToMove = sp._clipWrap || sp.el;
+      const elToMove = sp.rootEl;
       gEl.removeChild(elToMove);
       svg.insertBefore(elToMove, insertRef);
       delete sp.groupId;
@@ -145,7 +164,8 @@ Editor.Groups = {
     C.groups = C.groups.filter(g => g.id !== groupId);
 
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.Undo.record(Editor.Commands.Ungroup.create(groupId, groupName, opacity, spriteIds, beforeDOM));
+    Editor.State.dispatch({ type: 'UNGROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
   },
@@ -153,12 +173,21 @@ Editor.Groups = {
   /* ── Delete group and its sprites ── */
   deleteGroup(groupId) {
     const C = Editor.Core;
-    Editor.Undo.push();
+    const beforeDOM = Editor.Commands.captureDOMOrder();
+    const group = C.groups.find(g => g.id === groupId);
+    const groupName = group ? group.name : groupId;
+    const opacity = group ? group.opacity : 1;
 
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
+    const spriteDatas = sprites.map(s => Editor.Commands._captureSprite(s));
+    const spriteIds = sprites.map(s => s.id);
+
+    // Build undo: first ungrouping, then deleting each sprite
+    const cmds = spriteDatas.map(d => Editor.Commands.DeleteSprite.create(d));
+
     sprites.forEach(sp => {
-      if (sp._clipWrap) sp._clipWrap.remove();
-      else sp.el.remove();
+      if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp);
+      sp.el.remove();
       C.allSprites = C.allSprites.filter(s => s !== sp);
     });
 
@@ -167,8 +196,42 @@ Editor.Groups = {
 
     C.groups = C.groups.filter(g => g.id !== groupId);
 
+    // Batch: group command (for restoring the group structure) + delete sprites
+    const groupCmd = Editor.Commands.Group.create(groupId, groupName, opacity, spriteIds, beforeDOM);
+    // On undo, we reverse the batch: first restore sprites, then restore group
+    // So we record: [deleteSprites..., removeGroup] → reverse restores group then sprites
+    cmds.push({ type: 'REMOVE_GROUP_ENTRY', apply: function() { C.groups = C.groups.filter(function(g) { return g.id !== groupId; }); }, reverse: function() { C.groups.push({ id: groupId, name: groupName, opacity: opacity }); } });
+    // Actually simpler: use a custom batch that restores everything
+    Editor.Undo.record({
+      type: 'DELETE_GROUP',
+      description: 'Delete group ' + groupId,
+      apply: function() {
+        // Re-delete: remove sprites and group
+        var sprites2 = Editor.Core.allSprites.filter(function(s) { return s.groupId === groupId; });
+        sprites2.forEach(function(sp) { if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp); sp.el.remove(); });
+        Editor.Core.allSprites = Editor.Core.allSprites.filter(function(s) { return s.groupId !== groupId; });
+        var gEl2 = document.getElementById(groupId);
+        if (gEl2) gEl2.remove();
+        Editor.Core.groups = Editor.Core.groups.filter(function(g) { return g.id !== groupId; });
+      },
+      reverse: function() {
+        // Restore: recreate group, recreate sprites, restore DOM order
+        var svg = document.getElementById('battlefield');
+        var g = document.createElementNS(Editor.Core.NS, 'g');
+        g.id = groupId;
+        g.setAttribute('opacity', opacity != null ? opacity : 1);
+        var selUI = document.getElementById('selUI');
+        svg.insertBefore(g, selUI);
+        Editor.Core.groups.push({ id: groupId, name: groupName, opacity: opacity != null ? opacity : 1 });
+        spriteDatas.forEach(function(d) {
+          Editor.Commands._restoreSprite(d);
+        });
+        if (beforeDOM) Editor.Commands._restoreDOMOrder(beforeDOM);
+      }
+    });
+
     Editor.Selection.deselect();
-    Editor.Persistence.save();
+    Editor.State.dispatch({ type: 'DELETE_GROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
   },
@@ -200,7 +263,7 @@ Editor.Groups = {
     C.allSprites.forEach(sp => {
       if (sp.groupId && document.getElementById(sp.groupId)) {
         const gEl = document.getElementById(sp.groupId);
-        const elToMove = sp._clipWrap || sp.el;
+        const elToMove = sp.rootEl;
         if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
         gEl.appendChild(elToMove);
       }
