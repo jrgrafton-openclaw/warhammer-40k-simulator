@@ -72,12 +72,6 @@
   <div class="toggle-row" style="margin-top:6px">
     <button class="tbtn on" id="fxModelShadowBtn" onclick="Editor.Effects.toggleModelShadow(this)">Model Shadows</button>
   </div>
-  <div class="fx-controls" id="fxModelShadowControls">
-    <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="25" oninput="Editor.Effects.setModelShadowParam('opacity',this.value/100);this.nextElementSibling.textContent=this.value+'%'"><span class="fx-val">25%</span></label>
-    <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="10" value="3" oninput="Editor.Effects.setModelShadowParam('blur',this.value/2);this.nextElementSibling.textContent=(this.value/2)+'px'"><span class="fx-val">1.5px</span></label>
-    <label><span class="fx-lbl">Offset X</span><input type="range" min="-5" max="5" value="1" oninput="Editor.Effects.setModelShadowParam('dx',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">1px</span></label>
-    <label><span class="fx-lbl">Offset Y</span><input type="range" min="-5" max="5" value="2" oninput="Editor.Effects.setModelShadowParam('dy',+this.value);this.nextElementSibling.textContent=this.value+'px'"><span class="fx-val">2px</span></label>
-  </div>
   <h3>Ruins — Floor</h3>
   <div class="thumb-grid" id="tRuinsFloor"></div>
   <h3>Ruins — Top</h3>
@@ -180,6 +174,7 @@
       </g>
       <g id="objectiveRings"></g>
       <g id="objectiveHexes"></g>
+      <g id="modelShadowLayer"></g>
       <g id="modelLayer"></g>
       <g id="selUI" style="display:none"></g>
       <rect id="dragRect" class="sel-rect" style="display:none"/>

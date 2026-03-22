@@ -174,8 +174,6 @@ Editor.Persistence = {
       if (data.effects.modelShadow) Object.assign(E.modelShadow, data.effects.modelShadow);
       var modelShadowBtn = document.getElementById('fxModelShadowBtn');
       if (modelShadowBtn) modelShadowBtn.classList.toggle('on', E.modelShadow.on);
-      var fxModelShadowControls = document.getElementById('fxModelShadowControls');
-      if (fxModelShadowControls) fxModelShadowControls.style.display = E.modelShadow.on ? '' : 'none';
     }
   },
 
@@ -363,16 +361,6 @@ Editor.Persistence = {
       if (sliders[0]) { sliders[0].value = Math.round(E.grade.brightness * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.brightness * 100) + '%'; }
       if (sliders[1]) { sliders[1].value = Math.round(E.grade.saturation * 100); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.saturation * 100) + '%'; }
       if (sliders[2]) { sliders[2].value = Math.round(E.grade.sepia * 100); var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.sepia * 100) + '%'; }
-    }
-    // Model shadow sliders
-    var msControls = document.getElementById('fxModelShadowControls');
-    if (msControls && E.modelShadow) {
-      var sliders = msControls.querySelectorAll('input[type=range]');
-      // Order: opacity, blur, dx, dy (matches index.html)
-      if (sliders[0]) { sliders[0].value = Math.round(E.modelShadow.opacity * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.modelShadow.opacity * 100) + '%'; }
-      if (sliders[1]) { sliders[1].value = Math.round(E.modelShadow.blur * 2); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = E.modelShadow.blur + 'px'; }
-      if (sliders[2]) { sliders[2].value = E.modelShadow.dx; var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = E.modelShadow.dx + 'px'; }
-      if (sliders[3]) { sliders[3].value = E.modelShadow.dy; var sp = sliders[3].nextElementSibling; if (sp) sp.textContent = E.modelShadow.dy + 'px'; }
     }
   },
 

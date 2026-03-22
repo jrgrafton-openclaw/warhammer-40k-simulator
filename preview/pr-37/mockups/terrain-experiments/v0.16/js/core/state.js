@@ -36,7 +36,7 @@ Editor.State = {
     shadow:  { on: true,  dx: 3, dy: 3, blur: 6, opacity: 0.55 },
     feather: { on: false, radius: 10 },
     grade:   { on: true,  brightness: 0.75, saturation: 0.7, sepia: 0.08 },
-    modelShadow: { on: true, blur: 1.5, opacity: 0.25, dx: 1, dy: 2 },
+    modelShadow: { on: true },
   },
 
   // ── Counters ──
