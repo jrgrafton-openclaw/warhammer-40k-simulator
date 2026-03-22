@@ -22,6 +22,7 @@
 .layer-row .child-icon{width:24px;text-align:center;flex-shrink:0;font-size:12px}
 .expand-toggle{font-size:8px;margin-right:4px;color:#607080}
 .group-opacity{width:40px;height:12px;accent-color:#00d4ff}
+.layer-row.custom-group-row{min-height:36px}
 .layer-row.custom-group-row .lname{color:#00d4ff}
 .layer-row .group-icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .layer-row .group-icon svg{width:16px;height:16px}

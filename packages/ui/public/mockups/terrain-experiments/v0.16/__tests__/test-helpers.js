@@ -26,6 +26,7 @@ export function loadEditor() {
         <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55"><span class="fx-val">55%</span></label>
         <label><span class="fx-lbl">Offset X</span><input type="range" min="-10" max="10" value="3"><span class="fx-val">3px</span></label>
         <label><span class="fx-lbl">Offset Y</span><input type="range" min="-10" max="10" value="3"><span class="fx-val">3px</span></label>
+        <label><span class="fx-lbl">Distance</span><input type="range" min="0" max="300" value="100"><span class="fx-val">100%</span></label>
       </div>
       <div class="fx-controls" id="fxFeatherControls" style="display:none">
         <label><span class="fx-lbl">Feather Radius</span><input type="range" min="1" max="30" value="10"><span class="fx-val">10px</span></label>

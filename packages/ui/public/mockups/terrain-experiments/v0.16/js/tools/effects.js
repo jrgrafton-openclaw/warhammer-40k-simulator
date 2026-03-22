@@ -6,7 +6,7 @@
 
 Editor.Effects = {
   // Global state
-  shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55 },
+  shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55, distance: 1.0 },
   feather: { on: false, radius: 10 },
   grade:   { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
 
@@ -58,7 +58,7 @@ Editor.Effects = {
 
     // Build cache key including rotation + flip for shadow direction
     const key = [
-      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
+      hasShadow ? `s${this.shadow.dx},${this.shadow.dy},${this.shadow.blur},${this.shadow.opacity},${this.shadow.distance},${mul},r${qRot},fx${flipX},fy${flipY}` : '',
       hasFeather ? `f${this.feather.radius}` : '',
       hasGrade ? `g${this.grade.brightness},${this.grade.saturation},${this.grade.sepia}` : ''
     ].join('|');
@@ -69,8 +69,9 @@ Editor.Effects = {
     // The SVG filter operates in pre-transform (local) space, so we must inverse-rotate
     // the desired screen-space offset to get the correct local offset.
     const rad = (qRot || 0) * Math.PI / 180;
-    const dx = this.shadow.dx;
-    const dy = this.shadow.dy;
+    const dist = this.shadow.distance != null ? this.shadow.distance : 1.0;
+    const dx = this.shadow.dx * dist;
+    const dy = this.shadow.dy * dist;
     // Counter-rotate AND counter-flip the shadow offset.
     // feOffset operates in LOCAL space (pre-transform). The element's transform
     // (rotate + scale/flip) is applied AFTER the filter. So we must inverse-transform
@@ -95,8 +96,8 @@ Editor.Effects = {
 
     const f = document.createElementNS(NS, 'filter');
     f.id = id;
-    f.setAttribute('x', '-50%'); f.setAttribute('y', '-50%');
-    f.setAttribute('width', '200%'); f.setAttribute('height', '200%');
+    f.setAttribute('x', '-100%'); f.setAttribute('y', '-100%');
+    f.setAttribute('width', '300%'); f.setAttribute('height', '300%');
     f.setAttribute('color-interpolation-filters', 'sRGB');
 
     let currentInput = 'SourceGraphic';
