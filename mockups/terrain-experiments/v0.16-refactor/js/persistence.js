@@ -47,6 +47,7 @@ Editor.Persistence = {
     var data = {
       sprites: orderedSprites.map(function(s) {
         return {
+          id: s.id,
           file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot,
           layerType: s.layerType || 'floor', hidden: s.hidden,
           flipX: s.flipX || false, flipY: s.flipY || false,
@@ -186,11 +187,11 @@ Editor.Persistence = {
         if (E._ready) E._flush();
       }
 
-      // Restore sprites
+      // Restore sprites — use saved ID (_forceId) so zOrder references stay valid
       if (data.sprites) {
         data.sprites.forEach(function(s) {
           var lt = s.layerType || (s.layer === 'spriteTop' ? 'top' : 'floor');
-          var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, lt, true);
+          var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, lt, true, s.id || undefined);
           sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
           sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
           if (sp.flipX || sp.flipY) Editor.Sprites.apply(sp);
@@ -206,6 +207,13 @@ Editor.Persistence = {
           sp.shadowMul = s.shadowMul != null ? s.shadowMul : 1.0;
           if (s._fileName) sp._fileName = s._fileName;
         });
+        // Update sid counter to avoid ID collisions with future sprites
+        var maxSid = 0;
+        C.allSprites.forEach(function(sp) {
+          var num = parseInt(sp.id.replace('s', ''));
+          if (!isNaN(num) && num >= maxSid) maxSid = num + 1;
+        });
+        C.sid = maxSid;
       }
 
       // Restore models (replace defaults)

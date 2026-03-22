@@ -44,8 +44,12 @@ Editor.Groups = {
     if (insertRef) svg.insertBefore(g, insertRef);
     else svg.appendChild(g);
 
-    // Move sprites into the group <g> (handle crop wrappers)
-    sprites.forEach(sp => {
+    // Move sprites into the group <g> in their current DOM z-order (not selection order)
+    const svgChildrenList = Array.from(svg.children);
+    const sorted = sprites.slice().sort((a, b) =>
+      svgChildrenList.indexOf(a.rootEl) - svgChildrenList.indexOf(b.rootEl)
+    );
+    sorted.forEach(sp => {
       const elToMove = sp.rootEl;
       elToMove.parentNode.removeChild(elToMove);
       g.appendChild(elToMove);
@@ -136,8 +140,14 @@ Editor.Groups = {
     const groupName = group ? group.name : groupId;
     const opacity = group ? group.opacity : 1;
 
-    // Move sprites back to being direct SVG children at the group's current position
-    const sprites = C.allSprites.filter(s => s.groupId === groupId);
+    // Move sprites back to being direct SVG children at the group's current position.
+    // Iterate in DOM order within the group to preserve their relative z-order.
+    const childEls = Array.from(gEl.children);
+    const sprites = [];
+    childEls.forEach(el => {
+      let sp = C.allSprites.find(s => s.rootEl === el);
+      if (sp && sp.groupId === groupId) sprites.push(sp);
+    });
     const spriteIds = sprites.map(s => s.id);
     const insertRef = gEl.nextElementSibling; // insert where the group was
     sprites.forEach(sp => {
