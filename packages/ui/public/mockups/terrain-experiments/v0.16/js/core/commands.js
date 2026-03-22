@@ -31,7 +31,13 @@ Editor.Commands = {
   },
 
   _captureLight: function(l) {
-    return { id: l.id, x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity };
+    return {
+      id: l.id, x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity,
+      pulseType: l.pulseType || 'none',
+      pulseSpeed: l.pulseSpeed != null ? l.pulseSpeed : 1.0,
+      pulseIntensityAmp: l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15,
+      pulseRadiusAmp: l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10
+    };
   },
 
   _captureModel: function(m) {
@@ -130,7 +136,10 @@ Editor.Commands = {
 
   /** Restore a light from captured data */
   _restoreLight: function(d) {
-    return Editor.Lights.addLight(d.x, d.y, d.color, d.radius, d.intensity, true, d.id);
+    return Editor.Lights.addLight(d.x, d.y, d.color, d.radius, d.intensity, true, d.id, {
+      pulseType: d.pulseType, pulseSpeed: d.pulseSpeed,
+      pulseIntensityAmp: d.pulseIntensityAmp, pulseRadiusAmp: d.pulseRadiusAmp
+    });
   },
 
   /** Remove a light by ID */

@@ -217,7 +217,12 @@ Editor.Persistence = {
   _restoreLights(data) {
     if (!data.lights) return;
     data.lights.forEach(function(l) {
-      Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
+      Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true, undefined, {
+        pulseType: l.pulseType || 'none',
+        pulseSpeed: l.pulseSpeed != null ? l.pulseSpeed : 1.0,
+        pulseIntensityAmp: l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15,
+        pulseRadiusAmp: l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10
+      });
     });
   },
 

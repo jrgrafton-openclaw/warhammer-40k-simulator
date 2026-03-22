@@ -33,6 +33,12 @@ Editor.Lights = {
       <label>Color <input type="color" id="lcColor" value="#ffaa44"> <span class="lc-val" id="lcColorVal">#ffaa44</span></label>
       <label>Radius <input type="range" id="lcRadius" min="20" max="300" value="80"> <span class="lc-val" id="lcRadiusVal">80</span></label>
       <label>Intensity <input type="range" id="lcIntensity" min="5" max="100" value="30"> <span class="lc-val" id="lcIntensityVal">0.30</span></label>
+      <label>Animation <select id="lcPulseType"><option value="none">None</option><option value="pulse">Pulse</option><option value="flicker">Flicker</option><option value="breathe">Breathe</option></select></label>
+      <div id="lcPulseExtras" style="display:none">
+        <label>Speed <input type="range" id="lcPulseSpeed" min="2" max="30" value="10"> <span class="lc-val" id="lcPulseSpeedVal">1.0</span></label>
+        <label>Int. Amp <input type="range" id="lcPulseIntAmp" min="0" max="50" value="15"> <span class="lc-val" id="lcPulseIntAmpVal">0.15</span></label>
+        <label>Rad. Amp <input type="range" id="lcPulseRadAmp" min="0" max="50" value="10"> <span class="lc-val" id="lcPulseRadAmpVal">10</span></label>
+      </div>
     `;
     sidebar.appendChild(ctrl);
 
@@ -40,6 +46,29 @@ Editor.Lights = {
     document.getElementById('lcColor').oninput = e => this.updateSelected('color', e.target.value);
     document.getElementById('lcRadius').oninput = e => this.updateSelected('radius', parseInt(e.target.value));
     document.getElementById('lcIntensity').oninput = e => this.updateSelected('intensity', parseInt(e.target.value) / 100);
+    document.getElementById('lcPulseType').oninput = e => {
+      this.updateSelected('pulseType', e.target.value);
+      var extras = document.getElementById('lcPulseExtras');
+      if (extras) extras.style.display = e.target.value === 'none' ? 'none' : '';
+    };
+    document.getElementById('lcPulseSpeed').oninput = e => {
+      var v = parseInt(e.target.value) / 10;
+      this.updateSelected('pulseSpeed', v);
+      var span = document.getElementById('lcPulseSpeedVal');
+      if (span) span.textContent = v.toFixed(1);
+    };
+    document.getElementById('lcPulseIntAmp').oninput = e => {
+      var v = parseInt(e.target.value) / 100;
+      this.updateSelected('pulseIntensityAmp', v);
+      var span = document.getElementById('lcPulseIntAmpVal');
+      if (span) span.textContent = v.toFixed(2);
+    };
+    document.getElementById('lcPulseRadAmp').oninput = e => {
+      var v = parseInt(e.target.value);
+      this.updateSelected('pulseRadiusAmp', v);
+      var span = document.getElementById('lcPulseRadAmpVal');
+      if (span) span.textContent = v;
+    };
   },
 
   updateSelected(prop, val) {
@@ -95,9 +124,21 @@ Editor.Lights = {
     document.getElementById('lcRadiusVal').textContent = l.radius;
     document.getElementById('lcIntensity').value = Math.round(l.intensity * 100);
     document.getElementById('lcIntensityVal').textContent = l.intensity.toFixed(2);
+    // Pulse controls
+    var ptSel = document.getElementById('lcPulseType');
+    if (ptSel) ptSel.value = l.pulseType || 'none';
+    var psSlider = document.getElementById('lcPulseSpeed');
+    if (psSlider) psSlider.value = Math.round((l.pulseSpeed || 1.0) * 10);
+    var piSlider = document.getElementById('lcPulseIntAmp');
+    if (piSlider) piSlider.value = Math.round((l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15) * 100);
+    var prSlider = document.getElementById('lcPulseRadAmp');
+    if (prSlider) prSlider.value = l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10;
+    // Show/hide amplitude controls
+    var pulseExtras = document.getElementById('lcPulseExtras');
+    if (pulseExtras) pulseExtras.style.display = (l.pulseType || 'none') === 'none' ? 'none' : '';
   },
 
-  addLight(x, y, color, radius, intensity, skipSelect, restoreId) {
+  addLight(x, y, color, radius, intensity, skipSelect, restoreId, pulseOpts) {
     const C = Editor.Core, NS = C.NS;
     const id = restoreId || ('l' + (this.lid++));
 
@@ -138,7 +179,14 @@ Editor.Lights = {
 
     document.getElementById('lightLayer').appendChild(g);
 
-    const light = { id, x, y, color, radius, intensity, el: g, circle, grad, gradId, centerG };
+    var po = pulseOpts || {};
+    const light = {
+      id, x, y, color, radius, intensity, el: g, circle, grad, gradId, centerG,
+      pulseType: po.pulseType || 'none',
+      pulseSpeed: po.pulseSpeed != null ? po.pulseSpeed : 1.0,
+      pulseIntensityAmp: po.pulseIntensityAmp != null ? po.pulseIntensityAmp : 0.15,
+      pulseRadiusAmp: po.pulseRadiusAmp != null ? po.pulseRadiusAmp : 10
+    };
     C.allLights.push(light);
 
     g.onmousedown = e => { e.stopPropagation(); this.selectLight(light); this.startDrag(e, light); };
@@ -217,9 +265,65 @@ Editor.Lights = {
   },
 
   serialize() {
-    return Editor.Core.allLights.map(l => ({ id: l.id, x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity }));
+    return Editor.Core.allLights.map(l => ({
+      id: l.id, x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity,
+      pulseType: l.pulseType || 'none',
+      pulseSpeed: l.pulseSpeed != null ? l.pulseSpeed : 1.0,
+      pulseIntensityAmp: l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15,
+      pulseRadiusAmp: l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10
+    }));
+  },
+
+  // ── Animation loop ──
+  _animId: null,
+
+  startAnimLoop() {
+    var rAF = typeof window !== 'undefined' && window.requestAnimationFrame;
+    if (!rAF) return;
+    var self = this;
+    function tick(time) {
+      var t = time / 1000; // seconds
+      var lights = Editor.Core.allLights;
+      for (var i = 0; i < lights.length; i++) {
+        var l = lights[i];
+        if (!l.pulseType || l.pulseType === 'none') continue;
+
+        var speed = l.pulseType === 'breathe' ? 0.3 : (l.pulseSpeed || 1.0);
+        var intAmp = l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15;
+        var radAmp = l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10;
+        var mod;
+        if (l.pulseType === 'flicker') {
+          mod = Math.sin(t * speed * 7.3) * Math.sin(t * speed * 13.1) * Math.sin(t * speed * 23.7);
+        } else {
+          // pulse and breathe both use sine
+          mod = Math.sin(t * speed * Math.PI * 2);
+        }
+
+        var visIntensity = l.intensity + intAmp * mod;
+        visIntensity = Math.max(0, Math.min(1, visIntensity));
+        var visRadius = l.radius + radAmp * mod;
+        visRadius = Math.max(1, visRadius);
+
+        // Update gradient stops (visual only)
+        l.grad.innerHTML = '<stop offset="0%" stop-color="' + l.color + '" stop-opacity="' + visIntensity + '"/>' +
+          '<stop offset="70%" stop-color="' + l.color + '" stop-opacity="' + (visIntensity * 0.3) + '"/>' +
+          '<stop offset="100%" stop-color="' + l.color + '" stop-opacity="0"/>';
+        l.circle.setAttribute('r', visRadius);
+      }
+      self._animId = rAF(tick);
+    }
+    this._animId = rAF(tick);
+  },
+
+  stopAnimLoop() {
+    var cAF = typeof window !== 'undefined' && window.cancelAnimationFrame;
+    if (this._animId != null && cAF) {
+      cAF(this._animId);
+      this._animId = null;
+    }
   }
 };
 
 // Inject sidebar controls on load
 Editor.Lights.injectSidebarControls();
+Editor.Lights.startAnimLoop();
