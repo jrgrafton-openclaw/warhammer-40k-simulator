@@ -421,8 +421,8 @@ Editor.Selection = {
       this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
-    // Rotate
-    if (e.key === 'r' || e.key === 'R') {
+    // Rotate (skip if Cmd/Ctrl held — e.g. Cmd+R = refresh, not rotate)
+    if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey) {
       const step = e.shiftKey ? 45 : 15;
       const targets = C.multiSel.length > 1 ? C.multiSel : [C.selected];
       const cmds = targets.map(s => {

@@ -227,10 +227,17 @@ Editor.Crop = {
     const clipPath = document.createElementNS(NS, 'clipPath');
     clipPath.id = clipId;
     const clipRect = document.createElementNS(NS, 'rect');
-    clipRect.setAttribute('x', sp.x + sp.w * cL);
-    clipRect.setAttribute('y', sp.y + sp.h * cT);
-    clipRect.setAttribute('width', sp.w * (1 - cL - cR));
-    clipRect.setAttribute('height', sp.h * (1 - cT - cB));
+    // Expand clip rect to include shadow overflow so shadows aren't clipped
+    var shadowPad = 0;
+    if (Editor.Effects && Editor.Effects.shadow && Editor.Effects.shadow.on) {
+      var sh = Editor.Effects.shadow;
+      var dist = sh.distance != null ? sh.distance : 1;
+      shadowPad = (Math.max(Math.abs(sh.dx), Math.abs(sh.dy)) * dist + sh.blur * 3 + 5);
+    }
+    clipRect.setAttribute('x', sp.x + sp.w * cL - shadowPad);
+    clipRect.setAttribute('y', sp.y + sp.h * cT - shadowPad);
+    clipRect.setAttribute('width', sp.w * (1 - cL - cR) + shadowPad * 2);
+    clipRect.setAttribute('height', sp.h * (1 - cT - cB) + shadowPad * 2);
     const ct = this._clipTransform(sp);
     if (ct) clipRect.setAttribute('transform', ct);
     clipPath.appendChild(clipRect);

@@ -247,6 +247,8 @@ Editor.Effects = {
     });
     this._filterCache = {};
     this.rebuildAll();
+    // Reapply crops so clip rects expand/contract with shadow params
+    if (Editor.Crop) Editor.Crop.reapplyAll();
   },
 
   // ── Global toggle/set handlers ──
