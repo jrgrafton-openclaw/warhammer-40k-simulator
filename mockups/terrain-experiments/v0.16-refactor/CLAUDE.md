@@ -108,6 +108,20 @@ All sprite `<image>` hrefs use this prefix.
 5. Call `Editor.State.dispatch('<action>')` after mutations
 6. Add `<script>` tag in index.html (after entities, before persistence.js)
 
+## Adding New State (per-sprite property, global setting, etc.)
+
+When adding a new property that must survive save/load:
+
+1. **save()** — include the property in the serialized sprite/model/settings object
+2. **_normalize()** — handle both internal and output formats (e.g. `prop` vs nested `obj.prop`)
+3. **_restoreSprites()** (or relevant \_restore phase) — apply the property to the entity after creation
+4. **Copy/paste** in `selection.js` — include in clipboard copy (line ~319) AND apply on paste (line ~335)
+5. **Undo** — if the property is mutable, ensure `Commands._captureSprite()` captures it
+6. **test-helpers.js** `loadScene()` — apply the property when creating entities from fixture data
+7. **test-helpers.js** `exportScene()` — include the property in the exported scene snapshot
+8. **round-trip.test.js** — verify the property survives save → nuke → load
+9. **test-scene.json** — add representative values to the fixture (zero, non-zero, edge cases)
+
 ## Test Infrastructure
 
 Tests run in jsdom via Vitest. `loadEditor()` in test-helpers.js:
