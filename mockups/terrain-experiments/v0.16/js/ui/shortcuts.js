@@ -38,6 +38,7 @@ Editor.Shortcuts = {
           <div class="sc-row"><kbd>Arrow keys</kbd> Move 1px</div>
           <div class="sc-row"><kbd>⇧ Arrows</kbd> Move 10px</div>
           <div class="sc-row"><kbd>+ / −</kbd> Z-order up/down</div>
+          <div class="sc-row"><kbd>Mirror XY</kbd> Point-reflect all sprites</div>
         </div>
         <div class="sc-section">
           <h4>Resize</h4>
