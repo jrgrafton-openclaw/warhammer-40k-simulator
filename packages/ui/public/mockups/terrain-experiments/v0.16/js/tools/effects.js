@@ -95,8 +95,8 @@ Editor.Effects = {
 
     const f = document.createElementNS(NS, 'filter');
     f.id = id;
-    f.setAttribute('x', '-25%'); f.setAttribute('y', '-25%');
-    f.setAttribute('width', '150%'); f.setAttribute('height', '150%');
+    f.setAttribute('x', '-50%'); f.setAttribute('y', '-50%');
+    f.setAttribute('width', '200%'); f.setAttribute('height', '200%');
     f.setAttribute('color-interpolation-filters', 'sRGB');
 
     let currentInput = 'SourceGraphic';
