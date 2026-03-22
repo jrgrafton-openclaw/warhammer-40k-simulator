@@ -16,13 +16,17 @@ Editor.Sprites = {
     ghostEl.style.left = e.clientX - 36 + 'px'; ghostEl.style.top = e.clientY - 36 + 'px';
 
     const mv = e2 => { ghostEl.style.left = e2.clientX - 36 + 'px'; ghostEl.style.top = e2.clientY - 36 + 'px'; };
+    // Probe actual image dimensions for correct aspect ratio
+    const probe = new Image();
+    probe.src = C.spriteBasePath + file;
     const up = e2 => {
       document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
       ghostEl.remove(); ghostEl = null;
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
-        const is2x = file.includes('-2x.');
-        const w = is2x ? 50 : 100, h = is2x ? 160 : 80;
+        const pw = probe.naturalWidth || 1024, ph = probe.naturalHeight || 1024;
+        const scale = Math.min(100 / pw, 100 / ph);
+        const w = Math.round(pw * scale), h = Math.round(ph * scale);
         const sp = this.addSprite(file, pt.x - w/2, pt.y - h/2, w, h, 0, this.getLayerType(file, cat));
         // Scatter terrain defaults to no drop shadow
         if (cat === 'tScatter' && sp) {
