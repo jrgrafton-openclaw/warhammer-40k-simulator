@@ -419,16 +419,9 @@ Editor.Layers = {
     });
 
     row.onclick = e => {
+      // Ignore clicks on buttons, slider, drag handle
       if (e.target.closest('.lbtn') || e.target.closest('.group-opacity') || e.target.closest('.drag-hint') || e.target.closest('.group-rename-btn')) return;
-      // Click on expand toggle → collapse/expand
-      if (e.target.closest('.expand-toggle')) {
-        this.expandedGroups[gId] = !isExpanded;
-        this.rebuild();
-        return;
-      }
-      // Click on group name → ignore (let dblclick rename handler work)
-      if (e.target.closest('.group-name')) return;
-      // Click on row body → toggle expand/collapse (matches built-in group behavior)
+      // Everything else (expand toggle, group name, row body) → toggle collapse/expand
       this.expandedGroups[gId] = !isExpanded;
       this.rebuild();
     };
