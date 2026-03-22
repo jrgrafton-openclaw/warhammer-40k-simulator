@@ -21,7 +21,6 @@ export function loadEditor() {
       <textarea id="debug"></textarea>
       <div id="tRuinsFloor"></div><div id="tRuinsTop"></div><div id="tScatter"></div>
       <input type="range" min="0" max="100" value="92"><span>92%</span>
-      <input type="range" min="0" max="100" value="85"><span>85%</span>
       <div class="fx-controls" id="fxShadowControls">
         <label><span class="fx-lbl">Shadow Blur</span><input type="range" min="1" max="20" value="6"><span class="fx-val">6px</span></label>
         <label><span class="fx-lbl">Shadow Opacity</span><input type="range" min="0" max="100" value="55"><span class="fx-val">55%</span></label>
@@ -141,10 +140,6 @@ export function loadScene(fixtureJson) {
       ranges[0].value = data.settings.ruinsOpacity;
       ranges[0].nextElementSibling.textContent = data.settings.ruinsOpacity + '%';
     }
-    if (data.settings.roofOpacity != null && ranges[1]) {
-      ranges[1].value = data.settings.roofOpacity;
-      ranges[1].nextElementSibling.textContent = data.settings.roofOpacity + '%';
-    }
   }
 
   // Clear default models
@@ -259,7 +254,6 @@ export function exportScene(Editor) {
     settings: {
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: 100,
-      roofOpacity: 100,
     }
   };
 }

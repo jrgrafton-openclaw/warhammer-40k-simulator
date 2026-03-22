@@ -212,7 +212,7 @@ describe('Persistence — everything saves and restores', () => {
     expect(data.lights[0].color).toBe('#ff0000');
   });
 
-  it('settings persist (bg, ruinsOpacity, roofOpacity)', () => {
+  it('settings persist (bg, ruinsOpacity)', () => {
     // Change bg via select element (save reads bgSel.value directly)
     const bgSel = document.getElementById('bgSel');
     // Add the option first so the select can hold the value

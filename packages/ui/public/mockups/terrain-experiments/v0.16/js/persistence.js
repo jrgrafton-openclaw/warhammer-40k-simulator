@@ -72,7 +72,6 @@ Editor.Persistence = {
       },
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ranges[0] ? ranges[0].value : 92,
-      roofOpacity: ranges[1] ? ranges[1].value : 85,
       // Explicit zOrder array (Phase 1)
       zOrder: S.zOrder.slice(),
       // Keep layerOrder for backward compat with older versions
@@ -158,11 +157,6 @@ Editor.Persistence = {
         ranges[0].value = data.ruinsOpacity;
         document.getElementById('svgRuins').style.opacity = data.ruinsOpacity / 100;
         ranges[0].nextElementSibling.textContent = data.ruinsOpacity + '%';
-      }
-      if (data.roofOpacity && ranges[1]) {
-        ranges[1].value = data.roofOpacity;
-        C._savedRoofOpacity = data.roofOpacity / 100;
-        ranges[1].nextElementSibling.textContent = data.roofOpacity + '%';
       }
 
       // Restore effects state
@@ -279,14 +273,6 @@ Editor.Persistence = {
 
       // Flush effects AFTER sprites + crops exist so filters apply to all sprites
       if (data.effects && Editor.Effects._ready) Editor.Effects._flush();
-
-      // Apply saved roof opacity per-sprite (after sprites are created)
-      if (C._savedRoofOpacity != null) {
-        C.allSprites.filter(function(s) { return s.layerType === 'top'; }).forEach(function(s) {
-          s.el.style.opacity = C._savedRoofOpacity;
-        });
-        delete C._savedRoofOpacity;
-      }
 
       // Restore z-order: prefer explicit zOrder array (Phase 1), fallback to layerOrder
       if (data.zOrder && data.zOrder.length) {

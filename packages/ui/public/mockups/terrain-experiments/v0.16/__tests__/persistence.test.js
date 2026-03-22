@@ -160,13 +160,13 @@ describe('Round-trip persistence', () => {
       }
     });
 
-    it('preserves settings (bg, ruinsOpacity, roofOpacity)', () => {
+    it('preserves settings (bg, ruinsOpacity) — roofOpacity removed', () => {
       const Editor = loadScene(fixture);
       Editor.Persistence.save();
       const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
       expect(saved.bg).toBe('svg-gradient');
       expect(Number(saved.ruinsOpacity)).toBe(100);
-      expect(Number(saved.roofOpacity)).toBe(100);
+      expect(saved.roofOpacity).toBeUndefined();
     });
 
     it('preserves near-zero rotation values (no NaN or truncation to 0)', () => {
@@ -244,6 +244,15 @@ describe('Round-trip persistence', () => {
       expect(afterExport.sprites.length).toBe(beforeExport.sprites.length);
       expect(afterExport.models.length).toBe(beforeExport.models.length);
     });
+  });
+
+  it('roof opacity slider is removed — save has no roofOpacity (Bug 2 regression)', () => {
+    const Editor = loadScene(fixture);
+    Editor.Persistence.save();
+    const saved = JSON.parse(localStorage.getItem(Editor.Persistence.STORAGE_KEY));
+    expect(saved.roofOpacity).toBeUndefined();
+    // State object should not have roofOpacity
+    expect(Editor.State.settings.roofOpacity).toBeUndefined();
   });
 
   it('effects (shadow/grade) are applied to sprites after load (Bug 1 regression)', () => {

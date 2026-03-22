@@ -44,11 +44,7 @@
   <div class="bg-row">
     <input type="range" min="0" max="100" value="92" style="flex:1;accent-color:#00d4ff" oninput="document.getElementById('svgRuins').style.opacity=this.value/100;document.getElementById('svgScatter').style.opacity=this.value/100;this.nextElementSibling.textContent=this.value+'%'" onchange="Editor.Persistence.save()"><span style="font-size:10px;width:30px">92%</span>
   </div>
-  <h3>Roof Opacity</h3>
-  <div class="bg-row">
-    <input type="range" min="0" max="100" value="85" style="flex:1;accent-color:#00d4ff" oninput="Editor.Core.allSprites.filter(s=>s.layerType==='top').forEach(s=>s.el.style.opacity=this.value/100);this.nextElementSibling.textContent=this.value+'%'" onchange="Editor.Persistence.save()"><span style="font-size:10px;width:30px">85%</span>
-  </div>
-  <h3>Sprite Grounding</h3>
+<h3>Sprite Grounding</h3>
   <div class="fx-section">
     <div class="toggle-row">
       <button class="tbtn on" id="fxShadowBtn" onclick="Editor.Effects.toggleShadow(this)">Drop Shadow</button>
