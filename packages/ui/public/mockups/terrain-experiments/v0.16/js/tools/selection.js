@@ -316,7 +316,7 @@ Editor.Selection = {
     // Copy (sprites or lights)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
       if (C.multiSel.length) {
-        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layerType: s.layerType, hidden: s.hidden, flipX: s.flipX, flipY: s.flipY }));
+        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layerType: s.layerType, hidden: s.hidden, flipX: s.flipX, flipY: s.flipY, shadowMul: s.shadowMul != null ? s.shadowMul : 1, cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0 }));
         C.clipboardLights = [];
         e.preventDefault(); return;
       }
@@ -332,7 +332,14 @@ Editor.Selection = {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
       if (C.clipboardSprites.length) {
         this.deselect();
-        C.multiSel = C.clipboardSprites.map(s => Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layerType || "floor", true));
+        C.multiSel = C.clipboardSprites.map(s => {
+          var sp = Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layerType || "floor", true);
+          sp.flipX = s.flipX; sp.flipY = s.flipY; sp.shadowMul = s.shadowMul;
+          sp.cropL = s.cropL; sp.cropT = s.cropT; sp.cropR = s.cropR; sp.cropB = s.cropB;
+          if (s.flipX || s.flipY) Editor.Sprites.apply(sp);
+          if (s.cropL || s.cropT || s.cropR || s.cropB) Editor.Crop._applyClip(sp);
+          return sp;
+        });
         C.selected = C.multiSel[0]; this.drawSelectionUI();
         const cmds = C.multiSel.map(s => Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(s)));
         Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Paste'));
