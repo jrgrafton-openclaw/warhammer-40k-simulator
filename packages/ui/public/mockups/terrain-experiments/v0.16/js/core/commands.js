@@ -92,6 +92,11 @@ Editor.Commands = {
     Editor.Core.allSprites.forEach(function(sp) {
       if (sp.groupId) groups[sp.id] = sp.groupId;
     });
+    if (Editor.Core.allSmokeFx) {
+      Editor.Core.allSmokeFx.forEach(function(fx) {
+        if (fx.groupId) groups[fx.id] = fx.groupId;
+      });
+    }
     return { dom: snapshot, spriteGroups: groups };
   },
 
@@ -109,6 +114,16 @@ Editor.Commands = {
         delete sp.groupId;
       }
     });
+    // Restore fx→group assignments
+    if (Editor.Core.allSmokeFx) {
+      Editor.Core.allSmokeFx.forEach(function(fx) {
+        if (snap.spriteGroups[fx.id]) {
+          fx.groupId = snap.spriteGroups[fx.id];
+        } else {
+          delete fx.groupId;
+        }
+      });
+    }
 
     // Restore DOM order
     snap.dom.forEach(function(entry) {
@@ -143,6 +158,49 @@ Editor.Commands = {
     light.grad.remove();
     C.allLights.splice(idx, 1);
     if (Editor.Lights.selectedLight === light) Editor.Lights.deselectLight();
+  },
+
+  /** Capture FX state for undo */
+  _captureFx: function(fx) {
+    var base = { id: fx.id, type: fx.type, x: fx.x, y: fx.y, color: fx.color, groupId: fx.groupId || null };
+    if (fx.type === 'smoke') {
+      base.particleCount = fx.particleCount; base.sizeMin = fx.sizeMin; base.sizeMax = fx.sizeMax;
+      base.riseSpeed = fx.riseSpeed; base.spread = fx.spread; base.opacity = fx.opacity;
+      base.fadeRate = fx.fadeRate; base.maxHeight = fx.maxHeight;
+    } else {
+      base.sparkCount = fx.sparkCount; base.sparkSpeed = fx.sparkSpeed; base.sparkSize = fx.sparkSize;
+      base.direction = fx.direction; base.angle = fx.angle || 0; base.maxHeight = fx.maxHeight;
+      base.glowRadius = fx.glowRadius; base.glowIntensity = fx.glowIntensity;
+    }
+    return base;
+  },
+
+  /** Restore an FX from captured data */
+  _restoreFx: function(d) {
+    var opts = {};
+    var skip = { id: 1, type: 1, x: 1, y: 1 };
+    Object.keys(d).forEach(function(k) { if (!skip[k]) opts[k] = d[k]; });
+    if (d.type === 'fire') {
+      return Editor.Fire.addFire(d.x, d.y, opts, true, d.id);
+    } else {
+      return Editor.Smoke.addSmoke(d.x, d.y, opts, true, d.id);
+    }
+  },
+
+  /** Remove an FX by ID (clean — no dispatch/rebuild) */
+  _removeFx: function(id) {
+    var C = Editor.Core;
+    var idx = C.allSmokeFx.findIndex(function(f) { return f.id === id; });
+    if (idx === -1) return;
+    var fx = C.allSmokeFx[idx];
+    fx.el.remove();
+    if (fx._filtEl) fx._filtEl.remove();
+    if (fx._glowFiltEl) fx._glowFiltEl.remove();
+    if (fx._gradEl) fx._gradEl.remove();
+    C.allSmokeFx.splice(idx, 1);
+    if (Editor.Smoke.selectedFx === fx) Editor.Smoke.deselectEffect();
+    if (C.allSmokeFx.length === 0) Editor.Smoke.stopAnimation();
+    Editor.State.syncZOrderFromDOM();
   },
 
   /** Restore a model from captured data */
@@ -594,6 +652,52 @@ Editor.Commands = {
           if (!l) return;
           l.x = fromX; l.y = fromY;
           Editor.Lights.applyLight(l);
+        }
+      };
+    }
+  },
+
+  /** ADD_FX — create a smoke/fire effect */
+  AddFx: {
+    create: function(fxData) {
+      return {
+        type: 'ADD_FX',
+        description: 'Add ' + fxData.type + ' ' + fxData.id,
+        apply: function() { Editor.Commands._restoreFx(fxData); },
+        reverse: function() { Editor.Commands._removeFx(fxData.id); }
+      };
+    }
+  },
+
+  /** REMOVE_FX — delete a smoke/fire effect */
+  RemoveFx: {
+    create: function(fxData) {
+      return {
+        type: 'REMOVE_FX',
+        description: 'Remove ' + fxData.type + ' ' + fxData.id,
+        apply: function() { Editor.Commands._removeFx(fxData.id); },
+        reverse: function() { Editor.Commands._restoreFx(fxData); }
+      };
+    }
+  },
+
+  /** MOVE_FX — fx position change */
+  MoveFx: {
+    create: function(fxId, fromX, fromY, toX, toY) {
+      return {
+        type: 'MOVE_FX',
+        description: 'Move ' + fxId,
+        apply: function() {
+          var fx = Editor.Core.allSmokeFx.find(function(f) { return f.id === fxId; });
+          if (!fx) return;
+          fx.x = toX; fx.y = toY;
+          Editor.Smoke.applyEffect(fx);
+        },
+        reverse: function() {
+          var fx = Editor.Core.allSmokeFx.find(function(f) { return f.id === fxId; });
+          if (!fx) return;
+          fx.x = fromX; fx.y = fromY;
+          Editor.Smoke.applyEffect(fx);
         }
       };
     }
