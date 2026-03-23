@@ -9,7 +9,6 @@ Editor.Effects = {
   shadow: { on: true, dx: 3, dy: 3, blur: 6, opacity: 0.55, distance: 1.0 },
   feather: { on: false, radius: 10 },
   grade:   { on: true, brightness: 0.75, saturation: 0.7, sepia: 0.08 },
-  modelShadow: { on: true, dx: 1, dy: 2, blur: 1.5, opacity: 0.35 },
 
   // Filter cache: key = quantised params string → filter id
   _filterCache: {},
@@ -19,7 +18,6 @@ Editor.Effects = {
   init() {
     this._ready = true;
     this.rebuildAll();
-    this.rebuildModelShadows();
   },
 
   // ── Rebuild all sprite filters ──
@@ -319,78 +317,5 @@ Editor.Effects = {
     this._applyToSprite(sp);
     Editor.Core.updateDebug();
     Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  // ── Model Shadow toggle/rebuild ──
-  // Uses sprite grounding shadow settings (dx, dy, blur, opacity, distance)
-  toggleModelShadow(btn) {
-    this.modelShadow.on = !this.modelShadow.on;
-    btn.classList.toggle('on', this.modelShadow.on);
-    const ctrl = document.getElementById('fxModelShadowControls');
-    if (ctrl) ctrl.style.display = this.modelShadow.on ? '' : 'none';
-    this.rebuildModelShadows();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  setModelShadowParam(param, value) {
-    this.modelShadow[param] = value;
-    this.rebuildModelShadows();
-    Editor.State.dispatch({ type: 'SET_EFFECT' });
-  },
-
-  rebuildModelShadows() {
-    const C = Editor.Core;
-    const NS = C.NS;
-    const shadowLayer = document.getElementById('modelShadowLayer');
-    const modelLayer = document.getElementById('modelLayer');
-    if (!shadowLayer || !modelLayer) return;
-
-    // Ensure shadow layer is always immediately before model layer in DOM order,
-    // regardless of z-order reordering that places sprites as direct SVG children.
-    if (shadowLayer.nextElementSibling !== modelLayer) {
-      modelLayer.parentNode.insertBefore(shadowLayer, modelLayer);
-    }
-
-    // Clear all existing shadows
-    shadowLayer.innerHTML = '';
-    C.allModels.forEach(m => { m.shadowEl = null; });
-
-    if (!this.modelShadow.on) return;
-
-    // Dedicated model shadow settings (decoupled from sprite grounding)
-    const ms = this.modelShadow;
-    const dx = ms.dx;
-    const dy = ms.dy;
-    const opacity = ms.opacity;
-    const blur = ms.blur;
-
-    // Update the SVG filter blur for models
-    const f = document.getElementById('mf-model-shadow');
-    if (f) {
-      const blurEl = f.querySelector('feGaussianBlur');
-      if (blurEl) blurEl.setAttribute('stdDeviation', blur);
-    }
-
-    C.allModels.forEach(m => {
-      if (m.kind === 'circle') {
-        const sh = document.createElementNS(NS, 'circle');
-        sh.setAttribute('cx', m.x + dx); sh.setAttribute('cy', m.y + dy);
-        sh.setAttribute('r', m.r);
-        sh.setAttribute('fill', `rgba(0,0,0,${opacity})`);
-        sh.setAttribute('filter', 'url(#mf-model-shadow)');
-        sh.style.pointerEvents = 'none';
-        shadowLayer.appendChild(sh);
-        m.shadowEl = sh;
-      } else {
-        const sh = document.createElementNS(NS, 'rect');
-        sh.setAttribute('x', m.x + dx); sh.setAttribute('y', m.y + dy);
-        sh.setAttribute('width', m.w); sh.setAttribute('height', m.h); sh.setAttribute('rx', '4');
-        sh.setAttribute('fill', `rgba(0,0,0,${opacity})`);
-        sh.setAttribute('filter', 'url(#mf-model-shadow)');
-        sh.style.pointerEvents = 'none';
-        shadowLayer.appendChild(sh);
-        m.shadowEl = sh;
-      }
-    });
   }
 };

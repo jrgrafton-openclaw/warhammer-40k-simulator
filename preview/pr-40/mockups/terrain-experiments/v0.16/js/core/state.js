@@ -36,7 +36,6 @@ Editor.State = {
     shadow:  { on: true,  dx: 3, dy: 3, blur: 6, opacity: 0.55 },
     feather: { on: false, radius: 10 },
     grade:   { on: true,  brightness: 0.75, saturation: 0.7, sepia: 0.08 },
-    modelShadow: { on: true, dx: 1, dy: 2, blur: 1.5, opacity: 0.35 },
   },
 
   // ── Counters ──
@@ -200,7 +199,6 @@ Editor.State = {
       this.effects.shadow = Editor.Effects.shadow;
       this.effects.feather = Editor.Effects.feather;
       this.effects.grade = Editor.Effects.grade;
-      this.effects.modelShadow = Editor.Effects.modelShadow;
     }
   },
 
@@ -222,7 +220,6 @@ Editor.State = {
       Editor.Effects.shadow = this.effects.shadow;
       Editor.Effects.feather = this.effects.feather;
       Editor.Effects.grade = this.effects.grade;
-      Editor.Effects.modelShadow = this.effects.modelShadow;
     }
   },
 
