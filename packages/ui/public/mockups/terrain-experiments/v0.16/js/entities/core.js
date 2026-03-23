@@ -135,10 +135,7 @@ Editor.Core = {
         id: l.id, x: Math.round(l.x), y: Math.round(l.y),
         color: l.color, radius: l.radius, intensity: l.intensity
       })),
-      smokeFx: this.allSmokeFx.map(fx => ({
-        id: fx.id, type: fx.type, x: Math.round(fx.x), y: Math.round(fx.y),
-        radius: fx.radius, color: fx.color, style: fx.style
-      })),
+      smokeFx: Editor.Smoke.serialize(),
       groups: (this.groups || []).map(g => ({
         id: g.id, name: g.name, opacity: g.opacity,
         spriteIds: this.allSprites.filter(s => s.groupId === g.id).map(s => s.id)
