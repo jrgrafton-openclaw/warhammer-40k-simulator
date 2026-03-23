@@ -362,7 +362,7 @@ Editor.Smoke = {
 
   serialize() {
     return Editor.Core.allSmokeFx.map(fx => {
-      const b = { id: fx.id, type: fx.type, x: fx.x, y: fx.y, color: fx.color };
+      const b = { id: fx.id, type: fx.type, x: fx.x, y: fx.y, color: fx.color, groupId: fx.groupId || null };
       if (fx.type === 'smoke') {
         return Object.assign(b, {
           particleCount: fx.particleCount, sizeMin: fx.sizeMin, sizeMax: fx.sizeMax,

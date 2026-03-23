@@ -377,8 +377,17 @@ Editor.Persistence = {
         var sp = C.allSprites.find(function(s) { return s.id === entry.id; });
         if (!sp) return;
         el = sp.rootEl;
-        // Skip sprites inside groups — their order is managed by the group
         if (sp.groupId) return;
+      } else if (entry.type === 'smokefx') {
+        var fx = C.allSmokeFx.find(function(f) { return f.id === entry.id; });
+        if (!fx) return;
+        el = fx.el;
+        // If FX has groupId, move it into that group
+        if (fx.groupId) {
+          var groupEl = document.getElementById(fx.groupId);
+          if (groupEl && el.parentNode !== groupEl) groupEl.appendChild(el);
+          return;
+        }
       } else {
         el = document.getElementById(entry.id);
       }
