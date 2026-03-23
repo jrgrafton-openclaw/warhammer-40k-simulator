@@ -224,20 +224,29 @@ Editor.Layers = {
         const isExpanded = this.expandedGroups[gId] !== false; // default expanded
         if (isExpanded) {
           const gEl = document.getElementById(gId);
-          const childSprites = gEl
-            ? Array.from(gEl.children).map(el => {
-                // Direct match or inside a crop wrapper <g>
-                let sp = C.allSprites.find(s => s.el === el);
-                if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
-                  sp = C.allSprites.find(s => s._clipWrap === el);
-                }
-                return sp;
-              }).filter(Boolean).reverse()
-            : C.allSprites.filter(s => s.groupId === gId);
-          childSprites.forEach(sp => {
-            const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
-            this._setupGroupChildDrag(child, sp, gId);
-            list.appendChild(child);
+          // Build children: sprites AND smokefx entities inside this group
+          const children = gEl ? Array.from(gEl.children).reverse() : [];
+          children.forEach(el => {
+            // Check if it's a sprite
+            let sp = C.allSprites.find(s => s.el === el);
+            if (!sp && el.tagName === 'g' && el.id && el.id.endsWith('-wrap')) {
+              sp = C.allSprites.find(s => s._clipWrap === el);
+            }
+            if (sp) {
+              const child = this._createSpriteRow({ type: 'sprite', ref: sp }, C, true);
+              this._setupGroupChildDrag(child, sp, gId);
+              list.appendChild(child);
+              return;
+            }
+            // Check if it's a smokefx entity
+            if (el.classList && el.classList.contains('smokefx-entity')) {
+              const fx = C.allSmokeFx.find(f => f.el === el);
+              if (fx) {
+                const child = this._createSmokeFxRow({ type: 'smokefx', ref: fx, svgEl: fx.el }, C);
+                child.classList.add('child-row');
+                list.appendChild(child);
+              }
+            }
           });
         }
       } else if (item.type === 'smokefx') {
