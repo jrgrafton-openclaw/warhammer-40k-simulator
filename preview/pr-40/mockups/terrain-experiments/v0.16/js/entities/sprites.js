@@ -16,15 +16,15 @@ Editor.Sprites = {
     ghostEl.style.left = e.clientX - 36 + 'px'; ghostEl.style.top = e.clientY - 36 + 'px';
 
     const mv = e2 => { ghostEl.style.left = e2.clientX - 36 + 'px'; ghostEl.style.top = e2.clientY - 36 + 'px'; };
-    // Probe actual image dimensions for correct aspect ratio
-    const probe = new Image();
-    probe.src = C.spriteBasePath + file;
+    // Use the already-loaded sidebar thumbnail for dimensions (avoids race condition)
+    const thumbEl = document.querySelector(`img.thumb[data-file="${file}"]`);
     const up = e2 => {
       document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
       ghostEl.remove(); ghostEl = null;
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
-        const pw = probe.naturalWidth || 1024, ph = probe.naturalHeight || 1024;
+        const pw = (thumbEl && thumbEl.naturalWidth) || 1024;
+        const ph = (thumbEl && thumbEl.naturalHeight) || 1024;
         const scale = Math.min(100 / pw, 100 / ph);
         const w = Math.round(pw * scale), h = Math.round(ph * scale);
         const sp = this.addSprite(file, pt.x - w/2, pt.y - h/2, w, h, 0, this.getLayerType(file, cat));
@@ -49,7 +49,7 @@ Editor.Sprites = {
     const isDataUrl = file.startsWith('data:');
     img.setAttribute('href', isDataUrl ? file : C.spriteBasePath + file);
     img.setAttribute('x', x); img.setAttribute('y', y); img.setAttribute('width', w); img.setAttribute('height', h);
-    img.setAttribute('preserveAspectRatio', 'none');
+    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     if (rot) img.setAttribute('transform', `rotate(${rot},${x+w/2},${y+h/2})`);
     img.dataset.id = id; img.id = id; img.style.cursor = 'pointer';
     // Insert directly into SVG before selUI for true z-order independence
