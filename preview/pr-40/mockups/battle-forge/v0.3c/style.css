@@ -1,0 +1,863 @@
+/* ═══════════════════════════════════════════════
+   WAR COUNCIL — Battle Forge v0.3c
+   Total War: Warhammer 3 pre-battle inspired
+   ═══════════════════════════════════════════════ */
+
+/* ── Full viewport ── */
+.war-council {
+  position: fixed; inset: 0;
+  background: var(--bg-primary);
+  overflow: hidden;
+  font-family: 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  grid-template-columns: 1fr;
+}
+
+/* ── Atmospheric background ── */
+.atmo {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 0;
+}
+
+/* Faction colour bleed — left cyan, right red */
+.atmo::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 50% 80% at 0% 50%, rgba(0, 212, 255, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 80% at 100% 50%, rgba(255, 64, 32, 0.07) 0%, transparent 70%);
+}
+
+/* Smoke / fog effect */
+.atmo::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 120% 40% at 50% 100%, rgba(15, 21, 32, 0.9) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 60% at 30% 70%, rgba(0, 212, 255, 0.025) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 60% at 70% 70%, rgba(255, 64, 32, 0.025) 0%, transparent 50%);
+}
+
+/* Grain */
+.grain {
+  position: fixed; inset: 0; z-index: 1;
+  opacity: 0.035; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* Scanlines */
+.scanlines {
+  position: fixed; inset: 0; z-index: 1;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0, transparent 3px,
+    rgba(0, 180, 255, 0.01) 3px, rgba(0, 180, 255, 0.01) 4px
+  );
+}
+
+/* ── Navigation Chrome ── */
+.nav-back, .nav-mockups {
+  position: fixed; top: 16px; z-index: 100;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: color 0.2s;
+  letter-spacing: 0.5px;
+}
+.nav-back { left: 20px; }
+.nav-mockups { right: 20px; }
+.nav-back:hover, .nav-mockups:hover { color: var(--text-primary); }
+
+.version-badge {
+  position: fixed; bottom: 12px; left: 16px; z-index: 100;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-dis);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+/* ── Gold ornamental helpers ── */
+.gold-rule {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--gold-dim) 20%, var(--gold) 50%, var(--gold-dim) 80%, transparent 100%);
+  position: relative;
+}
+.gold-rule::after {
+  content: '◆';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 7px;
+  color: var(--gold);
+  background: var(--bg-primary);
+  padding: 0 10px;
+}
+
+/* ══════════════════════════════════════
+   TOP BAR — Faction names + title
+   ══════════════════════════════════════ */
+.top-bar {
+  position: relative; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 48px 32px 12px;
+}
+
+.top-faction {
+  display: flex; align-items: center; gap: 14px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.top-faction:hover { opacity: 0.8; }
+
+.top-faction-emblem {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.top-faction-info {
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.top-faction-name {
+  font: 400 22px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.top-faction-sub {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.top-faction.right { flex-direction: row-reverse; text-align: right; }
+.top-faction.right .top-faction-name { color: var(--ork); }
+
+.top-title {
+  text-align: center;
+}
+.top-title-main {
+  font: 400 16px/1 'Anton', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Browse indicator */
+.browse-hint {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  margin-top: 4px;
+}
+
+/* ══════════════════════════════════════
+   BALANCE OF POWER BAR
+   ══════════════════════════════════════ */
+.balance-bar-wrap {
+  position: relative; z-index: 10;
+  padding: 4px 32px 16px;
+}
+
+.balance-bar {
+  display: flex; align-items: center; gap: 16px;
+}
+
+.balance-pts {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  min-width: 60px;
+}
+.balance-pts.left { text-align: right; color: var(--imp); }
+.balance-pts.right { text-align: left; color: var(--ork); }
+
+.balance-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.balance-fill-left {
+  height: 100%;
+  background: linear-gradient(90deg, var(--imp-dim), var(--imp));
+  transition: width 0.6s ease;
+}
+.balance-fill-right {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ork), var(--ork-dim));
+  transition: width 0.6s ease;
+}
+.balance-gap {
+  flex: 0 0 2px;
+  background: var(--bg-primary);
+}
+
+.balance-label {
+  position: absolute;
+  top: -16px; left: 50%;
+  transform: translateX(-50%);
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+}
+
+/* ══════════════════════════════════════
+   MIDDLE — Portraits + Map
+   ══════════════════════════════════════ */
+.middle {
+  position: relative; z-index: 10;
+  display: grid;
+  grid-template-columns: 1fr minmax(280px, 380px) 1fr;
+  gap: 24px;
+  padding: 8px 32px;
+  align-items: center;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Lord portrait frames */
+.portrait {
+  aspect-ratio: 3 / 4;
+  max-height: 320px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 2px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Inner gold border */
+.portrait::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 1px solid rgba(201, 163, 82, 0.15);
+  border-radius: 1px;
+  pointer-events: none;
+}
+
+.portrait.left {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.04) 0%, rgba(8, 12, 16, 0.95) 100%);
+  justify-self: end;
+}
+.portrait.right {
+  background: linear-gradient(225deg, rgba(255, 64, 32, 0.04) 0%, rgba(8, 12, 16, 0.95) 100%);
+  justify-self: start;
+}
+
+/* Holographic emblem inside portrait */
+.portrait-emblem {
+  font-size: 80px;
+  line-height: 1;
+  opacity: 0.6;
+  user-select: none;
+  animation: holo-pulse 4s ease-in-out infinite;
+}
+
+.portrait.left .portrait-emblem {
+  text-shadow:
+    0 0 40px rgba(0, 212, 255, 0.5),
+    0 0 80px rgba(0, 212, 255, 0.2),
+    0 0 120px rgba(0, 212, 255, 0.1);
+  color: var(--imp);
+}
+.portrait.right .portrait-emblem {
+  text-shadow:
+    0 0 40px rgba(255, 64, 32, 0.5),
+    0 0 80px rgba(255, 64, 32, 0.2),
+    0 0 120px rgba(255, 64, 32, 0.1);
+  color: var(--ork);
+}
+
+@keyframes holo-pulse {
+  0%, 100% { opacity: 0.5; filter: brightness(1); }
+  50% { opacity: 0.7; filter: brightness(1.2); }
+}
+
+/* Portrait corner ornaments */
+.portrait-corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  border-color: var(--gold);
+  border-style: solid;
+}
+.portrait-corner.tl { top: 0; left: 0; border-width: 2px 0 0 2px; }
+.portrait-corner.tr { top: 0; right: 0; border-width: 2px 2px 0 0; }
+.portrait-corner.bl { bottom: 0; left: 0; border-width: 0 0 2px 2px; }
+.portrait-corner.br { bottom: 0; right: 0; border-width: 0 2px 2px 0; }
+
+.portrait-label {
+  position: absolute;
+  bottom: 10px;
+  left: 0; right: 0;
+  text-align: center;
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: linear-gradient(transparent, rgba(8, 12, 16, 0.8));
+  padding: 16px 8px 4px;
+}
+
+/* ── Map preview (centre) ── */
+.map-preview {
+  width: 100%;
+  aspect-ratio: 60 / 44;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.deploy-zone {
+  position: absolute; top: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.deploy-zone.left {
+  left: 0; width: 25%;
+  background: rgba(0, 212, 255, 0.06);
+  border-right: 1px dashed rgba(0, 212, 255, 0.2);
+  color: var(--imp-dim);
+}
+.deploy-zone.right {
+  right: 0; width: 25%;
+  background: rgba(255, 64, 32, 0.06);
+  border-left: 1px dashed rgba(255, 64, 32, 0.2);
+  color: var(--ork-dim);
+}
+
+.deploy-nml {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+}
+
+.deploy-obj {
+  position: absolute;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: rgba(201, 163, 82, 0.15);
+}
+
+.map-label {
+  text-align: center;
+  margin-top: 10px;
+}
+.map-label-name {
+  font: 400 16px/1 'Anton', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.map-label-info {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-top: 2px;
+}
+
+/* ══════════════════════════════════════
+   BOTTOM UNIT STRIP — TW signature
+   ══════════════════════════════════════ */
+.unit-strip-wrap {
+  position: relative; z-index: 10;
+  padding: 8px 32px 4px;
+}
+
+.unit-strip-row {
+  display: flex;
+  gap: 0;
+  width: 100%;
+}
+
+.unit-strip-half {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 4px 0;
+}
+.unit-strip-half::-webkit-scrollbar { display: none; }
+
+.unit-strip-half.left { justify-content: flex-end; padding-right: 12px; }
+.unit-strip-half.right { justify-content: flex-start; padding-left: 12px; }
+
+/* Divider between armies */
+.strip-divider {
+  flex: 0 0 2px;
+  background: linear-gradient(180deg, transparent 0%, var(--gold-dim) 30%, var(--gold) 50%, var(--gold-dim) 70%, transparent 100%);
+  align-self: stretch;
+}
+
+/* Unit card — miniature military dossier */
+.unit-card {
+  flex: 0 0 auto;
+  width: 58px;
+  height: 74px;
+  border-radius: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 3px;
+  position: relative;
+  cursor: default;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+/* Card backgrounds */
+.unit-card.imp {
+  background: linear-gradient(180deg, rgba(0, 212, 255, 0.06) 0%, rgba(8, 12, 16, 0.9) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.12);
+}
+.unit-card.ork {
+  background: linear-gradient(180deg, rgba(255, 64, 32, 0.06) 0%, rgba(8, 12, 16, 0.9) 100%);
+  border: 1px solid rgba(255, 64, 32, 0.12);
+}
+
+.unit-card:hover {
+  transform: translateY(-3px);
+  z-index: 5;
+}
+.unit-card.imp:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(0, 212, 255, 0.15);
+}
+.unit-card.ork:hover {
+  border-color: rgba(255, 64, 32, 0.3);
+  box-shadow: 0 4px 16px rgba(255, 64, 32, 0.15);
+}
+
+/* Role border top (colour coded by battlefield role) */
+.unit-card[data-role="hq"]     { border-top: 2px solid var(--gold); }
+.unit-card[data-role="troops"] .unit-card-role { color: var(--imp); }
+.unit-card[data-role="elites"]  { border-top: 2px solid #9060cc; }
+.unit-card[data-role="heavy"]   { border-top: 2px solid var(--strat); }
+.unit-card[data-role="fast"]    { border-top: 2px solid #20cc60; }
+.unit-card[data-role="hq"].ork  { border-top-color: var(--gold); }
+
+/* Card content */
+.unit-card-icon {
+  font-size: 16px;
+  line-height: 1;
+  margin-bottom: 2px;
+  opacity: 0.7;
+}
+
+.unit-card-name {
+  font: 600 8px/1.1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-sec);
+  max-height: 28px;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+/* Model count badge */
+.unit-card-count {
+  position: absolute;
+  bottom: 3px; right: 3px;
+  font: 700 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.5);
+  padding: 1px 4px;
+  border-radius: 1px;
+  min-width: 14px;
+  text-align: center;
+}
+
+/* Points badge */
+.unit-card-pts {
+  position: absolute;
+  top: 3px; right: 3px;
+  font: 600 7px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--text-dis);
+}
+
+/* Qty badge for duplicate units */
+.unit-card-qty {
+  position: absolute;
+  top: 3px; left: 3px;
+  font: 700 8px/1 'Rajdhani', sans-serif;
+  padding: 1px 3px;
+  border-radius: 1px;
+  min-width: 14px;
+  text-align: center;
+}
+.unit-card.imp .unit-card-qty {
+  color: var(--imp);
+  background: rgba(0, 212, 255, 0.1);
+}
+.unit-card.ork .unit-card-qty {
+  color: var(--ork);
+  background: rgba(255, 64, 32, 0.1);
+}
+
+/* Tooltip on hover */
+.unit-card-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%; transform: translateX(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 2px;
+  white-space: nowrap;
+  font: 500 11px/1.3 'Rajdhani', sans-serif;
+  color: var(--text-primary);
+  z-index: 50;
+  pointer-events: none;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+.unit-card:hover .unit-card-tooltip { display: block; }
+
+.tooltip-pts {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+/* ══════════════════════════════════════
+   BOTTOM CONTROL BAR
+   ══════════════════════════════════════ */
+.bottom-bar {
+  position: relative; z-index: 10;
+  padding: 8px 32px 20px;
+}
+
+.bottom-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* Map selector chips */
+.map-chips {
+  display: flex; gap: 8px;
+}
+.map-chip {
+  padding: 7px 14px;
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dis);
+  cursor: default;
+  transition: all 0.2s;
+  background: transparent;
+}
+.map-chip.active {
+  color: var(--text-sec);
+  border-color: var(--gold-dim);
+  background: rgba(201, 163, 82, 0.05);
+}
+.map-chip.disabled {
+  opacity: 0.35;
+}
+
+/* Settings chips */
+.setting-chips {
+  display: flex; gap: 6px;
+}
+.setting-chip {
+  padding: 5px 10px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+  color: var(--text-dis);
+}
+.setting-chip span { color: var(--text-muted); }
+
+/* Mode toggle */
+.mode-chips {
+  display: flex; gap: 6px;
+}
+.mode-chip {
+  padding: 5px 10px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-dis);
+  cursor: default;
+  background: transparent;
+}
+.mode-chip.active {
+  color: var(--text-sec);
+  border-color: var(--text-muted);
+}
+
+/* BEGIN BATTLE button — matches start-game splash exactly */
+.begin-btn {
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 14px 44px;
+  border-radius: 2px;
+  display: inline-block;
+}
+.begin-btn:hover {
+  background: #18eaff;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+}
+
+/* Bottom gold separator */
+.bottom-gold-rule {
+  margin-bottom: 10px;
+}
+
+/* ══════════════════════════════════════
+   FACTION BROWSER OVERLAY
+   ══════════════════════════════════════ */
+.overlay {
+  position: fixed; inset: 0;
+  z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+.overlay.open { opacity: 1; pointer-events: auto; }
+
+.overlay-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(4, 6, 8, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.overlay-panel {
+  position: relative;
+  width: 640px;
+  max-height: 80vh;
+  background: linear-gradient(165deg, rgba(15, 21, 32, 0.95), rgba(8, 12, 16, 0.98));
+  border: 1px solid var(--gold-dim);
+  border-radius: 2px;
+  padding: 28px 32px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+}
+
+.overlay-title {
+  font: 400 24px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.overlay-subtitle {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.overlay-close {
+  position: absolute;
+  top: 12px; right: 16px;
+  font: 600 18px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none; border: none;
+  transition: color 0.2s;
+  padding: 4px 8px;
+}
+.overlay-close:hover { color: var(--text-primary); }
+
+/* Faction grid */
+.faction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.faction-grid-item {
+  padding: 16px 12px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: transparent;
+}
+.faction-grid-item:hover {
+  border-color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.02);
+}
+.faction-grid-item.active {
+  border-color: var(--gold);
+  background: rgba(201, 163, 82, 0.06);
+}
+.faction-grid-item.locked {
+  opacity: 0.3;
+  cursor: default;
+  pointer-events: none;
+}
+
+.faction-grid-emblem {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.faction-grid-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+}
+.faction-grid-coming {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  margin-top: 4px;
+}
+
+/* Upload .ros option */
+.upload-ros {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+.upload-ros:hover {
+  border-color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.01);
+}
+.upload-ros-icon {
+  font-size: 16px;
+  color: var(--text-dis);
+}
+.upload-ros-text {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ══════════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════════ */
+
+/* Stagger entrance */
+.stagger-in > * {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: stagger-enter 0.5s ease forwards;
+}
+@keyframes stagger-enter {
+  to { opacity: 1; transform: translateY(0); }
+}
+.stagger-in > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-in > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-in > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-in > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-in > *:nth-child(5) { animation-delay: 0.25s; }
+
+/* Unit card stagger (many cards) */
+.unit-strip-half .unit-card {
+  opacity: 0;
+  transform: translateY(6px);
+  animation: card-in 0.3s ease forwards;
+}
+.unit-strip-half.left .unit-card:nth-child(1) { animation-delay: 0.4s; }
+.unit-strip-half.left .unit-card:nth-child(2) { animation-delay: 0.35s; }
+.unit-strip-half.left .unit-card:nth-child(3) { animation-delay: 0.3s; }
+.unit-strip-half.left .unit-card:nth-child(4) { animation-delay: 0.25s; }
+.unit-strip-half.left .unit-card:nth-child(5) { animation-delay: 0.2s; }
+.unit-strip-half.left .unit-card:nth-child(6) { animation-delay: 0.15s; }
+.unit-strip-half.left .unit-card:nth-child(7) { animation-delay: 0.1s; }
+.unit-strip-half.left .unit-card:nth-child(8) { animation-delay: 0.05s; }
+.unit-strip-half.left .unit-card:nth-child(n+9) { animation-delay: 0.0s; }
+
+.unit-strip-half.right .unit-card:nth-child(1) { animation-delay: 0.05s; }
+.unit-strip-half.right .unit-card:nth-child(2) { animation-delay: 0.1s; }
+.unit-strip-half.right .unit-card:nth-child(3) { animation-delay: 0.15s; }
+.unit-strip-half.right .unit-card:nth-child(4) { animation-delay: 0.2s; }
+.unit-strip-half.right .unit-card:nth-child(5) { animation-delay: 0.25s; }
+.unit-strip-half.right .unit-card:nth-child(6) { animation-delay: 0.3s; }
+.unit-strip-half.right .unit-card:nth-child(7) { animation-delay: 0.35s; }
+.unit-strip-half.right .unit-card:nth-child(8) { animation-delay: 0.4s; }
+.unit-strip-half.right .unit-card:nth-child(n+9) { animation-delay: 0.45s; }
+
+@keyframes card-in {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Portrait entrance */
+.portrait {
+  opacity: 0;
+  animation: portrait-in 0.8s ease 0.2s forwards;
+}
+@keyframes portrait-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* ══════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .middle {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .portrait { display: none; }
+  .map-centre { grid-column: 1 / -1; }
+  .unit-card { width: 48px; height: 62px; }
+  .overlay-panel { width: 95vw; }
+}
+
+@media (max-width: 600px) {
+  .top-bar { padding: 48px 16px 8px; }
+  .middle { padding: 8px 16px; }
+  .unit-strip-wrap { padding: 8px 16px 4px; }
+  .bottom-bar { padding: 8px 16px 16px; }
+  .top-faction-name { font-size: 16px; }
+  .bottom-bar-inner { flex-wrap: wrap; gap: 10px; }
+}

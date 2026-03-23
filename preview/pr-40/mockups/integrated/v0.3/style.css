@@ -1,0 +1,283 @@
+/* ══════════════════════════════════════════════════════════════
+   Integrated Prototype v0.2 — Deploy → Move → Shoot
+   Integration-specific styles only.
+   Phase-specific styles imported from phase directories.
+══════════════════════════════════════════════════════════════ */
+
+/* ── App layout: standard 2-column (roster | battlefield) ── */
+#app {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  height: 100vh;
+}
+#roster { grid-column: 1; }
+#battlefield { grid-column: 2; overflow: hidden; }
+#bf-svg-terrain, #bf-svg { overflow: visible; }
+
+/* ── Phase transition animation (pill fade/slide) ── */
+.phase-pill.phase-transition {
+  animation: pill-transition 0.5s ease;
+}
+@keyframes pill-transition {
+  0%   { opacity: 0.4; transform: translateY(-4px); }
+  100% { opacity: 1;   transform: translateY(0); }
+}
+
+/* ── Move center lines: hidden during deploy, visible during move ── */
+.move-center-line { opacity: 0; transition: opacity 0.5s ease; }
+.phase-move .move-center-line { opacity: 1; }
+
+/* ── .phase-move: hide deploy-specific SVGs ── */
+/* Only hide staging zone + deployment zones + NML. Keep DS + Reserves visible. */
+.phase-move .staging-zone-bg,
+.phase-move .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-move .board-edge-separator,
+.phase-move .deploy-zone-bg,
+.phase-move .deploy-zone-border,
+.phase-move .deploy-zone-label,
+.phase-move .deploy-zone-sublabel,
+.phase-move .nml-zone-bg,
+.phase-move .nml-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+/* DS + Reserves zones: keep visible but dim slightly */
+.phase-move .ds-zone-bg,
+.phase-move .reserves-zone-bg {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+
+/* ── Hide zone warning during move phase ── */
+.phase-move .zone-warning { display: none !important; }
+
+/* ── .phase-shoot: same as .phase-move, keeps deployment zones hidden ── */
+.phase-shoot .staging-zone-bg,
+.phase-shoot .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-shoot .board-edge-separator,
+.phase-shoot .deploy-zone-bg,
+.phase-shoot .deploy-zone-border,
+.phase-shoot .deploy-zone-label,
+.phase-shoot .deploy-zone-sublabel,
+.phase-shoot .nml-zone-bg,
+.phase-shoot .nml-label {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+.phase-shoot .ds-zone-bg,
+.phase-shoot .reserves-zone-bg {
+  opacity: 0.3;
+  transition: opacity 0.5s ease;
+}
+.phase-shoot .zone-warning { display: none !important; }
+.phase-shoot .move-center-line { opacity: 1; }
+
+/* ── .phase-charge: same as .phase-shoot ── */
+.phase-charge .staging-zone-bg,
+.phase-charge .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-charge .board-edge-separator,
+.phase-charge .deploy-zone-bg,
+.phase-charge .deploy-zone-border,
+.phase-charge .deploy-zone-label,
+.phase-charge .deploy-zone-sublabel,
+.phase-charge .nml-zone-bg,
+.phase-charge .nml-label {
+  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+}
+.phase-charge .ds-zone-bg,
+.phase-charge .reserves-zone-bg { opacity: 0.3; transition: opacity 0.5s ease; }
+.phase-charge .zone-warning { display: none !important; }
+.phase-charge .move-center-line { opacity: 1; }
+
+/* ── .phase-fight: same as .phase-charge ── */
+.phase-fight .staging-zone-bg,
+.phase-fight .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-fight .board-edge-separator,
+.phase-fight .deploy-zone-bg,
+.phase-fight .deploy-zone-border,
+.phase-fight .deploy-zone-label,
+.phase-fight .deploy-zone-sublabel,
+.phase-fight .nml-zone-bg,
+.phase-fight .nml-label {
+  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+}
+.phase-fight .ds-zone-bg,
+.phase-fight .reserves-zone-bg { opacity: 0.3; transition: opacity 0.5s ease; }
+.phase-fight .zone-warning { display: none !important; }
+.phase-fight .move-center-line { opacity: 1; }
+
+/* ── .phase-game-end: same as .phase-fight ── */
+.phase-game-end .staging-zone-bg,
+.phase-game-end .offboard-zone-label:not(.ds-label):not(.reserves-label),
+.phase-game-end .board-edge-separator,
+.phase-game-end .deploy-zone-bg,
+.phase-game-end .deploy-zone-border,
+.phase-game-end .deploy-zone-label,
+.phase-game-end .deploy-zone-sublabel,
+.phase-game-end .nml-zone-bg,
+.phase-game-end .nml-label {
+  opacity: 0; pointer-events: none; transition: opacity 0.5s ease;
+}
+.phase-game-end .ds-zone-bg,
+.phase-game-end .reserves-zone-bg { opacity: 0.3; transition: opacity 0.5s ease; }
+.phase-game-end .zone-warning { display: none !important; }
+.phase-game-end .move-center-line { opacity: 1; }
+
+/* ── Hide per-unit CONFIRM/CANCEL during deploy (auto-confirm on drop) ── */
+#btn-confirm-unit,
+#btn-cancel-unit {
+  display: none !important;
+}
+
+/* ── Card range toggles: horizontal scroll carousel ── */
+/* #unit-card has overflow-x:hidden (shared CSS), so we must scroll
+   WITHIN the card. .card-ranges gets explicit max-width = card width
+   minus padding, and its own overflow-x:scroll. */
+.card-ranges {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: scroll !important;
+  overflow-y: hidden !important;
+  max-width: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,212,255,0.2) transparent;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+.card-ranges::-webkit-scrollbar { height: 4px; }
+.card-ranges::-webkit-scrollbar-track { background: transparent; }
+.card-ranges::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.25); border-radius: 2px; }
+.card-ranges .range-toggle {
+  flex: 0 0 auto !important;
+  min-width: 72px !important;
+}
+
+/* Weapon range toggle buttons — neutral by default, colored when active */
+.range-toggle.weapon {
+  background: transparent;
+  border: 1px solid var(--text-dis);
+  color: var(--text-muted);
+  font-size: 8px;
+  min-width: 72px !important;
+}
+.range-toggle.weapon:hover {
+  border-color: var(--text-muted);
+  color: var(--text-sec);
+}
+.range-toggle.weapon.active {
+  background: rgba(255,100,60,0.15);
+  border-color: rgba(255,100,60,0.5);
+  color: #ff8855;
+}
+
+/* ── CONFIRM DEPLOYMENT disabled state ── */
+#btn-end:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* ── Debug Panel ── */
+#debug-menu {
+  position: absolute; top: 58px; right: 8px; z-index: 800;
+  font-family: 'Rajdhani', sans-serif; font-size: 11px;
+}
+#debug-toggle {
+  background: rgba(30,35,40,0.85); color: #8af;
+  border: 1px solid rgba(100,140,200,0.3); border-radius: 4px;
+  padding: 3px 10px; cursor: pointer;
+  font-family: inherit; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.5px; transition: all 0.15s ease;
+}
+#debug-toggle:hover { background: rgba(40,50,65,0.9); border-color: rgba(100,140,200,0.5); }
+#debug-toggle.active { background: rgba(40,55,80,0.95); border-color: #8af; color: #bdf; }
+#debug-panel {
+  margin-top: 4px; background: rgba(16,20,26,0.95);
+  border: 1px solid rgba(100,140,200,0.2); border-radius: 6px;
+  padding: 10px 12px; min-width: 180px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+.debug-section { margin-bottom: 8px; }
+.debug-section:last-child { margin-bottom: 0; }
+.debug-section-label {
+  display: block; font-size: 9px; font-weight: 700;
+  letter-spacing: 1.5px; color: rgba(138,170,255,0.5);
+  margin-bottom: 4px;
+}
+.debug-btn {
+  display: block; width: 100%;
+  background: rgba(138,170,255,0.08); color: #8af;
+  border: 1px solid rgba(138,170,255,0.15); border-radius: 4px;
+  padding: 5px 8px; cursor: pointer; text-align: left;
+  font-family: inherit; font-size: 11px; font-weight: 600;
+  transition: all 0.12s ease; margin-bottom: 3px;
+}
+.debug-btn:hover { background: rgba(138,170,255,0.15); border-color: rgba(138,170,255,0.35); }
+.debug-btn:active { background: rgba(138,170,255,0.22); }
+.debug-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.debug-phase-btns { display: flex; gap: 4px; }
+.debug-phase-btns .debug-btn { flex: 1; text-align: center; margin-bottom: 0; }
+.debug-checkbox {
+  display: flex; align-items: center; gap: 6px;
+  color: #aac; cursor: pointer; margin-bottom: 3px;
+  font-size: 11px;
+}
+.debug-checkbox input { accent-color: #8af; cursor: pointer; }
+.debug-state {
+  font-size: 10px; color: rgba(138,170,255,0.6);
+  font-family: monospace; line-height: 1.4;
+  padding: 4px 6px; background: rgba(0,0,0,0.2);
+  border-radius: 3px;
+}
+
+/* ── Debug: ruin footprint overlays ── */
+.debug-ruin-footprint {
+  fill: rgba(255,100,60,0.12);
+  stroke: rgba(255,100,60,0.5);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+/* ── Debug: enhanced LoS lines ── */
+body.debug-los-enhanced .target-line-clear {
+  stroke-width: 2 !important;
+  stroke-opacity: 0.9 !important;
+  stroke: #00d4ff !important;
+}
+body.debug-los-enhanced .target-line-blocked {
+  stroke-width: 2.5 !important;
+  stroke-opacity: 0.95 !important;
+  stroke: #ff3020 !important;
+  stroke-dasharray: 6 4 !important;
+}
+body.debug-los-enhanced .los-origin-dot {
+  fill: #00ff88;
+  stroke: #fff;
+  stroke-width: 1;
+  opacity: 0.95;
+}
+body.debug-los-enhanced .los-origin-dot-blocked {
+  fill: #ff4020;
+  stroke: #fff;
+  stroke-width: 1;
+  opacity: 0.95;
+}
+
+/* ── Debug: model-in-ruin highlight ── */
+.model-base.debug-in-ruin circle,
+.model-base.debug-in-ruin rect {
+  stroke: #ff6040 !important;
+  stroke-width: 2.5 !important;
+  filter: url(#mf-broken) !important;
+}
+
+/* ── Version badge (overrides both deploy-badge and v23-badge) ── */
+.deploy-badge {
+  position: absolute; top: 32px; right: 12px; z-index: 50;
+  font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dis); padding: 3px 8px;
+  border: 1px solid rgba(0,212,255,.06);
+}

@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.4c — Warband</title>
+  <link rel="stylesheet" href="../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../shared/tokens/typography.css">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ ATMOSPHERIC BACKGROUND ═══ -->
+<div id="atmosphere" class="atmosphere neutral">
+  <div class="atmo-gradient"></div>
+  <div class="atmo-vignette"></div>
+  <div class="atmo-grain"></div>
+  <div class="atmo-scanlines"></div>
+  <!-- Ember particles -->
+  <span class="ember" style="--x:12%;--y:80%;--d:6s;--del:0s"></span>
+  <span class="ember" style="--x:28%;--y:90%;--d:7s;--del:1.2s"></span>
+  <span class="ember" style="--x:45%;--y:85%;--d:5s;--del:0.4s"></span>
+  <span class="ember" style="--x:62%;--y:92%;--d:8s;--del:2.1s"></span>
+  <span class="ember" style="--x:78%;--y:88%;--d:6.5s;--del:0.8s"></span>
+  <span class="ember" style="--x:90%;--y:82%;--d:7.5s;--del:1.6s"></span>
+  <span class="ember" style="--x:20%;--y:95%;--d:5.5s;--del:3s"></span>
+  <span class="ember" style="--x:55%;--y:78%;--d:9s;--del:0.2s"></span>
+  <span class="ember" style="--x:35%;--y:93%;--d:6.2s;--del:2.5s"></span>
+  <span class="ember" style="--x:72%;--y:86%;--d:7.8s;--del:1s"></span>
+  <span class="ember" style="--x:8%;--y:91%;--d:5.8s;--del:3.4s"></span>
+  <span class="ember" style="--x:85%;--y:76%;--d:8.5s;--del:0.6s"></span>
+</div>
+
+<!-- ═══ TOP BAR ═══ -->
+<header class="top-bar anim-title">
+  <a class="nav-link nav-back" href="../../start-game/index.html">← Back</a>
+  <div class="top-centre">
+    <div class="top-title">BATTLE FORGE</div>
+    <div class="top-subtitle">SELECT YOUR WARBAND</div>
+  </div>
+  <a class="nav-link nav-mockups" href="../../index.html#battle-forge">← Mockups</a>
+</header>
+<div class="version-badge">v0.4c · Warband</div>
+
+<!-- ═══ CARD SLOTS ═══ -->
+<div class="card-slots anim-slots">
+  <div class="slot slot-p1" id="slotP1">
+    <div class="slot-label">YOUR FORCES</div>
+    <div class="slot-card slot-empty" id="slotP1Card" onclick="clearSlot('p1')">
+      <span class="slot-plus">+</span>
+    </div>
+  </div>
+  <div class="slot-vs" id="slotVs">VS</div>
+  <div class="slot slot-p2" id="slotP2">
+    <div class="slot-label">ENEMY FORCES</div>
+    <div class="slot-card slot-empty" id="slotP2Card" onclick="clearSlot('p2')">
+      <span class="slot-plus">+</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN CARD AREA ═══ -->
+<div class="card-stage anim-card">
+  <button class="card-arrow arrow-left" id="arrowLeft" onclick="navigate(-1)">‹</button>
+  <div class="card-viewport">
+    <div class="faction-card" id="factionCard">
+      <div class="card-emblem" id="cardEmblem">⚜</div>
+      <div class="card-name" id="cardName">Adeptus Custodes</div>
+      <div class="card-info" id="cardInfo">2000 PTS · SHIELD HOST</div>
+      <div class="card-lore" id="cardLore">The Emperor's golden guardians. Ten thousand warriors, each worth a hundred lesser men.</div>
+      <div class="card-army-count" id="cardArmyCount">1 army available</div>
+      <button class="card-select-btn" id="cardSelectBtn" onclick="selectFaction()">SELECT</button>
+      <div class="card-locked-overlay" id="cardLocked" style="display:none">
+        <span class="locked-icon">🔒</span>
+        <span class="locked-text">COMING SOON</span>
+      </div>
+    </div>
+  </div>
+  <button class="card-arrow arrow-right" id="arrowRight" onclick="navigate(1)">›</button>
+</div>
+
+<!-- Dot indicators -->
+<div class="card-dots anim-card" id="cardDots"></div>
+
+<!-- ═══ ROSTER AREA ═══ -->
+<div class="roster-area" id="rosterArea">
+  <div class="roster-title" id="rosterTitle">ARMY ROSTER</div>
+  <div class="roster-grid" id="rosterGrid"></div>
+</div>
+
+<!-- ═══ BOTTOM BAR ═══ -->
+<div class="bottom-bar anim-bottom">
+  <div class="bottom-row">
+    <div class="bottom-left">
+      <div class="chip chip-active">
+        <span class="chip-label">MAP</span>
+        <span class="chip-value">Battlefield Alpha · 60×44"</span>
+      </div>
+      <div class="chip chip-active">
+        <span class="chip-label">LAYOUT</span>
+        <span class="chip-value">Hammer &amp; Anvil</span>
+        <span class="chip-diagram">◧</span>
+      </div>
+    </div>
+    <div class="bottom-centre">
+      <div class="chip chip-active">
+        <span class="chip-label">MISSION</span>
+        <span class="chip-value">Take and Hold</span>
+      </div>
+      <div class="chip chip-disabled">
+        <span class="chip-label">TURNS</span>
+        <span class="chip-value">5</span>
+      </div>
+      <div class="chip chip-disabled">
+        <span class="chip-label">FIRST TURN</span>
+        <span class="chip-value">Roll-off</span>
+      </div>
+      <div class="chip chip-disabled">
+        <span class="chip-label">SIZE</span>
+        <span class="chip-value">Strike Force</span>
+      </div>
+    </div>
+    <div class="bottom-right">
+      <div class="mode-toggle">
+        <button class="mode-btn mode-active">Single Player</button>
+        <button class="mode-btn mode-locked">Multiplayer</button>
+      </div>
+    </div>
+  </div>
+  <a class="begin-btn disabled" id="beginBtn" href="../../phases/deploy/v0.4/index.html">
+    <span>⚔</span> BEGIN BATTLE
+  </a>
+</div>
+
+<script>
+/* ═══ FACTION DATA ═══ */
+const FACTIONS = [
+  {
+    id:'custodes', name:'Adeptus Custodes', emblem:'⚜', available:true, color:'imp',
+    info:'2000 PTS · SHIELD HOST', armyCount:'1 army available',
+    lore:"The Emperor's golden guardians. Ten thousand warriors, each worth a hundred lesser men.",
+    roster:[
+      {name:'Blade Champion',pts:120,models:1,qty:2},{name:'Custodian Guard',pts:190,models:5,qty:4},
+      {name:'Allarus Custodians',pts:165,models:3,qty:1},{name:'Allarus Custodians',pts:110,models:2,qty:1},
+      {name:'Prosecutors',pts:85,models:5,qty:2},{name:'Caladius Grav-tank',pts:215,models:1,qty:2},
+      {name:'Inquisitor Draxus',pts:95,models:1,qty:1}
+    ],
+    totalPts:'1985/2000pts', totalUnits:'13 units', totalModels:'45 models'
+  },
+  {
+    id:'orks', name:'Orks', emblem:'☠', available:true, color:'ork',
+    info:'2000 PTS · WAAAGH! TRIBE', armyCount:'1 army available',
+    lore:"Da biggest, da greenest, da best. Waaagh!",
+    roster:[
+      {name:'Warboss',pts:90,models:1,qty:1},{name:'Boss Nob',pts:95,models:1,qty:1},
+      {name:'Boyz Mob',pts:150,models:10,qty:2},{name:'Mekboy',pts:75,models:1,qty:1},
+      {name:'Nobz Mob',pts:115,models:5,qty:2},{name:'Gretchin',pts:50,models:10,qty:2},
+      {name:'Deff Dread',pts:150,models:1,qty:1},{name:'Battlewagon',pts:185,models:1,qty:1},
+      {name:'Lootas',pts:100,models:5,qty:1},{name:'Stormboyz',pts:80,models:5,qty:1},
+      {name:'Weirdboy',pts:70,models:1,qty:1},{name:'Meganobz',pts:200,models:3,qty:1},
+      {name:'Trukk',pts:65,models:1,qty:1}
+    ],
+    totalPts:'1960/2000pts', totalUnits:'16 units', totalModels:'75 models'
+  },
+  {
+    id:'marines', name:'Space Marines', emblem:'⚔', available:false, color:'imp',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"The Angels of Death. Humanity's greatest warriors.", roster:[]
+  },
+  {
+    id:'chaos', name:'Chaos Marines', emblem:'★', available:false, color:'ork',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"Fallen angels. Traitors to the Imperium, servants of the Dark Gods.", roster:[]
+  },
+  {
+    id:'aeldari', name:'Aeldari', emblem:'◇', available:false, color:'imp',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"Ancient beyond measure. Masters of the psychic arts.", roster:[]
+  },
+  {
+    id:'tyranids', name:'Tyranids', emblem:'◈', available:false, color:'ork',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"The Great Devourer. An extragalactic swarm consuming all.", roster:[]
+  },
+  {
+    id:'necrons', name:'Necrons', emblem:'⬡', available:false, color:'imp',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"Deathless machines. An ancient dynasty awakened.", roster:[]
+  },
+  {
+    id:'tau', name:"T'au Empire", emblem:'⬢', available:false, color:'imp',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"For the Greater Good. Young, ambitious, technologically advanced.", roster:[]
+  },
+  {
+    id:'deathguard', name:'Death Guard', emblem:'☣', available:false, color:'ork',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"Grandfather Nurgle's chosen. Plague and pestilence incarnate.", roster:[]
+  },
+  {
+    id:'thousandsons', name:'Thousand Sons', emblem:'✦', available:false, color:'imp',
+    info:'LOCKED — COMING SOON', armyCount:'',
+    lore:"Sorcerers of Tzeentch. All is dust.", roster:[]
+  },
+  {
+    id:'upload', name:'Upload Custom', emblem:'📋', available:false, color:'neutral',
+    info:'DISABLED — COMING SOON', armyCount:'',
+    lore:"Upload your own army list (.ros / BattleScribe)", roster:[]
+  }
+];
+
+/* ═══ STATE ═══ */
+let currentIndex = 0;
+let p1 = null;  // faction index
+let p2 = null;  // faction index
+let slideDir = 1; // 1=right, -1=left
+
+const atmo = document.getElementById('atmosphere');
+const card = document.getElementById('factionCard');
+const cardEmblem = document.getElementById('cardEmblem');
+const cardName = document.getElementById('cardName');
+const cardInfo = document.getElementById('cardInfo');
+const cardLore = document.getElementById('cardLore');
+const cardArmyCount = document.getElementById('cardArmyCount');
+const cardSelectBtn = document.getElementById('cardSelectBtn');
+const cardLocked = document.getElementById('cardLocked');
+const dotsContainer = document.getElementById('cardDots');
+const rosterArea = document.getElementById('rosterArea');
+const rosterTitle = document.getElementById('rosterTitle');
+const rosterGrid = document.getElementById('rosterGrid');
+const slotP1Card = document.getElementById('slotP1Card');
+const slotP2Card = document.getElementById('slotP2Card');
+const slotVs = document.getElementById('slotVs');
+const beginBtn = document.getElementById('beginBtn');
+
+/* ═══ INIT ═══ */
+function init() {
+  // Build dots
+  FACTIONS.forEach((_, i) => {
+    const dot = document.createElement('span');
+    dot.className = 'dot' + (i === 0 ? ' dot-active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  });
+  renderCard(0, false);
+  updateSlots();
+  updateBeginBtn();
+}
+
+/* ═══ RENDER CARD ═══ */
+function renderCard(index, animate = true) {
+  const f = FACTIONS[index];
+
+  if (animate) {
+    card.classList.add(slideDir > 0 ? 'slide-out-left' : 'slide-out-right');
+    setTimeout(() => {
+      applyCardData(f);
+      card.classList.remove('slide-out-left', 'slide-out-right');
+      card.classList.add(slideDir > 0 ? 'slide-in-right' : 'slide-in-left');
+      setTimeout(() => card.classList.remove('slide-in-right', 'slide-in-left'), 300);
+    }, 280);
+  } else {
+    applyCardData(f);
+  }
+
+  // Update atmosphere
+  atmo.className = 'atmosphere';
+  if (f.color === 'imp') atmo.classList.add('imp');
+  else if (f.color === 'ork') atmo.classList.add('ork');
+  else atmo.classList.add('neutral');
+
+  // Update dots
+  dotsContainer.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('dot-active', i === index);
+  });
+}
+
+function applyCardData(f) {
+  cardEmblem.textContent = f.emblem;
+  cardName.textContent = f.name;
+  cardInfo.textContent = f.info;
+  cardLore.textContent = f.lore;
+  cardArmyCount.textContent = f.armyCount;
+
+  // Emblem glow color
+  const isOrk = f.color === 'ork';
+  cardEmblem.style.textShadow = f.available
+    ? `0 0 40px ${isOrk?'rgba(255,64,32,0.6)':'rgba(0,212,255,0.6)'}, 0 0 80px ${isOrk?'rgba(255,64,32,0.3)':'rgba(0,212,255,0.3)'}`
+    : '0 0 20px rgba(74,96,128,0.3)';
+
+  // Card border color
+  card.className = 'faction-card';
+  if (f.available) card.classList.add(isOrk ? 'card-ork' : 'card-imp');
+  else card.classList.add('card-locked');
+
+  // Show/hide select vs locked
+  if (f.available) {
+    cardSelectBtn.style.display = '';
+    cardLocked.style.display = 'none';
+    cardArmyCount.style.display = '';
+    // Disable select if already selected as p1 or p2
+    const alreadySelected = (p1 === currentIndex || p2 === currentIndex);
+    if (alreadySelected) {
+      cardSelectBtn.textContent = 'SELECTED';
+      cardSelectBtn.classList.add('selected');
+    } else {
+      cardSelectBtn.textContent = 'SELECT';
+      cardSelectBtn.classList.remove('selected');
+    }
+  } else {
+    cardSelectBtn.style.display = 'none';
+    cardLocked.style.display = '';
+    cardArmyCount.style.display = 'none';
+  }
+
+  // Roster
+  if (f.available && f.roster.length) {
+    rosterArea.classList.add('visible');
+    rosterTitle.textContent = f.totalPts + ' · ' + f.totalUnits + ' · ' + f.totalModels;
+    rosterGrid.innerHTML = f.roster.map(u =>
+      `<div class="roster-unit">
+        <span class="ru-name">${u.qty > 1 ? u.name+' ×'+u.qty : u.name}</span>
+        <span class="ru-pts">${u.pts}pts · ${u.models}${u.models>1?' models':' model'}</span>
+      </div>`
+    ).join('');
+  } else {
+    rosterArea.classList.remove('visible');
+    rosterGrid.innerHTML = '';
+  }
+}
+
+/* ═══ NAVIGATION ═══ */
+function navigate(dir) {
+  slideDir = dir;
+  currentIndex = (currentIndex + dir + FACTIONS.length) % FACTIONS.length;
+  renderCard(currentIndex);
+}
+
+function goTo(index) {
+  if (index === currentIndex) return;
+  slideDir = index > currentIndex ? 1 : -1;
+  currentIndex = index;
+  renderCard(currentIndex);
+}
+
+/* Keyboard nav */
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft') navigate(-1);
+  else if (e.key === 'ArrowRight') navigate(1);
+  else if (e.key === 'Enter' && FACTIONS[currentIndex].available) selectFaction();
+});
+
+/* ═══ SELECTION ═══ */
+function selectFaction() {
+  const f = FACTIONS[currentIndex];
+  if (!f.available) return;
+  if (p1 === currentIndex || p2 === currentIndex) return; // already selected
+
+  // Selection flash
+  card.classList.add('card-select-flash');
+  setTimeout(() => card.classList.remove('card-select-flash'), 500);
+
+  if (p1 === null) {
+    p1 = currentIndex;
+    // Auto-advance to next available
+    for (let i = 0; i < FACTIONS.length; i++) {
+      const ni = (currentIndex + 1 + i) % FACTIONS.length;
+      if (FACTIONS[ni].available && ni !== p1) {
+        setTimeout(() => { slideDir = 1; currentIndex = ni; renderCard(currentIndex); }, 400);
+        break;
+      }
+    }
+  } else if (p2 === null) {
+    p2 = currentIndex;
+  }
+
+  updateSlots();
+  updateBeginBtn();
+  // Re-render current card to show SELECTED state
+  setTimeout(() => renderCard(currentIndex, false), 420);
+}
+
+function clearSlot(which) {
+  if (which === 'p1' && p1 !== null) {
+    p1 = null;
+    // If p2 was set, move it to p1
+    if (p2 !== null) { p1 = p2; p2 = null; }
+  } else if (which === 'p2' && p2 !== null) {
+    p2 = null;
+  }
+  updateSlots();
+  updateBeginBtn();
+  renderCard(currentIndex, false);
+}
+
+function updateSlots() {
+  if (p1 !== null) {
+    const f = FACTIONS[p1];
+    slotP1Card.className = 'slot-card slot-filled ' + (f.color === 'ork' ? 'slot-ork' : 'slot-imp');
+    slotP1Card.innerHTML = `<span class="slot-emblem">${f.emblem}</span><span class="slot-name">${f.name}</span><span class="slot-pts">${f.totalPts||''}</span>`;
+  } else {
+    slotP1Card.className = 'slot-card slot-empty';
+    slotP1Card.innerHTML = '<span class="slot-plus">+</span>';
+  }
+
+  if (p2 !== null) {
+    const f = FACTIONS[p2];
+    slotP2Card.className = 'slot-card slot-filled ' + (f.color === 'ork' ? 'slot-ork' : 'slot-imp');
+    slotP2Card.innerHTML = `<span class="slot-emblem">${f.emblem}</span><span class="slot-name">${f.name}</span><span class="slot-pts">${f.totalPts||''}</span>`;
+  } else {
+    slotP2Card.className = 'slot-card slot-empty';
+    slotP2Card.innerHTML = '<span class="slot-plus">+</span>';
+  }
+
+  slotVs.classList.toggle('vs-visible', p1 !== null && p2 !== null);
+}
+
+function updateBeginBtn() {
+  if (p1 !== null && p2 !== null) {
+    beginBtn.classList.remove('disabled');
+  } else {
+    beginBtn.classList.add('disabled');
+  }
+}
+
+/* ═══ ERROR OVERLAY ═══ */
+window.onerror = function(msg, src, line) {
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:12px 16px;background:#ff2020;color:#fff;font:600 13px/1.4 Rajdhani,sans-serif;z-index:99999';
+  d.textContent = '⚠ JS Error: ' + msg + ' (line ' + line + ')';
+  document.body.appendChild(d);
+};
+
+init();
+</script>
+
+</body>
+</html>

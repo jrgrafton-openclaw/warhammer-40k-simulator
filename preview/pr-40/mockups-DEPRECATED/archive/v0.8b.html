@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.8b · FIELD INTEL</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@700;900&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       v0.8b — FIELD INTEL
+       Bold departure: contextual card near token, minimal chrome,
+       information density. Stark white text, Orbitron VP numbers.
+       Palette: #060504 bg, #c9a352 gold chrome, #8b1a1a enemy,
+                #00ccaa teal (selected only), #ffffff primary text, #4a3f2f muted
+       ============================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #060504; color: #ffffff; font-family: 'Rajdhani', sans-serif; }
+
+    #app {
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      grid-template-rows: 1fr 52px;
+      width: 100vw; height: 100vh;
+      transition: grid-template-columns 0.3s ease;
+    }
+    #app.rail-collapsed { grid-template-columns: 44px 1fr; }
+
+    /* ── VP BAR — large Orbitron numbers ─────────────────── */
+    #vp-bar {
+      position: fixed; top: 0; left: 230px; right: 0; height: 34px;
+      background: rgba(6,5,4,0.97);
+      border-bottom: 1px solid rgba(201,163,82,0.1);
+      display: flex; align-items: center; justify-content: center;
+      gap: 24px; z-index: 50; backdrop-filter: blur(8px);
+      transition: left 0.3s;
+    }
+    #app.rail-collapsed #vp-bar { left: 44px; }
+    .vp-faction { display: flex; align-items: center; gap: 10px; }
+    .vp-label { font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; }
+    .vp-label.imp { color: #c9a352; }
+    .vp-label.ork { color: #8b1a1a; }
+    .vp-score { font: 900 22px/1 'Orbitron', sans-serif; }
+    .vp-score.imp { color: #c9a352; }
+    .vp-score.ork { color: #8b1a1a; }
+    .vp-vs { font: 700 10px/1 'Orbitron', sans-serif; color: #4a3f2f; letter-spacing: 3px; }
+    .vp-round { font: 600 9px/1 'Share Tech Mono', monospace; color: #4a3f2f; position: absolute; right: 12px; }
+    .vp-cp { position: absolute; left: 12px; display: flex; align-items: center; gap: 5px; font: 600 9px/1 'Rajdhani', sans-serif; color: #4a3f2f; letter-spacing: 2px; }
+    .vp-cp span { font: 700 16px/1 'Orbitron', sans-serif; color: #c9a352; }
+
+    /* ── LEFT RAIL — denser rows ─────────────────────────── */
+    #sidebar-left {
+      grid-column: 1; grid-row: 1 / 3;
+      background: #060504;
+      border-right: 1px solid rgba(201,163,82,0.07);
+      display: flex; flex-direction: column;
+      overflow: hidden; z-index: 40;
+    }
+    .rail-header {
+      height: 34px; padding: 0 10px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(201,163,82,0.06);
+      margin-top: 34px; flex-shrink: 0;
+    }
+    .rail-title { font: 700 8px/1 'Orbitron', sans-serif; letter-spacing: 2px; color: rgba(201,163,82,0.25); text-transform: uppercase; }
+    #app.rail-collapsed .rail-title { display: none; }
+    .rail-collapse-btn { background: none; border: none; cursor: pointer; color: rgba(201,163,82,0.3); font-size: 12px; padding: 2px 4px; transition: color 0.15s; }
+    .rail-collapse-btn:hover { color: #c9a352; }
+    #app.rail-collapsed .rail-collapse-btn { margin: 0 auto; }
+
+    .rail-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .rail-scroll::-webkit-scrollbar { width: 2px; }
+    .rail-scroll::-webkit-scrollbar-thumb { background: rgba(201,163,82,0.08); }
+
+    /* Faction sections */
+    .faction-section { margin-bottom: 2px; }
+    .faction-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 10px 4px; cursor: pointer;
+      font: 700 7px/1 'Orbitron', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+      user-select: none; border-bottom: 1px solid rgba(201,163,82,0.05);
+    }
+    .faction-header.imp { color: #c9a352; }
+    .faction-header.ork { color: #8b1a1a; }
+    .faction-header:hover { background: rgba(201,163,82,0.03); }
+    .faction-icon { font-size: 12px; }
+    .faction-label { flex: 1; }
+    .faction-chevron { font-size: 8px; color: #4a3f2f; transition: transform 0.25s; }
+    .faction-body { overflow: hidden; max-height: 500px; transition: max-height 0.3s ease; }
+    .faction-body.collapsed { max-height: 0; }
+    #app.rail-collapsed .faction-header { padding: 5px 0; justify-content: center; }
+    #app.rail-collapsed .faction-label, #app.rail-collapsed .faction-chevron { display: none; }
+
+    /* Dense unit rows — 36px, no faction band, icon only for faction */
+    .rail-unit {
+      display: flex; align-items: center; gap: 8px;
+      height: 36px; padding: 0 10px; cursor: pointer;
+      transition: background 0.1s; border-left: 2px solid transparent;
+    }
+    .rail-unit:hover { background: rgba(255,255,255,0.03); }
+    .rail-unit.active { background: rgba(0,204,170,0.06); border-left-color: #00ccaa; }
+    .rail-icon { font-size: 14px; flex-shrink: 0; width: 18px; text-align: center; position: relative; }
+    .rail-icon.imp { color: rgba(201,163,82,0.6); }
+    .rail-icon.ork { color: rgba(139,26,26,0.7); }
+    .rail-count-badge {
+      position: absolute; top: -4px; right: -6px;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: rgba(201,163,82,0.15); color: rgba(201,163,82,0.8);
+      font: 700 7px/14px 'Share Tech Mono', monospace; text-align: center;
+    }
+    .rail-unit-name { flex: 1; font: 600 11px/1 'Rajdhani', sans-serif; color: rgba(255,255,255,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rail-unit.active .rail-unit-name { color: #00ccaa; }
+    .shocked-badge { font: 700 6px/1 'Rajdhani', sans-serif; letter-spacing: 1px; padding: 2px 4px; background: rgba(255,170,0,0.1); color: #ffaa00; border: 1px solid rgba(255,170,0,0.2); border-radius: 1px; text-transform: uppercase; flex-shrink: 0; }
+    #app.rail-collapsed .rail-unit { padding: 0; justify-content: center; }
+    #app.rail-collapsed .rail-unit-name, #app.rail-collapsed .shocked-badge { display: none; }
+
+    /* Army abilities sub-section */
+    .army-abilities-section { font-size: 0; }
+    .army-abilities-header {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 10px; cursor: pointer;
+      font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 2px;
+      text-transform: uppercase; color: #4a3f2f;
+      background: rgba(201,163,82,0.03);
+      border-top: 1px solid rgba(201,163,82,0.05);
+      user-select: none; transition: color 0.15s;
+      font-size: 7px;
+    }
+    .army-abilities-header:hover { color: #8a7a6a; }
+    .aa-chevron { margin-left: auto; font-size: 7px; transition: transform 0.25s; }
+    .army-abilities-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .army-abilities-body.open { max-height: 200px; }
+    .army-ability-row { padding: 4px 10px 4px 14px; border-bottom: 1px solid rgba(201,163,82,0.03); }
+    .aa-name { font: 700 8px/1 'Rajdhani', sans-serif; color: rgba(201,163,82,0.7); letter-spacing: 1px; text-transform: uppercase; }
+    .aa-desc { font: 400 9px/1.4 'Rajdhani', sans-serif; color: #4a3f2f; margin-top: 2px; }
+    #app.rail-collapsed .army-abilities-section { display: none; }
+
+    /* ── BATTLEFIELD ──────────────────────────────────────── */
+    #battlefield {
+      grid-column: 2; grid-row: 1 / 3;
+      position: relative; overflow: hidden; cursor: default;
+      background-color: #060504;
+      background-image:
+        radial-gradient(ellipse 95% 90% at 50% 50%, transparent 50%, rgba(0,0,0,0.85) 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(201,163,82,0.06) 49px, rgba(201,163,82,0.06) 50px),
+        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(201,163,82,0.06) 49px, rgba(201,163,82,0.06) 50px);
+      margin-top: 34px;
+    }
+
+    /* Phase pill — wider, shows full sequence */
+    #phase-header {
+      position: absolute; top: 0; left: 0; right: 0; height: 54px;
+      display: flex; align-items: flex-start; justify-content: center; z-index: 10; pointer-events: none;
+    }
+    .phase-pill {
+      margin-top: 8px;
+      background: rgba(6,5,4,0.92);
+      border: 1px solid rgba(201,163,82,0.2);
+      border-radius: 4px;
+      padding: 7px 18px;
+      display: flex; align-items: center; gap: 8px;
+      pointer-events: auto;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.8);
+      backdrop-filter: blur(6px);
+    }
+    .phase-step {
+      display: flex; align-items: center; gap: 5px;
+      font: 700 8px/1 'Orbitron', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+    }
+    .phase-step.done { color: #4a3f2f; }
+    .phase-step.done .pstep-indicator { color: #c9a352; }
+    .phase-step.active { color: #ffffff; }
+    .phase-step.active .pstep-indicator { color: #00ccaa; }
+    .phase-step.upcoming { color: #2a2018; }
+    .phase-step.upcoming .pstep-indicator { color: #2a2018; }
+    .pstep-indicator { font-size: 10px; }
+    .phase-sep { color: #2a2018; font-size: 10px; margin: 0 2px; }
+
+    #bf-controls {
+      position: absolute; top: 8px; right: 8px;
+      display: flex; align-items: center; gap: 6px; z-index: 11;
+    }
+    #zoom-indicator { font: 400 10px/1 'Share Tech Mono', monospace; color: rgba(201,163,82,0.2); }
+    .bf-ctrl-btn {
+      font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+      background: rgba(6,5,4,0.7); border: 1px solid rgba(201,163,82,0.08); color: rgba(201,163,82,0.2);
+      padding: 3px 7px; cursor: pointer; transition: all 0.15s; border-radius: 2px;
+    }
+    .bf-ctrl-btn:hover { border-color: rgba(201,163,82,0.4); color: #c9a352; }
+
+    #battlefield-inner { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform-origin: center; cursor: grab; }
+    #battlefield-inner.dragging { cursor: grabbing; }
+    #bf-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+    /* OBJECTIVE MARKERS */
+    .obj-hex-wrap { position: absolute; transform: translate(-50%, -50%); width: 84px; height: 97px; z-index: 4; }
+    .obj-hex-outer { position: absolute; inset: 0; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; align-items: center; justify-content: center; }
+    .obj-hex-outer.neutral { background: rgba(74,63,47,0.35); }
+    .obj-hex-outer.controlled { background: rgba(201,163,82,0.4); filter: drop-shadow(0 0 14px rgba(201,163,82,0.45)); }
+    .obj-hex-outer.contested { background: rgba(139,26,26,0.45); animation: hex-contested 1.2s ease-in-out infinite; }
+    @keyframes hex-contested { 0%,100%{filter:drop-shadow(0 0 8px rgba(139,26,26,0.4))} 50%{filter:drop-shadow(0 0 22px rgba(139,26,26,0.9))} }
+    .obj-hex-inner { width: 76px; height: 88px; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); background: rgba(6,5,4,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .obj-control-ring { position: absolute; width: 160px; height: 160px; border-radius: 50%; border: 1px solid rgba(201,163,82,0.12); top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+    .obj-number { font: 700 20px/1 'Orbitron', sans-serif; color: #fff; }
+    .obj-label-text { font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(255,255,255,0.35); text-transform: uppercase; margin-top: 2px; }
+
+    /* TOKENS — shimmer on selection */
+    .token {
+      position: absolute; transform: translate(-50%, -50%);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 3;
+      transition: box-shadow 0.15s, border-color 0.15s; user-select: none;
+      flex-direction: column; gap: 1px;
+    }
+    .token-label {
+      position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      margin-top: 4px; font: 600 8px/1 'Rajdhani', sans-serif; color: rgba(201,163,82,0.3);
+      white-space: nowrap; pointer-events: none;
+    }
+    .token-size-s { width: 46px; height: 46px; }
+    .token-size-m { width: 58px; height: 58px; }
+    .token-size-l { width: 74px; height: 74px; }
+    .token-vehicle { width: 80px; height: 70px; border-radius: 12px; }
+    .token-class-icon { font-size: 16px; line-height: 1; }
+    .token-count { font: 700 8px/1 'Share Tech Mono', monospace; color: rgba(255,255,255,0.35); }
+    .token-imp { border: 2px solid rgba(201,163,82,0.3); background: radial-gradient(circle, rgba(18,14,8,0.95) 0%, rgba(6,5,4,0.95) 100%); box-shadow: 0 0 8px rgba(201,163,82,0.1); }
+    .token-imp:hover { box-shadow: 0 0 16px rgba(201,163,82,0.3); }
+    .token-imp.selected { border-color: #00ccaa; box-shadow: 0 0 20px rgba(0,204,170,0.6), 0 0 6px rgba(0,204,170,0.3); animation: shimmer-sel 0.4s ease-out; }
+    .token-ork { border: 2px solid rgba(139,26,26,0.45); background: radial-gradient(circle, rgba(22,6,6,0.95) 0%, rgba(6,5,4,0.95) 100%); box-shadow: 0 0 8px rgba(139,26,26,0.2); }
+    .token-ork:hover { box-shadow: 0 0 16px rgba(139,26,26,0.4); }
+    .token-ork.selected { border-color: #00ccaa; box-shadow: 0 0 20px rgba(0,204,170,0.6); animation: shimmer-sel 0.4s ease-out; }
+    @keyframes shimmer-sel { 0%{box-shadow:0 0 40px rgba(0,204,170,0.9)} 100%{box-shadow:0 0 20px rgba(0,204,170,0.6)} }
+    .token-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 3px; background: rgba(201,163,82,0.15); color: rgba(201,163,82,0.8); font: 700 8px/18px 'Share Tech Mono', monospace; text-align: center; z-index: 4; border: 1px solid rgba(201,163,82,0.2); }
+    .token-ork .token-badge { background: rgba(139,26,26,0.2); color: rgba(139,26,26,0.9); border-color: rgba(139,26,26,0.3); }
+
+    /* POPOVER CARD — anchored above selected token */
+    .token-popover {
+      position: absolute;
+      width: 280px;
+      background: rgba(6,5,4,0.97);
+      border: 1px solid rgba(201,163,82,0.2);
+      border-radius: 3px;
+      z-index: 40;
+      display: none;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.9);
+    }
+    .token-popover.visible { display: block; }
+    .popover-arrow {
+      position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+      width: 12px; height: 7px; overflow: hidden;
+    }
+    .popover-arrow::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 12px; height: 12px;
+      background: rgba(6,5,4,0.97);
+      border: 1px solid rgba(201,163,82,0.2);
+      transform: translateX(-50%) rotate(45deg);
+      transform-origin: top left;
+    }
+    .popover-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid rgba(201,163,82,0.1); }
+    .popover-unit-name { font: 700 14px/1.1 'Rajdhani', sans-serif; color: #ffffff; letter-spacing: 1px; text-transform: uppercase; flex: 1; }
+    .popover-faction { font: 600 8px/1 'Rajdhani', sans-serif; color: rgba(201,163,82,0.5); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+    .popover-close { color: rgba(255,255,255,0.2); cursor: pointer; font-size: 14px; line-height: 1; margin-left: 8px; transition: color 0.15s; }
+    .popover-close:hover { color: #fff; }
+
+    /* Stats — compact */
+    .popover-stats { display: flex; border-bottom: 1px solid rgba(201,163,82,0.06); }
+    .popover-stat { flex: 1; text-align: center; padding: 5px 2px; }
+    .popover-stat-key { font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 1px; color: rgba(201,163,82,0.4); text-transform: uppercase; }
+    .popover-stat-val { font: 700 14px/1 'Share Tech Mono', monospace; color: #ffffff; margin-top: 2px; }
+    .popover-stat.hl .popover-stat-key { color: #00ccaa; }
+    .popover-stat.hl .popover-stat-val { color: #00ccaa; }
+
+    /* Weapons — name left, inline stats right */
+    .popover-weapons { padding: 7px 12px; border-bottom: 1px solid rgba(201,163,82,0.06); }
+    .popover-weapon-row { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .popover-weapon-row:last-child { border-bottom: none; }
+    .pw-name { font: 700 11px/1.2 'Rajdhani', sans-serif; color: #ffffff; flex: 1; }
+    .pw-stats { font: 400 10px/1 'Share Tech Mono', monospace; color: rgba(201,163,82,0.5); white-space: nowrap; font-size: 9px; }
+    .pw-kws { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+
+    /* Keyword pills — larger, more colourful */
+    .kw-pill {
+      display: inline-block; font: 700 8px/1 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+      padding: 2px 6px; border-radius: 3px; cursor: help; position: relative;
+      text-transform: uppercase; transition: filter 0.15s;
+    }
+    .kw-pill:hover { filter: brightness(1.3); }
+    .kw-pill.assault  { background: rgba(0,204,170,0.18); color: #00ccaa; border: 1px solid rgba(0,204,170,0.4); }
+    .kw-pill.melee    { background: rgba(204,51,51,0.18); color: #ee4444; border: 1px solid rgba(204,51,51,0.4); }
+    .kw-pill.pistol   { background: rgba(201,163,82,0.18); color: #d4af5a; border: 1px solid rgba(201,163,82,0.4); }
+    .kw-pill.hazardous{ background: rgba(255,104,32,0.18); color: #ff7830; border: 1px solid rgba(255,104,32,0.4); }
+    .kw-pill.heavy    { background: rgba(102,136,204,0.18); color: #7799dd; border: 1px solid rgba(102,136,204,0.4); }
+    .kw-pill.rapid    { background: rgba(68,170,102,0.18); color: #55bb77; border: 1px solid rgba(68,170,102,0.4); }
+    .kw-pill.blast    { background: rgba(204,170,0,0.18); color: #ddbb00; border: 1px solid rgba(204,170,0,0.4); }
+    .kw-pill.melta    { background: rgba(255,64,16,0.18); color: #ff5020; border: 1px solid rgba(255,64,16,0.4); }
+    .kw-pill.other    { background: rgba(74,63,47,0.2); color: #6a5a4a; border: 1px solid #2a2018; }
+    .kw-tooltip {
+      visibility: hidden; opacity: 0;
+      position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%);
+      background: #080604; border: 1px solid rgba(201,163,82,0.2); color: #8a7a6a;
+      font: 400 10px/1.5 'Rajdhani', sans-serif;
+      padding: 6px 10px; white-space: normal; z-index: 999;
+      pointer-events: none; transition: opacity 0.15s;
+      min-width: 180px; max-width: 240px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.9); border-radius: 2px;
+    }
+    .kw-pill:hover .kw-tooltip { visibility: visible; opacity: 1; }
+
+    /* Wargear & Abilities in popover */
+    .popover-wargear { padding: 5px 12px; border-bottom: 1px solid rgba(201,163,82,0.06); }
+    .popover-section-title { font: 700 7px/1 'Orbitron', sans-serif; letter-spacing: 2px; color: rgba(201,163,82,0.35); text-transform: uppercase; margin-bottom: 5px; }
+    .wg-toggle { display: flex; align-items: center; gap: 6px; padding: 3px 0; cursor: pointer; font: 600 10px/1 'Rajdhani', sans-serif; color: #4a3f2f; transition: color 0.15s; }
+    .wg-toggle:hover { color: #8a7a6a; }
+    .wg-toggle.checked { color: #c9a352; }
+    .wg-check { font-size: 11px; flex-shrink: 0; }
+
+    .popover-abilities { padding: 5px 12px; }
+    .ability-collapse-toggle {
+      display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; padding: 2px 0;
+      font: 700 7px/1 'Orbitron', sans-serif; letter-spacing: 2px; color: rgba(201,163,82,0.35); text-transform: uppercase;
+    }
+    .ability-collapse-toggle:hover { color: #c9a352; }
+    .ability-chevron { font-size: 8px; transition: transform 0.2s; }
+    .abilities-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .abilities-body.open { max-height: 300px; }
+    .ability-row-b { margin-top: 5px; }
+    .ability-pill-b {
+      display: inline-block; font: 700 8px/1 'Rajdhani', sans-serif; letter-spacing: 1px;
+      padding: 3px 8px; background: rgba(201,163,82,0.06); color: #c9a352;
+      border: 1px solid rgba(201,163,82,0.15); border-radius: 2px; text-transform: uppercase; margin-bottom: 3px;
+    }
+    .ability-desc-b { font: 400 9px/1.5 'Rajdhani', sans-serif; color: #4a3f2f; }
+
+    /* ── ACTION BAR ─────────────────────────────────────── */
+    #action-bar {
+      grid-column: 2; grid-row: 2;
+      height: 52px;
+      background: rgba(6,5,4,0.97);
+      border-top: 1px solid rgba(201,163,82,0.08);
+      display: flex; align-items: center; padding: 0 12px; gap: 8px;
+      backdrop-filter: blur(4px);
+    }
+    .phase-step-mini { display: flex; align-items: center; gap: 4px; padding: 3px 7px; font: 600 8px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
+    .phase-step-mini .ps-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .phase-step-mini.done { color: #2a2018; } .phase-step-mini.done .ps-dot { background: #1a1408; }
+    .phase-step-mini.active { color: #ffffff; } .phase-step-mini.active .ps-dot { background: #00ccaa; box-shadow: 0 0 4px rgba(0,204,170,0.5); }
+    .phase-step-mini.upcoming { color: #2a2018; } .phase-step-mini.upcoming .ps-dot { background: #1a1408; }
+    .ps-sep { color: #1a1408; font-size: 8px; }
+    .ab-divider { width: 1px; height: 34px; background: rgba(201,163,82,0.05); margin: 0 4px; }
+    .ab-action-btn {
+      height: 36px; min-width: 90px; padding: 0 12px; position: relative;
+      font: 700 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+      background: transparent; border: 1px solid rgba(255,255,255,0.06); color: rgba(255,255,255,0.25);
+      cursor: pointer; transition: all 0.15s; border-radius: 2px;
+    }
+    .ab-action-btn:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+    .ab-action-btn:hover::after { content: attr(data-shortcut); position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font: 700 8px/1 'Share Tech Mono', monospace; background: #0a0806; color: #c9a352; padding: 2px 5px; border: 1px solid rgba(201,163,82,0.2); border-radius: 2px; white-space: nowrap; }
+    .ab-action-btn.active { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.2); color: #ffffff; }
+    .ab-stratagem-btn {
+      height: 36px; min-width: 130px; padding: 0 14px; position: relative;
+      font: 700 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase;
+      background: transparent; border: 1px solid rgba(201,163,82,0.2); color: rgba(201,163,82,0.5);
+      cursor: pointer; transition: all 0.15s; border-radius: 2px;
+    }
+    .ab-stratagem-btn:hover { border-color: #c9a352; color: #c9a352; }
+    .ab-end-btn {
+      height: 36px; min-width: 150px; padding: 0 14px;
+      font: 700 9px/1 'Orbitron', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.15); color: #ffffff;
+      cursor: pointer; transition: all 0.15s; border-radius: 2px; margin-left: auto;
+    }
+    .ab-end-btn:hover { border-color: rgba(255,255,255,0.4); box-shadow: 0 0 10px rgba(255,255,255,0.05); }
+    #zone-actions { display: flex; gap: 6px; }
+
+    /* STRATAGEM MODAL */
+    #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #modal-overlay.visible { display: flex; }
+    #stratagem-modal { width: 400px; max-height: 70vh; background: rgba(6,5,4,0.99); border: 1px solid rgba(201,163,82,0.2); box-shadow: 0 0 40px rgba(0,0,0,0.9); display: flex; flex-direction: column; overflow: hidden; border-radius: 3px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(201,163,82,0.04); border-bottom: 1px solid rgba(201,163,82,0.1); font: 700 10px/1 'Orbitron', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: #c9a352; }
+    .modal-close { font-size: 16px; color: rgba(255,255,255,0.2); cursor: pointer; }
+    .modal-close:hover { color: #fff; }
+    .stratagem-list { overflow-y: auto; flex: 1; padding: 6px 0; }
+    .stratagem-item { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; }
+    .stratagem-item:hover { background: rgba(255,255,255,0.02); }
+    .stratagem-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .stratagem-name { font: 700 12px/1 'Rajdhani', sans-serif; color: #ffffff; flex: 1; }
+    .stratagem-cost { font: 700 10px/1 'Share Tech Mono', monospace; background: rgba(139,26,26,0.15); color: #cc4444; padding: 2px 6px; border-radius: 2px; }
+    .stratagem-timing { font: 600 8px/1 'Rajdhani', sans-serif; color: #c9a352; background: rgba(201,163,82,0.06); border: 1px solid rgba(201,163,82,0.15); padding: 2px 5px; text-transform: uppercase; letter-spacing: 1px; border-radius: 2px; }
+    .stratagem-desc { font: 400 11px/1.5 'Rajdhani', sans-serif; color: #4a3f2f; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LEFT RAIL -->
+  <aside id="sidebar-left">
+    <div class="rail-header">
+      <span class="rail-title">Army</span>
+      <button class="rail-collapse-btn" id="rail-toggle">⟨</button>
+    </div>
+    <div class="rail-scroll">
+
+      <!-- IMPERIUM -->
+      <div class="faction-section">
+        <div class="faction-header imp" onclick="toggleFaction(this)">
+          <span class="faction-icon">✠</span>
+          <span class="faction-label">Imperium</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit active" data-unit="assault-intercessors">
+            <span class="rail-icon imp">✠</span>
+            <span class="rail-unit-name">Assault Intercessors</span>
+          </div>
+          <div class="rail-unit" data-unit="primaris-lieutenant">
+            <span class="rail-icon imp">★</span>
+            <span class="rail-unit-name">Primaris Lieutenant</span>
+          </div>
+          <div class="rail-unit" data-unit="intercessor-squad-a">
+            <span class="rail-icon imp">✠</span>
+            <span class="rail-unit-name">Intercessor Squad A</span>
+          </div>
+          <div class="rail-unit" data-unit="hellblasters">
+            <span class="rail-icon imp">✠</span>
+            <span class="rail-unit-name">Hellblasters</span>
+          </div>
+          <div class="rail-unit" data-unit="redemptor-dreadnought">
+            <span class="rail-icon imp">⬡</span>
+            <span class="rail-unit-name">Redemptor Dreadnought</span>
+          </div>
+          <div class="army-abilities-section">
+            <div class="army-abilities-header" onclick="toggleArmyAbilities(this)">
+              Army Abilities <span class="aa-chevron">▸</span>
+            </div>
+            <div class="army-abilities-body">
+              <div class="army-ability-row"><div class="aa-name">And They Shall Know No Fear</div><div class="aa-desc">Re-roll wound rolls of 1 for friendly ADEPTUS ASTARTES units.</div></div>
+              <div class="army-ability-row"><div class="aa-name">Oath of Moment</div><div class="aa-desc">Pick one enemy unit. Re-roll hit rolls against it.</div></div>
+              <div class="army-ability-row"><div class="aa-name">Shock Assault</div><div class="aa-desc">+1 Attack for units that charged this turn.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORKS -->
+      <div class="faction-section">
+        <div class="faction-header ork" onclick="toggleFaction(this)">
+          <span class="faction-icon">☠</span>
+          <span class="faction-label">Orks</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit" data-unit="boss-nob">
+            <span class="rail-icon ork">☠</span>
+            <span class="rail-unit-name">Boss Nob</span>
+          </div>
+          <div class="rail-unit" data-unit="boyz-mob">
+            <span class="rail-icon ork">☠</span>
+            <span class="rail-unit-name">Boyz Mob</span>
+          </div>
+          <div class="rail-unit" data-unit="mekboy">
+            <span class="rail-icon ork">⚙</span>
+            <span class="rail-unit-name">Mekboy</span>
+          </div>
+          <div class="army-abilities-section">
+            <div class="army-abilities-header" onclick="toggleArmyAbilities(this)" style="color:#8b2020;">
+              Army Abilities <span class="aa-chevron">▸</span>
+            </div>
+            <div class="army-abilities-body">
+              <div class="army-ability-row"><div class="aa-name" style="color:rgba(139,26,26,0.8);">'Ere We Go</div><div class="aa-desc">Ork units can charge after Advancing.</div></div>
+              <div class="army-ability-row"><div class="aa-name" style="color:rgba(139,26,26,0.8);">Waaagh!</div><div class="aa-desc">Once per game: +1 Attack and +1 to charge rolls until end of turn.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- BATTLEFIELD -->
+  <main id="battlefield">
+    <div id="vp-bar">
+      <span class="vp-cp">CP<span>5</span></span>
+      <div class="vp-faction"><span class="vp-label imp">IMPERIUM</span><span class="vp-score imp">10</span></div>
+      <span class="vp-vs">VS</span>
+      <div class="vp-faction"><span class="vp-score ork">4</span><span class="vp-label ork">ORKS</span></div>
+      <span class="vp-round">RND 2 / 5</span>
+    </div>
+
+    <!-- Phase pill — wider, full sequence -->
+    <div id="phase-header">
+      <div class="phase-pill">
+        <div class="phase-step done"><span class="pstep-indicator">✓</span>COMMAND</div>
+        <span class="phase-sep">→</span>
+        <div class="phase-step active"><span class="pstep-indicator">●</span>MOVEMENT</div>
+        <span class="phase-sep">→</span>
+        <div class="phase-step upcoming"><span class="pstep-indicator">○</span>SHOOTING</div>
+        <span class="phase-sep">→</span>
+        <div class="phase-step upcoming"><span class="pstep-indicator">○</span>CHARGE</div>
+        <span class="phase-sep">→</span>
+        <div class="phase-step upcoming"><span class="pstep-indicator">○</span>FIGHT</div>
+      </div>
+    </div>
+
+    <div id="bf-controls">
+      <span id="zoom-indicator">100%</span>
+      <button class="bf-ctrl-btn" id="reset-view">↺ Reset</button>
+    </div>
+
+    <div id="battlefield-inner">
+      <svg id="bf-svg" viewBox="0 0 1000 600" preserveAspectRatio="none">
+        <line x1="0" y1="450" x2="1000" y2="450" stroke="rgba(201,163,82,0.06)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <line x1="0" y1="150" x2="1000" y2="150" stroke="rgba(139,26,26,0.08)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <polygon points="200,300 200,450 350,450 350,400 250,400 250,300" fill="rgba(201,163,82,0.015)" stroke="rgba(201,163,82,0.25)" stroke-width="1.5"/>
+        <polygon points="600,100 800,100 800,250 750,250 750,150 600,150" fill="rgba(201,163,82,0.015)" stroke="rgba(201,163,82,0.25)" stroke-width="1.5"/>
+        <polygon points="400,280 500,280 500,380 400,380" fill="rgba(201,163,82,0.01)" stroke="rgba(201,163,82,0.2)" stroke-width="1"/>
+      </svg>
+
+      <!-- Objectives -->
+      <div class="obj-hex-wrap" style="left:15%;top:20%;">
+        <div class="obj-hex-outer contested"><div class="obj-hex-inner"><div class="obj-number">01</div><div class="obj-label-text">OBJ</div></div></div>
+        <div class="obj-control-ring"></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:50%;top:65%;">
+        <div class="obj-hex-outer controlled"><div class="obj-hex-inner"><div class="obj-number">02</div><div class="obj-label-text">OBJ</div></div></div>
+        <div class="obj-control-ring"></div>
+      </div>
+      <div class="obj-hex-wrap" style="left:80%;top:30%;">
+        <div class="obj-hex-outer neutral"><div class="obj-hex-inner"><div class="obj-number">03</div><div class="obj-label-text">OBJ</div></div></div>
+        <div class="obj-control-ring"></div>
+      </div>
+
+      <!-- Tokens -->
+      <div class="token token-size-m token-imp selected" data-unit="assault-intercessors" style="left:30%;top:40%;">
+        <div class="token-class-icon" style="color:rgba(201,163,82,0.7);">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Assault Int.</div>
+      </div>
+      <div class="token token-size-s token-imp" data-unit="primaris-lieutenant" style="left:35%;top:55%;">
+        <div class="token-class-icon" style="color:#c9a352;">★</div>
+        <div class="token-badge">1</div>
+        <div class="token-label">Lt.</div>
+      </div>
+      <div class="token token-size-m token-imp" data-unit="intercessor-squad-a" style="left:42%;top:45%;">
+        <div class="token-class-icon" style="color:rgba(201,163,82,0.7);">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Int. A</div>
+      </div>
+      <div class="token token-size-m token-imp" data-unit="hellblasters" style="left:50%;top:38%;">
+        <div class="token-class-icon" style="color:rgba(201,163,82,0.7);">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Hellblasters</div>
+      </div>
+      <div class="token token-vehicle token-imp" data-unit="redemptor-dreadnought" style="left:26%;top:58%;">
+        <div class="token-class-icon" style="font-size:20px;color:rgba(201,163,82,0.7);">⬡</div>
+        <div class="token-badge">1</div>
+        <div class="token-label" style="margin-top:8px;">Dreadnought</div>
+      </div>
+      <div class="token token-size-s token-ork" data-unit="boss-nob" style="left:70%;top:18%;">
+        <div class="token-class-icon" style="color:rgba(139,26,26,0.8);">☠</div>
+        <div class="token-badge">1</div>
+        <div class="token-label">Boss Nob</div>
+      </div>
+      <div class="token token-size-l token-ork" data-unit="boyz-mob" style="left:72%;top:32%;">
+        <div class="token-class-icon" style="color:rgba(139,26,26,0.7);">☠</div>
+        <div class="token-count" style="color:rgba(139,26,26,0.5);">×10</div>
+        <div class="token-badge">10</div>
+        <div class="token-label">Boyz</div>
+      </div>
+      <div class="token token-size-s token-ork" data-unit="mekboy" style="left:62%;top:45%;">
+        <div class="token-class-icon" style="color:rgba(139,26,26,0.7);">⚙</div>
+        <div class="token-badge">1</div>
+        <div class="token-label">Mekboy</div>
+      </div>
+    </div>
+
+    <!-- POPOVER CARD — repositioned by JS above selected token -->
+    <div id="token-popover" class="token-popover">
+      <div class="popover-header">
+        <div>
+          <div class="popover-unit-name" id="pop-name">Unit Name</div>
+          <div class="popover-faction" id="pop-faction">Faction</div>
+        </div>
+        <span class="popover-close" id="pop-close">×</span>
+      </div>
+      <div class="popover-stats" id="pop-stats"></div>
+      <div class="popover-weapons" id="pop-weapons"></div>
+      <div id="pop-wargear-section"></div>
+      <div class="popover-abilities" id="pop-abilities"></div>
+      <div class="popover-arrow"></div>
+    </div>
+  </main>
+
+  <!-- ACTION BAR -->
+  <footer id="action-bar">
+    <div class="phase-step-mini done"><div class="ps-dot"></div>Command</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini active"><div class="ps-dot"></div>Movement</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Shooting</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Charge</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Fight</div>
+    <div class="ab-divider"></div>
+    <div id="zone-actions">
+      <button class="ab-action-btn active" data-shortcut="[N]">NORMAL MOVE</button>
+      <button class="ab-action-btn" data-shortcut="[A]">ADVANCE</button>
+    </div>
+    <div class="ab-divider"></div>
+    <button class="ab-stratagem-btn" id="btn-stratagem">USE STRATAGEM</button>
+    <button class="ab-end-btn" id="btn-end-phase">END MOVEMENT →</button>
+  </footer>
+</div>
+
+<!-- Stratagem Modal -->
+<div id="modal-overlay">
+  <div id="stratagem-modal">
+    <div class="modal-header">Select Stratagem<span class="modal-close" id="modal-close">×</span></div>
+    <div class="stratagem-list">
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Command Re-roll</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Any Phase</span></div><p class="stratagem-desc">Re-roll one dice result.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Insane Bravery</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Command Phase</span></div><p class="stratagem-desc">A unit automatically passes a Battle-shock test.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Tank Shock</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Movement Phase</span></div><p class="stratagem-desc">A VEHICLE unit can move through enemy units.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Fire Overwatch</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Opp. Movement</span></div><p class="stratagem-desc">When an enemy unit declares a charge, one of your units within 24" can shoot at it.</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KW_RULES = {
+  'MELEE':        { cls:'melee',     tip:'Fight phase only.' },
+  'PISTOL':       { cls:'pistol',    tip:'Can shoot in Fight phase even within Engagement Range.' },
+  'ASSAULT':      { cls:'assault',   tip:'Fire after Advancing. No penalty.' },
+  'ASSAULT 2':    { cls:'assault',   tip:'ASSAULT: 2 shots, fire after Advancing.' },
+  'ASSAULT 3':    { cls:'assault',   tip:'ASSAULT: 3 shots, fire after Advancing.' },
+  'HEAVY':        { cls:'heavy',     tip:'-1 to hit if bearer moved this turn.' },
+  'HAZARDOUS':    { cls:'hazardous', tip:'Roll D6 per model after shooting. On 1: 1 mortal wound.' },
+  'RAPID FIRE 1': { cls:'rapid',     tip:'Extra attack at half range.' },
+  'BLAST':        { cls:'blast',     tip:'+1 Attack per 5 models in target.' },
+  'MELTA 2':      { cls:'melta',     tip:'+2 Damage at half range.' },
+};
+function kwPill(kw){
+  const d=KW_RULES[kw]||{cls:'other',tip:'Keyword ability.'};
+  return `<span class="kw-pill ${d.cls}">${kw}<span class="kw-tooltip">${d.tip}</span></span>`;
+}
+
+const UNITS = {
+  'assault-intercessors':{name:'ASSAULT INTERCESSORS',faction:'SPACE MARINES · ADEPTUS ASTARTES',models:5,isVehicle:false,
+    stats:{M:'6"',T:'4',Sv:'3+',W:'2',Ld:'7',OC:'2'},
+    baseWeapons:[{type:'MELEE',name:'Astartes Chainsword',rng:'—',a:4,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Heavy Bolt Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}],
+    wargear:null,
+    abilities:[{name:'Shock Assault',desc:'On a turn this unit charges, its models get +1 Attack until end of turn.'},{name:'And They Shall Know No Fear',desc:'Each time a model takes a wound, roll D6. On 6, ignored.'}]
+  },
+  'primaris-lieutenant':{name:'PRIMARIS LIEUTENANT',faction:'SPACE MARINES · CHARACTER',models:1,isVehicle:false,
+    stats:{M:'6"',T:'4',Sv:'3+',W:'5',Ld:'6',OC:'1'},
+    baseWeapons:[{type:'RANGED',name:'Master-crafted Auto Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']},{type:'MELEE',name:'Paired Combat Blades',rng:'—',a:6,s:4,ap:-1,d:1,kw:['MELEE']}],
+    wargear:null,
+    abilities:[{name:'Tactical Precision',desc:'Friendly ADEPTUS ASTARTES within 6" re-roll wound rolls of 1.'}]
+  },
+  'intercessor-squad-a':{name:'INTERCESSOR SQUAD A',faction:'SPACE MARINES · INFANTRY',models:5,isVehicle:false,
+    stats:{M:'6"',T:'4',Sv:'3+',W:'2',Ld:'7',OC:'2'},
+    baseWeapons:[{type:'RANGED',name:'Bolt Rifle',rng:'30"',a:2,s:4,ap:-1,d:1,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Bolt Pistol',rng:'12"',a:1,s:4,ap:0,d:1,kw:['PISTOL']}],
+    wargear:[{label:"Sergeant bolt pistol → plasma pistol",extraWeapon:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],
+    abilities:[{name:'And They Shall Know No Fear',desc:'Each time a model takes a wound, roll D6. On 6, ignored.'}]
+  },
+  'hellblasters':{name:'HELLBLASTERS',faction:'SPACE MARINES · INFANTRY',models:5,isVehicle:false,
+    stats:{M:'6"',T:'4',Sv:'3+',W:'2',Ld:'7',OC:'2'},
+    baseWeapons:[{type:'RANGED',name:'Plasma Incinerator (std)',rng:'30"',a:2,s:7,ap:-3,d:2,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Plasma Incinerator (sup)',rng:'30"',a:2,s:8,ap:-3,d:3,kw:['RAPID FIRE 1','HAZARDOUS']}],
+    wargear:[{label:"Sergeant bolt pistol → plasma pistol",extraWeapon:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],
+    abilities:[{name:'And They Shall Know No Fear',desc:'Each time a model takes a wound, roll D6. On 6, ignored.'},{name:"For the Chapter!",desc:"Each time a model is destroyed, roll D6: on 3+, it can shoot once before removal. HAZARDOUS tests auto-pass."}]
+  },
+  'redemptor-dreadnought':{name:'REDEMPTOR DREADNOUGHT',faction:'SPACE MARINES · VEHICLE',models:1,isVehicle:true,
+    stats:{M:'8"',T:'10',Sv:'2+',W:'12',Ld:'6',OC:'3'},
+    baseWeapons:[{type:'MELEE',name:'Redemptor Fist',rng:'—',a:5,s:12,ap:-3,d:3,kw:['MELEE']},{type:'RANGED',name:'Macro Plasma Incinerator',rng:'36"',a:3,s:8,ap:-4,d:2,kw:['HEAVY','BLAST']}],
+    wargear:null,
+    abilities:[{name:'Duty Eternal',desc:'Each time this model suffers a wound, roll D6: on 5+, ignored.'},{name:'Guardian of the Chapter',desc:'Within 3" of friendly INFANTRY: 4+ invulnerable save.'}]
+  },
+  'boss-nob':{name:'BOSS NOB',faction:'ORKS · CHARACTER',models:1,isVehicle:false,
+    stats:{M:'5"',T:'5',Sv:'4+',W:'5',Ld:'7',OC:'1'},
+    baseWeapons:[{type:'MELEE',name:'Power Klaw',rng:'—',a:4,s:8,ap:-3,d:2,kw:['MELEE']},{type:'RANGED',name:'Slugga',rng:'12"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}],
+    wargear:null,
+    abilities:[{name:"'Ere We Go",desc:'This unit can make a charge move after Advancing. +1 to charge rolls.'}]
+  },
+  'boyz-mob':{name:'BOYZ MOB',faction:'ORKS · INFANTRY',models:10,isVehicle:false,
+    stats:{M:'5"',T:'4',Sv:'5+',W:'1',Ld:'7',OC:'2'},
+    baseWeapons:[{type:'MELEE',name:'Choppa',rng:'—',a:2,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Shoota',rng:'12"',a:2,s:4,ap:0,d:1,kw:['ASSAULT 2']}],
+    wargear:[{label:"1 Boy's Shoota → big shoota",extraWeapon:{type:'RANGED',name:'Big Shoota',rng:'24"',a:3,s:5,ap:0,d:1,kw:['ASSAULT 3']}}],
+    abilities:[{name:"'Ere We Go",desc:'This unit can make a charge move after Advancing. +1 to charge rolls.'}]
+  },
+  'mekboy':{name:'MEKBOY',faction:'ORKS · CHARACTER',models:1,isVehicle:false,
+    stats:{M:'5"',T:'4',Sv:'5+',W:'4',Ld:'7',OC:'1'},
+    baseWeapons:[{type:'RANGED',name:'Kustom Mega-blasta',rng:'24"',a:3,s:8,ap:-3,d:'D3',kw:['MELTA 2']},{type:'MELEE',name:'Choppa',rng:'—',a:3,s:4,ap:-1,d:1,kw:['MELEE']}],
+    wargear:null,
+    abilities:[{name:"Mek's Tools",desc:'At start of Command phase, if within 3" of a friendly VEHICLE, that vehicle regains up to D3 wounds.'}]
+  }
+};
+
+const CURRENT_PHASE='MOVEMENT';
+const PHASE_HL={MOVEMENT:['M'],SHOOTING:['BS'],FIGHT:['WS']};
+const wargearState={};
+
+let selectedUnitId=null;
+
+function formatStats(stats){
+  return `${stats.rng||'—'} · ${stats.a}A · S${stats.s} · AP${stats.ap} · D${stats.d}`;
+}
+
+function buildPopoverWeapons(unitId){
+  const u=UNITS[unitId]; if(!u) return '';
+  let weapons=[...u.baseWeapons];
+  if(u.wargear&&wargearState[unitId]){
+    u.wargear.forEach((wg,i)=>{ if(wargearState[unitId][i]&&wg.extraWeapon) weapons.push(wg.extraWeapon); });
+  }
+  const types=[...new Set(weapons.map(w=>w.type))];
+  let html='';
+  types.forEach(type=>{
+    weapons.filter(w=>w.type===type).forEach(w=>{
+      html+=`<div class="popover-weapon-row">
+        <div class="pw-name">${w.name}</div>
+        <div style="text-align:right;">
+          <div class="pw-stats">${w.rng} · ${w.a}A · S${w.s} · AP${w.ap} · D${w.d}</div>
+          <div class="pw-kws">${(w.kw||[]).map(kwPill).join('')}</div>
+        </div>
+      </div>`;
+    });
+  });
+  return html;
+}
+
+function positionPopover(tokenEl){
+  const pop=document.getElementById('token-popover');
+  const bf=document.getElementById('battlefield');
+  const bfRect=bf.getBoundingClientRect();
+  const tokenRect=tokenEl.getBoundingClientRect();
+  const popW=280; const popH=pop.offsetHeight||400;
+
+  // Anchor above token center
+  let left=tokenRect.left+tokenRect.width/2-popW/2-bfRect.left;
+  let top=tokenRect.top-popH-14-bfRect.top;
+
+  // Clamp to viewport
+  const margin=8;
+  if(left<margin) left=margin;
+  if(left+popW>bfRect.width-margin) left=bfRect.width-popW-margin;
+  if(top<margin){ top=tokenRect.bottom+14-bfRect.top; } // flip below if no room
+
+  pop.style.left=left+'px';
+  pop.style.top=top+'px';
+}
+
+function updatePopover(unitId){
+  const u=UNITS[unitId]; if(!u) return;
+  selectedUnitId=unitId;
+  const pop=document.getElementById('token-popover');
+  document.getElementById('pop-name').textContent=u.name;
+  document.getElementById('pop-faction').textContent=u.faction;
+
+  // Stats
+  const hl=PHASE_HL[CURRENT_PHASE]||[];
+  const statKeys=['M','T','Sv','W','Ld','OC'];
+  document.getElementById('pop-stats').innerHTML=statKeys.map(k=>{
+    const isHl=hl.includes(k);
+    return `<div class="popover-stat${isHl?' hl':''}"><div class="popover-stat-key">${k}</div><div class="popover-stat-val">${u.stats[k]}</div></div>`;
+  }).join('');
+
+  // Weapons
+  document.getElementById('pop-weapons').innerHTML=buildPopoverWeapons(unitId);
+
+  // Wargear
+  const wgEl=document.getElementById('pop-wargear-section');
+  if(u.wargear&&u.wargear.length){
+    if(!wargearState[unitId])wargearState[unitId]={};
+    let html='<div class="popover-wargear"><div class="popover-section-title">Wargear Options</div>';
+    u.wargear.forEach((wg,i)=>{
+      const checked=!!wargearState[unitId][i];
+      html+=`<div class="wg-toggle${checked?' checked':''}" data-unit="${unitId}" data-wgidx="${i}">
+        <span class="wg-check">${checked?'☑':'☐'}</span>${wg.label}
+      </div>`;
+    });
+    html+='</div>';
+    wgEl.innerHTML=html;
+    wgEl.querySelectorAll('.wg-toggle').forEach(row=>{
+      row.addEventListener('click',()=>{
+        const idx=parseInt(row.dataset.wgidx);
+        if(!wargearState[unitId])wargearState[unitId]={};
+        wargearState[unitId][idx]=!wargearState[unitId][idx];
+        updatePopover(unitId);
+        // re-position after height change
+        const tokenEl=document.querySelector(`.token[data-unit="${unitId}"]`);
+        if(tokenEl) positionPopover(tokenEl);
+      });
+    });
+  } else wgEl.innerHTML='';
+
+  // Abilities (collapsed by default)
+  const aEl=document.getElementById('pop-abilities');
+  if(u.abilities&&u.abilities.length){
+    let html=`<div class="ability-collapse-toggle" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.ability-chevron').style.transform=this.nextElementSibling.classList.contains('open')?'rotate(90deg)':'';">
+      ABILITIES <span class="ability-chevron">▸</span>
+    </div>
+    <div class="abilities-body">`;
+    u.abilities.forEach(a=>{
+      html+=`<div class="ability-row-b"><div class="ability-pill-b">${a.name}</div><div class="ability-desc-b">${a.desc}</div></div>`;
+    });
+    html+='</div>';
+    aEl.innerHTML=html;
+  } else aEl.innerHTML='';
+
+  pop.classList.add('visible');
+}
+
+// Token click
+document.querySelectorAll('.token').forEach(t=>{
+  t.addEventListener('click',e=>{
+    e.stopPropagation();
+    document.querySelectorAll('.token').forEach(x=>x.classList.remove('selected'));
+    document.querySelectorAll('.rail-unit').forEach(r=>r.classList.remove('active'));
+    t.classList.add('selected');
+    const uid=t.dataset.unit;
+    document.querySelector(`.rail-unit[data-unit="${uid}"]`)?.classList.add('active');
+    updatePopover(uid);
+    positionPopover(t);
+  });
+});
+
+// Rail unit click
+document.querySelectorAll('.rail-unit').forEach(row=>{
+  row.addEventListener('click',()=>{
+    document.querySelectorAll('.rail-unit').forEach(r=>r.classList.remove('active'));
+    row.classList.add('active');
+    const uid=row.dataset.unit;
+    document.querySelectorAll('.token').forEach(t=>t.classList.remove('selected'));
+    const tokenEl=document.querySelector(`.token[data-unit="${uid}"]`);
+    tokenEl?.classList.add('selected');
+    updatePopover(uid);
+    if(tokenEl) positionPopover(tokenEl);
+  });
+});
+
+// Close popover
+document.getElementById('pop-close').addEventListener('click',()=>{
+  document.getElementById('token-popover').classList.remove('visible');
+  document.querySelectorAll('.token').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('.rail-unit').forEach(r=>r.classList.remove('active'));
+});
+
+// Click battlefield to deselect
+document.getElementById('battlefield').addEventListener('click',e=>{
+  if(!e.target.closest('.token,.token-popover,.rail-unit,#vp-bar,#phase-header,#bf-controls,#action-bar'))return;
+});
+
+// Rail collapse
+document.getElementById('rail-toggle').addEventListener('click',()=>{
+  const app=document.getElementById('app');
+  const btn=document.getElementById('rail-toggle');
+  const collapsed=app.classList.toggle('rail-collapsed');
+  btn.textContent=collapsed?'⟩':'⟨';
+  document.getElementById('vp-bar').style.left=collapsed?'44px':'230px';
+});
+
+function toggleFaction(h){const b=h.nextElementSibling;const c=h.querySelector('.faction-chevron');b.classList.toggle('collapsed');c.style.transform=b.classList.contains('collapsed')?'rotate(-90deg)':'';}
+function toggleArmyAbilities(h){const b=h.nextElementSibling;const c=h.querySelector('.aa-chevron');b.classList.toggle('open');c.style.transform=b.classList.contains('open')?'rotate(90deg)':'';}
+
+document.querySelectorAll('#zone-actions .ab-action-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{document.querySelectorAll('#zone-actions .ab-action-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});
+});
+
+const overlay=document.getElementById('modal-overlay');
+document.getElementById('btn-stratagem').addEventListener('click',()=>overlay.classList.add('visible'));
+document.getElementById('modal-close').addEventListener('click',()=>overlay.classList.remove('visible'));
+overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('visible');});
+
+// Pan & Zoom
+let scale=1,tx=0,ty=0,isDragging=false,startX,startY;
+const inner=document.getElementById('battlefield-inner');
+const bf=document.getElementById('battlefield');
+function applyTransform(){inner.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;document.getElementById('zoom-indicator').textContent=Math.round(scale*100)+'%';}
+bf.addEventListener('wheel',e=>{e.preventDefault();scale=Math.min(3,Math.max(0.4,scale*(e.deltaY>0?0.9:1.1)));applyTransform();},{passive:false});
+bf.addEventListener('mousedown',e=>{if(e.target.closest('.token,.obj-hex-wrap,.token-popover,#phase-header,#bf-controls'))return;isDragging=true;startX=e.clientX-tx;startY=e.clientY-ty;inner.classList.add('dragging');});
+document.addEventListener('mousemove',e=>{if(!isDragging)return;tx=e.clientX-startX;ty=e.clientY-startY;applyTransform();});
+document.addEventListener('mouseup',()=>{isDragging=false;inner.classList.remove('dragging');});
+document.getElementById('reset-view').addEventListener('click',()=>{scale=1;tx=0;ty=0;applyTransform();});
+
+// Init — show Assault Intercessors popover
+updatePopover('assault-intercessors');
+setTimeout(()=>{
+  const t=document.querySelector('.token.selected');
+  if(t)positionPopover(t);
+},50);
+</script>
+</body>
+</html>

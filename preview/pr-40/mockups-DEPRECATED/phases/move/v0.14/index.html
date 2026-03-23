@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Prototype A: Drill-Down</title>
+    <style>
+        body { margin: 0; background: #1a1a1a; color: white; font-family: sans-serif; overflow: hidden; }
+        #canvas { width: 100vw; height: 100vh; display: block; background: #222; }
+        .ui { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.8); padding: 15px; border-radius: 8px; border: 1px solid #444; pointer-events: none; z-index: 10; }
+        h3 { margin: 0 0 10px 0; color: #00c8a8; }
+        p { margin: 5px 0; font-size: 14px; color: #ccc; }
+        .interactive-ui { pointer-events: auto; }
+        
+        .unit-hull { fill: rgba(0, 150, 255, 0.1); stroke: #0096ff; stroke-width: 2; stroke-dasharray: 6 4; cursor: grab; }
+        .unit-hull:active { cursor: grabbing; }
+        .unit-hull.selected { fill: rgba(0, 200, 168, 0.2); stroke: #00c8a8; stroke-width: 3; stroke-dasharray: none; }
+        .unit-hull.broken { stroke: #ff3333; fill: rgba(255, 50, 50, 0.2); stroke-dasharray: 8 8; }
+        
+        .model-base { fill: #333; stroke: #666; stroke-width: 2; cursor: grab; transition: fill 0.1s; }
+        .model-base:active { cursor: grabbing; }
+        .model-base:hover { fill: #555; }
+        .model-base.selected { fill: #00c8a8; stroke: #fff; }
+        .model-base.broken-cohesion { stroke: #ff3333; stroke-width: 3; }
+        
+        #cohesion-warning { position: absolute; top: 20px; right: 20px; background: rgba(255, 50, 50, 0.9); padding: 10px 20px; border-radius: 8px; font-weight: bold; display: none; z-index: 10; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div class="ui">
+        <h3>v0.14: Unified Model Traction</h3>
+        <p>• <b>Drag near unit (hull)</b>: Drag the whole unit</p>
+        <p>• <b>Shift + Drag unit (hull)</b>: Rotate the unit around selection point</p>
+        <p>• <b>Drag a model</b>: Auto-moves just that model base</p>
+        <p>• <b>Cohesion</b>: Broken if models > 2" (120px) apart</p>
+    </div>
+    
+    <div id="cohesion-warning">⚠️ Unit Cohesion Broken</div>
+    
+    <svg id="canvas">
+        <g id="layer-hulls"></g>
+        <g id="layer-models"></g>
+    </svg>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+    <script>
+        const COHESION_RANGE = 120; // Simulated 2" distance at 60px/inch
+        
+        const state = {
+            units: [
+                {
+                    id: 'u1',
+                    models: [
+                        {id: 'm1', x: 400, y: 300, r: 16}, {id: 'm2', x: 440, y: 290, r: 16},
+                        {id: 'm3', x: 390, y: 340, r: 16}, {id: 'm4', x: 430, y: 330, r: 16},
+                        {id: 'm5', x: 460, y: 360, r: 16}
+                    ],
+                    broken: false
+                },
+                {
+                    id: 'u2',
+                    models: [
+                        {id: 'm6', x: 700, y: 400, r: 20}, {id: 'm7', x: 750, y: 380, r: 20},
+                        {id: 'm8', x: 720, y: 440, r: 20}
+                    ],
+                    broken: false
+                }
+            ],
+            selection: { unitId: null, modelId: null },
+            drag: null // { type: 'model'|'unit'|'rotate', ref, offsets, pivot }
+        };
+
+        const svg = document.getElementById('canvas');
+        const layerHulls = document.getElementById('layer-hulls');
+        const layerModels = document.getElementById('layer-models');
+        const warningUI = document.getElementById('cohesion-warning');
+
+        // Check if a model is within cohesion of at least one other model in its unit
+        // Simple simplified cohesion: every model must be <= 2" from *at least one* other model in unit
+        function checkCohesion(unit) {
+            if (unit.models.length <= 1) return false;
+            
+            let broken = false;
+            unit.models.forEach(m1 => {
+                let hasFriend = false;
+                unit.models.forEach(m2 => {
+                    if (m1 === m2) return;
+                    const dist = Math.hypot(m1.x - m2.x, m1.y - m2.y);
+                    if (dist - m1.r - m2.r <= COHESION_RANGE) hasFriend = true; // edge-to-edge
+                });
+                m1.broken = !hasFriend;
+                if (!hasFriend) broken = true;
+            });
+            unit.broken = broken;
+            return broken;
+        }
+
+        // Curved Hull using d3.polygonHull + cardinal spline
+        function getCurvedHullPath(models) {
+            if (models.length === 0) return '';
+            if (models.length === 1) {
+                const m = models[0];
+                const r = m.r + 15;
+                return "M " + m.x + " " + (m.y - r) + " A " + r + " " + r + " 0 1 1 " + m.x + " " + (m.y + r) + " A " + r + " " + r + " 0 1 1 " + m.x + " " + (m.y - r);
+            }
+            if (models.length === 2) {
+                 const m1 = models[0]; const m2 = models[1];
+                 const r = m1.r + 15;
+                 const dx = m2.x - m1.x; const dy = m2.y - m1.y;
+                 const len = Math.hypot(dx, dy);
+                 if (len === 0) return '';
+                 const nx = dx/len; const ny = dy/len;
+                 const px = -ny * r; const py = nx * r;
+                 return `M ${m1.x+px},${m1.y+py} L ${m2.x+px},${m2.y+py} A ${r} ${r} 0 0 1 ${m2.x-px},${m2.y-py} L ${m1.x-px},${m1.y-py} A ${r} ${r} 0 0 1 ${m1.x+px},${m1.y+py}`;
+            }
+            
+            const extents = [];
+            models.forEach(m => {
+                const r = m.r + 15; 
+                const steps = 12;
+                for(let i=0; i<steps; i++) {
+                    const angle = (Math.PI * 2 * i) / steps;
+                    extents.push([m.x + Math.cos(angle)*r, m.y + Math.sin(angle)*r]);
+                }
+            });
+            
+            const hullPoints = d3.polygonHull(extents);
+            if (!hullPoints) return '';
+            
+            // closed curve
+            const line = d3.line().curve(d3.curveCatmullRomClosed.alpha(0.5));
+            return line(hullPoints);
+        }
+
+        function render() {
+            layerHulls.innerHTML = '';
+            layerModels.innerHTML = '';
+            let anyBroken = false;
+
+            state.units.forEach(unit => {
+                checkCohesion(unit);
+                if (unit.broken) anyBroken = true;
+
+                // Hull
+                const isSelectedUnit = state.selection.unitId === unit.id;
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', getCurvedHullPath(unit.models));
+                let hclass = 'unit-hull';
+                if (isSelectedUnit) hclass += ' selected';
+                if (unit.broken) hclass += ' broken';
+                path.setAttribute('class', hclass);
+                path.dataset.unitId = unit.id;
+                layerHulls.appendChild(path);
+
+                // Models
+                unit.models.forEach(model => {
+                    const isSelectedModel = state.selection.modelId === model.id;
+                    const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    c.setAttribute('cx', model.x);
+                    c.setAttribute('cy', model.y);
+                    c.setAttribute('r', model.r);
+                    let mclass = 'model-base';
+                    if (isSelectedModel) mclass += ' selected';
+                    if (model.broken) mclass += ' broken-cohesion';
+                    c.setAttribute('class', mclass);
+                    c.dataset.unitId = unit.id;
+                    c.dataset.modelId = model.id;
+                    layerModels.appendChild(c);
+                });
+            });
+            
+            warningUI.style.display = anyBroken ? 'block' : 'none';
+        }
+
+        function getMousePos(evt) {
+            const CTM = svg.getScreenCTM() || svg.getBBox(); // fallback
+            if (!CTM || !CTM.a) {
+              const pt = svg.createSVGPoint();
+              pt.x = evt.clientX; pt.y = evt.clientY;
+              const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+              return {x: loc.x, y: loc.y};
+            }
+            return {
+                x: (evt.clientX - CTM.e) / CTM.a,
+                y: (evt.clientY - CTM.f) / CTM.d
+            };
+        }
+
+        svg.addEventListener('mousedown', (e) => {
+            const trg = e.target;
+            const pt = getMousePos(e);
+            
+            if (trg.classList.contains('model-base')) {
+                // Drag model directly
+                const uId = trg.dataset.unitId;
+                const mId = trg.dataset.modelId;
+                const unit = state.units.find(u => u.id === uId);
+                const model = unit.models.find(m => m.id === mId);
+                
+                state.selection.unitId = uId;
+                state.selection.modelId = mId;
+                state.drag = { type: 'model', model, offsetX: model.x - pt.x, offsetY: model.y - pt.y };
+                render();
+            } 
+            else if (trg.classList.contains('unit-hull')) {
+                const uId = trg.dataset.unitId;
+                const unit = state.units.find(u => u.id === uId);
+                
+                state.selection.unitId = uId;
+                state.selection.modelId = null;
+                
+                if (e.shiftKey) {
+                    // Start Rotate
+                    state.drag = { 
+                        type: 'rotate', 
+                        pivot: pt, 
+                        unit: unit, 
+                        origins: unit.models.map(m => ({x: m.x, y: m.y}))
+                    };
+                } else {
+                    // Drag Unit
+                    state.drag = { 
+                        type: 'unit', 
+                        unit: unit, 
+                        offsets: unit.models.map(m => ({m, dx: m.x - pt.x, dy: m.y - pt.y})) 
+                    };
+                }
+                render();
+            } else {
+                state.selection.unitId = null;
+                state.selection.modelId = null;
+                render();
+            }
+        });
+
+        function onMouseMove(e) {
+            if (!state.drag) return;
+            const pt = getMousePos(e);
+            
+            if (state.drag.type === 'unit') {
+                state.drag.offsets.forEach(o => {
+                    o.m.x = pt.x + o.dx;
+                    o.m.y = pt.y + o.dy;
+                });
+            } 
+            else if (state.drag.type === 'model') {
+                state.drag.model.x = pt.x + state.drag.offsetX;
+                state.drag.model.y = pt.y + state.drag.offsetY;
+            }
+            else if (state.drag.type === 'rotate') {
+                const pivot = state.drag.pivot;
+                // Calculate angle delta
+                const startAngle = Math.atan2(pivot.y - pivot.y, pt.x - pivot.x); // simplifying this interaction: just raw rotation from pivot
+                // A better approach: calculate dot product rotation from start pos, but simple cursor angle is ok for mockup
+                // Let's do cursor angle from pivot around Y down
+                const currentAngle = Math.atan2(pt.y - pivot.y, pt.x - pivot.x);
+                // Assume start angle is essentially 0 relative to where they clicked, let's just make the rotation absolute to cursor
+                
+                // Let's fix rotation properly: need initial angle
+                if (state.drag.startAngle === undefined) {
+                    state.drag.startAngle = currentAngle;
+                }
+                const angleDiff = currentAngle - state.drag.startAngle;
+                
+                state.drag.unit.models.forEach((m, i) => {
+                    const orig = state.drag.origins[i];
+                    const dx = orig.x - pivot.x;
+                    const dy = orig.y - pivot.y;
+                    m.x = pivot.x + dx * Math.cos(angleDiff) - dy * Math.sin(angleDiff);
+                    m.y = pivot.y + dx * Math.sin(angleDiff) + dy * Math.cos(angleDiff);
+                });
+            }
+            render();
+        }
+
+        function onMouseUp(e) { 
+            state.drag = null; 
+            render();
+        }
+
+        svg.addEventListener('mousemove', onMouseMove);
+        svg.addEventListener('mouseup', onMouseUp);
+        svg.addEventListener('mouseleave', onMouseUp);
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>

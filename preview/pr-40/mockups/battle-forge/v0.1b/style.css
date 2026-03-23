@@ -1,0 +1,502 @@
+/* ══════════════════════════════════════════════════════════════
+   Battle Forge v0.1b — WAR TABLE
+   Total War inspired · Map-centric · Cinematic
+══════════════════════════════════════════════════════════════ */
+
+html, body { overflow: auto; height: auto; }
+
+/* ── Root ── */
+.wt-root {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  padding: 12px 24px 40px;
+  position: relative;
+}
+
+/* ── Vignette ── */
+.wt-vignette {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 15%, rgba(4,6,8,0.55) 55%, rgba(4,6,8,0.95) 100%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── Grain overlay ── */
+.wt-grain {
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════ */
+.nav-back, .nav-mockups {
+  position: fixed; top: 14px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; color: var(--text-muted);
+  text-decoration: none; text-transform: uppercase;
+  z-index: 20; transition: color 0.2s;
+}
+.nav-back { left: 14px; }
+.nav-mockups { right: 14px; }
+.nav-back:hover, .nav-mockups:hover { color: var(--gold); }
+
+.version-badge {
+  position: fixed; bottom: 14px; left: 14px;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dis); z-index: 20;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FACTION BAR — horizontal top strip
+═══════════════════════════════════════════════════════════ */
+.faction-bar {
+  display: flex; align-items: center; justify-content: center;
+  gap: 12px; padding: 16px 0 20px;
+  position: relative; z-index: 1;
+}
+
+.faction-emblem {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.2s;
+  min-width: 180px;
+}
+.faction-emblem:hover:not(.disabled) { border-color: var(--text-muted); }
+
+.faction-emblem.selected-imp {
+  border-color: var(--imp);
+  box-shadow: 0 0 20px rgba(0,212,255,0.12), inset 0 0 30px rgba(0,212,255,0.04);
+}
+.faction-emblem.selected-ork {
+  border-color: var(--ork);
+  box-shadow: 0 0 20px rgba(255,64,32,0.12), inset 0 0 30px rgba(255,64,32,0.04);
+}
+.faction-emblem.disabled { opacity: 0.35; cursor: not-allowed; }
+
+.emblem-icon {
+  font-size: 24px; line-height: 1;
+}
+.faction-emblem.selected-imp .emblem-icon { color: var(--imp); }
+.faction-emblem.selected-ork .emblem-icon { color: var(--ork); }
+.emblem-icon.dim { color: var(--text-dis); }
+
+.emblem-info { flex: 1; }
+.emblem-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-primary);
+}
+.faction-emblem.disabled .emblem-name { color: var(--text-dis); }
+.emblem-sub {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec); margin-top: 2px;
+}
+.faction-emblem.disabled .emblem-sub { color: var(--text-dis); }
+
+.emblem-check {
+  font-size: 12px; color: var(--gold); opacity: 0.7;
+}
+
+.coming-tag {
+  font: 600 7px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); background: rgba(26,37,53,0.8);
+  border: 1px solid var(--border); padding: 2px 6px; white-space: nowrap;
+}
+
+/* VS divider */
+.faction-bar-divider {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 0 8px;
+}
+.divider-ornament { color: var(--gold-dim); font-size: 10px; opacity: 0.5; }
+.divider-text {
+  font: 400 18px/1 'Anton', sans-serif;
+  letter-spacing: 4px; color: var(--gold);
+  text-shadow: 0 0 20px rgba(201,163,82,0.3);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WAR TABLE — 3-column: roster | map | roster
+═══════════════════════════════════════════════════════════ */
+.war-table {
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative; z-index: 1;
+}
+
+/* ── Roster scrolls (flanking banners) ── */
+.roster-scroll {
+  background: rgba(10,16,22,0.92);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  max-height: 520px;
+}
+
+.roster-banner {
+  padding: 14px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(0,212,255,0.06) 0%, transparent 100%);
+}
+.ork-banner {
+  background: linear-gradient(180deg, rgba(255,64,32,0.06) 0%, transparent 100%);
+}
+
+.banner-icon { font-size: 28px; margin-bottom: 6px; }
+.imp-scroll .banner-icon { color: var(--imp); }
+.ork-scroll .banner-icon { color: var(--ork); }
+
+.banner-title {
+  font: 400 14px/1 'Anton', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+.imp-scroll .banner-title { color: var(--imp); }
+.ork-scroll .banner-title { color: var(--ork); }
+
+.banner-pts {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; color: var(--text-muted); margin-top: 4px;
+}
+
+.roster-entries {
+  flex: 1; overflow-y: auto; padding: 4px 0;
+}
+
+.r-entry {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(26,37,53,0.4);
+  align-items: center;
+}
+.r-entry:last-child { border-bottom: none; }
+
+.r-name {
+  font: 500 10px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px; color: var(--text-sec);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.r-detail {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted); white-space: nowrap;
+}
+.r-pts {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  color: var(--gold-dim); text-align: right;
+  min-width: 24px;
+}
+.r-pts::after { content: 'pts'; margin-left: 1px; font-weight: 400; color: var(--text-dis); }
+
+/* Scrollbar */
+.roster-entries::-webkit-scrollbar { width: 3px; }
+.roster-entries::-webkit-scrollbar-track { background: var(--bg-primary); }
+.roster-entries::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════════════════════
+   THE MAP — centre piece
+═══════════════════════════════════════════════════════════ */
+.table-centre {
+  display: flex; flex-direction: column;
+}
+
+.table-title-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px;
+  background: rgba(201,163,82,0.06);
+  border: 1px solid var(--gold-dim);
+  border-bottom: none;
+}
+.table-label {
+  font: 400 11px/1 'Anton', sans-serif;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold);
+}
+.table-dim {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; color: var(--gold-dim);
+}
+
+.war-map {
+  flex: 1;
+  aspect-ratio: 60 / 44;
+  background: var(--bg-primary);
+  border: 1px solid var(--gold-dim);
+  position: relative; overflow: hidden;
+  box-shadow:
+    inset 0 0 60px rgba(0,0,0,0.4),
+    0 0 40px rgba(201,163,82,0.08);
+}
+
+/* Grid overlay */
+.map-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(201,163,82,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,163,82,0.04) 1px, transparent 1px);
+  background-size: 10% 10%;
+}
+
+/* Deployment zones — LEFT / RIGHT */
+.dz {
+  position: absolute; top: 0; bottom: 0;
+  width: 22%;
+  display: flex; align-items: center; justify-content: center;
+}
+.dz-imp {
+  left: 0;
+  background: linear-gradient(90deg, rgba(0,212,255,0.1), rgba(0,212,255,0.02));
+  border-right: 1px dashed rgba(0,212,255,0.25);
+}
+.dz-ork {
+  right: 0;
+  background: linear-gradient(270deg, rgba(255,64,32,0.1), rgba(255,64,32,0.02));
+  border-left: 1px dashed rgba(255,64,32,0.25);
+}
+.dz-label {
+  font: 600 8px/1.3 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  text-align: center; writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.dz-imp .dz-label { color: rgba(0,212,255,0.45); }
+.dz-ork .dz-label { color: rgba(255,64,32,0.45); }
+
+.nml {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font: 500 7px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dis); white-space: nowrap;
+}
+
+/* Objectives */
+.obj {
+  position: absolute; width: 10px; height: 10px;
+  border: 1.5px solid var(--strat);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px rgba(204,136,0,0.35);
+  background: rgba(204,136,0,0.15);
+}
+.obj-centre {
+  width: 14px; height: 14px;
+  border-width: 2px;
+  box-shadow: 0 0 12px rgba(204,136,0,0.4);
+}
+
+/* Terrain features */
+.terrain-ruin, .terrain-crate {
+  position: absolute;
+  border: 1px solid rgba(201,163,82,0.18);
+  background: rgba(201,163,82,0.04);
+  display: flex; align-items: center; justify-content: center;
+}
+.terrain-ruin {
+  border-style: dashed;
+}
+.terrain-tag {
+  font: 500 6px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: rgba(201,163,82,0.3);
+}
+
+/* Compass rose */
+.compass {
+  position: absolute; top: 8px; right: 10px;
+  font: 400 10px/1 'Anton', sans-serif;
+  color: var(--gold-dim); opacity: 0.4;
+  letter-spacing: 1px;
+}
+
+.table-footer {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 14px;
+  background: rgba(201,163,82,0.04);
+  border: 1px solid var(--gold-dim);
+  border-top: none;
+}
+.table-mission, .table-deploy-type {
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAP THUMBNAILS ROW
+═══════════════════════════════════════════════════════════ */
+.map-row {
+  max-width: 1400px; margin: 20px auto 0;
+  position: relative; z-index: 1;
+}
+
+.map-row-label {
+  font: 400 10px/1 'Anton', sans-serif;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 10px;
+}
+
+.map-thumbs {
+  display: flex; gap: 12px;
+}
+
+.map-thumb {
+  padding: 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  cursor: pointer; transition: all 0.2s;
+  text-align: center; width: 160px;
+}
+.map-thumb:hover:not(.disabled) { border-color: var(--gold-dim); }
+.map-thumb.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 14px rgba(201,163,82,0.15);
+}
+.map-thumb.disabled { opacity: 0.3; cursor: not-allowed; }
+
+.thumb-preview {
+  width: 100%; aspect-ratio: 60/44;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  margin-bottom: 6px;
+  position: relative; overflow: hidden;
+}
+.disabled-preview {
+  background: repeating-linear-gradient(
+    45deg, var(--bg-primary), var(--bg-primary) 4px,
+    rgba(26,37,53,0.3) 4px, rgba(26,37,53,0.3) 8px
+  );
+}
+
+.thumb-zone {
+  position: absolute; top: 0; bottom: 0; width: 22%;
+}
+.thumb-imp { left: 0; background: rgba(0,212,255,0.12); border-right: 1px dashed rgba(0,212,255,0.2); }
+.thumb-ork { right: 0; background: rgba(255,64,32,0.12); border-left: 1px dashed rgba(255,64,32,0.2); }
+
+.thumb-name {
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-primary); margin-bottom: 2px;
+}
+.map-thumb.disabled .thumb-name { color: var(--text-dis); }
+
+.thumb-size {
+  font: 500 8px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+}
+.map-thumb.disabled .thumb-size { color: var(--text-dis); }
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS BAR
+═══════════════════════════════════════════════════════════ */
+.settings-bar {
+  max-width: 1400px; margin: 16px auto 0;
+  display: flex; gap: 12px;
+  position: relative; z-index: 1;
+}
+
+.setting-chip {
+  flex: 1;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  opacity: 0.4;
+}
+
+.chip-label {
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-dis);
+}
+.chip-value {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px; color: var(--text-dis);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BEGIN BATTLE BUTTON
+═══════════════════════════════════════════════════════════ */
+.begin-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px;
+  max-width: 1400px; margin: 20px auto 0;
+  height: 60px;
+  font: 600 14px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px; text-transform: uppercase;
+  border: 2px solid var(--gold);
+  color: var(--gold);
+  background: linear-gradient(180deg, rgba(201,163,82,0.1), rgba(201,163,82,0.03));
+  cursor: pointer; transition: all 0.25s;
+  text-decoration: none;
+  position: relative; z-index: 1;
+}
+.begin-btn:hover {
+  background: linear-gradient(180deg, rgba(201,163,82,0.2), rgba(201,163,82,0.08));
+  box-shadow: 0 0 40px rgba(201,163,82,0.2), inset 0 0 30px rgba(201,163,82,0.05);
+  color: #e8d090;
+  border-color: #e8d090;
+}
+.begin-btn:active {
+  background: rgba(201,163,82,0.08);
+}
+
+.btn-ornament {
+  font-size: 18px; opacity: 0.4;
+}
+.btn-text { display: flex; align-items: center; gap: 8px; }
+
+/* ═══════════════════════════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════════════════════════ */
+.wt-tooltip {
+  position: fixed;
+  padding: 5px 12px;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--text-sec);
+  background: rgba(10,16,22,0.95);
+  border: 1px solid var(--gold-dim);
+  pointer-events: none; z-index: 100;
+  opacity: 0; transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.wt-tooltip.visible { opacity: 1; }
+
+/* ═══════════════════════════════════════════════════════════
+   STAGGERED ENTRANCE ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+@keyframes wt-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.anim-row {
+  opacity: 0;
+  animation: wt-rise 0.6s ease-out forwards;
+  animation-delay: calc(0.15s + var(--i) * 0.15s);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 1000px) {
+  .war-table {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .roster-scroll {
+    max-height: 200px;
+  }
+  .faction-bar {
+    flex-wrap: wrap;
+  }
+}

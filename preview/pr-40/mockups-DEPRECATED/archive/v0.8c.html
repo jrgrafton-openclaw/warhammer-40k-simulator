@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — v0.8c · IRON STRATEGIUM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Cinzel+Decorative:wght@700&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================================
+       v0.8c — IRON STRATEGIUM
+       Most radical: roster in slide-in drawer, battlefield ~fullscreen.
+       Unit card bottom-left. Deepest colour palette of all three.
+       VP in battlefield corner HUDs. Phase = single compact line.
+       Token labels appear on hover only.
+       ============================================================ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #040302; color: #e0d0b0; font-family: 'Rajdhani', sans-serif; }
+
+    /* ROOT: 40px tab + full battlefield */
+    #app { position: relative; width: 100vw; height: 100vh; }
+
+    /* ── 40px LEFT TAB ──────────────────────────────────── */
+    #roster-tab {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 40px;
+      background: rgba(4,3,2,0.98);
+      border-right: 1px solid rgba(201,163,82,0.08);
+      display: flex; flex-direction: column; align-items: center;
+      padding-top: 8px; gap: 14px; z-index: 60; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    #roster-tab:hover { border-right-color: rgba(201,163,82,0.2); }
+    .tab-icon { font-size: 16px; opacity: 0.4; transition: opacity 0.2s; }
+    .tab-icon.imp { color: #c9a352; }
+    .tab-icon.ork { color: #8b1a1a; }
+    #roster-tab:hover .tab-icon { opacity: 0.7; }
+    .tab-open-hint { font: 700 6px/1 'Share Tech Mono', monospace; color: rgba(201,163,82,0.15); writing-mode: vertical-lr; transform: rotate(180deg); margin-top: auto; margin-bottom: 16px; letter-spacing: 2px; }
+
+    /* ── SLIDE-IN DRAWER ────────────────────────────────── */
+    #roster-drawer {
+      position: fixed; left: 40px; top: 0; bottom: 0; width: 280px;
+      background: rgba(4,3,2,0.92);
+      backdrop-filter: blur(16px);
+      border-right: 1px solid rgba(201,163,82,0.12);
+      display: flex; flex-direction: column;
+      z-index: 55; overflow: hidden;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.25,0.8,0.25,1);
+      box-shadow: 8px 0 40px rgba(0,0,0,0.8);
+    }
+    #roster-drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      height: 36px; padding: 0 14px;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid rgba(201,163,82,0.08);
+      flex-shrink: 0;
+    }
+    .drawer-title { font: 700 8px/1 'Cinzel Decorative', serif; letter-spacing: 3px; color: rgba(201,163,82,0.35); text-transform: uppercase; }
+    .drawer-close { background: none; border: none; color: rgba(201,163,82,0.3); cursor: pointer; font-size: 14px; line-height: 1; transition: color 0.15s; }
+    .drawer-close:hover { color: #c9a352; }
+
+    .drawer-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .drawer-scroll::-webkit-scrollbar { width: 2px; }
+    .drawer-scroll::-webkit-scrollbar-thumb { background: rgba(201,163,82,0.1); }
+
+    /* Faction sections in drawer */
+    .faction-section { margin-bottom: 2px; }
+    .faction-header {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px 5px; cursor: pointer;
+      font: 700 8px/1 'Cinzel', serif; letter-spacing: 2px; text-transform: uppercase;
+      user-select: none; border-bottom: 1px solid rgba(201,163,82,0.05);
+      transition: background 0.15s;
+    }
+    .faction-header:hover { background: rgba(201,163,82,0.03); }
+    .faction-header.imp { color: #c9a352; }
+    .faction-header.ork { color: #8b1a1a; }
+    .faction-icon { font-size: 13px; }
+    .faction-label { flex: 1; }
+    .faction-chevron { font-size: 8px; color: #4a3f2f; transition: transform 0.25s; }
+    .faction-body { overflow: hidden; max-height: 500px; transition: max-height 0.3s ease; }
+    .faction-body.collapsed { max-height: 0; }
+
+    /* Unit rows in drawer */
+    .rail-unit {
+      display: flex; align-items: center; gap: 10px;
+      height: 42px; padding: 0 14px; cursor: pointer;
+      border-left: 3px solid transparent; transition: background 0.1s;
+    }
+    .rail-unit.imp { border-left-color: rgba(201,163,82,0.12); }
+    .rail-unit.ork { border-left-color: rgba(139,26,26,0.15); }
+    .rail-unit:hover { background: rgba(201,163,82,0.03); }
+    .rail-unit.active { background: rgba(0,204,170,0.04); border-left-color: #00ccaa; }
+    .rail-icon { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; background: rgba(4,3,2,0.8); position: relative; }
+    .rail-icon.imp { border: 1.5px solid rgba(201,163,82,0.2); color: rgba(201,163,82,0.6); }
+    .rail-icon.ork { border: 1.5px solid rgba(139,26,26,0.3); color: rgba(139,26,26,0.7); }
+    .rail-icon.char { border-color: rgba(201,163,82,0.35); }
+    .rail-unit.active .rail-icon { border-color: rgba(0,204,170,0.5); }
+    .rail-count-badge { position: absolute; top: -3px; right: -4px; width: 14px; height: 14px; border-radius: 50%; background: rgba(4,3,2,0.9); color: rgba(201,163,82,0.6); font: 700 7px/14px 'Share Tech Mono', monospace; text-align: center; z-index: 2; border: 1px solid rgba(201,163,82,0.2); }
+    .rail-unit-info { flex: 1; min-width: 0; }
+    .rail-unit-name { font: 700 11px/1.2 'Rajdhani', sans-serif; color: #6a5a4a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rail-unit.active .rail-unit-name { color: #00ccaa; }
+    .shocked-badge { font: 700 6px/1 'Rajdhani', sans-serif; padding: 2px 4px; background: rgba(255,170,0,0.1); color: #ffaa00; border: 1px solid rgba(255,170,0,0.2); border-radius: 1px; text-transform: uppercase; flex-shrink: 0; }
+
+    /* Army abilities in drawer */
+    .army-abilities-section {}
+    .army-abilities-header {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 14px; cursor: pointer;
+      font: 600 7px/1 'Cinzel', serif; letter-spacing: 2px;
+      text-transform: uppercase; color: #4a3f2f;
+      background: rgba(201,163,82,0.03);
+      border-top: 1px solid rgba(201,163,82,0.05);
+      user-select: none;
+    }
+    .army-abilities-header:hover { color: #8a7a6a; }
+    .aa-chevron { margin-left: auto; font-size: 7px; transition: transform 0.25s; }
+    .army-abilities-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .army-abilities-body.open { max-height: 200px; }
+    .army-ability-row { padding: 4px 14px 4px 20px; border-bottom: 1px solid rgba(201,163,82,0.03); }
+    .aa-name { font: 700 8px/1 'Rajdhani', sans-serif; color: rgba(201,163,82,0.6); letter-spacing: 1px; text-transform: uppercase; }
+    .aa-desc { font: 400 9px/1.4 'Rajdhani', sans-serif; color: #3a3028; margin-top: 2px; }
+
+    /* ── BATTLEFIELD (almost fullscreen) ─────────────────── */
+    #battlefield {
+      position: fixed; left: 40px; top: 0; right: 0; bottom: 0;
+      background-color: #040302;
+      background-image:
+        radial-gradient(ellipse 95% 90% at 50% 50%, transparent 50%, rgba(0,0,0,0.9) 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(201,163,82,0.05) 49px, rgba(201,163,82,0.05) 50px),
+        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(201,163,82,0.05) 49px, rgba(201,163,82,0.05) 50px);
+      cursor: default; overflow: hidden; z-index: 10;
+    }
+
+    /* VP HUD overlays in battlefield corners */
+    .vp-hud {
+      position: absolute; top: 10px;
+      font: 700 11px/1 'Orbitron', sans-serif; letter-spacing: 2px;
+      pointer-events: none; z-index: 20;
+    }
+    .vp-hud.imp { left: 12px; color: rgba(201,163,82,0.25); }
+    .vp-hud.ork { right: 12px; color: rgba(139,26,26,0.3); text-align: right; }
+    .vp-hud .vp-num { font-size: 22px; color: inherit; display: block; }
+    .vp-hud .vp-lbl { font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: inherit; opacity: 0.7; margin-top: 2px; display: block; }
+    .cp-hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); font: 700 8px/1 'Orbitron', sans-serif; letter-spacing: 2px; color: rgba(201,163,82,0.2); z-index: 20; pointer-events: none; text-transform: uppercase; }
+    .cp-hud span { font-size: 16px; color: rgba(201,163,82,0.25); display: block; text-align: center; margin-top: 1px; }
+
+    /* Phase: single compact line top-center */
+    #phase-header {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 25; pointer-events: none;
+      display: flex; justify-content: center; align-items: flex-start;
+    }
+    .phase-single {
+      margin-top: 10px;
+      font: 700 9px/1 'Cinzel', serif; letter-spacing: 3px; color: rgba(201,163,82,0.3);
+      text-transform: uppercase;
+      background: rgba(4,3,2,0.7); padding: 5px 16px; border-radius: 2px;
+      pointer-events: auto;
+      border: 1px solid rgba(201,163,82,0.08);
+    }
+
+    #bf-controls {
+      position: absolute; bottom: 60px; right: 10px;
+      display: flex; align-items: center; gap: 6px; z-index: 25;
+    }
+    #zoom-indicator { font: 400 9px/1 'Share Tech Mono', monospace; color: rgba(201,163,82,0.15); }
+    .bf-ctrl-btn {
+      font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 1px; text-transform: uppercase;
+      background: rgba(4,3,2,0.7); border: 1px solid rgba(201,163,82,0.08); color: rgba(201,163,82,0.2);
+      padding: 3px 7px; cursor: pointer; transition: all 0.15s; border-radius: 2px;
+    }
+    .bf-ctrl-btn:hover { border-color: rgba(201,163,82,0.35); color: #c9a352; }
+
+    #battlefield-inner { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform-origin: center; cursor: grab; }
+    #battlefield-inner.dragging { cursor: grabbing; }
+    #bf-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+
+    /* OBJECTIVE MARKERS — double ring style */
+    .obj-wrap {
+      position: absolute; transform: translate(-50%, -50%);
+      width: 64px; height: 64px; z-index: 4;
+    }
+    .obj-inner {
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: rgba(8,6,4,0.9);
+      position: relative;
+    }
+    .obj-inner::before {
+      content: ''; position: absolute; inset: -6px;
+      border-radius: 50%; border: 1.5px solid rgba(201,163,82,0.18);
+    }
+    .obj-inner::after {
+      content: ''; position: absolute; inset: -36px;
+      border-radius: 50%; border: 1px solid rgba(201,163,82,0.08);
+    }
+    .obj-inner.neutral { border: 2px solid rgba(74,63,47,0.4); }
+    .obj-inner.controlled { border: 2px solid rgba(201,163,82,0.5); box-shadow: 0 0 20px rgba(201,163,82,0.3); }
+    .obj-inner.controlled::before { border-color: rgba(201,163,82,0.4); }
+    .obj-inner.contested { border: 2px solid rgba(139,26,26,0.6); animation: obj-pulse 1.2s ease-in-out infinite; }
+    @keyframes obj-pulse { 0%,100%{box-shadow:0 0 8px rgba(139,26,26,0.3)} 50%{box-shadow:0 0 24px rgba(139,26,26,0.8)} }
+    .obj-inner.contested::before { border-color: rgba(139,26,26,0.3); }
+    .obj-number { font: 700 18px/1 'Cinzel', serif; color: #e0d0b0; }
+    .obj-label { font: 600 6px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: rgba(224,208,176,0.35); text-transform: uppercase; margin-top: 2px; }
+
+    /* TOKENS — minimal, labels on hover only, gold for imp, red for ork */
+    .token {
+      position: absolute; transform: translate(-50%, -50%);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 3;
+      transition: box-shadow 0.15s, border-color 0.15s; user-select: none;
+      flex-direction: column;
+    }
+    /* Token labels: hidden, appear on hover */
+    .token-label {
+      position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+      margin-top: 4px; font: 700 7px/1 'Cinzel', serif; color: rgba(201,163,82,0.4);
+      white-space: nowrap; pointer-events: none; letter-spacing: 0.5px;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    .token:hover .token-label { opacity: 1; }
+    .token-size-s { width: 46px; height: 46px; }
+    .token-size-m { width: 58px; height: 58px; }
+    .token-size-l { width: 74px; height: 74px; }
+    .token-vehicle { width: 80px; height: 70px; border-radius: 12px; }
+    .token-class-icon { font-size: 18px; line-height: 1; }
+    .token-count { font: 700 8px/1 'Share Tech Mono', monospace; color: rgba(224,208,176,0.3); }
+    /* Imperial tokens — gold */
+    .token-imp {
+      border: 2px solid rgba(201,163,82,0.3);
+      background: radial-gradient(circle, rgba(16,12,6,0.97) 0%, rgba(4,3,2,0.97) 100%);
+      box-shadow: 0 0 8px rgba(201,163,82,0.1);
+    }
+    .token-imp .token-class-icon { color: rgba(201,163,82,0.6); }
+    .token-imp:hover { box-shadow: 0 0 16px rgba(201,163,82,0.3); border-color: rgba(201,163,82,0.5); }
+    .token-imp.selected { border-color: #00ccaa; box-shadow: 0 0 20px rgba(0,204,170,0.6); }
+    /* Ork tokens — red */
+    .token-ork {
+      border: 2px solid rgba(139,26,26,0.4);
+      background: radial-gradient(circle, rgba(18,4,4,0.97) 0%, rgba(4,3,2,0.97) 100%);
+      box-shadow: 0 0 8px rgba(139,26,26,0.2);
+    }
+    .token-ork .token-class-icon { color: rgba(139,26,26,0.7); }
+    .token-ork:hover { box-shadow: 0 0 16px rgba(139,26,26,0.4); border-color: rgba(139,26,26,0.6); }
+    .token-ork.selected { border-color: #00ccaa; box-shadow: 0 0 20px rgba(0,204,170,0.6); }
+    .token-badge { position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px; border-radius: 8px; padding: 0 2px; background: rgba(4,3,2,0.9); font: 700 7px/16px 'Share Tech Mono', monospace; text-align: center; z-index: 4; }
+    .token-imp .token-badge { color: rgba(201,163,82,0.6); border: 1px solid rgba(201,163,82,0.2); }
+    .token-ork .token-badge { color: rgba(139,26,26,0.8); border: 1px solid rgba(139,26,26,0.25); }
+
+    /* ── UNIT DETAIL CARD (bottom-left) ──────────────────── */
+    #unit-detail-card {
+      position: fixed; bottom: 60px; left: 50px;
+      width: 320px;
+      background: rgba(4,3,2,0.97);
+      border: 1px solid rgba(201,163,82,0.25);
+      z-index: 30; display: none;
+      backdrop-filter: blur(14px);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    #unit-detail-card.visible { display: block; }
+    #unit-detail-card::before { content: ''; position: absolute; top: 0; left: 0; width: 16px; height: 16px; border-top: 1px solid rgba(201,163,82,0.5); border-left: 1px solid rgba(201,163,82,0.5); pointer-events: none; z-index: 1; }
+    #unit-detail-card::after { content: ''; position: absolute; bottom: 0; right: 0; width: 16px; height: 16px; border-bottom: 1px solid rgba(201,163,82,0.5); border-right: 1px solid rgba(201,163,82,0.5); pointer-events: none; z-index: 1; }
+
+    .card-header { background: rgba(201,163,82,0.03); border-bottom: 1px solid rgba(201,163,82,0.1); padding: 12px 14px; display: flex; align-items: flex-start; justify-content: space-between; }
+    .card-unit-name { font: 700 20px/1.1 'Cinzel', serif; color: #e0d0b0; text-transform: uppercase; }
+    .card-faction-badge { font: 600 8px/1 'Rajdhani', sans-serif; color: rgba(201,163,82,0.4); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+    .card-close { color: rgba(201,163,82,0.3); cursor: pointer; font-size: 16px; line-height: 1; margin-left: 8px; flex-shrink: 0; transition: color 0.15s; }
+    .card-close:hover { color: #c9a352; }
+
+    /* Stats */
+    .card-stats { display: flex; border-bottom: 1px solid rgba(201,163,82,0.07); }
+    .card-stat { flex: 1; text-align: center; padding: 8px 2px; }
+    .card-stat-key { font: 600 8px/1 'Cinzel', serif; letter-spacing: 1px; color: rgba(201,163,82,0.35); text-transform: uppercase; }
+    .card-stat-val { font: 700 16px/1 'Share Tech Mono', monospace; color: #c0a890; margin-top: 3px; }
+    .card-stat.hl { background: rgba(201,163,82,0.05); }
+    .card-stat.hl .card-stat-key { color: #c9a352; }
+    .card-stat.hl .card-stat-val { color: #c9a352; }
+
+    /* Abilities section — most prominent */
+    .card-abilities {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(201,163,82,0.07);
+      background: rgba(201,163,82,0.02);
+    }
+    .card-section-title { font: 700 8px/1 'Cinzel', serif; letter-spacing: 2px; color: rgba(201,163,82,0.4); text-transform: uppercase; margin-bottom: 8px; }
+    .ability-row { margin-bottom: 8px; }
+    .ability-pill {
+      display: inline-block; cursor: pointer;
+      font: 700 9px/1 'Cinzel', serif; letter-spacing: 1.5px;
+      padding: 5px 12px; background: rgba(201,163,82,0.06); color: #c9a352;
+      border: 1px solid rgba(201,163,82,0.18); border-radius: 2px;
+      transition: all 0.15s; margin-bottom: 5px; text-transform: uppercase;
+    }
+    .ability-pill:hover { background: rgba(201,163,82,0.12); border-color: rgba(201,163,82,0.4); }
+    .ability-desc { font: 400 11px/1.55 'Rajdhani', sans-serif; color: #4a3f2f; padding-left: 4px; }
+    .ability-row:hover .ability-desc { color: #6a5a4a; }
+
+    /* Wargear — collapsible, closed by default */
+    .card-wargear { border-bottom: 1px solid rgba(201,163,82,0.07); }
+    .wargear-toggle-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; cursor: pointer;
+      font: 700 8px/1 'Cinzel', serif; letter-spacing: 2px; color: rgba(201,163,82,0.35);
+      text-transform: uppercase; user-select: none; transition: color 0.15s;
+    }
+    .wargear-toggle-header:hover { color: #c9a352; }
+    .wg-chevron { font-size: 8px; transition: transform 0.25s; }
+    .wargear-body { overflow: hidden; max-height: 0; transition: max-height 0.3s ease; }
+    .wargear-body.open { max-height: 200px; }
+    .wargear-inner { padding: 0 14px 8px; }
+    .wargear-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 6px; margin-bottom: 3px; cursor: pointer;
+      border: 1px solid rgba(201,163,82,0.07); border-radius: 2px;
+      transition: all 0.15s; color: #3a3028;
+      font: 600 11px/1 'Rajdhani', sans-serif;
+    }
+    .wargear-row:hover { border-color: rgba(201,163,82,0.2); color: #6a5a4a; }
+    .wargear-row.checked { border-color: rgba(201,163,82,0.35); background: rgba(201,163,82,0.05); color: #e0d0b0; }
+    .wargear-check { font-size: 12px; flex-shrink: 0; }
+
+    /* Weapons — compact table at bottom */
+    .card-weapons { padding: 8px 14px; }
+    .card-weapon-type { font: 700 7px/1 'Cinzel', serif; letter-spacing: 2px; color: rgba(201,163,82,0.25); text-transform: uppercase; margin-bottom: 4px; margin-top: 4px; }
+    .card-weapon-type:first-child { margin-top: 0; }
+    .card-weapon-row { display: flex; align-items: flex-start; gap: 4px; padding: 3px 0; border-bottom: 1px solid rgba(201,163,82,0.03); }
+    .card-weapon-row:last-child { border-bottom: none; }
+    .cwname { flex: 1; font: 600 10px/1.2 'Rajdhani', sans-serif; color: #8a7a6a; }
+    .cwval { font: 600 9px/1 'Share Tech Mono', monospace; color: #3a3028; min-width: 22px; text-align: center; }
+    .cwval.ap-neg { color: #8a7060; }
+    .cwval.ap-heavy { color: #6a2020; }
+    .cwval.dmg { color: #8a7040; }
+    .card-kws { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px; }
+
+    /* Keyword pills */
+    .kw-pill { display: inline-block; font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 0.5px; padding: 2px 5px; border-radius: 6px; cursor: help; position: relative; text-transform: uppercase; transition: filter 0.15s; }
+    .kw-pill:hover { filter: brightness(1.4); }
+    .kw-pill.assault  { background: rgba(0,204,170,0.1); color: rgba(0,204,170,0.7); border: 1px solid rgba(0,204,170,0.2); }
+    .kw-pill.melee    { background: rgba(204,51,51,0.1); color: rgba(204,51,51,0.7); border: 1px solid rgba(204,51,51,0.2); }
+    .kw-pill.pistol   { background: rgba(201,163,82,0.1); color: rgba(201,163,82,0.7); border: 1px solid rgba(201,163,82,0.2); }
+    .kw-pill.hazardous{ background: rgba(255,104,32,0.1); color: rgba(255,104,32,0.7); border: 1px solid rgba(255,104,32,0.2); }
+    .kw-pill.heavy    { background: rgba(102,136,204,0.1); color: rgba(102,136,204,0.7); border: 1px solid rgba(102,136,204,0.2); }
+    .kw-pill.rapid    { background: rgba(68,170,102,0.1); color: rgba(68,170,102,0.7); border: 1px solid rgba(68,170,102,0.2); }
+    .kw-pill.blast    { background: rgba(204,170,0,0.1); color: rgba(204,170,0,0.7); border: 1px solid rgba(204,170,0,0.2); }
+    .kw-pill.melta    { background: rgba(255,64,16,0.1); color: rgba(255,64,16,0.7); border: 1px solid rgba(255,64,16,0.2); }
+    .kw-pill.other    { background: rgba(58,48,40,0.3); color: #4a3f2f; border: 1px solid #2a2018; }
+    .kw-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 115%; left: 50%; transform: translateX(-50%); background: #0a0806; border: 1px solid rgba(201,163,82,0.15); color: #6a5a4a; font: 400 10px/1.5 'Rajdhani', sans-serif; padding: 6px 10px; white-space: normal; z-index: 999; pointer-events: none; transition: opacity 0.15s; min-width: 180px; max-width: 230px; box-shadow: 0 4px 16px rgba(0,0,0,0.9); border-radius: 2px; }
+    .kw-pill:hover .kw-tooltip { visibility: visible; opacity: 1; }
+
+    /* ── ACTION BAR ─────────────────────────────────────── */
+    #action-bar {
+      position: fixed; left: 40px; right: 0; bottom: 0; height: 52px;
+      background: rgba(4,3,2,0.98);
+      border-top: 1px solid rgba(201,163,82,0.07);
+      display: flex; align-items: center; padding: 0 12px; gap: 8px;
+      z-index: 30;
+    }
+    .phase-step-mini { display: flex; align-items: center; gap: 4px; font: 600 7px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; }
+    .phase-step-mini .ps-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .phase-step-mini.done { color: #1a1408; } .phase-step-mini.done .ps-dot { background: #1a1408; }
+    .phase-step-mini.active { color: #c9a352; } .phase-step-mini.active .ps-dot { background: #c9a352; box-shadow: 0 0 4px rgba(201,163,82,0.4); }
+    .phase-step-mini.upcoming { color: #1a1408; } .phase-step-mini.upcoming .ps-dot { background: #181208; }
+    .ps-sep { color: #181208; font-size: 8px; }
+    .ab-divider { width: 1px; height: 32px; background: rgba(201,163,82,0.05); margin: 0 4px; }
+    .ab-action-btn { height: 34px; min-width: 86px; padding: 0 10px; position: relative; font: 700 8px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; background: rgba(201,163,82,0.03); border: 1px solid rgba(201,163,82,0.08); color: rgba(201,163,82,0.25); cursor: pointer; transition: all 0.15s; border-radius: 2px; }
+    .ab-action-btn:hover { border-color: rgba(201,163,82,0.25); color: rgba(201,163,82,0.6); }
+    .ab-action-btn:hover::after { content: attr(data-shortcut); position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font: 700 7px/1 'Share Tech Mono', monospace; background: #0a0806; color: #c9a352; padding: 2px 4px; border: 1px solid rgba(201,163,82,0.15); border-radius: 2px; white-space: nowrap; }
+    .ab-action-btn.active { border-color: rgba(201,163,82,0.3); color: #c9a352; background: rgba(201,163,82,0.07); }
+    .ab-stratagem-btn { height: 34px; min-width: 120px; padding: 0 12px; position: relative; font: 700 8px/1 'Cinzel', serif; letter-spacing: 1px; text-transform: uppercase; background: transparent; border: 1px solid rgba(201,163,82,0.2); color: rgba(201,163,82,0.4); cursor: pointer; transition: all 0.15s; border-radius: 2px; }
+    .ab-stratagem-btn:hover { border-color: #c9a352; color: #c9a352; }
+    .ab-end-btn { height: 34px; min-width: 140px; padding: 0 12px; font: 700 8px/1 'Cinzel', serif; letter-spacing: 2px; text-transform: uppercase; background: rgba(201,163,82,0.05); border: 1px solid rgba(201,163,82,0.2); color: rgba(201,163,82,0.6); cursor: pointer; transition: all 0.15s; border-radius: 2px; margin-left: auto; }
+    .ab-end-btn:hover { border-color: #c9a352; color: #c9a352; }
+    #zone-actions { display: flex; gap: 5px; }
+
+    /* STRATAGEM MODAL */
+    #modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+    #modal-overlay.visible { display: flex; }
+    #stratagem-modal { width: 400px; max-height: 70vh; background: rgba(4,3,2,0.99); border: 1px solid rgba(201,163,82,0.2); box-shadow: 0 0 40px rgba(0,0,0,0.9); display: flex; flex-direction: column; overflow: hidden; border-radius: 3px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(201,163,82,0.03); border-bottom: 1px solid rgba(201,163,82,0.1); font: 700 10px/1 'Cinzel Decorative', serif; letter-spacing: 3px; color: #c9a352; }
+    .modal-close { font-size: 16px; color: rgba(201,163,82,0.3); cursor: pointer; }
+    .modal-close:hover { color: #c9a352; }
+    .stratagem-list { overflow-y: auto; flex: 1; padding: 6px 0; }
+    .stratagem-item { padding: 10px 16px; border-bottom: 1px solid rgba(201,163,82,0.04); cursor: pointer; }
+    .stratagem-item:hover { background: rgba(201,163,82,0.02); }
+    .stratagem-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .stratagem-name { font: 700 12px/1 'Cinzel', serif; color: #a09080; flex: 1; }
+    .stratagem-cost { font: 700 10px/1 'Share Tech Mono', monospace; background: rgba(139,26,26,0.1); color: rgba(139,26,26,0.8); padding: 2px 6px; border-radius: 2px; border: 1px solid rgba(139,26,26,0.2); }
+    .stratagem-timing { font: 600 7px/1 'Rajdhani', sans-serif; color: rgba(201,163,82,0.5); background: rgba(201,163,82,0.05); border: 1px solid rgba(201,163,82,0.12); padding: 2px 5px; text-transform: uppercase; letter-spacing: 1px; border-radius: 2px; }
+    .stratagem-desc { font: 400 10px/1.5 'Rajdhani', sans-serif; color: #3a3028; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 40px LEFT TAB -->
+  <div id="roster-tab" onclick="toggleDrawer()">
+    <span class="tab-icon imp" title="Imperium">✠</span>
+    <span class="tab-icon ork" title="Orks">☠</span>
+    <span class="tab-open-hint">ROSTER</span>
+  </div>
+
+  <!-- SLIDE-IN DRAWER -->
+  <div id="roster-drawer">
+    <div class="drawer-header">
+      <span class="drawer-title">Army Roster</span>
+      <button class="drawer-close" onclick="closeDrawer()">×</button>
+    </div>
+    <div class="drawer-scroll">
+
+      <!-- IMPERIUM -->
+      <div class="faction-section">
+        <div class="faction-header imp" onclick="toggleFaction(this)">
+          <span class="faction-icon">✠</span>
+          <span class="faction-label">Imperium</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit imp active" data-unit="assault-intercessors">
+            <div class="rail-icon imp">✠<div class="rail-count-badge">5</div></div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Assault Intercessors</div></div>
+          </div>
+          <div class="rail-unit imp" data-unit="primaris-lieutenant">
+            <div class="rail-icon char">★</div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Primaris Lieutenant</div></div>
+          </div>
+          <div class="rail-unit imp" data-unit="intercessor-squad-a">
+            <div class="rail-icon imp">✠<div class="rail-count-badge">5</div></div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Intercessor Squad A</div></div>
+          </div>
+          <div class="rail-unit imp" data-unit="hellblasters">
+            <div class="rail-icon imp">✠<div class="rail-count-badge">5</div></div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Hellblasters</div></div>
+          </div>
+          <div class="rail-unit imp" data-unit="redemptor-dreadnought">
+            <div class="rail-icon imp" style="border-radius:4px;">⬡</div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Redemptor Dreadnought</div></div>
+          </div>
+          <div class="army-abilities-section">
+            <div class="army-abilities-header" onclick="toggleArmyAbilities(this)">
+              <span>⚜</span><span style="flex:1;margin-left:5px;">Army Abilities</span>
+              <span class="aa-chevron">▸</span>
+            </div>
+            <div class="army-abilities-body">
+              <div class="army-ability-row"><div class="aa-name">And They Shall Know No Fear</div><div class="aa-desc">Re-roll wound rolls of 1 for ADEPTUS ASTARTES.</div></div>
+              <div class="army-ability-row"><div class="aa-name">Oath of Moment</div><div class="aa-desc">Pick one enemy unit. Re-roll hit rolls against it.</div></div>
+              <div class="army-ability-row"><div class="aa-name">Shock Assault</div><div class="aa-desc">+1 Attack for units that charged this turn.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ORKS -->
+      <div class="faction-section">
+        <div class="faction-header ork" onclick="toggleFaction(this)">
+          <span class="faction-icon">☠</span>
+          <span class="faction-label">Orks</span>
+          <span class="faction-chevron">▾</span>
+        </div>
+        <div class="faction-body">
+          <div class="rail-unit ork" data-unit="boss-nob">
+            <div class="rail-icon char" style="color:rgba(139,26,26,0.7);">☠</div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Boss Nob</div></div>
+          </div>
+          <div class="rail-unit ork" data-unit="boyz-mob">
+            <div class="rail-icon ork" style="color:rgba(139,26,26,0.65);">☠<div class="rail-count-badge" style="color:rgba(139,26,26,0.7);border-color:rgba(139,26,26,0.2);">10</div></div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Boyz Mob</div></div>
+          </div>
+          <div class="rail-unit ork" data-unit="mekboy">
+            <div class="rail-icon char" style="color:rgba(139,26,26,0.65);">⚙</div>
+            <div class="rail-unit-info"><div class="rail-unit-name">Mekboy</div></div>
+          </div>
+          <div class="army-abilities-section">
+            <div class="army-abilities-header" onclick="toggleArmyAbilities(this)" style="color:rgba(139,26,26,0.5);">
+              <span>☠</span><span style="flex:1;margin-left:5px;">Army Abilities</span>
+              <span class="aa-chevron">▸</span>
+            </div>
+            <div class="army-abilities-body">
+              <div class="army-ability-row"><div class="aa-name" style="color:rgba(139,26,26,0.6);">'Ere We Go</div><div class="aa-desc">Ork units can charge after Advancing.</div></div>
+              <div class="army-ability-row"><div class="aa-name" style="color:rgba(139,26,26,0.6);">Waaagh!</div><div class="aa-desc">Once per game: +1 Attack and +1 charge rolls until end of turn.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BATTLEFIELD (fullscreen minus tab) -->
+  <div id="battlefield" onclick="handleBattlefieldClick(event)">
+
+    <!-- VP HUDs in corners -->
+    <div class="vp-hud imp">
+      <span class="vp-num">10</span>
+      <span class="vp-lbl">IMP VP</span>
+    </div>
+    <div class="vp-hud ork">
+      <span class="vp-num" style="text-align:right;display:block;">4</span>
+      <span class="vp-lbl">ORKS VP</span>
+    </div>
+    <div class="cp-hud">CMD PTS<span>5</span></div>
+
+    <!-- Phase: single compact line -->
+    <div id="phase-header">
+      <div class="phase-single">MOVEMENT PHASE · RND 2</div>
+    </div>
+
+    <!-- Controls -->
+    <div id="bf-controls">
+      <span id="zoom-indicator">100%</span>
+      <button class="bf-ctrl-btn" id="reset-view">↺ Reset</button>
+    </div>
+
+    <div id="battlefield-inner">
+      <svg id="bf-svg" viewBox="0 0 1000 600" preserveAspectRatio="none">
+        <line x1="0" y1="450" x2="1000" y2="450" stroke="rgba(201,163,82,0.06)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <line x1="0" y1="150" x2="1000" y2="150" stroke="rgba(139,26,26,0.07)" stroke-width="1.5" stroke-dasharray="10,6"/>
+        <polygon points="200,300 200,450 350,450 350,400 250,400 250,300" fill="rgba(201,163,82,0.01)" stroke="rgba(201,163,82,0.22)" stroke-width="1.5"/>
+        <polygon points="600,100 800,100 800,250 750,250 750,150 600,150" fill="rgba(201,163,82,0.01)" stroke="rgba(201,163,82,0.22)" stroke-width="1.5"/>
+        <polygon points="400,280 500,280 500,380 400,380" fill="rgba(201,163,82,0.008)" stroke="rgba(201,163,82,0.18)" stroke-width="1"/>
+      </svg>
+
+      <!-- Objective Markers — double ring -->
+      <div class="obj-wrap" style="left:15%;top:20%;">
+        <div class="obj-inner contested"><div class="obj-number">01</div><div class="obj-label">OBJ</div></div>
+      </div>
+      <div class="obj-wrap" style="left:50%;top:65%;">
+        <div class="obj-inner controlled"><div class="obj-number">02</div><div class="obj-label">OBJ</div></div>
+      </div>
+      <div class="obj-wrap" style="left:80%;top:30%;">
+        <div class="obj-inner neutral"><div class="obj-number">03</div><div class="obj-label">OBJ</div></div>
+      </div>
+
+      <!-- Tokens — labels on hover only -->
+      <div class="token token-size-m token-imp selected" data-unit="assault-intercessors" style="left:30%;top:40%;">
+        <div class="token-class-icon">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Assault Int.</div>
+      </div>
+      <div class="token token-size-s token-imp" data-unit="primaris-lieutenant" style="left:35%;top:55%;">
+        <div class="token-class-icon" style="color:#c9a352;">★</div>
+        <div class="token-badge">1</div>
+        <div class="token-label">Lt.</div>
+      </div>
+      <div class="token token-size-m token-imp" data-unit="intercessor-squad-a" style="left:42%;top:45%;">
+        <div class="token-class-icon">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Int. A</div>
+      </div>
+      <div class="token token-size-m token-imp" data-unit="hellblasters" style="left:50%;top:38%;">
+        <div class="token-class-icon">✠</div>
+        <div class="token-count">×5</div>
+        <div class="token-badge">5</div>
+        <div class="token-label">Hellblasters</div>
+      </div>
+      <div class="token token-vehicle token-imp" data-unit="redemptor-dreadnought" style="left:26%;top:58%;">
+        <div class="token-class-icon" style="font-size:20px;">⬡</div>
+        <div class="token-badge">1</div>
+        <div class="token-label" style="margin-top:8px;">Dreadnought</div>
+      </div>
+      <div class="token token-size-s token-ork" data-unit="boss-nob" style="left:70%;top:18%;">
+        <div class="token-class-icon">☠</div>
+        <div class="token-badge">1</div>
+        <div class="token-label">Boss Nob</div>
+      </div>
+      <div class="token token-size-l token-ork" data-unit="boyz-mob" style="left:72%;top:32%;">
+        <div class="token-class-icon">☠</div>
+        <div class="token-count">×10</div>
+        <div class="token-badge">10</div>
+        <div class="token-label">Boyz</div>
+      </div>
+      <div class="token token-size-s token-ork" data-unit="mekboy" style="left:62%;top:45%;">
+        <div class="token-class-icon" style="font-size:14px;">⚙</div>
+        <div class="token-badge">1</div>
+        <div class="token-label">Mekboy</div>
+      </div>
+    </div>
+
+    <!-- UNIT DETAIL CARD (bottom-left) -->
+    <div id="unit-detail-card" class="visible">
+      <div class="card-header">
+        <div style="min-width:0;flex:1;">
+          <div class="card-unit-name" id="card-unit-name">Assault Intercessors</div>
+          <div class="card-faction-badge" id="card-faction">✠ SPACE MARINES · ADEPTUS ASTARTES</div>
+        </div>
+        <span class="card-close" id="card-close">×</span>
+      </div>
+      <div class="card-stats" id="card-stats"></div>
+      <div class="card-abilities" id="card-abilities"></div>
+      <div class="card-wargear" id="card-wargear-section"></div>
+      <div class="card-weapons" id="card-weapons"></div>
+    </div>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div id="action-bar">
+    <div class="phase-step-mini done"><div class="ps-dot"></div>Command</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini active"><div class="ps-dot"></div>Movement</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Shooting</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Charge</div>
+    <span class="ps-sep">›</span>
+    <div class="phase-step-mini upcoming"><div class="ps-dot"></div>Fight</div>
+    <div class="ab-divider"></div>
+    <div id="zone-actions">
+      <button class="ab-action-btn active" data-shortcut="[N]">NORMAL MOVE</button>
+      <button class="ab-action-btn" data-shortcut="[A]">ADVANCE</button>
+    </div>
+    <div class="ab-divider"></div>
+    <button class="ab-stratagem-btn" id="btn-stratagem">USE STRATAGEM</button>
+    <button class="ab-end-btn" id="btn-end-phase">END MOVEMENT →</button>
+  </div>
+
+</div>
+
+<!-- Stratagem Modal -->
+<div id="modal-overlay">
+  <div id="stratagem-modal">
+    <div class="modal-header">Select Stratagem<span class="modal-close" id="modal-close">×</span></div>
+    <div class="stratagem-list">
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Command Re-roll</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Any Phase</span></div><p class="stratagem-desc">Re-roll one dice result.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Insane Bravery</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Command Phase</span></div><p class="stratagem-desc">A unit automatically passes a Battle-shock test.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Tank Shock</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Movement Phase</span></div><p class="stratagem-desc">A VEHICLE unit can move through enemy units.</p></div>
+      <div class="stratagem-item"><div class="stratagem-top"><span class="stratagem-name">Fire Overwatch</span><span class="stratagem-cost">1 CP</span><span class="stratagem-timing">Opp. Movement</span></div><p class="stratagem-desc">When an enemy unit declares a charge, a unit within 24" can shoot at it.</p></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const KW_RULES = {
+  'MELEE':        {cls:'melee',     tip:'Fight phase only.'},
+  'PISTOL':       {cls:'pistol',    tip:'Can shoot in Fight phase.'},
+  'ASSAULT':      {cls:'assault',   tip:'Fire after Advancing.'},
+  'ASSAULT 2':    {cls:'assault',   tip:'ASSAULT: 2 shots, fire after Advancing.'},
+  'ASSAULT 3':    {cls:'assault',   tip:'ASSAULT: 3 shots, fire after Advancing.'},
+  'HEAVY':        {cls:'heavy',     tip:'-1 to hit if bearer moved.'},
+  'HAZARDOUS':    {cls:'hazardous', tip:'Roll D6 after shooting. On 1: 1 mortal wound.'},
+  'RAPID FIRE 1': {cls:'rapid',     tip:'Extra attack at half range.'},
+  'BLAST':        {cls:'blast',     tip:'+1 Attack per 5 models in target.'},
+  'MELTA 2':      {cls:'melta',     tip:'+2 Damage at half range.'},
+};
+function kwPill(kw){
+  const d=KW_RULES[kw]||{cls:'other',tip:'Keyword ability.'};
+  return `<span class="kw-pill ${d.cls}">${kw}<span class="kw-tooltip">${d.tip}</span></span>`;
+}
+
+const UNITS = {
+  'assault-intercessors':{name:'Assault Intercessors',faction:'✠ SPACE MARINES · ADEPTUS ASTARTES',models:5,
+    stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2},
+    abilities:[{name:'Shock Assault',desc:'On a turn this unit makes a charge move, until end of turn its models get +1 Attack.'},{name:'And They Shall Know No Fear',desc:'Each time a model takes a wound, roll D6. On 6, ignored.'}],
+    wargear:null,
+    baseWeapons:[{type:'MELEE',name:'Astartes Chainsword',rng:'—',a:4,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Heavy Bolt Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}]
+  },
+  'primaris-lieutenant':{name:'Primaris Lieutenant',faction:'★ SPACE MARINES · CHARACTER',models:1,
+    stats:{M:'6"',T:4,Sv:'3+',W:5,Ld:6,OC:1},
+    abilities:[{name:'Tactical Precision',desc:'Friendly ADEPTUS ASTARTES within 6" re-roll wound rolls of 1.'}],
+    wargear:null,
+    baseWeapons:[{type:'RANGED',name:'Master-crafted Auto Pistol',rng:'18"',a:2,s:4,ap:0,d:1,kw:['PISTOL']},{type:'MELEE',name:'Paired Combat Blades',rng:'—',a:6,s:4,ap:-1,d:1,kw:['MELEE']}]
+  },
+  'intercessor-squad-a':{name:'Intercessor Squad A',faction:'✠ SPACE MARINES · INFANTRY',models:5,
+    stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2},
+    abilities:[{name:'And They Shall Know No Fear',desc:'Each time a model takes a wound, roll D6. On 6, ignored.'}],
+    wargear:[{label:"Sergeant bolt pistol → plasma pistol",extraWeapon:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],
+    baseWeapons:[{type:'RANGED',name:'Bolt Rifle',rng:'30"',a:2,s:4,ap:-1,d:1,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Bolt Pistol',rng:'12"',a:1,s:4,ap:0,d:1,kw:['PISTOL']}]
+  },
+  'hellblasters':{name:'Hellblasters',faction:'✠ SPACE MARINES · INFANTRY',models:5,
+    stats:{M:'6"',T:4,Sv:'3+',W:2,Ld:7,OC:2},
+    abilities:[{name:'And They Shall Know No Fear',desc:'Each time a model takes a wound, roll D6. On 6, ignored.'},{name:"For the Chapter!",desc:"Each time a model is destroyed, roll D6: on 3+, it can shoot once before removal."}],
+    wargear:[{label:"Sergeant bolt pistol → plasma pistol",extraWeapon:{type:'RANGED',name:'Plasma Pistol',rng:'12"',a:1,s:7,ap:-2,d:1,kw:['PISTOL','HAZARDOUS']}}],
+    baseWeapons:[{type:'RANGED',name:'Plasma Incinerator (std)',rng:'30"',a:2,s:7,ap:-3,d:2,kw:['RAPID FIRE 1']},{type:'RANGED',name:'Plasma Incinerator (sup)',rng:'30"',a:2,s:8,ap:-3,d:3,kw:['RAPID FIRE 1','HAZARDOUS']}]
+  },
+  'redemptor-dreadnought':{name:'Redemptor Dreadnought',faction:'⬡ SPACE MARINES · VEHICLE',models:1,
+    stats:{M:'8"',T:10,Sv:'2+',W:12,Ld:6,OC:3},
+    abilities:[{name:'Duty Eternal',desc:'Each time this model suffers a wound, roll D6: on 5+, ignored.'},{name:'Guardian of the Chapter',desc:'Within 3" of friendly INFANTRY: 4+ invulnerable save.'}],
+    wargear:null,
+    baseWeapons:[{type:'MELEE',name:'Redemptor Fist',rng:'—',a:5,s:12,ap:-3,d:3,kw:['MELEE']},{type:'RANGED',name:'Macro Plasma Incinerator',rng:'36"',a:3,s:8,ap:-4,d:2,kw:['HEAVY','BLAST']}]
+  },
+  'boss-nob':{name:'Boss Nob',faction:'☠ ORKS · CHARACTER',models:1,
+    stats:{M:'5"',T:5,Sv:'4+',W:5,Ld:7,OC:1},
+    abilities:[{name:"'Ere We Go",desc:'This unit can charge after Advancing. +1 to charge rolls.'}],
+    wargear:null,
+    baseWeapons:[{type:'MELEE',name:'Power Klaw',rng:'—',a:4,s:8,ap:-3,d:2,kw:['MELEE']},{type:'RANGED',name:'Slugga',rng:'12"',a:2,s:4,ap:0,d:1,kw:['PISTOL']}]
+  },
+  'boyz-mob':{name:'Boyz Mob',faction:'☠ ORKS · INFANTRY',models:10,
+    stats:{M:'5"',T:4,Sv:'5+',W:1,Ld:7,OC:2},
+    abilities:[{name:"'Ere We Go",desc:'This unit can charge after Advancing. +1 to charge rolls.'}],
+    wargear:[{label:"1 Boy's Shoota → big shoota",extraWeapon:{type:'RANGED',name:'Big Shoota',rng:'24"',a:3,s:5,ap:0,d:1,kw:['ASSAULT 3']}}],
+    baseWeapons:[{type:'MELEE',name:'Choppa',rng:'—',a:2,s:4,ap:-1,d:1,kw:['MELEE']},{type:'RANGED',name:'Shoota',rng:'12"',a:2,s:4,ap:0,d:1,kw:['ASSAULT 2']}]
+  },
+  'mekboy':{name:'Mekboy',faction:'⚙ ORKS · CHARACTER',models:1,
+    stats:{M:'5"',T:4,Sv:'5+',W:4,Ld:7,OC:1},
+    abilities:[{name:"Mek's Tools",desc:"At start of Command phase, if within 3\" of a friendly VEHICLE, it regains up to D3 wounds."}],
+    wargear:null,
+    baseWeapons:[{type:'RANGED',name:'Kustom Mega-blasta',rng:'24"',a:3,s:8,ap:-3,d:'D3',kw:['MELTA 2']},{type:'MELEE',name:'Choppa',rng:'—',a:3,s:4,ap:-1,d:1,kw:['MELEE']}]
+  }
+};
+
+const CURRENT_PHASE='MOVEMENT';
+const PHASE_HL={MOVEMENT:['M'],SHOOTING:['BS'],FIGHT:['WS']};
+const wargearState={};
+
+function apClass(ap){
+  if(ap===0||ap==='0')return '';
+  const n=typeof ap==='number'?ap:parseInt(ap);
+  if(n<=-3)return 'ap-heavy'; if(n<0)return 'ap-neg'; return '';
+}
+
+function buildWeaponRows(unitId){
+  const u=UNITS[unitId]; if(!u) return '';
+  let weapons=[...u.baseWeapons];
+  if(u.wargear&&wargearState[unitId]){
+    u.wargear.forEach((wg,i)=>{if(wargearState[unitId][i]&&wg.extraWeapon)weapons.push(wg.extraWeapon);});
+  }
+  const types=[...new Set(weapons.map(w=>w.type))];
+  let html='';
+  types.forEach(type=>{
+    html+=`<div class="card-weapon-type">${type} WEAPONS</div>`;
+    weapons.filter(w=>w.type===type).forEach(w=>{
+      html+=`<div class="card-weapon-row">
+        <div class="cwname">${w.name}</div>
+        <div class="cwval">${w.rng}</div>
+        <div class="cwval">${w.a}</div>
+        <div class="cwval">${w.s}</div>
+        <div class="cwval ${apClass(w.ap)}">${w.ap}</div>
+        <div class="cwval dmg">${w.d}</div>
+      </div><div class="card-kws">${(w.kw||[]).map(kwPill).join('')}</div>`;
+    });
+  });
+  return html;
+}
+
+function updateCard(unitId){
+  const u=UNITS[unitId]; if(!u) return;
+  document.getElementById('unit-detail-card').classList.add('visible');
+  document.getElementById('card-unit-name').textContent=u.name;
+  document.getElementById('card-faction').textContent=u.faction;
+
+  // Stats
+  const hl=PHASE_HL[CURRENT_PHASE]||[];
+  const statKeys=['M','T','Sv','W','Ld','OC'];
+  document.getElementById('card-stats').innerHTML=statKeys.map(k=>{
+    const isHl=hl.includes(k);
+    return `<div class="card-stat${isHl?' hl':''}"><div class="card-stat-key">${k}</div><div class="card-stat-val">${u.stats[k]}</div></div>`;
+  }).join('');
+
+  // Abilities — most prominent, shown first
+  const aEl=document.getElementById('card-abilities');
+  if(u.abilities&&u.abilities.length){
+    let html='<div class="card-section-title">Abilities</div>';
+    u.abilities.forEach(a=>{
+      html+=`<div class="ability-row"><div class="ability-pill">${a.name}</div><div class="ability-desc">${a.desc}</div></div>`;
+    });
+    aEl.innerHTML=html;
+  } else aEl.innerHTML='';
+
+  // Wargear — collapsible, closed
+  const wgEl=document.getElementById('card-wargear-section');
+  if(u.wargear&&u.wargear.length){
+    if(!wargearState[unitId])wargearState[unitId]={};
+    let html=`<div class="wargear-toggle-header" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('.wg-chevron').style.transform=this.nextElementSibling.classList.contains('open')?'rotate(90deg)':'';updateCard('${unitId}')">
+      WARGEAR OPTIONS <span class="wg-chevron">▸</span>
+    </div>
+    <div class="wargear-body"><div class="wargear-inner">`;
+    u.wargear.forEach((wg,i)=>{
+      const checked=!!wargearState[unitId][i];
+      html+=`<div class="wargear-row${checked?' checked':''}" data-unit="${unitId}" data-wgidx="${i}">
+        <span class="wargear-check">${checked?'☑':'☐'}</span>${wg.label}
+      </div>`;
+    });
+    html+='</div></div>';
+    wgEl.innerHTML=html;
+    wgEl.querySelectorAll('.wargear-row').forEach(row=>{
+      row.addEventListener('click',()=>{
+        const idx=parseInt(row.dataset.wgidx);
+        if(!wargearState[unitId])wargearState[unitId]={};
+        wargearState[unitId][idx]=!wargearState[unitId][idx];
+        updateCard(unitId);
+      });
+    });
+  } else wgEl.innerHTML='';
+
+  // Weapons
+  document.getElementById('card-weapons').innerHTML=buildWeaponRows(unitId);
+}
+
+// Drawer
+function toggleDrawer(){document.getElementById('roster-drawer').classList.toggle('open');}
+function closeDrawer(){document.getElementById('roster-drawer').classList.remove('open');}
+function handleBattlefieldClick(e){
+  if(e.target.closest('#roster-drawer,.token,#unit-detail-card,#action-bar'))return;
+  closeDrawer();
+}
+
+// Selection
+document.querySelectorAll('.rail-unit').forEach(row=>{
+  row.addEventListener('click',()=>{
+    document.querySelectorAll('.rail-unit').forEach(r=>r.classList.remove('active'));
+    row.classList.add('active');
+    const uid=row.dataset.unit;
+    updateCard(uid);
+    document.querySelectorAll('.token').forEach(t=>t.classList.remove('selected'));
+    document.querySelector(`.token[data-unit="${uid}"]`)?.classList.add('selected');
+  });
+});
+document.querySelectorAll('.token').forEach(t=>{
+  t.addEventListener('click',e=>{
+    e.stopPropagation();
+    document.querySelectorAll('.token').forEach(x=>x.classList.remove('selected'));
+    document.querySelectorAll('.rail-unit').forEach(r=>r.classList.remove('active'));
+    t.classList.add('selected');
+    const uid=t.dataset.unit;
+    document.querySelector(`.rail-unit[data-unit="${uid}"]`)?.classList.add('active');
+    updateCard(uid);
+  });
+});
+document.getElementById('card-close').addEventListener('click',()=>{
+  document.getElementById('unit-detail-card').classList.remove('visible');
+  document.querySelectorAll('.token').forEach(t=>t.classList.remove('selected'));
+  document.querySelectorAll('.rail-unit').forEach(r=>r.classList.remove('active'));
+});
+
+function toggleFaction(h){const b=h.nextElementSibling;const c=h.querySelector('.faction-chevron');b.classList.toggle('collapsed');c.style.transform=b.classList.contains('collapsed')?'rotate(-90deg)':'';}
+function toggleArmyAbilities(h){const b=h.nextElementSibling;const c=h.querySelector('.aa-chevron');b.classList.toggle('open');c.style.transform=b.classList.contains('open')?'rotate(90deg)':'';}
+
+document.querySelectorAll('#zone-actions .ab-action-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{document.querySelectorAll('#zone-actions .ab-action-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');});
+});
+const overlay=document.getElementById('modal-overlay');
+document.getElementById('btn-stratagem').addEventListener('click',()=>overlay.classList.add('visible'));
+document.getElementById('modal-close').addEventListener('click',()=>overlay.classList.remove('visible'));
+overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.classList.remove('visible');});
+
+// Pan & Zoom
+let scale=1,tx=0,ty=0,isDragging=false,startX,startY;
+const inner=document.getElementById('battlefield-inner');
+const bf=document.getElementById('battlefield');
+function applyTransform(){inner.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;document.getElementById('zoom-indicator').textContent=Math.round(scale*100)+'%';}
+bf.addEventListener('wheel',e=>{e.preventDefault();scale=Math.min(3,Math.max(0.4,scale*(e.deltaY>0?0.9:1.1)));applyTransform();},{passive:false});
+bf.addEventListener('mousedown',e=>{if(e.target.closest('.token,.obj-wrap,#unit-detail-card,#phase-header,#bf-controls,#action-bar'))return;isDragging=true;startX=e.clientX-tx;startY=e.clientY-ty;inner.classList.add('dragging');});
+document.addEventListener('mousemove',e=>{if(!isDragging)return;tx=e.clientX-startX;ty=e.clientY-startY;applyTransform();});
+document.addEventListener('mouseup',()=>{isDragging=false;inner.classList.remove('dragging');});
+document.getElementById('reset-view').addEventListener('click',()=>{scale=1;tx=0;ty=0;applyTransform();});
+
+// Init
+updateCard('assault-intercessors');
+</script>
+</body>
+</html>

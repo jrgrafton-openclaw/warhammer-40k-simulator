@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.5a — Command Table v3</title>
+  <link rel="stylesheet" href="../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../shared/tokens/typography.css">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══ HOLOGRAPHIC MAP BACKGROUND ═══ -->
+<div class="holo-map" id="holoMap">
+  <div class="holo-grid"></div>
+  <div class="holo-scanlines"></div>
+  <div class="holo-vignette"></div>
+  <div class="holo-grain"></div>
+
+  <!-- Deployment zones — hidden until armies selected -->
+  <div class="dz dz-imp" id="dzImp"><span class="dz-label">IMPERIUM<br>DEPLOYMENT</span></div>
+  <div class="dz dz-ork" id="dzOrk"><span class="dz-label">ORK<br>DEPLOYMENT</span></div>
+
+  <!-- Objectives -->
+  <span class="obj" id="obj0" style="left:35%; top:25%"></span>
+  <span class="obj" id="obj1" style="left:65%; top:25%"></span>
+  <span class="obj obj-centre" id="obj2" style="left:50%; top:50%"></span>
+  <span class="obj" id="obj3" style="left:35%; top:75%"></span>
+  <span class="obj" id="obj4" style="left:65%; top:75%"></span>
+
+  <!-- Terrain outlines -->
+  <div class="terrain terrain-ruin" style="left:28%;top:18%;width:80px;height:50px"><span class="terrain-tag">RUIN ALPHA</span></div>
+  <div class="terrain terrain-ruin" style="left:68%;top:70%;width:70px;height:55px"><span class="terrain-tag">RUIN BETA</span></div>
+  <div class="terrain terrain-crate" style="left:45%;top:40%;width:40px;height:30px"><span class="terrain-tag">CRATES</span></div>
+  <div class="terrain terrain-ruin" style="left:50%;top:60%;width:90px;height:40px"><span class="terrain-tag">CHAPEL</span></div>
+  <div class="terrain terrain-crate" style="left:38%;top:52%;width:35px;height:25px"><span class="terrain-tag">BARRELS</span></div>
+
+  <!-- Compass -->
+  <div class="compass"><span class="compass-n">N</span></div>
+  <div class="map-dims">60" &times; 44"</div>
+</div>
+
+<!-- ═══ NAVIGATION CHROME ═══ -->
+<a class="nav-back" href="../../start-game/index.html">&larr; Back</a>
+<a class="nav-mockups" href="../../index.html#battle-forge">&larr; Mockups</a>
+<div class="version-badge">v0.5a &middot; Command Table v3</div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="os-header anim-fade">
+  <div class="os-title">Battle Forge</div>
+  <div class="os-subtitle">Orbital Command &middot; Strike Force Configuration</div>
+</header>
+
+<!-- ═══ ARMY SELECTION — CENTRED FACTION CARDS ═══ -->
+<div class="army-select anim-cards" id="armySelect">
+
+  <!-- YOUR FORCES — empty state -->
+  <div class="faction-card card-empty faction-imp" id="cardLeft" onclick="openBrowser('left')">
+    <div class="card-corner tl"></div>
+    <div class="card-corner tr"></div>
+    <div class="card-corner bl"></div>
+    <div class="card-corner br"></div>
+    <div class="card-tag imp-tag">YOUR FORCES</div>
+    <div class="empty-plus">+</div>
+    <div class="empty-label">Select Faction</div>
+    <div class="empty-sub">Choose from available factions</div>
+  </div>
+
+  <!-- VS DIVIDER -->
+  <div class="vs-divider" id="vsDivider">
+    <span class="vs-text">--</span>
+  </div>
+
+  <!-- ENEMY FORCES — empty state -->
+  <div class="faction-card card-empty faction-ork" id="cardRight" onclick="openBrowser('right')">
+    <div class="card-corner tl"></div>
+    <div class="card-corner tr"></div>
+    <div class="card-corner bl"></div>
+    <div class="card-corner br"></div>
+    <div class="card-tag ork-tag">ENEMY FORCES</div>
+    <div class="empty-plus">+</div>
+    <div class="empty-label">Select Faction</div>
+    <div class="empty-sub">Choose from available factions</div>
+  </div>
+</div>
+
+<!-- ═══ EXPANDABLE ROSTERS ═══ -->
+<div class="roster-panels anim-cards-delay" id="rosterPanels">
+
+  <div class="roster-panel roster-imp" id="rosterPanelLeft">
+    <button class="roster-toggle" onclick="toggleRoster('left')">
+      <span class="roster-toggle-icon" id="roster-icon-left">&blacktriangleright;</span>
+      <span id="rosterLabelLeft">Roster</span>
+      <span class="roster-count" id="rosterCountLeft"></span>
+    </button>
+    <div class="roster-list" id="rosterListLeft" style="display:none"></div>
+  </div>
+
+  <div class="roster-panel roster-ork" id="rosterPanelRight">
+    <button class="roster-toggle" onclick="toggleRoster('right')">
+      <span class="roster-toggle-icon" id="roster-icon-right">&blacktriangleright;</span>
+      <span id="rosterLabelRight">Roster</span>
+      <span class="roster-count" id="rosterCountRight"></span>
+    </button>
+    <div class="roster-list" id="rosterListRight" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ═══ BOTTOM SECTION ═══ -->
+<div class="bottom-section anim-rise">
+
+  <!-- Map + Deployment row -->
+  <div class="map-deploy-row">
+    <!-- MAP -->
+    <div class="config-panel">
+      <div class="section-label">Map</div>
+      <div class="map-thumbs">
+        <div class="map-thumb map-thumb-active">
+          <div class="thumb-visual thumb-ha"></div>
+          <div class="thumb-name">Battlefield Alpha</div>
+          <div class="thumb-info">60" &times; 44"</div>
+        </div>
+        <div class="map-thumb map-thumb-disabled">
+          <div class="thumb-visual"></div>
+          <div class="thumb-name">Layout 2</div>
+          <div class="thumb-info">Coming Soon</div>
+        </div>
+        <div class="map-thumb map-thumb-disabled">
+          <div class="thumb-visual"></div>
+          <div class="thumb-name">Layout 3</div>
+          <div class="thumb-info">Coming Soon</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPLOYMENT -->
+    <div class="config-panel">
+      <div class="section-label">Deployment</div>
+      <div class="deploy-thumbs">
+        <div class="deploy-card deploy-active" onclick="selectDeployment(this)">
+          <div class="deploy-thumb">
+            <div class="dt-zone dt-imp"></div>
+            <div class="dt-zone dt-ork"></div>
+          </div>
+          <div class="deploy-name">Hammer &amp; Anvil</div>
+        </div>
+        <div class="deploy-card deploy-locked">
+          <div class="deploy-thumb deploy-thumb-locked"></div>
+          <div class="deploy-name">Dawn of War</div>
+          <div class="deploy-soon">Soon</div>
+        </div>
+        <div class="deploy-card deploy-locked">
+          <div class="deploy-thumb deploy-thumb-locked"></div>
+          <div class="deploy-name">Search &amp; Destroy</div>
+          <div class="deploy-soon">Soon</div>
+        </div>
+        <div class="deploy-card deploy-locked">
+          <div class="deploy-thumb deploy-thumb-locked"></div>
+          <div class="deploy-name">Sweeping Eng.</div>
+          <div class="deploy-soon">Soon</div>
+        </div>
+        <div class="deploy-card deploy-locked">
+          <div class="deploy-thumb deploy-thumb-locked"></div>
+          <div class="deploy-name">Crucible</div>
+          <div class="deploy-soon">Soon</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings row -->
+  <div class="settings-row">
+    <div class="setting-group">
+      <div class="section-label" style="margin-bottom:0">Mission</div>
+      <div class="setting-value">Take and Hold</div>
+    </div>
+    <div class="setting-divider"></div>
+    <div class="setting-group">
+      <div class="section-label" style="margin-bottom:0">Mode</div>
+      <div class="mode-toggle">
+        <button class="mode-btn mode-active">Single Player</button>
+        <button class="mode-btn mode-disabled" disabled>Multiplayer <span class="soon-tag">Soon</span></button>
+      </div>
+    </div>
+    <div class="setting-divider"></div>
+    <div class="setting-chips">
+      <span class="chip chip-dis">Turn 5</span>
+      <span class="chip chip-dis">Roll-off</span>
+      <span class="chip chip-dis">Strike Force</span>
+    </div>
+  </div>
+
+  <!-- BEGIN BATTLE -->
+  <a class="begin-btn disabled" id="beginBtn" href="../../phases/deploy/v0.4/index.html">BEGIN BATTLE</a>
+</div>
+
+<!-- ═══ FACTION BROWSER OVERLAY ═══ -->
+<div class="faction-overlay" id="factionOverlay">
+  <div class="overlay-backdrop" onclick="closeBrowser()"></div>
+  <div class="overlay-content">
+    <div class="overlay-header">
+      <div class="overlay-title" id="overlayTitle">SELECT FACTION</div>
+      <button class="overlay-close" onclick="closeBrowser()">&times;</button>
+    </div>
+
+    <!-- Phase 1: Faction Grid -->
+    <div class="overlay-phase phase-active" id="phase1">
+      <div class="faction-grid" id="factionGrid"></div>
+    </div>
+
+    <!-- Phase 2: Army Selection -->
+    <div class="overlay-phase" id="phase2">
+      <button class="phase2-back" onclick="backToFactions()">&larr; Back to Factions</button>
+      <div class="phase2-header">
+        <div class="phase2-icon" id="p2Icon"></div>
+        <div class="phase2-faction-name" id="p2Name"></div>
+        <div class="phase2-faction-sub" id="p2Sub"></div>
+      </div>
+      <div class="army-list" id="armyList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Error display ── */
+  window.onerror = function(msg, src, line) {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;bottom:8px;right:8px;background:#cc2020;color:#fff;padding:8px 14px;font:12px/1.4 Rajdhani,sans-serif;border-radius:4px;z-index:9999;max-width:400px';
+    d.textContent = msg + ' (line ' + line + ')';
+    document.body.appendChild(d);
+  };
+
+  /* ── Faction/Army Data ── */
+  var FACTIONS = [
+    {
+      id: 'custodes', name: 'Adeptus Custodes', icon: '\u269C', color: 'imp',
+      subtitle: 'Talons of the Emperor',
+      armies: [
+        {
+          name: 'Shield Host', pts: 1985, maxPts: 2000, unitCount: 13, modelCount: 45,
+          available: true,
+          units: [
+            { name: 'Blade Champion', info: '1 model', pts: 120, qty: 2 },
+            { name: 'Custodian Guard', info: '5 models', pts: 190, qty: 4 },
+            { name: 'Allarus Custodians', info: '3 models', pts: 165, qty: 1 },
+            { name: 'Allarus Custodians', info: '2 models', pts: 110, qty: 1 },
+            { name: 'Prosecutors', info: '5 models', pts: 85, qty: 2 },
+            { name: 'Caladius Grav-tank', info: '1 model', pts: 215, qty: 2 },
+            { name: 'Inquisitor Draxus', info: '1 model', pts: 95, qty: 1 }
+          ]
+        },
+        { name: 'Auric Champions', pts: 2000, maxPts: 2000, available: false },
+        { name: 'Talons of the Emperor', pts: 1750, maxPts: 2000, available: false }
+      ]
+    },
+    {
+      id: 'orks', name: 'Orks', icon: '\u2620', color: 'ork',
+      subtitle: 'Da Biggest an\' da Meanest',
+      armies: [
+        {
+          name: "Waaagh! Tribe", pts: 1960, maxPts: 2000, unitCount: 16, modelCount: 75,
+          available: true,
+          units: [
+            { name: 'Warboss', info: '1 model', pts: 90, qty: 1 },
+            { name: 'Boss Nob', info: '1 model', pts: 95, qty: 1 },
+            { name: 'Boyz Mob', info: '10 models', pts: 150, qty: 2 },
+            { name: 'Mekboy', info: '1 model', pts: 75, qty: 1 },
+            { name: 'Nobz Mob', info: '5 models', pts: 115, qty: 2 },
+            { name: 'Gretchin', info: '10 models', pts: 50, qty: 2 },
+            { name: 'Deff Dread', info: '1 model', pts: 150, qty: 1 },
+            { name: 'Battlewagon', info: '1 model', pts: 185, qty: 1 },
+            { name: 'Lootas', info: '5 models', pts: 100, qty: 1 },
+            { name: 'Stormboyz', info: '5 models', pts: 80, qty: 1 },
+            { name: 'Weirdboy', info: '1 model', pts: 70, qty: 1 },
+            { name: 'Meganobz', info: '3 models', pts: 200, qty: 1 },
+            { name: 'Trukk', info: '1 model', pts: 65, qty: 1 }
+          ]
+        },
+        { name: 'Speed Freeks', pts: 1980, maxPts: 2000, available: false },
+        { name: 'Goff Stompa Mob', pts: 2000, maxPts: 2000, available: false }
+      ]
+    },
+    { id: 'sm', name: 'Space Marines', icon: '\u2694', locked: true },
+    { id: 'csm', name: 'Chaos Marines', icon: '\u26E7', locked: true },
+    { id: 'aeldari', name: 'Aeldari', icon: '\u263D', locked: true },
+    { id: 'tyranids', name: 'Tyranids', icon: '\uD83D\uDD77', locked: true },
+    { id: 'necrons', name: 'Necrons', icon: '\u2625', locked: true },
+    { id: 'tau', name: "T'au Empire", icon: '\u2B21', locked: true },
+    { id: 'dg', name: 'Death Guard', icon: '\u2623', locked: true },
+    { id: 'tsons', name: 'Thousand Sons', icon: '\u2726', locked: true },
+    { id: 'upload', name: 'Upload Custom', icon: '\u2B06', locked: true, upload: true }
+  ];
+
+  /* ── State ── */
+  var state = { left: null, right: null, browserTarget: null, selectedFaction: null };
+
+  /* ── Build faction grid ── */
+  var gridEl = document.getElementById('factionGrid');
+  FACTIONS.forEach(function(f, i) {
+    var card = document.createElement('div');
+    card.className = 'fg-card' + (f.locked ? ' fg-locked' : '') + (f.upload ? ' fg-upload' : '');
+    card.style.animationDelay = (0.05 * i) + 's';
+
+    var html = '<div class="fg-icon">' + f.icon + '</div>' +
+      '<div class="fg-name">' + f.name + '</div>';
+    if (f.locked) {
+      html += '<div class="fg-lock">Coming Soon</div>';
+    } else {
+      html += '<div class="fg-pts">' + f.armies[0].pts + ' pts available</div>';
+    }
+    card.innerHTML = html;
+
+    if (!f.locked) {
+      card.onclick = function() { showArmyPhase(f); };
+    }
+    gridEl.appendChild(card);
+  });
+
+  /* ── Browser open/close ── */
+  function openBrowser(side) {
+    state.browserTarget = side;
+    state.selectedFaction = null;
+    document.getElementById('overlayTitle').textContent =
+      side === 'left' ? 'SELECT YOUR FORCES' : 'SELECT ENEMY FORCES';
+    showFactionPhase();
+    document.getElementById('factionOverlay').classList.add('open');
+  }
+  window.openBrowser = openBrowser;
+
+  function closeBrowser() {
+    document.getElementById('factionOverlay').classList.remove('open');
+    state.browserTarget = null;
+    state.selectedFaction = null;
+  }
+  window.closeBrowser = closeBrowser;
+
+  /* ── Phase 1 → Phase 2 transitions ── */
+  function showFactionPhase() {
+    document.getElementById('phase1').classList.add('phase-active');
+    document.getElementById('phase2').classList.remove('phase-active');
+  }
+
+  function showArmyPhase(faction) {
+    state.selectedFaction = faction;
+
+    // Populate phase 2
+    document.getElementById('p2Icon').textContent = faction.icon;
+    document.getElementById('p2Name').textContent = faction.name;
+    document.getElementById('p2Sub').textContent = faction.subtitle || '';
+
+    var listEl = document.getElementById('armyList');
+    listEl.innerHTML = '';
+
+    faction.armies.forEach(function(army) {
+      var card = document.createElement('div');
+      card.className = 'army-card' + (army.available ? '' : ' army-locked');
+
+      if (army.available) {
+        card.innerHTML =
+          '<div class="army-card-left">' +
+            '<div class="army-card-name">' + army.name + '</div>' +
+            '<div class="army-card-info">' + army.unitCount + ' units &middot; ' + army.modelCount + ' models</div>' +
+          '</div>' +
+          '<div class="army-card-pts">' + army.pts + 'pts</div>';
+        card.onclick = function() { selectArmy(faction, army); };
+      } else {
+        card.innerHTML =
+          '<div class="army-card-left">' +
+            '<div class="army-card-name">' + army.name + '</div>' +
+            '<div class="army-card-badge">Coming Soon</div>' +
+          '</div>' +
+          '<div class="army-card-pts">' + army.pts + 'pts</div>';
+      }
+      listEl.appendChild(card);
+    });
+
+    // Upload card
+    var uploadCard = document.createElement('div');
+    uploadCard.className = 'army-card army-upload army-locked';
+    uploadCard.innerHTML =
+      '<div class="army-card-left">' +
+        '<div class="army-upload-icon">\uD83D\uDCCB</div>' +
+        '<div class="army-card-name">Upload Custom (.ros)</div>' +
+        '<div class="army-card-badge">Coming Soon</div>' +
+      '</div>';
+    listEl.appendChild(uploadCard);
+
+    // Transition
+    document.getElementById('phase1').classList.remove('phase-active');
+    document.getElementById('phase2').classList.add('phase-active');
+  }
+
+  function backToFactions() {
+    state.selectedFaction = null;
+    showFactionPhase();
+  }
+  window.backToFactions = backToFactions;
+
+  /* ── Select army → fill card ── */
+  function selectArmy(faction, army) {
+    var side = state.browserTarget;
+    if (!side) return;
+    state[side] = { faction: faction, army: army };
+    closeBrowser();
+    renderCard(side);
+    renderRoster(side);
+    updateMapState();
+    updateBeginBtn();
+  }
+
+  /* ── Render filled faction card ── */
+  function renderCard(side) {
+    var sel = state[side];
+    if (!sel) return;
+    var f = sel.faction;
+    var a = sel.army;
+    var card = document.getElementById(side === 'left' ? 'cardLeft' : 'cardRight');
+
+    card.className = 'faction-card card-filled faction-' + f.color;
+    card.innerHTML =
+      '<div class="card-corner tl"></div>' +
+      '<div class="card-corner tr"></div>' +
+      '<div class="card-corner bl"></div>' +
+      '<div class="card-corner br"></div>' +
+      '<div class="card-tag ' + (f.color === 'imp' ? 'imp-tag' : 'ork-tag') + '">' +
+        (side === 'left' ? 'YOUR FORCES' : 'ENEMY FORCES') + '</div>' +
+      '<div class="card-icon">' + f.icon + '</div>' +
+      '<div class="card-name">' + f.name + '</div>' +
+      '<div class="card-sub">' + a.name + '</div>' +
+      '<div class="card-pts">' + a.pts + ' / ' + a.maxPts + ' pts</div>' +
+      '<div class="card-change">Change \u25BE</div>';
+  }
+
+  /* ── Render roster panel ── */
+  function renderRoster(side) {
+    var sel = state[side];
+    if (!sel) return;
+    var a = sel.army;
+    var panelId = side === 'left' ? 'rosterPanelLeft' : 'rosterPanelRight';
+    var listId = side === 'left' ? 'rosterListLeft' : 'rosterListRight';
+    var labelId = side === 'left' ? 'rosterLabelLeft' : 'rosterLabelRight';
+    var countId = side === 'left' ? 'rosterCountLeft' : 'rosterCountRight';
+
+    document.getElementById(panelId).classList.add('roster-visible');
+    document.getElementById(labelId).textContent = sel.faction.name + ' Roster';
+    document.getElementById(countId).textContent = a.unitCount + ' units \u00B7 ' + a.modelCount + ' models';
+
+    var listEl = document.getElementById(listId);
+    listEl.innerHTML = '';
+    a.units.forEach(function(u) {
+      for (var q = 0; q < u.qty; q++) {
+        var row = document.createElement('div');
+        row.className = 'ru';
+        row.innerHTML =
+          '<span class="ru-name">' + u.name + '</span>' +
+          '<span class="ru-meta">' + u.info + ' \u00B7 ' + u.pts + 'pts</span>';
+        listEl.appendChild(row);
+      }
+    });
+  }
+
+  /* ── Roster toggle ── */
+  function toggleRoster(side) {
+    var listId = side === 'left' ? 'rosterListLeft' : 'rosterListRight';
+    var iconId = side === 'left' ? 'roster-icon-left' : 'roster-icon-right';
+    var list = document.getElementById(listId);
+    var icon = document.getElementById(iconId);
+    if (list.style.display === 'none') {
+      list.style.display = 'block';
+      icon.innerHTML = '\u25BE';
+    } else {
+      list.style.display = 'none';
+      icon.innerHTML = '\u25B8';
+    }
+  }
+  window.toggleRoster = toggleRoster;
+
+  /* ── Map activation ── */
+  function updateMapState() {
+    var map = document.getElementById('holoMap');
+    var hasLeft = !!state.left;
+    var hasRight = !!state.right;
+    var hasBoth = hasLeft && hasRight;
+
+    // Deployment zones
+    document.getElementById('dzImp').classList.toggle('dz-visible', hasLeft || hasRight);
+    document.getElementById('dzOrk').classList.toggle('dz-visible', hasLeft || hasRight);
+    document.getElementById('dzImp').classList.toggle('dz-glow', hasLeft);
+    document.getElementById('dzOrk').classList.toggle('dz-glow', hasRight);
+
+    // Objectives
+    var objs = document.querySelectorAll('.obj');
+    objs.forEach(function(o) { o.classList.toggle('obj-visible', hasLeft || hasRight); });
+
+    // Map brightness
+    map.classList.toggle('map-active', hasLeft || hasRight);
+    map.classList.toggle('map-full', hasBoth);
+
+    // VS divider
+    document.getElementById('vsDivider').classList.toggle('vs-active', hasBoth);
+    if (hasBoth) {
+      document.querySelector('.vs-text').textContent = 'VS';
+    }
+  }
+
+  /* ── Begin button ── */
+  function updateBeginBtn() {
+    var btn = document.getElementById('beginBtn');
+    var ready = state.left && state.right;
+    btn.classList.toggle('disabled', !ready);
+  }
+
+  /* ── Deployment selection ── */
+  function selectDeployment(card) {
+    if (card.classList.contains('deploy-locked')) return;
+    document.querySelectorAll('.deploy-card').forEach(function(c) {
+      c.classList.remove('deploy-active');
+    });
+    card.classList.add('deploy-active');
+  }
+  window.selectDeployment = selectDeployment;
+
+  /* ── Keyboard ── */
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (state.selectedFaction) {
+        backToFactions();
+      } else {
+        closeBrowser();
+      }
+    }
+  });
+</script>
+
+</body>
+</html>

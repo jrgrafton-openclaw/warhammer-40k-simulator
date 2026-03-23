@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WH40K Simulator — Mockups v2</title>
+  <link rel="stylesheet" href="shared/tokens/colors.css">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Rajdhani', sans-serif;
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
+    .page-header { text-align: center; margin-bottom: 48px; }
+    .page-title { font: 400 32px/1 'Anton', sans-serif; color: var(--imp); letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 30px rgba(0,212,255,0.25); }
+    .page-subtitle { font: 500 11px/1 'Rajdhani', sans-serif; letter-spacing: 4px; color: var(--text-muted); text-transform: uppercase; margin-top: 10px; }
+    .page-divider { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 20px; }
+    .divider-line { flex: 1; max-width: 200px; height: 1px; background: linear-gradient(90deg, transparent, var(--border), transparent); }
+    .divider-ornament { color: var(--imp-dim); font-size: 18px; opacity: 0.6; }
+
+    .section-title { font: 600 14px/1 'Rajdhani', sans-serif; letter-spacing: 4px; color: var(--imp); text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+    .section-title::before { content: '▸'; color: var(--text-muted); font-size: 10px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+    .section-desc { font: 400 12px/1.6 'Rajdhani', sans-serif; color: var(--text-muted); margin-bottom: 24px; padding-left: 16px; border-left: 2px solid var(--border); max-width: 700px; }
+
+    .card-grid { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 48px; }
+    .card-grid.featured .card { width: 300px; }
+
+    .card {
+      display: block; padding: 24px;
+      background: var(--bg-surface); border: 1px solid var(--border);
+      text-decoration: none; color: var(--text-primary); position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; flex-shrink: 0;
+    }
+    .card::before, .card::after { content: ''; position: absolute; width: 14px; height: 14px; pointer-events: none; }
+    .card::before { top: 0; left: 0; border-top: 1.5px solid var(--border); border-left: 1.5px solid var(--border); }
+    .card::after  { bottom: 0; right: 0; border-bottom: 1.5px solid var(--border); border-right: 1.5px solid var(--border); }
+    .card:hover { border-color: var(--imp); background: var(--bg-raised); box-shadow: 0 0 24px rgba(0,212,255,0.10), 0 4px 20px rgba(0,0,0,0.5); }
+    .card:hover::before, .card:hover::after { border-color: var(--imp); }
+
+    .card.latest { border-color: rgba(0,212,255,0.15); }
+    .card.latest::before, .card.latest::after { border-color: rgba(0,212,255,0.2); }
+    .card.latest:hover { border-color: #00d4ff; box-shadow: 0 0 24px rgba(0,212,255,0.12); }
+    .card.latest:hover::before, .card.latest:hover::after { border-color: #00d4ff; }
+
+    .card-badge { position: absolute; top: 10px; right: 10px; font: 700 7px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; padding: 3px 7px; border-radius: 1px; }
+    .badge-latest { background: rgba(0,212,255,0.15); color: #00d4ff; border: 1px solid rgba(0,212,255,0.3); }
+
+    .card-version { font: 400 28px/1 'Anton', sans-serif; color: var(--text-sec); margin-bottom: 8px; }
+    .card.latest .card-version { color: var(--imp); }
+    .card-codename { font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .card-title { font: 500 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--text-sec); margin-bottom: 14px; }
+    .card-features { list-style: none; font: 400 11px/1.8 'Rajdhani', sans-serif; color: var(--text-muted); }
+    .card-features li::before { content: '▸ '; color: var(--text-dis); }
+    .card:hover .card-features { color: var(--text-sec); }
+
+    .card-link { display: inline-block; margin-top: 18px; padding: 6px 16px; border: 1px solid var(--border); font: 600 9px/1 'Rajdhani', sans-serif; letter-spacing: 2px; text-transform: uppercase; color: var(--imp); transition: all 0.2s; }
+    .card:hover .card-link { border-color: var(--imp); background: rgba(0,212,255,0.06); }
+    .card.latest .card-link { color: #00d4ff; }
+    .card.latest:hover .card-link { border-color: #00d4ff; background: rgba(0,212,255,0.06); }
+
+    .tab-nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 44px; }
+    .tab-btn {
+      background: none; border: none; cursor: pointer;
+      font: 600 10px/1 'Rajdhani', sans-serif; letter-spacing: 2.5px; text-transform: uppercase;
+      padding: 13px 28px; color: var(--text-dis);
+      border-bottom: 2px solid transparent; margin-bottom: -1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .tab-btn:hover { color: var(--text-sec); }
+    .tab-btn.active { color: var(--imp); border-bottom-color: var(--imp); }
+    .tab-pane.hidden { display: none; }
+
+    .backlink { display: inline-block; margin-bottom: 24px; font: 500 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-muted); text-decoration: none; text-transform: uppercase; }
+    .backlink:hover { color: var(--imp); }
+
+    .arch-badge { display: inline-block; margin-left: 8px; font: 700 7px/1 'Rajdhani', sans-serif; letter-spacing: 1.5px; text-transform: uppercase; padding: 2px 6px; border-radius: 2px; background: rgba(0,212,255,0.08); color: #00d4ff; border: 1px solid rgba(0,212,255,0.2); vertical-align: middle; }
+
+    .page-footer { text-align: center; margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border); font: 500 10px/1 'Rajdhani', sans-serif; letter-spacing: 2px; color: var(--text-dis); text-transform: uppercase; }
+    .page-footer .aquila { font-size: 20px; color: var(--imp-dim); opacity: 0.4; margin-bottom: 8px; }
+
+    .section-subtitle { font: 600 11px/1 'Rajdhani', sans-serif; letter-spacing: 3px; color: var(--text-muted); text-transform: uppercase; margin: 32px 0 16px; }
+  </style>
+</head>
+<body>
+
+  <header class="page-header">
+    <div class="page-title">WH40K Simulator</div>
+    <div class="page-subtitle">Mockups v2 · ES Module Architecture <span class="arch-badge">ES MODULES</span></div>
+    <div class="page-divider">
+      <div class="divider-line"></div>
+      <span class="divider-ornament">&#10022;</span>
+      <div class="divider-line"></div>
+    </div>
+  </header>
+
+  <div style="max-width:1200px; margin:0 auto;">
+
+    <div class="tab-nav" id="phase-tabs">
+      <button class="tab-btn active" data-tab="integrated" onclick="switchTab('integrated')">INTEGRATED</button>
+      <button class="tab-btn" data-tab="deploy" onclick="switchTab('deploy')">DEPLOY</button>
+      <button class="tab-btn" data-tab="terrain" onclick="switchTab('terrain')">TERRAIN</button>
+      <button class="tab-btn" data-tab="archive" onclick="switchTab('archive')">ARCHIVE</button>
+    </div>
+
+    <!-- INTEGRATED PROTOTYPE -->
+    <div id="tab-integrated" class="tab-pane">
+      <div class="section-title">Integrated Prototype</div>
+      <div class="section-desc">
+        Multi-phase prototype combining individual mockup phases into a single continuous game flow.
+        Phases share state, units persist across transitions, and the full turn cycle is playable.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="integrated/v0.4/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.4</div>
+          <div class="card-codename">FULL GAME FLOW</div>
+          <div class="card-title">Start Screen &rarr; Battle Forge &rarr; 6 Phases &rarr; Game End</div>
+          <ul class="card-features">
+            <li>Complete game loop: Start &rarr; Army Select &rarr; Deploy &rarr; Move &rarr; Shoot &rarr; Charge &rarr; Fight &rarr; Game End</li>
+            <li>Cinematic start screen with particles, lightning, ambient audio</li>
+            <li>Battle Forge army selection screen</li>
+            <li>Options modal (audio, display, game speed)</li>
+            <li>Animated screen transitions with audio continuity</li>
+          </ul>
+          <span class="card-link">OPEN &rarr;</span>
+        </a>
+      </div>
+
+      <div class="section-subtitle">Previous Versions</div>
+      <div class="card-grid">
+        <a class="card" href="integrated/v0.3/index.html">
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">DEPLOY &rarr; MOVE &rarr; SHOOT &rarr; CHARGE &rarr; FIGHT</div>
+          <div class="card-title">5 phases + Scene Registry + file splitting</div>
+          <ul class="card-features">
+            <li>Full combat flow with Game End</li>
+            <li>Scene Registry architecture, GameBus</li>
+            <li>All files split under 400 lines</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="integrated/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DEPLOY &rarr; MOVE &rarr; SHOOT</div>
+          <div class="card-title">Three phases with debug panel</div>
+          <ul class="card-features">
+            <li>Direct DOM transitions, callbacks pattern</li>
+            <li>Debug panel with LoS overlays</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- DEPLOY PHASE -->
+    <div id="tab-deploy" class="tab-pane hidden">
+      <div class="section-title">Deployment Phase</div>
+      <div class="section-desc">
+        Pre-game unit placement with deployment zones, strategic reserves, and deep strike.
+        Alternating placement with zone validation and drag-to-deploy interaction.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="phases/deploy/v0.3/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">PER-PIECE NB2</div>
+          <div class="card-title">Nano Banana 2 per-piece textures &middot; Top-down orthographic</div>
+          <ul class="card-features">
+            <li>Per-piece LLM-generated textures</li>
+            <li>Clipped to SVG terrain paths</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+
+        <a class="card" href="phases/deploy/v0.2a/index.html">
+          <div class="card-version">v0.2a</div>
+          <div class="card-codename">EDGELESS DEBUG</div>
+          <div class="card-title">Edgeless battlefield &middot; Debug menu &middot; Real-time visual tuning</div>
+          <ul class="card-features">
+            <li>Extended ground beyond play area &mdash; no floating board</li>
+            <li>Press D: fog, vignette, zone &amp; FX controls</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+
+        <a class="card" href="phases/deploy/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">BLACK VOID</div>
+          <div class="card-title">Fog layers &middot; Atmospheric deploy &middot; Shared component CSS</div>
+          <ul class="card-features">
+            <li>Fog FX layers with CSS animation</li>
+            <li>Full shared component architecture</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+
+        <a class="card" href="phases/deploy/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">VISUAL ENHANCEMENT</div>
+          <div class="card-title">Animated space background &middot; Terrain drop shadows &middot; Shooting stars</div>
+          <ul class="card-features">
+            <li>Deep space nebula background with rotating stars + flicker</li>
+            <li>Rare shooting stars with gradient trails</li>
+            <li>Consistent terrain drop shadows + light edge highlights</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- TERRAIN EXPERIMENTS -->
+    <div id="tab-terrain" class="tab-pane hidden">
+      <div class="section-title">Terrain Experiments</div>
+      <div class="section-desc">
+        Exploring different approaches to terrain rendering: hand-drawn SVG, AI image generation,
+        and hybrid techniques. Goal: find the best method for producing grimdark top-down terrain pieces with transparency.
+      </div>
+
+      <div class="card-grid featured">
+        <a class="card latest" href="terrain-experiments/v0.16/index.html">
+          <span class="card-badge badge-latest">LATEST</span>
+          <div class="card-version">v0.16</div>
+          <div class="card-codename">TERRAIN SPRITE EDITOR</div>
+          <div class="card-title">Multi-file architecture &middot; Undo &middot; Point lights &middot; Command-phase objectives</div>
+          <ul class="card-features">
+            <li>Refactored to 9 focused JS modules (~100 lines each)</li>
+            <li>Ctrl/Cmd+Z undo (50 entries) &middot; Arrow key movement</li>
+            <li>Draggable point lights (color, radius, intensity)</li>
+            <li>Exact command-phase objective markers (draggable)</li>
+            <li>Models always draggable &middot; Models + Lights in layers panel</li>
+            <li>Multi-select, rotate, resize, copy/paste, layer reordering</li>
+            <li>LocalStorage persistence of full layout state</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ARCHIVE -->
+    <div id="tab-archive" class="tab-pane hidden">
+      <div class="section-title">Archive</div>
+      <div class="section-desc">
+        Previous phase mockups and explorations. These are preserved for reference but are no longer actively developed.
+      </div>
+
+      <!-- Start Game -->
+      <div class="section-subtitle">Start Game</div>
+      <div class="card-grid">
+        <a class="card" href="start-game/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">SPLASH SCREEN</div>
+          <div class="card-title">Parallax battlefield &middot; Frosted glass menu &middot; Ambient audio</div>
+          <ul class="card-features">
+            <li>3-layer parallax background (gothic cathedral, ruins, embers)</li>
+            <li>Frosted glass panel with victory-panel styling</li>
+            <li>CSS ember particles + vignette + grain overlay</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Battle Forge -->
+      <div class="section-subtitle">Battle Forge</div>
+      <div class="card-grid">
+        <a class="card" href="battle-forge/v0.7a/index.html">
+          <div class="card-version">v0.7a</div>
+          <div class="card-codename">DEFINITIVE</div>
+          <div class="card-title">Deploy v0.4 battlefield &middot; Sliding roster panels &middot; Narrow dock</div>
+          <ul class="card-features">
+            <li>Real SVG battlefield (terrain via ES module import)</li>
+            <li>Side panels hidden by default &mdash; slide in when armies selected</li>
+            <li>Deployment Type (5) + Layout (1-8), scanning line</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.6a/index.html">
+          <div class="card-version">v0.6a</div>
+          <div class="card-codename">COMMAND TABLE &mdash; FINAL</div>
+          <div class="card-title">SVG battlefield from deploy v0.4 &middot; Side roster panels</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.5a/index.html">
+          <div class="card-version">v0.5a</div>
+          <div class="card-codename">COMMAND TABLE V3</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.4a/index.html">
+          <div class="card-version">v0.4a</div>
+          <div class="card-codename">COMMAND TABLE</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="battle-forge/v0.3a/index.html">
+          <div class="card-version">v0.3a</div>
+          <div class="card-codename">ORBITAL STRIKE V2</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Command Phase -->
+      <div class="section-subtitle">Command Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/command/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">BATTLE-SHOCK &middot; CP &middot; VP</div>
+          <div class="card-title">Battle-shock tests &middot; CP gain animation &middot; VP objective scoring</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Movement Phase -->
+      <div class="section-subtitle">Movement Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/move/v0.23/index.html">
+          <div class="card-version">v0.23</div>
+          <div class="card-codename">MOVEMENT STATE MACHINE</div>
+          <div class="card-title">Full movement flow &middot; ES modules &middot; Shared components</div>
+          <ul class="card-features">
+            <li>Movement enforcement: zone clamp, terrain collision, overlap resolution</li>
+            <li>Advance D6 roll animation, confirm/cancel, moved-state tracking</li>
+          </ul>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Shooting Phase -->
+      <div class="section-subtitle">Shooting Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/shoot/v0.9/index.html">
+          <div class="card-version">v0.12a</div>
+          <div class="card-codename">TALL RUIN LoS</div>
+          <div class="card-title">Per-model line-of-sight through terrain &middot; Benefit of Cover</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="phases/shoot/v0.8a/index.html">
+          <div class="card-version">v0.8a</div>
+          <div class="card-codename">BOTTOM-DOCKED DICE OVERLAY</div>
+          <div class="card-title">Full shooting flow &middot; ES modules &middot; WorldAPI contract</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Charge Phase -->
+      <div class="section-subtitle">Charge Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/charge/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">DECLARE + ROLL + ENGAGE</div>
+          <div class="card-title">Charger select &middot; 2D6 roll &middot; engagement placement &middot; wall collision</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Fight Phase -->
+      <div class="section-subtitle">Fight Phase</div>
+      <div class="card-grid">
+        <a class="card" href="phases/fight/v0.1/index.html">
+          <div class="card-version">v0.1</div>
+          <div class="card-codename">PILE-IN &middot; MELEE &middot; CONSOLIDATE</div>
+          <div class="card-title">Full fight flow &middot; Engagement targeting &middot; Melee slash FX</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Game End -->
+      <div class="section-subtitle">Game End</div>
+      <div class="card-grid">
+        <a class="card" href="phases/game-end/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">DISMISSABLE OVERLAY</div>
+          <div class="card-title">ESC to dismiss &middot; END GAME re-summons &middot; Battlefield review</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="phases/game-end/v0.1e/index.html">
+          <div class="card-version">v0.1e</div>
+          <div class="card-codename">CLEAN SLATE</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+
+      <!-- Options -->
+      <div class="section-subtitle">Options Menu</div>
+      <div class="card-grid">
+        <a class="card" href="options/v0.3/index.html">
+          <div class="card-version">v0.3</div>
+          <div class="card-codename">PAUSE MENU + OPTIONS</div>
+          <div class="card-title">Civ/XCOM-style two-layer: Pause Menu &rarr; Options sub-screen</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+        <a class="card" href="options/v0.2/index.html">
+          <div class="card-version">v0.2</div>
+          <div class="card-codename">CINEMATIC MODAL &mdash; REFINED</div>
+          <span class="card-link">Open &rarr;</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="page-footer">
+    <div class="aquila">&#9878;</div>
+    <div>WH40K Simulator &middot; Mockups v2 &middot; ES Module Architecture</div>
+  </footer>
+
+  <script>
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('hidden', p.id !== 'tab-' + tab));
+      history.replaceState(null, '', '#' + tab);
+    }
+    const hash = location.hash.replace('#', '');
+    if (hash && document.getElementById('tab-' + hash)) switchTab(hash);
+  </script>
+</body>
+</html>

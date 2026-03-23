@@ -1,0 +1,735 @@
+/* ══════════════════════════════════════════════════════════════
+   Battle Forge v0.1 — Pre-Game Configuration
+   Shared tokens via ../shared/tokens/*.css
+══════════════════════════════════════════════════════════════ */
+
+/* Override typography.css overflow:hidden on html/body */
+html, body { overflow: auto; height: auto; }
+
+/* ── Full-viewport layout ── */
+.forge-root {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  overflow-y: auto;
+  position: relative;
+}
+
+/* ── Vignette overlay ── */
+.forge-vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 20%, rgba(4,6,8,0.5) 65%, rgba(4,6,8,0.92) 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Scanlines ── */
+.forge-scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px, transparent 2px,
+    rgba(0, 0, 0, 0.02) 2px, rgba(0, 0, 0, 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONTAINER
+═══════════════════════════════════════════════════════════ */
+.forge-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 56px 32px 48px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════════ */
+.forge-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.forge-label {
+  font: 400 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.forge-title {
+  font: 400 40px/1 'Anton', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--imp);
+  text-shadow:
+    0 0 20px rgba(0, 212, 255, 0.35),
+    0 0 60px rgba(0, 212, 255, 0.12);
+  margin-bottom: 6px;
+}
+
+.forge-subtitle {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: var(--imp-dim);
+}
+
+.forge-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px auto 0;
+  max-width: 400px;
+}
+.forge-divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.forge-divider-ornament {
+  color: var(--imp-dim);
+  font-size: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SECTION — shared panel style with corner brackets
+═══════════════════════════════════════════════════════════ */
+.forge-section {
+  background: rgba(10, 16, 22, 0.92);
+  border: 1px solid var(--border);
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* Corner brackets */
+.forge-section::before,
+.forge-section::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+.forge-section::before {
+  top: -1px; left: -1px;
+  border-top: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+}
+.forge-section::after {
+  bottom: -1px; right: -1px;
+  border-bottom: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+}
+.forge-section .corner-tr,
+.forge-section .corner-bl {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+.forge-section .corner-tr {
+  top: -1px; right: -1px;
+  border-top: 2px solid var(--imp);
+  border-right: 2px solid var(--imp);
+}
+.forge-section .corner-bl {
+  bottom: -1px; left: -1px;
+  border-bottom: 2px solid var(--imp);
+  border-left: 2px solid var(--imp);
+}
+
+.section-title {
+  font: 400 14px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  margin-bottom: 18px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ARMY SELECTION — two-column layout
+═══════════════════════════════════════════════════════════ */
+.army-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.army-col-title {
+  font: 400 11px/1 'Anton', sans-serif;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.faction-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Faction card ── */
+.faction-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.faction-card:hover:not(.disabled) {
+  border-color: var(--text-muted);
+  background: var(--bg-raised);
+}
+
+/* Selected states */
+.faction-card.selected-imp {
+  border-color: var(--imp);
+  box-shadow:
+    0 0 16px rgba(0, 212, 255, 0.15),
+    inset 0 0 30px rgba(0, 212, 255, 0.04);
+}
+
+.faction-card.selected-ork {
+  border-color: var(--ork);
+  box-shadow:
+    0 0 16px rgba(255, 64, 32, 0.15),
+    inset 0 0 30px rgba(255, 64, 32, 0.04);
+}
+
+/* Disabled state */
+.faction-card.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.faction-icon {
+  font-size: 28px;
+  line-height: 1;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.faction-icon.imp-bg {
+  background: rgba(0, 212, 255, 0.08);
+  color: var(--imp);
+}
+.faction-icon.ork-bg {
+  background: rgba(255, 64, 32, 0.08);
+  color: var(--ork);
+}
+.faction-icon.disabled-bg {
+  background: rgba(42, 58, 74, 0.3);
+  color: var(--text-dis);
+}
+
+.faction-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.faction-name {
+  font: 600 13px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.faction-card.disabled .faction-name {
+  color: var(--text-dis);
+}
+
+.faction-pts {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  color: var(--text-sec);
+  margin-top: 3px;
+}
+
+.faction-card.disabled .faction-pts {
+  color: var(--text-dis);
+}
+
+/* Coming soon badge on card */
+.coming-soon-badge {
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(26, 37, 53, 0.8);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BATTLEFIELD SELECTION
+═══════════════════════════════════════════════════════════ */
+.map-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.map-card {
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.map-card:hover:not(.disabled) {
+  border-color: var(--text-muted);
+  background: var(--bg-raised);
+}
+
+.map-card.selected {
+  border-color: var(--imp);
+  box-shadow:
+    0 0 16px rgba(0, 212, 255, 0.12),
+    inset 0 0 20px rgba(0, 212, 255, 0.03);
+}
+
+.map-card.disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.map-preview {
+  width: 100%;
+  aspect-ratio: 60 / 44;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Deployment zone diagram — Hammer & Anvil: left/right zones */
+.deploy-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22%;
+}
+.deploy-zone.left-zone {
+  left: 0;
+  background: rgba(0, 212, 255, 0.12);
+  border-right: 1px dashed rgba(0, 212, 255, 0.25);
+}
+.deploy-zone.right-zone {
+  right: 0;
+  background: rgba(255, 64, 32, 0.12);
+  border-left: 1px dashed rgba(255, 64, 32, 0.25);
+}
+
+.deploy-label {
+  position: absolute;
+  font: 600 7px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+.deploy-label.imp-label {
+  color: rgba(0, 212, 255, 0.5);
+}
+.deploy-label.ork-label {
+  color: rgba(255, 64, 32, 0.5);
+}
+
+/* No man's land marker */
+.nml-marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font: 500 6px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  white-space: nowrap;
+}
+
+/* Objective dots */
+.obj-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--strat);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 4px rgba(204, 136, 0, 0.4);
+}
+
+.map-name {
+  font: 600 11px/1.2 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.map-card.disabled .map-name {
+  color: var(--text-dis);
+}
+
+.map-size {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+}
+
+.map-card.disabled .map-size {
+  color: var(--text-dis);
+}
+
+/* Mission row below map cards */
+.mission-row {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mission-label {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.mission-value {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ARMY ROSTERS
+═══════════════════════════════════════════════════════════ */
+.roster-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.roster-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+}
+
+.roster-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.roster-faction-icon {
+  font-size: 16px;
+}
+
+.imp-roster .roster-faction-icon { color: var(--imp); }
+.ork-roster .roster-faction-icon { color: var(--ork); }
+
+.roster-faction-name {
+  font: 600 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.roster-total {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+}
+
+.roster-list {
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.roster-unit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  border-bottom: 1px solid rgba(26, 37, 53, 0.5);
+}
+.roster-unit:last-child { border-bottom: none; }
+
+.unit-name {
+  font: 500 11px/1 'Rajdhani', sans-serif;
+  letter-spacing: 0.5px;
+  color: var(--text-sec);
+}
+
+.unit-meta {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Scrollbar styling for roster */
+.roster-list::-webkit-scrollbar { width: 4px; }
+.roster-list::-webkit-scrollbar-track { background: var(--bg-primary); }
+.roster-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ═══════════════════════════════════════════════════════════
+   ARMY LIST UPLOAD
+═══════════════════════════════════════════════════════════ */
+.upload-area {
+  border: 1px dashed var(--border);
+  padding: 28px;
+  text-align: center;
+  opacity: 0.35;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.upload-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+
+.upload-title {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  margin-bottom: 4px;
+}
+
+.upload-sub {
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-dis);
+}
+
+.upload-coming {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font: 600 8px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: rgba(26, 37, 53, 0.8);
+  border: 1px solid var(--border);
+  padding: 3px 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GAME SETTINGS ROW
+═══════════════════════════════════════════════════════════ */
+.settings-row {
+  display: flex;
+  gap: 20px;
+}
+
+.setting-item {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  opacity: 0.45;
+}
+
+.setting-label {
+  font: 600 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+}
+
+.setting-value {
+  font: 600 12px/1 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+  color: var(--text-dis);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BEGIN BATTLE BUTTON
+═══════════════════════════════════════════════════════════ */
+.begin-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 56px;
+  font: 600 13px/1 'Rajdhani', sans-serif;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  border: 1px solid var(--imp);
+  color: var(--bg-primary);
+  background: var(--imp);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+.begin-btn:hover {
+  background: #18eaff;
+  box-shadow:
+    0 0 30px rgba(0, 212, 255, 0.4),
+    0 0 60px rgba(0, 212, 255, 0.15);
+}
+.begin-btn:active {
+  background: var(--imp-dim);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION CHROME
+═══════════════════════════════════════════════════════════ */
+.nav-back {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  z-index: 20;
+  transition: color 0.2s;
+}
+.nav-back:hover {
+  color: var(--imp);
+}
+
+.nav-mockups {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  font: 500 10px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-decoration: none;
+  text-transform: uppercase;
+  z-index: 20;
+  transition: color 0.2s;
+}
+.nav-mockups:hover {
+  color: var(--imp);
+}
+
+.version-badge {
+  position: fixed;
+  bottom: 14px;
+  left: 14px;
+  font: 600 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dis);
+  z-index: 20;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOOLTIP
+═══════════════════════════════════════════════════════════ */
+.forge-tooltip {
+  position: fixed;
+  padding: 5px 12px;
+  font: 500 9px/1 'Rajdhani', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  background: rgba(10, 16, 22, 0.95);
+  border: 1px solid var(--border);
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.forge-tooltip.visible {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ENTRANCE ANIMATIONS
+═══════════════════════════════════════════════════════════ */
+@keyframes forge-fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.forge-header {
+  opacity: 0;
+  animation: forge-fade-up 0.6s ease-out 0.1s forwards;
+}
+
+.forge-section:nth-child(1) {
+  opacity: 0;
+  animation: forge-fade-up 0.5s ease-out 0.25s forwards;
+}
+.forge-section:nth-child(2) {
+  opacity: 0;
+  animation: forge-fade-up 0.5s ease-out 0.35s forwards;
+}
+.forge-section:nth-child(3) {
+  opacity: 0;
+  animation: forge-fade-up 0.5s ease-out 0.45s forwards;
+}
+.forge-section:nth-child(4) {
+  opacity: 0;
+  animation: forge-fade-up 0.5s ease-out 0.55s forwards;
+}
+
+.begin-btn {
+  opacity: 0;
+  animation: forge-fade-up 0.5s ease-out 0.65s forwards;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  .army-columns {
+    grid-template-columns: 1fr;
+  }
+  .map-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .settings-row {
+    flex-direction: column;
+  }
+  .forge-container {
+    padding: 56px 16px 40px;
+  }
+}

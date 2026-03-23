@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Battle Forge v0.3b — SANCTUM v2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../shared/tokens/colors.css">
+  <link rel="stylesheet" href="../../shared/tokens/typography.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Nav chrome -->
+<a class="nav-back" href="../../start-game/index.html">&larr; Back</a>
+<a class="nav-mockups" href="../../index.html#battle-forge">&larr; Mockups</a>
+<div class="version-badge">v0.3b &middot; SANCTUM v2</div>
+
+<!-- Full-viewport background -->
+<div class="sanctum">
+  <div class="grain"></div>
+  <div class="bg-glow" id="bgGlow"></div>
+
+  <!-- CSS ember particles -->
+  <div class="embers" id="embers"></div>
+
+  <!-- Centre panel -->
+  <div class="panel" id="panel">
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <!-- Step indicator — just 2 dots -->
+    <div class="step-dots" id="stepDots">
+      <div class="step-dot active" data-step="0">1</div>
+      <div class="step-sep"></div>
+      <div class="step-dot" data-step="1">2</div>
+    </div>
+
+    <!-- Step container -->
+    <div class="step-container" id="stepContainer">
+
+      <!-- ═══ STEP 1: Configure Forces ═══ -->
+      <div class="step active stagger" data-step="0" id="step0">
+        <div class="step-label">Configure Forces</div>
+
+        <!-- Mode selector -->
+        <div class="mode-selector">
+          <button class="mode-btn active">Single Player</button>
+          <button class="mode-btn disabled" title="Coming Soon">Multiplayer</button>
+        </div>
+
+        <!-- Two-column: Your Forces | Enemy Forces -->
+        <div class="forces-split">
+          <div class="force-col" id="forceColPlayer">
+            <div class="force-label">Your Forces</div>
+
+            <!-- Selected faction card -->
+            <div class="faction-card" id="playerFactionCard">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Change Army button -->
+            <button class="change-army-btn" id="changePlayerArmy">Change Army &#9662;</button>
+
+            <!-- Army dropdown overlay -->
+            <div class="army-dropdown" id="playerDropdown" style="position:relative;">
+              <div class="dropdown-header">
+                <span class="dropdown-title">Select Army</span>
+                <button class="dropdown-close" id="closePlayerDropdown">&times;</button>
+              </div>
+              <div class="army-grid" id="playerArmyGrid">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <!-- Compact roster -->
+            <div class="roster-scroll" id="playerRoster">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- VS divider -->
+          <div class="vs-divider">
+            <span class="vs-badge">VS</span>
+          </div>
+
+          <div class="force-col ork-accent" id="forceColEnemy">
+            <div class="force-label enemy">Enemy Forces</div>
+
+            <div class="faction-card ork-accent" id="enemyFactionCard">
+              <!-- Populated by JS -->
+            </div>
+
+            <button class="change-army-btn" id="changeEnemyArmy">Change Army &#9662;</button>
+
+            <div class="army-dropdown ork-border" id="enemyDropdown" style="position:relative;">
+              <div class="dropdown-header">
+                <span class="dropdown-title">Select Enemy</span>
+                <button class="dropdown-close" id="closeEnemyDropdown">&times;</button>
+              </div>
+              <div class="army-grid" id="enemyArmyGrid">
+                <!-- Populated by JS -->
+              </div>
+            </div>
+
+            <div class="roster-scroll" id="enemyRoster">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="nav-btn hidden">&larr; Back</button>
+          <button class="nav-btn" id="nextBtn0">Next &rarr;</button>
+        </div>
+      </div>
+
+      <!-- ═══ STEP 2: Choose Battlefield ═══ -->
+      <div class="step" data-step="1" id="step1">
+        <div class="step-label">Choose Battlefield</div>
+
+        <div class="map-display stagger">
+          <div class="map-hero">
+            <div class="map-title">Hammer &amp; Anvil</div>
+            <div class="map-subtitle">60&Prime; &times; 44&Prime; &middot; Layout 1</div>
+          </div>
+
+          <div class="deployment-diagram">
+            <div class="deploy-zone left">Attacker</div>
+            <div class="deploy-zone right">Defender</div>
+            <div class="deploy-nml">No Man's Land</div>
+            <div class="deploy-obj" style="top:50%;left:50%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:25%;left:25%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:75%;left:25%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:25%;left:75%;transform:translate(-50%,-50%)"></div>
+            <div class="deploy-obj" style="top:75%;left:75%;transform:translate(-50%,-50%)"></div>
+          </div>
+
+          <div class="map-alts">
+            <div class="map-alt active">Hammer &amp; Anvil</div>
+            <div class="map-alt">Search &amp; Destroy</div>
+            <div class="map-alt">Sweeping Engagement</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="mission-row">
+            <span class="mission-label">Mission:</span>
+            <span class="mission-name">Take and Hold</span>
+          </div>
+
+          <div class="settings-row">
+            <div class="setting-chip"><span>Turns:</span> 5</div>
+            <div class="setting-chip"><span>First Turn:</span> Roll-off</div>
+            <div class="setting-chip"><span>Format:</span> Strike Force</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div style="text-align:center">
+            <a class="begin-btn" href="../../phases/deploy/v0.4/index.html">Begin Battle &rarr;</a>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="nav-btn" id="backBtn1">&larr; Back</button>
+          <span></span>
+        </div>
+      </div>
+
+    </div><!-- /step-container -->
+  </div><!-- /panel -->
+</div><!-- /sanctum -->
+
+<script>
+// ── Error display ──
+window.onerror = function(msg, src, line) {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#cc2020;color:#fff;padding:8px 16px;font:13px monospace;z-index:9999';
+  d.textContent = 'ERROR: ' + msg + ' (' + src + ':' + line + ')';
+  document.body.appendChild(d);
+};
+
+// ── Faction Data ──
+var ALL_FACTIONS = {
+  custodes: {
+    emblem: '\u269C', name: 'Adeptus Custodes', sub: 'Shield Host',
+    pts: 1985, models: 45, units: 13, accent: 'imp',
+    roster: [
+      { name: 'Blade Champion', qty: 2, models: 1, pts: 120 },
+      { name: 'Custodian Guard', qty: 4, models: 5, pts: 190 },
+      { name: 'Allarus Custodians', qty: 1, models: 3, pts: 165 },
+      { name: 'Allarus Custodians', qty: 1, models: 2, pts: 110 },
+      { name: 'Prosecutors', qty: 2, models: 5, pts: 85 },
+      { name: 'Caladius Grav-tank', qty: 2, models: 1, pts: 215 },
+      { name: 'Inquisitor Draxus', qty: 1, models: 1, pts: 95 },
+    ],
+  },
+  orks: {
+    emblem: '\u2620', name: 'Orks', sub: 'Waaagh! Tribe',
+    pts: 1960, models: 75, units: 16, accent: 'ork',
+    roster: [
+      { name: 'Warboss', qty: 1, models: 1, pts: 90 },
+      { name: 'Boss Nob', qty: 1, models: 1, pts: 95 },
+      { name: 'Boyz Mob', qty: 2, models: 10, pts: 150 },
+      { name: 'Mekboy', qty: 1, models: 1, pts: 75 },
+      { name: 'Nobz Mob', qty: 2, models: 5, pts: 115 },
+      { name: 'Gretchin', qty: 2, models: 10, pts: 50 },
+      { name: 'Deff Dread', qty: 1, models: 1, pts: 150 },
+      { name: 'Battlewagon', qty: 1, models: 1, pts: 185 },
+      { name: 'Lootas', qty: 1, models: 5, pts: 100 },
+      { name: 'Stormboyz', qty: 1, models: 5, pts: 80 },
+      { name: 'Weirdboy', qty: 1, models: 1, pts: 70 },
+      { name: 'Meganobz', qty: 1, models: 3, pts: 200 },
+      { name: 'Trukk', qty: 1, models: 1, pts: 65 },
+    ],
+  },
+  space_marines:   { emblem: '\uD83E\uDD85', name: 'Space Marines',   sub: 'Coming Soon', locked: true, roster: [] },
+  chaos_marines:   { emblem: '\u26E7',  name: 'Chaos Marines',   sub: 'Coming Soon', locked: true, roster: [] },
+  aeldari:         { emblem: '\u2726',  name: 'Aeldari',         sub: 'Coming Soon', locked: true, roster: [] },
+  tyranids:        { emblem: '\uD83D\uDC1B', name: 'Tyranids',        sub: 'Coming Soon', locked: true, roster: [] },
+  necrons:         { emblem: '\u2620',  name: 'Necrons',         sub: 'Coming Soon', locked: true, roster: [] },
+  tau:             { emblem: '\u2738',  name: "T'au Empire",     sub: 'Coming Soon', locked: true, roster: [] },
+  death_guard:     { emblem: '\u2623',  name: 'Death Guard',     sub: 'Coming Soon', locked: true, roster: [] },
+  thousand_sons:   { emblem: '\u0416',  name: 'Thousand Sons',   sub: 'Coming Soon', locked: true, roster: [] },
+};
+
+// ── State ──
+var playerFaction = 'custodes';
+var enemyFaction = 'orks';
+var currentStep = 0;
+
+var GLOW_COLORS = [
+  'rgba(0, 212, 255, 0.07)',   // step 1: cyan
+  'rgba(201, 163, 82, 0.07)',  // step 2: amber (battlefield)
+];
+
+// ── Render helpers ──
+function totalPts(roster) {
+  return roster.reduce(function(s, u) { return s + u.pts * u.qty; }, 0);
+}
+
+function renderFactionCard(factionKey, cardId) {
+  var f = ALL_FACTIONS[factionKey];
+  var card = document.getElementById(cardId);
+  var isOrk = (f.accent === 'ork');
+  card.className = 'faction-card' + (isOrk ? ' ork-accent' : '');
+  card.innerHTML =
+    '<div class="fc-emblem">' + f.emblem + '</div>' +
+    '<div class="fc-name">' + f.name + '</div>' +
+    '<div class="fc-sub">' + f.sub + '</div>' +
+    (f.pts ? '<div class="fc-pts">' + f.pts + ' / 2000 PTS</div>' : '');
+}
+
+function renderRoster(factionKey, containerId) {
+  var f = ALL_FACTIONS[factionKey];
+  var el = document.getElementById(containerId);
+  if (!f.roster.length) { el.innerHTML = ''; return; }
+  var isOrk = (f.accent === 'ork');
+  var html = '<div class="roster-compact' + (isOrk ? ' ork-accent' : '') + '">';
+  for (var i = 0; i < f.roster.length; i++) {
+    var u = f.roster[i];
+    var label = u.qty > 1 ? u.name + ' \u00D7' + u.qty : u.name;
+    html += '<div class="roster-row">' +
+      '<span class="roster-name">' + label + '</span>' +
+      '<span class="roster-models">' + u.models + 'm</span>' +
+      '<span class="roster-pts">' + u.pts + 'pts</span>' +
+    '</div>';
+  }
+  html += '</div>';
+  html += '<div class="roster-total' + (isOrk ? ' ork-accent' : '') + '">' +
+    '<span>' + f.units + ' units \u00B7 ' + f.models + ' models</span>' +
+    '<span class="roster-total-pts">' + totalPts(f.roster) + ' pts</span>' +
+  '</div>';
+  el.innerHTML = html;
+}
+
+function renderArmyGrid(gridId, selectedKey, onSelect) {
+  var grid = document.getElementById(gridId);
+  var keys = Object.keys(ALL_FACTIONS);
+  var html = '';
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var f = ALL_FACTIONS[key];
+    var cls = 'army-mini-card';
+    if (f.locked) cls += ' locked';
+    else if (key === selectedKey) cls += (f.accent === 'ork' ? ' ork-active' : ' active');
+    html += '<div class="' + cls + '" data-faction="' + key + '">' +
+      '<div class="amc-emblem">' + f.emblem + '</div>' +
+      '<div class="amc-name">' + f.name + '</div>' +
+      (f.locked ? '<div class="amc-badge">Coming Soon</div>' : '') +
+    '</div>';
+  }
+  // Upload card
+  html += '<div class="army-mini-card upload-card locked">' +
+    '<div class="amc-emblem">\uD83D\uDCCB</div>' +
+    '<div class="amc-name">Upload (.ros)</div>' +
+    '<div class="amc-badge">Coming Soon</div>' +
+  '</div>';
+  grid.innerHTML = html;
+
+  // Bind click handlers
+  var cards = grid.querySelectorAll('.army-mini-card:not(.locked)');
+  for (var j = 0; j < cards.length; j++) {
+    cards[j].addEventListener('click', function(e) {
+      var card = e.currentTarget;
+      onSelect(card.dataset.faction);
+    });
+  }
+}
+
+// ── Dropdown logic ──
+function openDropdown(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeDropdown(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function selectPlayerFaction(key) {
+  playerFaction = key;
+  renderFactionCard(key, 'playerFactionCard');
+  renderRoster(key, 'playerRoster');
+  closeDropdown('playerDropdown');
+  renderArmyGrid('playerArmyGrid', playerFaction, selectPlayerFaction);
+}
+
+function selectEnemyFaction(key) {
+  enemyFaction = key;
+  renderFactionCard(key, 'enemyFactionCard');
+  renderRoster(key, 'enemyRoster');
+  var col = document.getElementById('forceColEnemy');
+  var isOrk = (ALL_FACTIONS[key].accent === 'ork');
+  col.className = 'force-col' + (isOrk ? ' ork-accent' : '');
+  closeDropdown('enemyDropdown');
+  renderArmyGrid('enemyArmyGrid', enemyFaction, selectEnemyFaction);
+}
+
+// ── Step navigation ──
+function goStep(idx) {
+  if (idx < 0 || idx > 1) return;
+  var prev = currentStep;
+  var dir = idx > prev ? 1 : -1;
+
+  // Exit current
+  var curEl = document.getElementById('step' + prev);
+  curEl.classList.remove('active');
+  curEl.classList.add(dir > 0 ? 'exit-down' : 'exit-up');
+
+  // Update dots
+  var dots = document.querySelectorAll('.step-dot');
+  var seps = document.querySelectorAll('.step-sep');
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].classList.remove('active', 'completed');
+    if (i < idx) dots[i].classList.add('completed');
+    if (i === idx) dots[i].classList.add('active');
+  }
+  for (var j = 0; j < seps.length; j++) {
+    if (j < idx) seps[j].classList.add('completed');
+    else seps[j].classList.remove('completed');
+  }
+
+  // Update glow
+  document.getElementById('bgGlow').style.background =
+    'radial-gradient(circle, ' + GLOW_COLORS[idx] + ' 0%, transparent 70%)';
+
+  // Enter new
+  currentStep = idx;
+  setTimeout(function() {
+    curEl.classList.remove('exit-down', 'exit-up');
+    var nextEl = document.getElementById('step' + idx);
+    nextEl.classList.add('active');
+
+    // Re-trigger stagger
+    var stag = nextEl.querySelector('.stagger') || nextEl;
+    if (stag.classList.contains('stagger')) {
+      stag.classList.remove('stagger');
+      void stag.offsetWidth;
+      stag.classList.add('stagger');
+    }
+  }, 300);
+}
+
+// ── Ember particle generation ──
+function createEmbers() {
+  var container = document.getElementById('embers');
+  var colors = ['#ff8c20', '#ff6a10', '#ffa040', '#ff4020', '#00d4ff', '#00b8e0'];
+  for (var i = 0; i < 20; i++) {
+    var ember = document.createElement('span');
+    ember.className = 'ember';
+    var size = 2 + Math.random() * 4;
+    ember.style.cssText =
+      'left:' + (5 + Math.random() * 90) + '%;' +
+      'width:' + size + 'px;height:' + size + 'px;' +
+      '--dur:' + (6 + Math.random() * 10) + 's;' +
+      '--delay:' + (Math.random() * 12) + 's;' +
+      '--drift:' + (-30 + Math.random() * 60) + 'px;' +
+      '--peak:' + (0.3 + Math.random() * 0.5) + ';' +
+      '--ember-color:' + colors[Math.floor(Math.random() * colors.length)] + ';';
+    container.appendChild(ember);
+  }
+}
+
+// ── Init ──
+function init() {
+  createEmbers();
+
+  // Animate corner brackets
+  requestAnimationFrame(function() {
+    document.getElementById('panel').classList.add('loaded');
+  });
+
+  // Render initial state
+  renderFactionCard(playerFaction, 'playerFactionCard');
+  renderRoster(playerFaction, 'playerRoster');
+  renderFactionCard(enemyFaction, 'enemyFactionCard');
+  renderRoster(enemyFaction, 'enemyRoster');
+  renderArmyGrid('playerArmyGrid', playerFaction, selectPlayerFaction);
+  renderArmyGrid('enemyArmyGrid', enemyFaction, selectEnemyFaction);
+
+  // Change Army buttons
+  document.getElementById('changePlayerArmy').addEventListener('click', function() {
+    var dd = document.getElementById('playerDropdown');
+    if (dd.classList.contains('open')) closeDropdown('playerDropdown');
+    else openDropdown('playerDropdown');
+  });
+  document.getElementById('changeEnemyArmy').addEventListener('click', function() {
+    var dd = document.getElementById('enemyDropdown');
+    if (dd.classList.contains('open')) closeDropdown('enemyDropdown');
+    else openDropdown('enemyDropdown');
+  });
+
+  // Close dropdown buttons
+  document.getElementById('closePlayerDropdown').addEventListener('click', function() {
+    closeDropdown('playerDropdown');
+  });
+  document.getElementById('closeEnemyDropdown').addEventListener('click', function() {
+    closeDropdown('enemyDropdown');
+  });
+
+  // Step nav buttons
+  document.getElementById('nextBtn0').addEventListener('click', function() { goStep(1); });
+  document.getElementById('backBtn1').addEventListener('click', function() { goStep(0); });
+
+  // Step dot clicks
+  var dots = document.querySelectorAll('.step-dot');
+  for (var i = 0; i < dots.length; i++) {
+    dots[i].addEventListener('click', function() {
+      if (this.classList.contains('completed')) {
+        goStep(parseInt(this.dataset.step));
+      }
+    });
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' && currentStep < 1) goStep(currentStep + 1);
+    if (e.key === 'ArrowLeft' && currentStep > 0) goStep(currentStep - 1);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
