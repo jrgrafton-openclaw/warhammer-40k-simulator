@@ -68,7 +68,8 @@ Editor.Persistence = {
       effects: {
         shadow: Object.assign({}, S.effects.shadow),
         feather: Object.assign({}, S.effects.feather),
-        grade: Object.assign({}, S.effects.grade)
+        grade: Object.assign({}, S.effects.grade),
+        modelShadow: Object.assign({}, S.effects.modelShadow)
       },
       bg: document.getElementById('bgSel').value,
       ruinsOpacity: ruinsSlider ? ruinsSlider.value : 92,
@@ -172,6 +173,11 @@ Editor.Persistence = {
       if (fxFeatherControls) fxFeatherControls.style.display = E.feather.on ? '' : 'none';
       var fxGradeControls = document.getElementById('fxGradeControls');
       if (fxGradeControls) fxGradeControls.style.display = E.grade.on ? '' : 'none';
+      if (data.effects.modelShadow) Object.assign(E.modelShadow, data.effects.modelShadow);
+      var modelShadowBtn = document.getElementById('fxModelShadowBtn');
+      if (modelShadowBtn) modelShadowBtn.classList.toggle('on', E.modelShadow.on);
+      var fxModelShadowControls = document.getElementById('fxModelShadowControls');
+      if (fxModelShadowControls) fxModelShadowControls.style.display = E.modelShadow.on ? '' : 'none';
     }
   },
 
@@ -213,7 +219,12 @@ Editor.Persistence = {
   _restoreLights(data) {
     if (!data.lights) return;
     data.lights.forEach(function(l) {
-      Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
+      Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true, undefined, {
+        pulseType: l.pulseType || 'none',
+        pulseSpeed: l.pulseSpeed != null ? l.pulseSpeed : 1.0,
+        pulseIntensityAmp: l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15,
+        pulseRadiusAmp: l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10
+      });
     });
   },
 
@@ -365,6 +376,16 @@ Editor.Persistence = {
       if (sliders[0]) { sliders[0].value = Math.round(E.grade.brightness * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.brightness * 100) + '%'; }
       if (sliders[1]) { sliders[1].value = Math.round(E.grade.saturation * 100); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.saturation * 100) + '%'; }
       if (sliders[2]) { sliders[2].value = Math.round(E.grade.sepia * 100); var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = Math.round(E.grade.sepia * 100) + '%'; }
+    }
+    // Model shadow sliders
+    var msControls = document.getElementById('fxModelShadowControls');
+    if (msControls && E.modelShadow) {
+      var sliders = msControls.querySelectorAll('input[type=range]');
+      // Order: opacity, blur, dx, dy (matches index.html)
+      if (sliders[0]) { sliders[0].value = Math.round(E.modelShadow.opacity * 100); var sp = sliders[0].nextElementSibling; if (sp) sp.textContent = Math.round(E.modelShadow.opacity * 100) + '%'; }
+      if (sliders[1]) { sliders[1].value = Math.round(E.modelShadow.blur * 2); var sp = sliders[1].nextElementSibling; if (sp) sp.textContent = E.modelShadow.blur + 'px'; }
+      if (sliders[2]) { sliders[2].value = E.modelShadow.dx; var sp = sliders[2].nextElementSibling; if (sp) sp.textContent = E.modelShadow.dx + 'px'; }
+      if (sliders[3]) { sliders[3].value = E.modelShadow.dy; var sp = sliders[3].nextElementSibling; if (sp) sp.textContent = E.modelShadow.dy + 'px'; }
     }
   },
 
