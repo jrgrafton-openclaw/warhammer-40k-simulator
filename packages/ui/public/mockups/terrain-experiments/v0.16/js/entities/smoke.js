@@ -348,8 +348,10 @@ Editor.Smoke = {
       return Object.assign(b, {
         sparkCount: fx.sparkCount, sparkSpeed: fx.sparkSpeed, sparkSize: fx.sparkSize,
         direction: fx.direction, angle: fx.angle || 45, maxHeight: fx.maxHeight,
-        coreSize: fx.coreSize, glowStyle: fx.glowStyle || 'radial',
-        glowRadius: fx.glowRadius, glowIntensity: fx.glowIntensity
+        coreSize: fx.coreSize, glowRadius: fx.glowRadius, glowIntensity: fx.glowIntensity,
+        pulseType: fx.pulseType || 'none', pulseSpeed: fx.pulseSpeed || 1.0,
+        pulseIntensityAmp: fx.pulseIntensityAmp != null ? fx.pulseIntensityAmp : 0.15,
+        pulseRadiusAmp: fx.pulseRadiusAmp != null ? fx.pulseRadiusAmp : 10
       });
     });
   },
