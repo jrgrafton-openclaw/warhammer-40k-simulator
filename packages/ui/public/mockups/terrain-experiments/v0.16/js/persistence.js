@@ -62,7 +62,7 @@ Editor.Persistence = {
           ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
           : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.s, f: m.f };
       }),
-      lights: Editor.Lights.serialize(),
+      lights: Editor.Lights.serialize(), smokeFx: Editor.Smoke.serialize(),
       objectives: Editor.Objectives.serialize(),
       groups: S.groups.map(function(g) { return { id: g.id, name: g.name, opacity: g.opacity }; }),
       effects: {
@@ -85,7 +85,7 @@ Editor.Persistence = {
         'deploy-ork': document.getElementById('deploy-ork')?.style.display !== 'none',
         modelLayer: document.getElementById('modelLayer')?.style.display !== 'none',
         objectives: document.getElementById('objectiveRings')?.style.display !== 'none',
-        lightLayer: document.getElementById('lightLayer')?.style.display !== 'none',
+        lightLayer: document.getElementById('lightLayer')?.style.display !== 'none', smokeLayer: document.getElementById('smokeLayer')?.style.display !== 'none',
       }
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
@@ -126,6 +126,7 @@ Editor.Persistence = {
       this._restoreSprites(data);
       this._restoreModels(data);
       this._restoreLights(data);
+      if (data.smokeFx&&data.smokeFx.length){Editor.Smoke.removeAll();data.smokeFx.forEach(function(fx){(fx.type==='fire'?Editor.Smoke.addFire:Editor.Smoke.addSmoke).call(Editor.Smoke,fx.x,fx.y,fx,true,fx.id);});var mxId=0;Editor.Core.allSmokeFx.forEach(function(fx){var n=parseInt((fx.id||'').replace('fx',''));if(!isNaN(n)&&n>=mxId)mxId=n+1;});Editor.Smoke.fxId=mxId;}
       this._restoreGroups(data);
       Editor.Crop.reapplyAll();
       this._restoreZOrder(data);
@@ -247,7 +248,7 @@ Editor.Persistence = {
 
   _restoreToggles(data) {
     if (!data.toggles) return;
-    ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer'].forEach(function(id) {
+    ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer','smokeLayer'].forEach(function(id) {
       if (data.toggles[id] === false) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -382,7 +383,6 @@ Editor.Persistence = {
     if (_dragRect) svg.appendChild(_dragRect);
   },
 
-  /** Restore z-order from legacy layerOrder (flat ID list). */
   _restoreZOrderFromLayerOrder(layerOrder, C) {
     var svg = document.getElementById('battlefield');
     layerOrder.forEach(function(id) {
