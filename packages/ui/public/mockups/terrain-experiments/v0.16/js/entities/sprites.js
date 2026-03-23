@@ -269,11 +269,11 @@ Editor.Sprites = {
     const p0 = C.svgPt(e.clientX, e.clientY);
     const rotRad = (sp.rot || 0) * Math.PI / 180;
     const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
+    const rad = -rotRad; // for local-space conversion
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY), gdx = p.x - p0.x, gdy = p.y - p0.y;
       if (e2.shiftKey) {
         // Shift-constrained: proportional resize in local space
-        const rad = -rotRad;
         const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
         const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         const d = Math.abs(dx) > Math.abs(dy) ? dx : dy * ar;
@@ -281,59 +281,42 @@ Editor.Sprites = {
         if (corner.includes('w')) { sp.x = o.x + d; sp.w = Math.max(20, o.w - d); }
         sp.h = sp.w / ar; if (corner.includes('n')) sp.y = o.y + o.h - sp.h;
       } else if (corner.length === 1) {
-        // EDGE handle: project drag onto the edge's visual outward normal
-        // This ensures dragging the visual bottom only changes height, etc.
-        // SVG rotate(θ) transforms local vector (x,y) → (x·cos(θ)-y·sin(θ), x·sin(θ)+y·cos(θ))
-        // East local normal (1,0) → global (cosR, sinR)
-        // South local normal (0,1) → global (-sinR, cosR)
+        // ── EDGE handle: single-axis resize in visual space ──
+        // Project drag onto the edge's visual outward normal
+        // SVG rotate(θ): local (x,y) → (x·cosθ - y·sinθ, x·sinθ + y·cosθ)
+        // East normal (1,0) → (cosR, sinR), South normal (0,1) → (-sinR, cosR)
         let d;
         switch (corner) {
-          case 's': d = -gdx * sinR + gdy * cosR; break;  // south outward: project onto (-sinR, cosR)
-          case 'n': d =  gdx * sinR - gdy * cosR; break;  // north outward: negate south
-          case 'e': d =  gdx * cosR + gdy * sinR; break;  // east outward: project onto (cosR, sinR)
-          case 'w': d = -gdx * cosR - gdy * sinR; break;  // west outward: negate east
+          case 's': d = -gdx * sinR + gdy * cosR; break;
+          case 'n': d =  gdx * sinR - gdy * cosR; break;
+          case 'e': d =  gdx * cosR + gdy * sinR; break;
+          case 'w': d = -gdx * cosR - gdy * sinR; break;
         }
-        // Compute old center and new dimensions
-        const oCx = o.x + o.w/2, oCy = o.y + o.h/2;
-        if (corner === 's' || corner === 'n') {
-          sp.h = Math.max(20, o.h + d);
-        } else {
-          sp.w = Math.max(20, o.w + d);
-        }
-        // Anchor the OPPOSITE edge's visual center by adjusting x,y
-        // After rotation, the opposite edge midpoint must stay fixed in global space
-        const nCx = (corner === 'w' || corner === 'e') ? o.x + sp.w/2 : oCx;
-        const nCy = (corner === 'n' || corner === 's') ? o.y + sp.h/2 : oCy;
-        // Opposite edge midpoint in local space:
-        let opp_lx, opp_ly;
+        // Resize the appropriate dimension
+        if (corner === 's' || corner === 'n') sp.h = Math.max(20, o.h + d);
+        else sp.w = Math.max(20, o.w + d);
+        // Anchor the opposite edge by adjusting x,y (closed-form for rotated center shift)
+        const dd = (corner === 's' || corner === 'n') ? (sp.h - o.h) : (sp.w - o.w);
         switch (corner) {
-          case 's': opp_lx = o.x + o.w/2; opp_ly = o.y; break;            // anchor north
-          case 'n': opp_lx = o.x + o.w/2; opp_ly = o.y + o.h; break;      // anchor south
-          case 'e': opp_lx = o.x;          opp_ly = o.y + o.h/2; break;    // anchor west
-          case 'w': opp_lx = o.x + o.w;    opp_ly = o.y + o.h/2; break;    // anchor east
+          case 's': // anchor north edge
+            sp.x = o.x - dd/2 * sinR;
+            sp.y = o.y - dd/2 * (1 - cosR);
+            break;
+          case 'n': // anchor south edge
+            sp.x = o.x + dd/2 * sinR;
+            sp.y = o.y - dd + dd/2 * (1 - cosR);
+            break;
+          case 'e': // anchor west edge
+            sp.x = o.x - dd/2 * (1 - cosR);
+            sp.y = o.y + dd/2 * sinR;
+            break;
+          case 'w': // anchor east edge
+            sp.x = o.x - dd + dd/2 * (1 - cosR);
+            sp.y = o.y - dd/2 * sinR;
+            break;
         }
-        // Old visual position of opposite edge midpoint (rotated around old center)
-        const odx = opp_lx - oCx, ody = opp_ly - oCy;
-        const old_gx = oCx + odx * cosR - ody * sinR;
-        const old_gy = oCy + odx * sinR + ody * cosR;
-        // New opposite edge midpoint in local space (with updated dimensions)
-        let new_opp_lx, new_opp_ly;
-        switch (corner) {
-          case 's': new_opp_lx = sp.x + sp.w/2; new_opp_ly = sp.y; break;
-          case 'n': new_opp_lx = sp.x + sp.w/2; new_opp_ly = sp.y + sp.h; break;
-          case 'e': new_opp_lx = sp.x;           new_opp_ly = sp.y + sp.h/2; break;
-          case 'w': new_opp_lx = sp.x + sp.w;    new_opp_ly = sp.y + sp.h/2; break;
-        }
-        // New visual position (rotated around new center)
-        const ndx = new_opp_lx - nCx, ndy = new_opp_ly - nCy;
-        const new_gx = nCx + ndx * cosR - ndy * sinR;
-        const new_gy = nCy + ndx * sinR + ndy * cosR;
-        // Compensate: shift sprite so opposite edge stays fixed
-        const comp_gx = old_gx - new_gx, comp_gy = old_gy - new_gy;
-        sp.x += comp_gx; sp.y += comp_gy;
       } else {
-        // CORNER handle: existing rotated-delta behavior
-        const rad = -rotRad;
+        // ── CORNER handle: existing local-space behavior ──
         const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
         const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         if (corner.includes('e')) sp.w = Math.max(20, o.w + dx);
