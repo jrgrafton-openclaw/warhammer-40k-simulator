@@ -85,11 +85,22 @@ Editor.Selection = {
     if (s.rot) r.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
     C.selUI.appendChild(r);
 
+    // Helper: rotate cursor icon based on sprite rotation
+    // CSS cursors cycle: n→ne→e→se→s→sw→w→nw in 45° steps
+    const cursorMap = ['n','ne','e','se','s','sw','w','nw'];
+    const rotateCursor = (baseCursor, rot) => {
+      const base = baseCursor.replace('-resize','');
+      const idx = cursorMap.indexOf(base);
+      if (idx < 0) return baseCursor;
+      const steps = Math.round((rot || 0) / 45) % 8;
+      return cursorMap[(idx + steps + 8) % 8] + '-resize';
+    };
+
     // Corner handles
     [[s.x, s.y, 'nw'], [s.x+s.w, s.y, 'ne'], [s.x, s.y+s.h, 'sw'], [s.x+s.w, s.y+s.h, 'se']].forEach(([hx, hy, pos]) => {
       const h = document.createElementNS(NS, 'rect');
       h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = pos + '-resize';
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(pos + '-resize', s.rot);
       if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
       h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
       C.selUI.appendChild(h);
@@ -106,7 +117,7 @@ Editor.Selection = {
       const h = document.createElementNS(NS, 'rect');
       h.setAttribute('x', hx - hw/2); h.setAttribute('y', hy - hh/2);
       h.setAttribute('width', hw); h.setAttribute('height', hh);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = cursor;
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(cursor, s.rot);
       h.classList.add('sel-handle');
       if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
       h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
