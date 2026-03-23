@@ -85,7 +85,8 @@ Editor.Persistence = {
         'deploy-ork': document.getElementById('deploy-ork')?.style.display !== 'none',
         modelLayer: document.getElementById('modelLayer')?.style.display !== 'none',
         objectives: document.getElementById('objectiveRings')?.style.display !== 'none',
-        lightLayer: document.getElementById('lightLayer')?.style.display !== 'none', smokeLayer: document.getElementById('smokeLayer')?.style.display !== 'none',
+        lightLayer: document.getElementById('lightLayer')?.style.display !== 'none',
+        smokeFxVisible: true,
       }
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
@@ -126,7 +127,7 @@ Editor.Persistence = {
       this._restoreSprites(data);
       this._restoreModels(data);
       this._restoreLights(data);
-      if (data.smokeFx&&data.smokeFx.length){Editor.Smoke.removeAll();data.smokeFx.forEach(function(fx){(fx.type==='fire'?Editor.Smoke.addFire:Editor.Smoke.addSmoke).call(Editor.Smoke,fx.x,fx.y,fx,true,fx.id);});var mxId=0;Editor.Core.allSmokeFx.forEach(function(fx){var n=parseInt((fx.id||'').replace('fx',''));if(!isNaN(n)&&n>=mxId)mxId=n+1;});Editor.Smoke.fxId=mxId;}
+      if (data.smokeFx&&data.smokeFx.length){Editor.Smoke.removeAll();data.smokeFx.forEach(function(fx){if(fx.type==='fire')Editor.Fire.addFire(fx.x,fx.y,fx,true,fx.id);else Editor.Smoke.addSmoke(fx.x,fx.y,fx,true,fx.id);});var mxId=0;Editor.Core.allSmokeFx.forEach(function(fx){var n=parseInt((fx.id||'').replace('fx',''));if(!isNaN(n)&&n>=mxId)mxId=n+1;});Editor.Smoke.fxId=mxId;}
       this._restoreGroups(data);
       Editor.Crop.reapplyAll();
       this._restoreZOrder(data);
@@ -248,7 +249,7 @@ Editor.Persistence = {
 
   _restoreToggles(data) {
     if (!data.toggles) return;
-    ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer','smokeLayer'].forEach(function(id) {
+    ['svgRuins','svgScatter','deployZones','modelLayer','lightLayer'].forEach(function(id) {
       if (data.toggles[id] === false) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -270,6 +271,12 @@ Editor.Persistence = {
       });
       var objBtn = document.querySelector('button[onclick*="objectiveRings"]');
       if (objBtn) objBtn.classList.remove('on');
+    }
+    // Restore smoke/fire FX visibility (per-entity toggle)
+    if (data.toggles.smokeFxVisible === false) {
+      Editor.Core.allSmokeFx.forEach(function(fx) { fx.el.style.display = 'none'; });
+      var sfBtn = document.querySelector('button[onclick*="toggleAll"]');
+      if (sfBtn) sfBtn.classList.remove('on');
     }
   },
 

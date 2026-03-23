@@ -57,6 +57,7 @@ Editor.Selection = {
     C.selected = sp; C.multiSel = [sp];
     Editor.Lights.deselectLight();
     Editor.Models.deselectModel();
+    Editor.Smoke.deselectEffect();
     this.drawSelectionUI(); Editor.Layers.rebuild();
   },
 
@@ -64,6 +65,7 @@ Editor.Selection = {
     const C = Editor.Core;
     C.selected = null; C.multiSel = [];
     C.selUI.style.display = 'none'; C.selUI.innerHTML = '';
+    Editor.Smoke.deselectEffect();
     Editor.Layers.rebuild();
   },
 
@@ -380,7 +382,7 @@ Editor.Selection = {
       return; // Block other keys while cropping
     }
 
-    if (e.key === 'Escape') { this.deselect(); Editor.Lights.deselectLight(); Editor.Models.deselectModel(); return; }
+    if (e.key === 'Escape') { this.deselect(); Editor.Lights.deselectLight(); Editor.Models.deselectModel(); Editor.Smoke.deselectEffect(); return; }
 
     // Toggle light center indicators
     if (e.key === 'l' || e.key === 'L') { Editor.Lights.toggleCenters(); return; }
