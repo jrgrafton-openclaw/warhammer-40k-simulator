@@ -22,8 +22,9 @@ Editor.Core = {
   selected: null,
   multiSel: [],
   sid: 0,  // sprite id counter
-  clipboardSprites: [],
-  clipboardLights: [],
+  clipboard: [],        // unified clipboard (serialized entities)
+  clipboardSprites: [],  // legacy
+  clipboardLights: [],   // legacy
 
   // Image paths resolve to img/ subdirectory
   spriteBasePath: 'img/',

@@ -402,24 +402,60 @@ Editor.Selection = {
       return;
     }
 
-    // Copy (sprites or lights)
+    // Copy — unified clipboard (any entity type)
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
       if (C.multiSel.length) {
-        C.clipboardSprites = C.multiSel.map(s => ({ file: s.file, x: s.x, y: s.y, w: s.w, h: s.h, rot: s.rot, layerType: s.layerType, hidden: s.hidden, flipX: s.flipX, flipY: s.flipY, shadowMul: s.shadowMul != null ? s.shadowMul : 1, cropL: s.cropL || 0, cropT: s.cropT || 0, cropR: s.cropR || 0, cropB: s.cropB || 0 }));
-        C.clipboardLights = [];
+        // Unified clipboard: serialize all selected entities
+        C.clipboard = C.multiSel.map(ent => {
+          if (ent.serialize) return ent.serialize();
+          // Legacy sprite fallback
+          return { type: 'sprite', file: ent.file, x: ent.x, y: ent.y, w: ent.w, h: ent.h, rot: ent.rot, layerType: ent.layerType, hidden: ent.hidden, flipX: ent.flipX, flipY: ent.flipY, shadowMul: ent.shadowMul != null ? ent.shadowMul : 1, cropL: ent.cropL || 0, cropT: ent.cropT || 0, cropR: ent.cropR || 0, cropB: ent.cropB || 0 };
+        });
+        // Also maintain legacy clipboardSprites for backwards compat
+        C.clipboardSprites = C.clipboard.filter(d => d.type === 'sprite');
+        C.clipboardLights = C.clipboard.filter(d => d.type === 'light');
         e.preventDefault(); return;
       }
       if (Editor.Lights.selectedLight) {
         const l = Editor.Lights.selectedLight;
-        C.clipboardLights = [{ x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity }];
+        const lData = { type: 'light', x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity };
+        C.clipboard = [lData];
+        C.clipboardLights = [lData];
         C.clipboardSprites = [];
         e.preventDefault(); return;
       }
       return;
     }
-    // Paste (sprites or lights)
+    // Paste — unified clipboard
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'v') {
-      if (C.clipboardSprites.length) {
+      if (C.clipboard && C.clipboard.length) {
+        this.deselect();
+        const newSel = [];
+        const cmds = [];
+        C.clipboard.forEach(data => {
+          const ent = Editor.Entity.createFromData(data, 20, 20);
+          if (!ent) return;
+          newSel.push(ent);
+          // Record undo for each created entity
+          if (ent.type === 'sprite') {
+            cmds.push(Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(ent)));
+          } else if (ent.type === 'smoke' || ent.type === 'fire') {
+            if (Editor.Commands._captureFx) cmds.push(Editor.Commands.AddFx.create(Editor.Commands._captureFx(ent)));
+          } else if (ent.type === 'light') {
+            cmds.push(Editor.Commands.AddLight.create(Editor.Commands._captureLight(ent)));
+          }
+        });
+        if (newSel.length) {
+          C.multiSel = newSel;
+          C.selected = newSel[0];
+          this.drawSelectionUI();
+          if (cmds.length) Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Paste'));
+          Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
+        }
+        e.preventDefault(); return;
+      }
+      // Legacy fallback for clipboardSprites/clipboardLights
+      if (C.clipboardSprites && C.clipboardSprites.length) {
         this.deselect();
         C.multiSel = C.clipboardSprites.map(s => {
           var sp = Editor.Sprites.addSprite(s.file, s.x+20, s.y+20, s.w, s.h, s.rot, s.layerType || "floor", true);
@@ -435,7 +471,7 @@ Editor.Selection = {
         Editor.State.dispatch({ type: 'SET_PROPERTY' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
-      if (C.clipboardLights.length) {
+      if (C.clipboardLights && C.clipboardLights.length) {
         const newLights = C.clipboardLights.map(l => Editor.Lights.addLight(l.x + 20, l.y + 20, l.color, l.radius, l.intensity));
         const cmds = newLights.filter(Boolean).map(l => Editor.Commands.AddLight.create(Editor.Commands._captureLight(l)));
         Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Paste lights'));
