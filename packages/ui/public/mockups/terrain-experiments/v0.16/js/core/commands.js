@@ -98,6 +98,11 @@ Editor.Commands = {
         if (fx.groupId) groups[fx.id] = fx.groupId;
       });
     }
+    if (Editor.Core.allLights) {
+      Editor.Core.allLights.forEach(function(l) {
+        if (l.groupId) groups[l.id] = l.groupId;
+      });
+    }
     return { dom: snapshot, spriteGroups: groups };
   },
 
@@ -122,6 +127,16 @@ Editor.Commands = {
           fx.groupId = snap.spriteGroups[fx.id];
         } else {
           delete fx.groupId;
+        }
+      });
+    }
+    // Restore light→group assignments
+    if (Editor.Core.allLights) {
+      Editor.Core.allLights.forEach(function(l) {
+        if (snap.spriteGroups[l.id]) {
+          l.groupId = snap.spriteGroups[l.id];
+        } else {
+          delete l.groupId;
         }
       });
     }
