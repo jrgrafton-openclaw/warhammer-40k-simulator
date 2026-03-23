@@ -168,16 +168,24 @@ Editor.Fire = {
 
     g.onmousedown = e => {
       e.stopPropagation();
-      if (e.shiftKey && SM.selectedFx) {
-        if (!SM.multiSelFx.includes(fx)) SM.multiSelFx.push(fx);
-        else SM.multiSelFx = SM.multiSelFx.filter(f => f !== fx);
-        if (!SM.multiSelFx.includes(SM.selectedFx)) SM.multiSelFx.push(SM.selectedFx);
-        SM.applySelectionRing(fx);
-        Editor.Layers.rebuild();
+      if (e.shiftKey) {
+        if (!SM.multiSelFx.includes(fx)) {
+          SM.multiSelFx.push(fx);
+          SM.applySelectionRing(fx);
+        } else {
+          SM.removeSelectionRing(fx);
+          SM.multiSelFx = SM.multiSelFx.filter(f => f !== fx);
+        }
+        if (SM.selectedFx && !SM.multiSelFx.includes(SM.selectedFx)) SM.multiSelFx.push(SM.selectedFx);
+        if (!SM.selectedFx) { SM.selectedFx = fx; SM.refreshControls(); }
+        document.getElementById('smokeCtrl').style.display = SM.selectedFx?.type === 'smoke' ? '' : 'none';
+        document.getElementById('fireCtrl').style.display = SM.selectedFx?.type === 'fire' ? '' : 'none';
+        if (Editor.Layers) Editor.Layers.rebuild();
+        SM.startDrag(e, fx);
       } else {
         SM.selectEffect(fx);
+        SM.startDrag(e, fx);
       }
-      SM.startDrag(e, fx);
     };
     if (!skipSelect) SM.selectEffect(fx);
     Editor.State.syncZOrderFromDOM();
