@@ -10,7 +10,10 @@ Editor.Core = {
   selUI: null,
   debug: null,
 
-  // Shared state arrays — single source of truth
+  // Unified entity registry (Phase 1 — dual-write with legacy arrays)
+  allEntities: [],
+
+  // Shared state arrays — legacy arrays kept during migration
   allSprites: [],
   allModels: [],
   allLights: [],
@@ -19,8 +22,9 @@ Editor.Core = {
   selected: null,
   multiSel: [],
   sid: 0,  // sprite id counter
-  clipboardSprites: [],
-  clipboardLights: [],
+  clipboard: [],        // unified clipboard (serialized entities)
+  clipboardSprites: [],  // legacy
+  clipboardLights: [],   // legacy
 
   // Image paths resolve to img/ subdirectory
   spriteBasePath: 'img/',

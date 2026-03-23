@@ -85,7 +85,7 @@ Editor.Core = {
 
 ## Implementation Phases
 
-### Phase 1: Entity Protocol + Sprite Adapter (foundation)
+### Phase 1: Entity Protocol + Sprite Adapter (foundation) ✅ COMPLETE
 **Files:** `js/core/entity.js` (NEW), `js/entities/core.js`, `js/entities/sprites.js`
 
 1. Create `js/core/entity.js` with:
@@ -112,7 +112,7 @@ Editor.Core = {
 
 **Acceptance:** All existing sprite behavior unchanged. Entity registry populated alongside allSprites. Existing tests still pass.
 
-### Phase 2: Unified Selection System
+### Phase 2: Unified Selection System ✅ COMPLETE
 **Files:** `js/tools/selection.js`
 
 1. Refactor `select(sp)` → `select(entity)`:
@@ -143,7 +143,7 @@ Editor.Core = {
 
 **Acceptance:** Can select any entity type. Shift-click works across types (select sprite + fire together). Arrow keys move any selected entity. Delete removes any selected entity.
 
-### Phase 3: Unified Clipboard
+### Phase 3: Unified Clipboard ✅ COMPLETE
 **Files:** `js/tools/selection.js` (keyboard handler section)
 
 1. ⌘C: `C.clipboard = C.multiSel.map(e => e.serialize())`
@@ -156,7 +156,7 @@ Editor.Core = {
 
 **Acceptance:** ⌘C/⌘V works for any entity type. Can copy a mix of sprites + FX and paste them all.
 
-### Phase 4: Smoke/Fire/Light Entity Adapters
+### Phase 4: Smoke/Fire/Light Entity Adapters ✅ COMPLETE
 **Files:** `js/entities/smoke.js`, `js/entities/fire.js`, `js/entities/lights.js`
 
 1. Remove from smoke.js:
@@ -187,7 +187,7 @@ Editor.Core = {
 
 **Acceptance:** FX entities participate fully in sprite selection system. All parallel selection code removed. ~150 lines deleted from smoke.js.
 
-### Phase 5: Unified Groups + Layers
+### Phase 5: Unified Groups + Layers ✅ COMPLETE
 **Files:** `js/tools/groups.js`, `js/ui/layers.js`
 
 1. Groups: `addToGroup(groupId, entity)` — works for any entity type
@@ -204,7 +204,7 @@ Editor.Core = {
 
 **Acceptance:** Any entity type can be dragged into/out of groups. Layers panel shows all entity types uniformly.
 
-### Phase 6: Unified Undo Commands
+### Phase 6: Unified Undo Commands ✅ COMPLETE
 **Files:** `js/core/commands.js`
 
 1. Replace separate `AddSprite/AddLight/AddFx`, `RemoveSprite/RemoveLight/RemoveFx`, `MoveSprite/MoveLight/MoveFx` with:
@@ -216,7 +216,7 @@ Editor.Core = {
 
 **Acceptance:** Ctrl+Z works uniformly for all entity types.
 
-### Phase 7: Persistence Update
+### Phase 7: Persistence Update ✅ COMPLETE
 **Files:** `js/persistence.js`
 
 1. Save: serialize `allEntities` with type tags (can keep backwards-compat format initially)
@@ -225,7 +225,7 @@ Editor.Core = {
 
 **Acceptance:** Save/load round-trip works for all entity types including mixed groups.
 
-### Phase 8: Tests
+### Phase 8: Tests ✅ COMPLETE
 **Files:** `__tests__/entity.test.js` (NEW), updates to existing tests
 
 **Unit tests:**

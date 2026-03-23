@@ -74,33 +74,33 @@ Editor.Groups = {
     return group;
   },
 
-  /* ── Add a sprite to an existing group ── */
-  addToGroup(groupId, sp) {
+  /* ── Add any entity to an existing group ── */
+  addToGroup(groupId, entity) {
     const C = Editor.Core;
     const gEl = document.getElementById(groupId);
-    if (!gEl || !sp) return;
+    if (!gEl || !entity) return;
     const beforeDOM = Editor.Commands.captureDOMOrder();
-    const oldGroupId = sp.groupId || null;
+    const oldGroupId = entity.groupId || null;
 
-    // The element to move may be wrapped in a crop <g>
-    const elToMove = sp.rootEl;
+    // The element to move — sprites have rootEl (for crop wrappers), others use el
+    const elToMove = entity.rootEl || entity.el;
 
     // Remove from current group if in one
-    if (sp.groupId && sp.groupId !== groupId) {
-      const oldGroupEl = document.getElementById(sp.groupId);
+    if (entity.groupId && entity.groupId !== groupId) {
+      const oldGroupEl = document.getElementById(entity.groupId);
       if (oldGroupEl && elToMove.parentNode === oldGroupEl) {
         oldGroupEl.removeChild(elToMove);
       }
     }
 
-    // Move sprite into the group <g>
+    // Move entity into the group <g>
     if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
     gEl.appendChild(elToMove);
     
-    sp.groupId = groupId;
+    entity.groupId = groupId;
 
     Editor.Selection.deselect();
-    Editor.Undo.record(Editor.Commands.AddToGroup.create(sp.id, oldGroupId, groupId, beforeDOM));
+    Editor.Undo.record(Editor.Commands.AddToGroup.create(entity.id, oldGroupId, groupId, beforeDOM));
     Editor.State.dispatch({ type: 'ADD_TO_GROUP', id: groupId });
     Editor.Layers.rebuild();
     C.updateDebug();
@@ -140,21 +140,26 @@ Editor.Groups = {
     const groupName = group ? group.name : groupId;
     const opacity = group ? group.opacity : 1;
 
-    // Move sprites back to being direct SVG children at the group's current position.
+    // Move all entities back to being direct SVG children at the group's current position.
     // Iterate in DOM order within the group to preserve their relative z-order.
     const childEls = Array.from(gEl.children);
-    const sprites = [];
+    const entities = [];
     childEls.forEach(el => {
-      let sp = C.allSprites.find(s => s.rootEl === el);
-      if (sp && sp.groupId === groupId) sprites.push(sp);
+      // Check sprites (rootEl may be crop wrapper)
+      let ent = C.allSprites.find(s => s.rootEl === el);
+      // Check smoke/fire FX
+      if (!ent) ent = C.allSmokeFx.find(f => f.el === el);
+      // Check lights
+      if (!ent) ent = C.allLights.find(l => l.el === el);
+      if (ent && ent.groupId === groupId) entities.push(ent);
     });
-    const spriteIds = sprites.map(s => s.id);
+    const spriteIds = entities.map(s => s.id);
     const insertRef = gEl.nextElementSibling; // insert where the group was
-    sprites.forEach(sp => {
-      const elToMove = sp.rootEl;
+    entities.forEach(ent => {
+      const elToMove = ent.rootEl || ent.el;
       gEl.removeChild(elToMove);
       svg.insertBefore(elToMove, insertRef);
-      delete sp.groupId;
+      delete ent.groupId;
     });
 
     // Remove the group <g> element
@@ -178,8 +183,13 @@ Editor.Groups = {
     const groupName = group ? group.name : groupId;
     const opacity = group ? group.opacity : 1;
 
+    // Collect ALL entities in this group (sprites, fx, lights)
     const sprites = C.allSprites.filter(s => s.groupId === groupId);
+    const fxEntities = C.allSmokeFx.filter(f => f.groupId === groupId);
+    const lightEntities = C.allLights.filter(l => l.groupId === groupId);
     const spriteDatas = sprites.map(s => Editor.Commands._captureSprite(s));
+    const fxDatas = fxEntities.map(f => Editor.Commands._captureFx(f));
+    const lightDatas = lightEntities.map(l => Editor.Commands._captureLight(l));
     const spriteIds = sprites.map(s => s.id);
 
     // Build undo: first ungrouping, then deleting each sprite
@@ -189,6 +199,13 @@ Editor.Groups = {
       if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp);
       sp.el.remove();
       C.allSprites = C.allSprites.filter(s => s !== sp);
+      if (Editor.Entity) Editor.Entity.unregister(sp.id);
+    });
+    fxEntities.forEach(fx => {
+      Editor.Commands._removeFx(fx.id);
+    });
+    lightEntities.forEach(l => {
+      Editor.Commands._removeLight(l.id);
     });
 
     const gEl = document.getElementById(groupId);
@@ -206,16 +223,20 @@ Editor.Groups = {
       type: 'DELETE_GROUP',
       description: 'Delete group ' + groupId,
       apply: function() {
-        // Re-delete: remove sprites and group
+        // Re-delete: remove all entities and group
         var sprites2 = Editor.Core.allSprites.filter(function(s) { return s.groupId === groupId; });
-        sprites2.forEach(function(sp) { if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp); sp.el.remove(); });
+        sprites2.forEach(function(sp) { if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp); sp.el.remove(); if (Editor.Entity) Editor.Entity.unregister(sp.id); });
         Editor.Core.allSprites = Editor.Core.allSprites.filter(function(s) { return s.groupId !== groupId; });
+        var fxInGroup = Editor.Core.allSmokeFx.filter(function(f) { return f.groupId === groupId; });
+        fxInGroup.forEach(function(fx) { Editor.Commands._removeFx(fx.id); });
+        var lightsInGroup = Editor.Core.allLights.filter(function(l) { return l.groupId === groupId; });
+        lightsInGroup.forEach(function(l) { Editor.Commands._removeLight(l.id); });
         var gEl2 = document.getElementById(groupId);
         if (gEl2) gEl2.remove();
         Editor.Core.groups = Editor.Core.groups.filter(function(g) { return g.id !== groupId; });
       },
       reverse: function() {
-        // Restore: recreate group, recreate sprites, restore DOM order
+        // Restore: recreate group, recreate all entities, restore DOM order
         var svg = document.getElementById('battlefield');
         var g = document.createElementNS(Editor.Core.NS, 'g');
         g.id = groupId;
@@ -225,6 +246,14 @@ Editor.Groups = {
         Editor.Core.groups.push({ id: groupId, name: groupName, opacity: opacity != null ? opacity : 1 });
         spriteDatas.forEach(function(d) {
           Editor.Commands._restoreSprite(d);
+        });
+        fxDatas.forEach(function(d) {
+          var fx = Editor.Commands._restoreFx(d);
+          if (fx) { fx.groupId = groupId; var gEl = document.getElementById(groupId); if (gEl) { if (fx.el.parentNode) fx.el.parentNode.removeChild(fx.el); gEl.appendChild(fx.el); } }
+        });
+        lightDatas.forEach(function(d) {
+          var l = Editor.Commands._restoreLight(d);
+          if (l) { l.groupId = groupId; var gEl = document.getElementById(groupId); if (gEl) { if (l.el.parentNode) l.el.parentNode.removeChild(l.el); gEl.appendChild(l.el); } }
         });
         if (beforeDOM) Editor.Commands._restoreDOMOrder(beforeDOM);
       }
@@ -268,6 +297,28 @@ Editor.Groups = {
         gEl.appendChild(elToMove);
       }
     });
+
+    // Move FX into their groups
+    if (C.allSmokeFx) {
+      C.allSmokeFx.forEach(fx => {
+        if (fx.groupId && document.getElementById(fx.groupId)) {
+          const gEl = document.getElementById(fx.groupId);
+          if (fx.el.parentNode) fx.el.parentNode.removeChild(fx.el);
+          gEl.appendChild(fx.el);
+        }
+      });
+    }
+
+    // Move lights into their groups
+    if (C.allLights) {
+      C.allLights.forEach(l => {
+        if (l.groupId && document.getElementById(l.groupId)) {
+          const gEl = document.getElementById(l.groupId);
+          if (l.el.parentNode) l.el.parentNode.removeChild(l.el);
+          gEl.appendChild(l.el);
+        }
+      });
+    }
 
     // Restore layer order
     const selUI = document.getElementById('selUI');

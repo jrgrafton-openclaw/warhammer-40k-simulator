@@ -224,7 +224,7 @@ Editor.Layers = {
         const isExpanded = this.expandedGroups[gId] !== false; // default expanded
         if (isExpanded) {
           const gEl = document.getElementById(gId);
-          // Build children: sprites AND smokefx entities inside this group
+          // Build children: ALL entity types inside this group
           const children = gEl ? Array.from(gEl.children).reverse() : [];
           children.forEach(el => {
             // Check if it's a sprite
@@ -246,6 +246,13 @@ Editor.Layers = {
                 child.classList.add('child-row');
                 list.appendChild(child);
               }
+              return;
+            }
+            // Check if it's a light
+            const light = C.allLights.find(l => l.el === el);
+            if (light) {
+              const child = this._createLightChildRow(light, C);
+              list.appendChild(child);
             }
           });
         }
@@ -378,7 +385,7 @@ Editor.Layers = {
   /* ── Individual light child row ── */
   _createLightChildRow(l, C) {
     const row = document.createElement('div');
-    const isSelected = Editor.Lights.selectedLight === l;
+    const isSelected = Editor.Core.selected === l || Editor.Core.multiSel.includes(l);
     row.className = 'layer-row child-row' + (isSelected ? ' sel' : '');
     const hidden = l.el.style.display === 'none';
     row.innerHTML = `<div class="child-icon" style="color:${l.color}">💡</div>
@@ -387,8 +394,8 @@ Editor.Layers = {
       <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Lights.removeLight('${l.id}')">🗑</button>`;
     row.onclick = e => {
       if (e.target.closest('.lbtn')) return;
-      Editor.Lights.selectLight(l);
-      Editor.Layers.rebuild();
+      Editor.Selection.select(l);
+      Editor.Lights._showLightControls(l);
     };
     return row;
   },
@@ -398,7 +405,7 @@ Editor.Layers = {
   _createSmokeFxRow(item, C) {
     const fx = item.ref;
     const row = document.createElement('div');
-    const isSelected = Editor.Smoke.selectedFx === fx;
+    const isSelected = Editor.Core.selected === fx || Editor.Core.multiSel.includes(fx);
     const hidden = fx.el.style.display === 'none';
     const icon = fx.type === 'fire' ? '🔥' : '💨';
     const color = fx.type === 'fire' ? '#ff8844' : '#88aacc';
@@ -412,8 +419,7 @@ Editor.Layers = {
       <span class="drag-hint" title="Drag to reorder z-level">⠿</span>`;
     row.onclick = e => {
       if (e.target.closest('.lbtn') || e.target.closest('.drag-hint')) return;
-      Editor.Smoke.selectEffect(fx);
-      Editor.Layers.rebuild();
+      Editor.Selection.select(fx);
     };
     return row;
   },
@@ -469,13 +475,16 @@ Editor.Layers = {
     const group = (C.groups || []).find(g => g.id === gId);
     const name = group ? group.name : gId;
     const opacity = group ? Math.round(group.opacity * 100) : 100;
-    const childCount = C.allSprites.filter(s => s.groupId === gId).length;
+    const spriteCount = C.allSprites.filter(s => s.groupId === gId).length;
+    const fxCount = C.allSmokeFx ? C.allSmokeFx.filter(f => f.groupId === gId).length : 0;
+    const lightCount = C.allLights ? C.allLights.filter(l => l.groupId === gId).length : 0;
+    const childCount = spriteCount + fxCount + lightCount;
     const isExpanded = this.expandedGroups[gId] !== false; // default expanded
 
     const row = document.createElement('div');
     row.className = 'layer-row group-row custom-group-row';
     row.innerHTML = `<div class="group-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#00d4ff" stroke-width="1.5"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/></svg></div>
-      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}"><span class="expand-toggle">${isExpanded ? '▾' : '▸'}</span>${name}</div><div class="lmeta">${childCount} sprite${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
+      <div style="flex:1;min-width:0"><div class="lname group-name" data-gid="${gId}"><span class="expand-toggle">${isExpanded ? '▾' : '▸'}</span>${name}</div><div class="lmeta">${childCount} item${childCount !== 1 ? 's' : ''} · ${opacity}%</div></div>
       <button class="lbtn group-rename-btn" title="Rename group" onclick="event.stopPropagation();Editor.Layers._startGroupRename('${gId}',this)">✏️</button>
       <input type="range" min="0" max="100" value="${opacity}" class="group-opacity" title="Group opacity" onclick="event.stopPropagation()" oninput="event.stopPropagation();Editor.Groups.setOpacity('${gId}',this.value/100)" onmousedown="event.stopPropagation();this.parentElement.draggable=false" onmouseup="this.parentElement.draggable=true">
       <button class="lbtn" title="Ungroup" onclick="event.stopPropagation();Editor.Groups.ungroup('${gId}')">📤</button>

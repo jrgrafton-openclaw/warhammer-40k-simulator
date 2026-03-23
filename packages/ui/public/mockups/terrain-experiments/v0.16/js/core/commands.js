@@ -71,6 +71,7 @@ Editor.Commands = {
     if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp);
     sp.el.remove();
     Editor.Core.allSprites = Editor.Core.allSprites.filter(function(s) { return s.id !== id; });
+    if (Editor.Entity) Editor.Entity.unregister(id);
     Editor.State.removeFromZOrder(id);
   },
 
@@ -97,6 +98,11 @@ Editor.Commands = {
         if (fx.groupId) groups[fx.id] = fx.groupId;
       });
     }
+    if (Editor.Core.allLights) {
+      Editor.Core.allLights.forEach(function(l) {
+        if (l.groupId) groups[l.id] = l.groupId;
+      });
+    }
     return { dom: snapshot, spriteGroups: groups };
   },
 
@@ -121,6 +127,16 @@ Editor.Commands = {
           fx.groupId = snap.spriteGroups[fx.id];
         } else {
           delete fx.groupId;
+        }
+      });
+    }
+    // Restore light→group assignments
+    if (Editor.Core.allLights) {
+      Editor.Core.allLights.forEach(function(l) {
+        if (snap.spriteGroups[l.id]) {
+          l.groupId = snap.spriteGroups[l.id];
+        } else {
+          delete l.groupId;
         }
       });
     }
@@ -157,6 +173,7 @@ Editor.Commands = {
     light.el.remove();
     light.grad.remove();
     C.allLights.splice(idx, 1);
+    if (Editor.Entity) Editor.Entity.unregister(id);
     if (Editor.Lights.selectedLight === light) Editor.Lights.deselectLight();
   },
 
@@ -198,6 +215,7 @@ Editor.Commands = {
     if (fx._glowFiltEl) fx._glowFiltEl.remove();
     if (fx._gradEl) fx._gradEl.remove();
     C.allSmokeFx.splice(idx, 1);
+    if (Editor.Entity) Editor.Entity.unregister(id);
     if (Editor.Smoke.selectedFx === fx) Editor.Smoke.deselectEffect();
     if (C.allSmokeFx.length === 0) Editor.Smoke.stopAnimation();
     Editor.State.syncZOrderFromDOM();
@@ -814,6 +832,89 @@ Editor.Commands = {
           for (var i = commands.length - 1; i >= 0; i--) {
             commands[i].reverse();
           }
+        }
+      };
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════
+  // Unified Entity Commands (Phase 6)
+  // ═══════════════════════════════════════════════════════════
+
+  /** Capture any entity's state for undo */
+  _captureEntity: function(entity) {
+    if (!entity || !entity.type) return null;
+    switch (entity.type) {
+      case 'sprite': return this._captureSprite(entity);
+      case 'smoke': case 'fire': return this._captureFx(entity);
+      case 'light': return this._captureLight(entity);
+      case 'model': return this._captureModel(entity);
+      default: return null;
+    }
+  },
+
+  /** Restore any entity from captured data */
+  _restoreEntity: function(data) {
+    if (!data) return null;
+    // Detect type from data shape
+    if (data.file !== undefined) return this._restoreSprite(data);
+    if (data.type === 'smoke' || data.type === 'fire') return this._restoreFx(data);
+    if (data.color !== undefined && data.radius !== undefined) return this._restoreLight(data);
+    if (data.kind !== undefined) return this._restoreModel(data);
+    return null;
+  },
+
+  /** Remove any entity by ID and type */
+  _removeEntity: function(id, entityType) {
+    switch (entityType) {
+      case 'sprite': return this._removeSprite(id);
+      case 'smoke': case 'fire': return this._removeFx(id);
+      case 'light': return this._removeLight(id);
+      case 'model': return this._removeModel(id);
+    }
+  },
+
+  /** ADD_ENTITY — unified add for any entity type */
+  AddEntity: {
+    create: function(entityData, entityType) {
+      return {
+        type: 'ADD_ENTITY',
+        description: 'Add ' + entityType + ' ' + (entityData.id || ''),
+        apply: function() { Editor.Commands._restoreEntity(entityData); },
+        reverse: function() { Editor.Commands._removeEntity(entityData.id, entityType); }
+      };
+    }
+  },
+
+  /** REMOVE_ENTITY — unified remove for any entity type */
+  RemoveEntity: {
+    create: function(entityData, entityType) {
+      return {
+        type: 'REMOVE_ENTITY',
+        description: 'Remove ' + entityType + ' ' + (entityData.id || ''),
+        apply: function() { Editor.Commands._removeEntity(entityData.id, entityType); },
+        reverse: function() { Editor.Commands._restoreEntity(entityData); }
+      };
+    }
+  },
+
+  /** MOVE_ENTITY — unified move for any entity type */
+  MoveEntity: {
+    create: function(entityId, entityType, fromX, fromY, toX, toY) {
+      return {
+        type: 'MOVE_ENTITY',
+        description: 'Move ' + entityType + ' ' + entityId,
+        apply: function() {
+          var ent = Editor.Entity.find(entityId);
+          if (!ent) return;
+          ent.x = toX; ent.y = toY;
+          if (ent.apply) ent.apply();
+        },
+        reverse: function() {
+          var ent = Editor.Entity.find(entityId);
+          if (!ent) return;
+          ent.x = fromX; ent.y = fromY;
+          if (ent.apply) ent.apply();
         }
       };
     }

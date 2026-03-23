@@ -55,6 +55,14 @@ Editor.Smoke = {
     document.getElementById('scCenters').onchange = e => { this.showCenters = e.target.checked; this.updateAllCenters(); };
   },
 
+  /** Show sidebar controls for an FX entity (called by unified selection) */
+  _showControls(fx) {
+    this.selectedFx = fx;
+    this.refreshControls();
+    document.getElementById('smokeCtrl').style.display = fx.type === 'smoke' ? '' : 'none';
+    document.getElementById('fireCtrl').style.display = fx.type === 'fire' ? '' : 'none';
+  },
+
   updateSelected(prop, val) {
     if (!this.selectedFx) return;
     this.selectedFx[prop] = val;
@@ -189,35 +197,46 @@ Editor.Smoke = {
     const selUI = document.getElementById('selUI');
     C.svg.insertBefore(g, selUI);
     fx.el = g;
+
+    // Entity interface (Phase 4)
+    fx.getBounds = function() {
+      return { x: this.x - this.spread, y: this.y - this.maxHeight, w: this.spread * 2, h: this.maxHeight + this.spread };
+    };
+    fx.apply = function() { Editor.Smoke.applyEffect(this); };
+    fx.drawSelection = function(selUIEl) { Editor.Smoke._drawFxSelection(this, selUIEl); };
+    fx.serialize = function() { return Editor.Smoke.serializeOne(this); };
+    fx.clone = function(dx, dy) {
+      var opts = {};
+      var d = this.serialize();
+      Object.keys(d).forEach(function(k) { if (k !== 'id' && k !== 'type' && k !== 'x' && k !== 'y') opts[k] = d[k]; });
+      return Editor.Smoke.addSmoke(this.x + dx, this.y + dy, opts, true);
+    };
+    Editor.Entity.register(fx);
+
     C.allSmokeFx.push(fx);
+
+    // Unified mousedown: use Editor.Selection
     g.onmousedown = e => {
       e.stopPropagation();
       if (e.shiftKey) {
-        // Shift-click: toggle in multi-select
-        if (!this.multiSelFx.includes(fx)) {
-          this.multiSelFx.push(fx);
-          this.applySelectionRing(fx);
+        const C2 = Editor.Core;
+        if (C2.multiSel.includes(fx)) {
+          C2.multiSel = C2.multiSel.filter(s => s !== fx);
+          C2.selected = C2.multiSel[0] || null;
         } else {
-          this.removeSelectionRing(fx);
-          this.multiSelFx = this.multiSelFx.filter(f => f !== fx);
+          C2.multiSel.push(fx);
+          C2.selected = fx;
         }
-        // Ensure current selected is also in the set
-        if (this.selectedFx && !this.multiSelFx.includes(this.selectedFx)) {
-          this.multiSelFx.push(this.selectedFx);
-        }
-        // Set primary selection to clicked item (for controls display)
-        if (!this.selectedFx) { this.selectedFx = fx; this.refreshControls(); }
-        document.getElementById('smokeCtrl').style.display = this.selectedFx?.type === 'smoke' ? '' : 'none';
-        document.getElementById('fireCtrl').style.display = this.selectedFx?.type === 'fire' ? '' : 'none';
-        if (Editor.Layers) Editor.Layers.rebuild();
-        // Start drag for multi-move
-        this.startDrag(e, fx);
+        Editor.Smoke._showControls(fx);
+        Editor.Selection.drawSelectionUI();
+        Editor.Layers.rebuild();
+        Editor.Selection.startMoveMulti(e, fx);
       } else {
-        this.selectEffect(fx);
-        this.startDrag(e, fx);
+        Editor.Selection.select(fx);
+        Editor.Selection.startMoveMulti(e, fx);
       }
     };
-    if (!skipSelect) this.selectEffect(fx);
+    if (!skipSelect) Editor.Selection.select(fx);
     Editor.State.syncZOrderFromDOM();
     this.startAnimation();
     // Record undo for user-initiated adds (not restores)
@@ -294,6 +313,39 @@ Editor.Smoke = {
     document.addEventListener('mouseup', up);
   },
 
+  /** Serialize a single FX entity (includes type field for clipboard) */
+  serializeOne(fx) {
+    const b = { type: fx.type, x: fx.x, y: fx.y, color: fx.color, groupId: fx.groupId || null };
+    if (fx.type === 'smoke') {
+      return Object.assign(b, {
+        particleCount: fx.particleCount, sizeMin: fx.sizeMin, sizeMax: fx.sizeMax,
+        riseSpeed: fx.riseSpeed, spread: fx.spread, opacity: fx.opacity,
+        fadeRate: fx.fadeRate, maxHeight: fx.maxHeight
+      });
+    }
+    return Object.assign(b, {
+      sparkCount: fx.sparkCount, sparkSpeed: fx.sparkSpeed, sparkSize: fx.sparkSize,
+      direction: fx.direction, angle: fx.angle || 45, maxHeight: fx.maxHeight,
+      coreSize: fx.coreSize, glowRadius: fx.glowRadius, glowIntensity: fx.glowIntensity,
+      pulseType: fx.pulseType || 'none', pulseSpeed: fx.pulseSpeed || 1.0,
+      pulseIntensityAmp: fx.pulseIntensityAmp != null ? fx.pulseIntensityAmp : 0.15,
+      pulseRadiusAmp: fx.pulseRadiusAmp != null ? fx.pulseRadiusAmp : 10
+    });
+  },
+
+  /** Draw FX selection ring (dashed circle) into selUI */
+  _drawFxSelection(fx, selUI) {
+    const NS = Editor.Core.NS;
+    const r = fx.type === 'smoke' ? fx.spread : (fx.maxHeight || 40);
+    const ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', fx.x); ring.setAttribute('cy', fx.y); ring.setAttribute('r', r);
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', fx.type === 'fire' ? '#ff8844' : '#88aacc');
+    ring.setAttribute('stroke-width', '1.5'); ring.setAttribute('stroke-dasharray', '4,3');
+    ring.style.pointerEvents = 'none';
+    selUI.appendChild(ring);
+  },
+
   removeEffect(id) {
     const C = Editor.Core;
     const idx = C.allSmokeFx.findIndex(f => f.id === id);
@@ -304,12 +356,22 @@ Editor.Smoke = {
       const fxData = Editor.Commands._captureFx(fx);
       Editor.Undo.record(Editor.Commands.RemoveFx.create(fxData));
     }
+    Editor.Entity.unregister(id);
     Editor.Commands._removeFx(id);
     Editor.State.dispatch({ type: 'DELETE_FX' });
     Editor.Layers.rebuild();
   },
 
-  deleteSelected() { if (this.selectedFx) this.removeEffect(this.selectedFx.id); },
+  deleteSelected() {
+    // Check unified selection first, fall back to selectedFx
+    const sel = Editor.Core.selected;
+    if (sel && (sel.type === 'smoke' || sel.type === 'fire')) {
+      this.removeEffect(sel.id);
+      Editor.Selection.deselect();
+    } else if (this.selectedFx) {
+      this.removeEffect(this.selectedFx.id);
+    }
+  },
 
   removeAll() {
     Editor.Core.allSmokeFx.forEach(fx => {
@@ -395,32 +457,7 @@ Editor.Smoke = {
   },
 
   init() {
-    document.addEventListener('keydown', e => {
-      if (!this.selectedFx) return;
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-      const fx = this.selectedFx;
-      // Delete
-      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSelected(); return; }
-      // Arrow keys to move (all multi-selected)
-      const step = e.shiftKey ? 10 : 1;
-      const toMove = this.multiSelFx.length > 1 ? this.multiSelFx : [fx];
-      const _arrowMove = (dx, dy) => {
-        e.preventDefault();
-        toMove.forEach(f => {
-          const oldX = f.x, oldY = f.y;
-          f.x += dx; f.y += dy;
-          this.applyEffect(f);
-          if (Editor.Undo && Editor.Commands) {
-            Editor.Undo.record(Editor.Commands.MoveFx.create(f.id, oldX, oldY, f.x, f.y));
-          }
-        });
-        Editor.State.dispatch({ type: 'MOVE_FX' });
-      };
-      if (e.key === 'ArrowLeft')  _arrowMove(-step, 0);
-      if (e.key === 'ArrowRight') _arrowMove(step, 0);
-      if (e.key === 'ArrowUp')    _arrowMove(0, -step);
-      if (e.key === 'ArrowDown')  _arrowMove(0, step);
-    });
+    // Arrow keys and delete now handled by unified Selection.onKey
   }
 };
 
