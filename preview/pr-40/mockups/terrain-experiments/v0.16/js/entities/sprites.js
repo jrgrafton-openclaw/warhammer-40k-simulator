@@ -267,19 +267,72 @@ Editor.Sprites = {
     const _before = { x: sp.x, y: sp.y, w: sp.w, h: sp.h };
     const o = { x: sp.x, y: sp.y, w: sp.w, h: sp.h }, ar = o.w / o.h;
     const p0 = C.svgPt(e.clientX, e.clientY);
-    const rad = -(sp.rot || 0) * Math.PI / 180;
+    const rotRad = (sp.rot || 0) * Math.PI / 180;
+    const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY), gdx = p.x - p0.x, gdy = p.y - p0.y;
-      // Rotate global deltas into sprite-local space
-      // Note: flip doesn't affect resize — it mirrors content within the same bbox
-      const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
-      const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
       if (e2.shiftKey) {
+        // Shift-constrained: proportional resize in local space
+        const rad = -rotRad;
+        const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
+        const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         const d = Math.abs(dx) > Math.abs(dy) ? dx : dy * ar;
         if (corner.includes('e')) sp.w = Math.max(20, o.w + d);
         if (corner.includes('w')) { sp.x = o.x + d; sp.w = Math.max(20, o.w - d); }
         sp.h = sp.w / ar; if (corner.includes('n')) sp.y = o.y + o.h - sp.h;
+      } else if (corner.length === 1) {
+        // EDGE handle: project drag onto the edge's visual outward normal
+        // This ensures dragging the visual bottom only changes height, etc.
+        let d;
+        switch (corner) {
+          case 's': d =  gdx * sinR + gdy * cosR; break;  // south outward normal
+          case 'n': d = -gdx * sinR - gdy * cosR; break;  // north outward normal
+          case 'e': d =  gdx * cosR - gdy * sinR; break;  // east outward normal (note: SVG y-axis is down)
+          case 'w': d = -gdx * cosR + gdy * sinR; break;  // west outward normal
+        }
+        // Compute old center and new dimensions
+        const oCx = o.x + o.w/2, oCy = o.y + o.h/2;
+        if (corner === 's' || corner === 'n') {
+          sp.h = Math.max(20, o.h + d);
+        } else {
+          sp.w = Math.max(20, o.w + d);
+        }
+        // Anchor the OPPOSITE edge's visual center by adjusting x,y
+        // After rotation, the opposite edge midpoint must stay fixed in global space
+        const nCx = (corner === 'w' || corner === 'e') ? o.x + sp.w/2 : oCx;
+        const nCy = (corner === 'n' || corner === 's') ? o.y + sp.h/2 : oCy;
+        // Opposite edge midpoint in local space:
+        let opp_lx, opp_ly;
+        switch (corner) {
+          case 's': opp_lx = o.x + o.w/2; opp_ly = o.y; break;            // anchor north
+          case 'n': opp_lx = o.x + o.w/2; opp_ly = o.y + o.h; break;      // anchor south
+          case 'e': opp_lx = o.x;          opp_ly = o.y + o.h/2; break;    // anchor west
+          case 'w': opp_lx = o.x + o.w;    opp_ly = o.y + o.h/2; break;    // anchor east
+        }
+        // Old visual position of opposite edge midpoint (rotated around old center)
+        const odx = opp_lx - oCx, ody = opp_ly - oCy;
+        const old_gx = oCx + odx * cosR - ody * sinR;
+        const old_gy = oCy + odx * sinR + ody * cosR;
+        // New opposite edge midpoint in local space (with updated dimensions)
+        let new_opp_lx, new_opp_ly;
+        switch (corner) {
+          case 's': new_opp_lx = sp.x + sp.w/2; new_opp_ly = sp.y; break;
+          case 'n': new_opp_lx = sp.x + sp.w/2; new_opp_ly = sp.y + sp.h; break;
+          case 'e': new_opp_lx = sp.x;           new_opp_ly = sp.y + sp.h/2; break;
+          case 'w': new_opp_lx = sp.x + sp.w;    new_opp_ly = sp.y + sp.h/2; break;
+        }
+        // New visual position (rotated around new center)
+        const ndx = new_opp_lx - nCx, ndy = new_opp_ly - nCy;
+        const new_gx = nCx + ndx * cosR - ndy * sinR;
+        const new_gy = nCy + ndx * sinR + ndy * cosR;
+        // Compensate: shift sprite so opposite edge stays fixed
+        const comp_gx = old_gx - new_gx, comp_gy = old_gy - new_gy;
+        sp.x += comp_gx; sp.y += comp_gy;
       } else {
+        // CORNER handle: existing rotated-delta behavior
+        const rad = -rotRad;
+        const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
+        const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         if (corner.includes('e')) sp.w = Math.max(20, o.w + dx);
         if (corner.includes('w')) { sp.x = o.x + dx; sp.w = Math.max(20, o.w - dx); }
         if (corner.includes('s')) sp.h = Math.max(20, o.h + dy);
