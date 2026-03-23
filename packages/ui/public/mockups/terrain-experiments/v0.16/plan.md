@@ -301,3 +301,59 @@ Each phase is a separate commit. If a phase breaks things:
 2. Fix and retry
 
 The convenience getters (`get allSprites()`) provide backwards compat so partial migration is safe.
+
+---
+
+## PR Strategy
+
+**This refactor should be a NEW PR based off the current PR branch:**
+
+```bash
+git checkout feat/broken-edge-tiles
+git checkout -b feat/entity-system
+# ... implement phases ...
+gh pr create --base feat/broken-edge-tiles --title "refactor(terrain-editor): unified entity system"
+```
+
+When PR #40 (`feat/broken-edge-tiles`) merges to `main`, GitHub auto-retargets PR #41 to `main`.
+
+---
+
+## Gap Check — Features That Must Work Post-Refactor
+
+Sprite-specific features that should NOT apply to FX/lights (guard with `if (entity.type === 'sprite')`):
+- **Resize handles** (corner + edge) — sprites only
+- **Rotate handle** (R key + drag handle) — sprites only  
+- **Flip** (F key) — sprites only
+- **Crop mode** (Enter/Escape) — sprites only
+- **Shadow/grounding** (shadowMul) — sprites only
+- **preserveAspectRatio** — sprites only
+
+Features that SHOULD apply to all entity types (via Entity interface):
+- **Select** (click)
+- **Multi-select** (shift-click, drag-rect)
+- **Move** (arrow keys, drag)
+- **Delete** (Delete/Backspace key)
+- **Copy/Paste** (⌘C/⌘V)
+- **Group** (⌘G, drag into/out of groups)
+- **Z-order** (layers panel drag)
+- **Undo/Redo** (⌘Z/⌘⇧Z)
+- **Visibility toggle** (layers panel eye icon)
+- **Escape to deselect**
+- **Persistence** (save/load)
+- **Debug output** (scene config JSON)
+
+FX-specific features (handled in type module, not Entity interface):
+- **Particle animation** (rAF tick loop)
+- **Sidebar controls** (type-specific sliders/pickers)
+- **Glow animation** (pulse/flicker/breathe)
+- **Center dot toggle**
+
+Light-specific features:
+- **Radial gradient glow rendering**
+- **Center crosshair indicator**
+- **Pulse/flicker/breathe animation**
+
+Model-specific features:
+- **Circle/rect rendering**
+- **Icon type selection**
