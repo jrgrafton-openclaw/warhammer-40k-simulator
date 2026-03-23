@@ -32,11 +32,13 @@ Editor.Smoke = {
       <label><span class="fx-lbl">Particles</span><input type="range" id="scCount" min="5" max="50" value="20"><span class="fx-val" id="scCountVal">20</span></label>
       <label><span class="fx-lbl">Size min</span><input type="range" id="scSizeMin" min="2" max="15" value="4"><span class="fx-val" id="scSizeMinVal">4</span></label>
       <label><span class="fx-lbl">Size max</span><input type="range" id="scSizeMax" min="5" max="25" value="12"><span class="fx-val" id="scSizeMaxVal">12</span></label>
-      <label><span class="fx-lbl">Rise speed</span><input type="range" id="scSpeed" min="1" max="10" value="4"><span class="fx-val" id="scSpeedVal">4</span></label>
-      <label><span class="fx-lbl">Spread</span><input type="range" id="scSpread" min="10" max="100" value="40"><span class="fx-val" id="scSpreadVal">40</span></label>
+      <label><span class="fx-lbl">Rise speed</span><input type="range" id="scSpeed" min="0" max="20" step="1" value="4"><span class="fx-val" id="scSpeedVal">0.4</span></label>
+      <label><span class="fx-lbl">Max height</span><input type="range" id="scMaxH" min="10" max="200" value="80"><span class="fx-val" id="scMaxHVal">80</span></label>
+      <label><span class="fx-lbl">Spread</span><input type="range" id="scSpread" min="5" max="100" value="40"><span class="fx-val" id="scSpreadVal">40</span></label>
       <label><span class="fx-lbl">Opacity</span><input type="range" id="scOpacity" min="0" max="100" value="30"><span class="fx-val" id="scOpacityVal">30%</span></label>
       <label><span class="fx-lbl">Color</span><input type="color" id="scColor" value="#555555"><span class="fx-val" id="scColorVal">#555555</span></label>
       <label><span class="fx-lbl">Fade rate</span><input type="range" id="scFade" min="1" max="10" value="5"><span class="fx-val" id="scFadeVal">5</span></label>
+      <label><span class="fx-lbl">Centers</span><input type="checkbox" id="scCenters" checked><span class="fx-val">show</span></label>
       <div style="margin-top:4px"><button class="tbtn" style="color:#cc4444;border-color:#cc444433;font-size:9px;width:100%" onclick="Editor.Smoke.deleteSelected()">Delete Smoke</button></div>`;
     sidebar.appendChild(sCtrl);
 
@@ -46,9 +48,10 @@ Editor.Smoke = {
     // Wire smoke controls
     const sw = (id, prop) => { document.getElementById(id).oninput = e => this.updateSelected(prop, +e.target.value); };
     sw('scCount','particleCount'); sw('scSizeMin','sizeMin'); sw('scSizeMax','sizeMax');
-    sw('scSpeed','riseSpeed'); sw('scSpread','spread'); sw('scFade','fadeRate');
+    sw('scSpeed','riseSpeed'); sw('scSpread','spread'); sw('scFade','fadeRate'); sw('scMaxH','maxHeight');
     document.getElementById('scOpacity').oninput = e => this.updateSelected('opacity', +e.target.value / 100);
     document.getElementById('scColor').oninput = e => this.updateSelected('color', e.target.value);
+    document.getElementById('scCenters').onchange = e => { this.showCenters = e.target.checked; this.updateAllCenters(); };
   },
 
   updateSelected(prop, val) {
@@ -104,7 +107,9 @@ Editor.Smoke = {
       document.getElementById('scSizeMax').value = fx.sizeMax;
       document.getElementById('scSizeMaxVal').textContent = fx.sizeMax;
       document.getElementById('scSpeed').value = fx.riseSpeed;
-      document.getElementById('scSpeedVal').textContent = fx.riseSpeed;
+      document.getElementById('scSpeedVal').textContent = (fx.riseSpeed * 0.1).toFixed(1);
+      document.getElementById('scMaxH').value = fx.maxHeight;
+      document.getElementById('scMaxHVal').textContent = fx.maxHeight;
       document.getElementById('scSpread').value = fx.spread;
       document.getElementById('scSpreadVal').textContent = fx.spread;
       document.getElementById('scOpacity').value = Math.round(fx.opacity * 100);
@@ -118,6 +123,14 @@ Editor.Smoke = {
     }
   },
 
+  showCenters: true,
+
+  updateAllCenters() {
+    Editor.Core.allSmokeFx.forEach(fx => {
+      if (fx._centerDot) fx._centerDot.style.display = this.showCenters ? '' : 'none';
+    });
+  },
+
   // ── Add Smoke ──
   addSmoke(x, y, opts, skipSelect, restoreId) {
     const C = Editor.Core, NS = C.NS;
@@ -126,18 +139,37 @@ Editor.Smoke = {
       id, type: 'smoke', x, y,
       particleCount: 20, sizeMin: 4, sizeMax: 12,
       riseSpeed: 4, spread: 40, opacity: 0.3,
-      color: '#555555', fadeRate: 5
+      color: '#555555', fadeRate: 5, maxHeight: 80
     }, opts || {});
 
     const g = document.createElementNS(NS, 'g');
     g.id = id; g.style.cursor = 'grab';
     g.classList.add('smokefx-entity');
 
-    // Shared blur filter
+    // Transparent hit area for click/drag (covers the full spread area)
+    const hitArea = document.createElementNS(NS, 'circle');
+    hitArea.setAttribute('cx', x); hitArea.setAttribute('cy', y);
+    hitArea.setAttribute('r', fx.spread);
+    hitArea.setAttribute('fill', 'transparent'); hitArea.setAttribute('stroke', 'none');
+    hitArea.style.pointerEvents = 'fill';
+    g.appendChild(hitArea);
+    fx._hitArea = hitArea;
+
+    // Center dot (toggleable like lights)
+    const center = document.createElementNS(NS, 'circle');
+    center.setAttribute('cx', x); center.setAttribute('cy', y); center.setAttribute('r', '3');
+    center.setAttribute('fill', '#88aacc'); center.setAttribute('opacity', '0.6');
+    center.style.display = this.showCenters ? '' : 'none';
+    g.appendChild(center);
+    fx._centerDot = center;
+
+    // Shared blur filter — use objectBoundingBox to avoid square clipping
     const filtId = 'sfilt-' + id;
     const defs = C.svg.querySelector('defs');
     const filt = document.createElementNS(NS, 'filter');
     filt.id = filtId;
+    filt.setAttribute('x', '-50%'); filt.setAttribute('y', '-50%');
+    filt.setAttribute('width', '200%'); filt.setAttribute('height', '200%');
     const blur = document.createElementNS(NS, 'feGaussianBlur');
     blur.setAttribute('stdDeviation', '3');
     filt.appendChild(blur); defs.appendChild(filt);
@@ -182,6 +214,14 @@ Editor.Smoke = {
       if (fx === this.selectedFx) this.applySelectionRing(fx);
     }
     fx.particles.forEach(p => p.el.setAttribute('fill', fx.color));
+    // Update hit area + center dot position
+    if (fx._hitArea) {
+      fx._hitArea.setAttribute('cx', fx.x); fx._hitArea.setAttribute('cy', fx.y);
+      fx._hitArea.setAttribute('r', Math.max(fx.spread, fx.maxHeight));
+    }
+    if (fx._centerDot) {
+      fx._centerDot.setAttribute('cx', fx.x); fx._centerDot.setAttribute('cy', fx.y);
+    }
     if (fx.selRing) {
       fx.selRing.setAttribute('cx', fx.x); fx.selRing.setAttribute('cy', fx.y);
       fx.selRing.setAttribute('r', fx.spread);
@@ -257,11 +297,12 @@ Editor.Smoke = {
   },
 
   _tickSmoke(fx) {
-    const speed = fx.riseSpeed * 0.5;
+    const speed = fx.riseSpeed * 0.1;  // much finer control (0.0 - 2.0)
+    const maxH = fx.maxHeight || 80;
     const fadeNorm = fx.fadeRate * 0.1;
     for (let j = 0; j < fx.particles.length; j++) {
       const p = fx.particles[j];
-      p.progress += speed * 0.016;
+      p.progress += speed * 0.012;
       if (p.progress >= 1) {
         p.progress = 0;
         p.offsetX = (Math.random() - 0.5) * 2 * fx.spread;
@@ -271,11 +312,16 @@ Editor.Smoke = {
       }
       const wobble = Math.sin(p.wobblePhase + p.progress * 6) * fx.spread * 0.3;
       p.el.setAttribute('cx', fx.x + p.offsetX + wobble);
-      p.el.setAttribute('cy', fx.y - p.progress * fx.spread * 2);
+      // maxHeight controls how far particles rise
+      p.el.setAttribute('cy', fx.y - p.progress * maxH);
+      // Fade: ramp up 0-15%, then fade out based on fadeRate
       let alpha;
       if (p.progress < 0.15) alpha = p.progress / 0.15;
-      else alpha = 1 - ((p.progress - 0.15) / 0.85);
-      alpha = Math.max(0, alpha * fx.opacity * (1 - fadeNorm * 0.3));
+      else {
+        const fadeProgress = (p.progress - 0.15) / 0.85;
+        alpha = Math.pow(1 - fadeProgress, fadeNorm);
+      }
+      alpha = Math.max(0, alpha * fx.opacity);
       p.el.setAttribute('opacity', alpha.toFixed(3));
     }
   },
@@ -286,7 +332,8 @@ Editor.Smoke = {
       if (fx.type === 'smoke') {
         return Object.assign(b, {
           particleCount: fx.particleCount, sizeMin: fx.sizeMin, sizeMax: fx.sizeMax,
-          riseSpeed: fx.riseSpeed, spread: fx.spread, opacity: fx.opacity, fadeRate: fx.fadeRate
+          riseSpeed: fx.riseSpeed, spread: fx.spread, opacity: fx.opacity,
+          fadeRate: fx.fadeRate, maxHeight: fx.maxHeight
         });
       }
       return Object.assign(b, {
@@ -299,9 +346,16 @@ Editor.Smoke = {
   init() {
     document.addEventListener('keydown', e => {
       if (!this.selectedFx) return;
-      if (e.key !== 'Delete' && e.key !== 'Backspace') return;
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-      e.preventDefault(); this.deleteSelected();
+      const fx = this.selectedFx;
+      // Delete
+      if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSelected(); return; }
+      // Arrow keys to move
+      const step = e.shiftKey ? 10 : 1;
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); fx.x -= step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); fx.x += step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
+      if (e.key === 'ArrowUp')    { e.preventDefault(); fx.y -= step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
+      if (e.key === 'ArrowDown')  { e.preventDefault(); fx.y += step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
     });
   }
 };
