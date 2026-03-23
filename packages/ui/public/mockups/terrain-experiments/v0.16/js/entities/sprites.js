@@ -316,23 +316,27 @@ Editor.Sprites = {
             break;
         }
       } else {
-        // ── CORNER handle: local-space resize + rotation anchor compensation ──
+        // ── CORNER handle: local-space resize + absolute anchor positioning ──
+        // Compute new w, h from local-space deltas
         const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
         const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         if (corner.includes('e')) sp.w = Math.max(20, o.w + dx);
-        if (corner.includes('w')) { sp.x = o.x + dx; sp.w = Math.max(20, o.w - dx); }
+        if (corner.includes('w')) sp.w = Math.max(20, o.w - dx);
         if (corner.includes('s')) sp.h = Math.max(20, o.h + dy);
-        if (corner.includes('n')) { sp.y = o.y + dy; sp.h = Math.max(20, o.h - dy); }
-        // Compensate for rotation center drift so the OPPOSITE corner stays visually fixed
-        const ddW = sp.w - o.w, ddH = sp.h - o.h;
-        let ax = 0, ay = 0;
-        // Height change shifts center: compensate based on which vertical edge is anchored
-        if (corner.includes('s')) { ax -= ddH/2 * sinR; ay -= ddH/2 * (1 - cosR); }
-        if (corner.includes('n')) { ax += ddH/2 * sinR; ay += ddH/2 * (1 - cosR); }
-        // Width change shifts center: compensate based on which horizontal edge is anchored
-        if (corner.includes('e')) { ax -= ddW/2 * (1 - cosR); ay += ddW/2 * sinR; }
-        if (corner.includes('w')) { ax += ddW/2 * (1 - cosR); ay -= ddW/2 * sinR; }
-        sp.x += ax; sp.y += ay;
+        if (corner.includes('n')) sp.h = Math.max(20, o.h - dy);
+        // Set x, y to anchor the OPPOSITE corner in global space
+        // These are closed-form solutions derived from: anchor_global_before = anchor_global_after
+        const dw = sp.w - o.w, dh = sp.h - o.h;
+        const hasS = corner.includes('s'), hasN = corner.includes('n');
+        const hasE = corner.includes('e'), hasW = corner.includes('w');
+        // Width anchor factor: +1 if anchoring the east side, -1 if anchoring the west side
+        const wf = hasE ? (1 - cosR) : (1 + cosR);
+        // Height anchor factor:
+        const hfx = hasS ? sinR : -sinR;        // height's x contribution
+        const hfy = hasS ? (1 - cosR) : (1 + cosR);  // height's y contribution
+        const wfy = hasE ? -sinR : sinR;         // width's y contribution
+        sp.x = o.x - dw/2 * wf - dh/2 * hfx;
+        sp.y = o.y - dh/2 * hfy - dw/2 * wfy;
       }
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
