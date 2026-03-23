@@ -213,7 +213,8 @@ Editor.Persistence = {
   _restoreLights(data) {
     if (!data.lights) return;
     data.lights.forEach(function(l) {
-      Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true);
+      var light = Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true, l.id || undefined);
+      if (light && l.groupId) light.groupId = l.groupId;
     });
   },
 
@@ -320,15 +321,18 @@ Editor.Persistence = {
     }
     // Groups: ensure array exists, auto-create from sprite groupId refs
     if (!data.groups) data.groups = [];
-    if (data.sprites) {
-      var groupIds = new Set(data.sprites.filter(function(s) { return s.groupId; }).map(function(s) { return s.groupId; }));
-      groupIds.forEach(function(gId) {
-        if (!data.groups.find(function(g) { return g.id === gId; })) {
-          var num = parseInt(gId.replace('group-g', '')) || 0;
-          data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
-        }
-      });
-    }
+    // Auto-create groups from entity groupId refs (sprites, fx, lights)
+    var allGroupRefs = [];
+    if (data.sprites) data.sprites.forEach(function(s) { if (s.groupId) allGroupRefs.push(s.groupId); });
+    if (data.smokeFx) data.smokeFx.forEach(function(f) { if (f.groupId) allGroupRefs.push(f.groupId); });
+    if (data.lights) data.lights.forEach(function(l) { if (l.groupId) allGroupRefs.push(l.groupId); });
+    var groupIds = new Set(allGroupRefs);
+    groupIds.forEach(function(gId) {
+      if (!data.groups.find(function(g) { return g.id === gId; })) {
+        var num = parseInt(gId.replace('group-g', '')) || 0;
+        data.groups.push({ id: gId, name: 'Group ' + (num + 1), opacity: 1 });
+      }
+    });
     // Settings: flatten nested settings to top-level
     if (data.settings) {
       if (!data.bg && data.settings.bg) data.bg = data.settings.bg;
