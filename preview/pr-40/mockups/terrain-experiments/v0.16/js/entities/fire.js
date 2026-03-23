@@ -12,20 +12,35 @@ Editor.Fire = {
       <label><span class="fx-lbl">Sparks</span><input type="range" id="fcSparks" min="3" max="30" value="10"><span class="fx-val" id="fcSparksVal">10</span></label>
       <label><span class="fx-lbl">Spark speed</span><input type="range" id="fcSpeed" min="1" max="10" value="5"><span class="fx-val" id="fcSpeedVal">5</span></label>
       <label><span class="fx-lbl">Spark size</span><input type="range" id="fcSize" min="1" max="5" value="2"><span class="fx-val" id="fcSizeVal">2</span></label>
+      <label><span class="fx-lbl">Max height</span><input type="range" id="fcMaxH" min="10" max="150" value="40"><span class="fx-val" id="fcMaxHVal">40</span></label>
       <label><span class="fx-lbl">Direction</span><select id="fcDir"><option value="all">All</option><option value="up">Up</option><option value="angled">Angled</option></select></label>
-      <label><span class="fx-lbl">Decay dist</span><input type="range" id="fcDecay" min="10" max="100" value="40"><span class="fx-val" id="fcDecayVal">40</span></label>
+      <label id="fcAngleRow" style="display:none"><span class="fx-lbl">Angle °</span><input type="range" id="fcAngle" min="0" max="360" value="0"><span class="fx-val" id="fcAngleVal">0°</span></label>
       <label><span class="fx-lbl">Color</span><input type="color" id="fcColor" value="#ff6600"><span class="fx-val" id="fcColorVal">#ff6600</span></label>
-      <label><span class="fx-lbl">Glow radius</span><input type="range" id="fcGlow" min="0" max="50" value="15"><span class="fx-val" id="fcGlowVal">15</span></label>
+      <label><span class="fx-lbl">Glow radius</span><input type="range" id="fcGlow" min="0" max="100" value="30"><span class="fx-val" id="fcGlowVal">30</span></label>
+      <label><span class="fx-lbl">Glow intensity</span><input type="range" id="fcGlowInt" min="5" max="100" value="20"><span class="fx-val" id="fcGlowIntVal">0.20</span></label>
+      <label><span class="fx-lbl">Centers</span><input type="checkbox" id="fcCenters" checked><span class="fx-val">show</span></label>
       <div style="margin-top:4px"><button class="tbtn" style="color:#cc4444;border-color:#cc444433;font-size:9px;width:100%" onclick="Editor.Smoke.deleteSelected()">Delete Fire</button></div>`;
     sidebar.appendChild(fCtrl);
 
-    // Wire fire controls
     const S = Editor.Smoke;
     const sw = (id, prop) => { document.getElementById(id).oninput = e => S.updateSelected(prop, +e.target.value); };
     sw('fcSparks','sparkCount'); sw('fcSpeed','sparkSpeed'); sw('fcSize','sparkSize');
-    sw('fcDecay','decayDist'); sw('fcGlow','glowRadius');
+    sw('fcMaxH','maxHeight'); sw('fcGlow','glowRadius'); sw('fcAngle','angle');
+    document.getElementById('fcGlowInt').oninput = e => S.updateSelected('glowIntensity', +e.target.value / 100);
     document.getElementById('fcColor').oninput = e => S.updateSelected('color', e.target.value);
-    document.getElementById('fcDir').onchange = e => S.updateSelected('direction', e.target.value);
+    document.getElementById('fcDir').onchange = e => {
+      S.updateSelected('direction', e.target.value);
+      document.getElementById('fcAngleRow').style.display = e.target.value === 'angled' ? '' : 'none';
+    };
+    document.getElementById('fcCenters').onchange = e => { this.showCenters = e.target.checked; this.updateAllCenters(); };
+  },
+
+  showCenters: true,
+
+  updateAllCenters() {
+    Editor.Core.allSmokeFx.filter(f => f.type === 'fire').forEach(fx => {
+      if (fx._centerDot) fx._centerDot.style.display = this.showCenters ? '' : 'none';
+    });
   },
 
   refreshControls(fx) {
@@ -35,13 +50,18 @@ Editor.Fire = {
     document.getElementById('fcSpeedVal').textContent = fx.sparkSpeed;
     document.getElementById('fcSize').value = fx.sparkSize;
     document.getElementById('fcSizeVal').textContent = fx.sparkSize;
+    document.getElementById('fcMaxH').value = fx.maxHeight;
+    document.getElementById('fcMaxHVal').textContent = fx.maxHeight;
     document.getElementById('fcDir').value = fx.direction;
-    document.getElementById('fcDecay').value = fx.decayDist;
-    document.getElementById('fcDecayVal').textContent = fx.decayDist;
+    document.getElementById('fcAngleRow').style.display = fx.direction === 'angled' ? '' : 'none';
+    document.getElementById('fcAngle').value = fx.angle || 0;
+    document.getElementById('fcAngleVal').textContent = (fx.angle || 0) + '°';
     document.getElementById('fcColor').value = fx.color;
     document.getElementById('fcColorVal').textContent = fx.color;
     document.getElementById('fcGlow').value = fx.glowRadius;
     document.getElementById('fcGlowVal').textContent = fx.glowRadius;
+    document.getElementById('fcGlowInt').value = Math.round(fx.glowIntensity * 100);
+    document.getElementById('fcGlowIntVal').textContent = fx.glowIntensity.toFixed(2);
   },
 
   addFire(x, y, opts, skipSelect, restoreId) {
@@ -51,8 +71,8 @@ Editor.Fire = {
     const fx = Object.assign({
       id, type: 'fire', x, y,
       sparkCount: 10, sparkSpeed: 5, sparkSize: 2,
-      direction: 'all', decayDist: 40,
-      color: '#ff6600', glowRadius: 15
+      direction: 'all', angle: 0, maxHeight: 40,
+      color: '#ff6600', glowRadius: 30, glowIntensity: 0.2
     }, opts || {});
 
     const g = document.createElementNS(NS, 'g');
@@ -61,25 +81,31 @@ Editor.Fire = {
 
     const defs = C.svg.querySelector('defs');
 
-    // Glow — blurred circle (objectBoundingBox, no square artifacts)
-    if (fx.glowRadius > 0) {
-      const glowFiltId = 'gfilt-' + id;
-      const gf = document.createElementNS(NS, 'filter');
-      gf.id = glowFiltId;
-      const gb = document.createElementNS(NS, 'feGaussianBlur');
-      gb.setAttribute('stdDeviation', String(fx.glowRadius * 0.6));
-      gf.appendChild(gb); defs.appendChild(gf);
-      fx._glowFiltId = glowFiltId; fx._glowFiltEl = gf; fx._glowBlur = gb;
+    // Glow — radial gradient like lights (no filter = no square artifact!)
+    const gradId = 'fire-grad-' + id;
+    const grad = document.createElementNS(NS, 'radialGradient');
+    grad.id = gradId;
+    grad.innerHTML = `<stop offset="0%" stop-color="${fx.color}" stop-opacity="${fx.glowIntensity}"/>
+      <stop offset="60%" stop-color="${fx.color}" stop-opacity="${fx.glowIntensity * 0.4}"/>
+      <stop offset="100%" stop-color="${fx.color}" stop-opacity="0"/>`;
+    defs.appendChild(grad);
+    fx._gradEl = grad; fx._gradId = gradId;
 
-      const glow = document.createElementNS(NS, 'circle');
-      glow.setAttribute('cx', fx.x); glow.setAttribute('cy', fx.y);
-      glow.setAttribute('r', fx.glowRadius);
-      glow.setAttribute('fill', fx.color); glow.setAttribute('opacity', '0.08');
-      glow.setAttribute('filter', `url(#${glowFiltId})`);
-      glow.classList.add('fire-glow');
-      g.appendChild(glow);
-      fx._glowEl = glow;
-    }
+    const glow = document.createElementNS(NS, 'circle');
+    glow.setAttribute('cx', fx.x); glow.setAttribute('cy', fx.y);
+    glow.setAttribute('r', fx.glowRadius);
+    glow.setAttribute('fill', `url(#${gradId})`);
+    g.appendChild(glow);
+    fx._glowEl = glow;
+
+    // Transparent hit area for click/drag
+    const hitArea = document.createElementNS(NS, 'circle');
+    hitArea.setAttribute('cx', x); hitArea.setAttribute('cy', y);
+    hitArea.setAttribute('r', Math.max(fx.glowRadius, fx.maxHeight));
+    hitArea.setAttribute('fill', 'transparent'); hitArea.setAttribute('stroke', 'none');
+    hitArea.style.pointerEvents = 'fill';
+    g.appendChild(hitArea);
+    fx._hitArea = hitArea;
 
     // Core — 4 overlapping flickering circles
     fx._coreEls = [];
@@ -94,6 +120,14 @@ Editor.Fire = {
       g.appendChild(c);
       fx._coreEls.push(c);
     }
+
+    // Center dot (toggleable)
+    const center = document.createElementNS(NS, 'circle');
+    center.setAttribute('cx', x); center.setAttribute('cy', y); center.setAttribute('r', '3');
+    center.setAttribute('fill', '#ff8844'); center.setAttribute('opacity', '0.7');
+    center.style.display = this.showCenters ? '' : 'none';
+    g.appendChild(center);
+    fx._centerDot = center;
 
     // Sparks container
     const sparksG = document.createElementNS(NS, 'g');
@@ -119,8 +153,8 @@ Editor.Fire = {
     while (fx._sparksEl.firstChild) fx._sparksEl.removeChild(fx._sparksEl.firstChild);
     for (let i = 0; i < fx.sparkCount; i++) {
       const spark = document.createElementNS(NS, 'circle');
-      const angle = this._sparkAngle(fx.direction);
-      const dist = Math.random() * fx.decayDist * 0.5;
+      const angle = this._sparkAngle(fx.direction, fx.angle);
+      const dist = Math.random() * fx.maxHeight * 0.3;
       spark.setAttribute('cx', fx.x + Math.cos(angle) * dist);
       spark.setAttribute('cy', fx.y + Math.sin(angle) * dist);
       spark.setAttribute('r', (0.5 + Math.random() * fx.sparkSize).toFixed(1));
@@ -130,24 +164,51 @@ Editor.Fire = {
       const dur = (0.6 + Math.random() * (1.2 / (fx.sparkSpeed * 0.2))).toFixed(2);
       const delay = (Math.random() * 2).toFixed(2);
       spark.style.animation = `sparkFloat ${dur}s ${delay}s ease-in infinite`;
-      spark.style.setProperty('--spark-dist', `-${fx.decayDist}px`);
+      spark.style.setProperty('--spark-dist', `-${fx.maxHeight}px`);
+      // Direction: set CSS custom properties for x offset
+      const xDrift = this._sparkXDrift(fx.direction, fx.angle);
+      spark.style.setProperty('--spark-x', `${xDrift}px`);
       fx._sparksEl.appendChild(spark);
     }
   },
 
-  _sparkAngle(dir) {
+  _sparkAngle(dir, angle) {
     if (dir === 'up') return -Math.PI / 2 + (Math.random() - 0.5) * 0.4;
-    if (dir === 'angled') return -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+    if (dir === 'angled') {
+      const baseRad = ((angle || 0) - 90) * Math.PI / 180; // -90 because 0° = up
+      return baseRad + (Math.random() - 0.5) * 0.8;
+    }
     return Math.random() * Math.PI * 2;
   },
 
+  _sparkXDrift(dir, angle) {
+    if (dir === 'all') return (Math.random() - 0.5) * 20;
+    if (dir === 'up') return (Math.random() - 0.5) * 6;
+    if (dir === 'angled') {
+      const baseRad = ((angle || 0)) * Math.PI / 180;
+      return Math.sin(baseRad) * (10 + Math.random() * 15);
+    }
+    return 0;
+  },
+
   applyEffect(fx) {
+    // Update glow gradient
+    if (fx._gradEl) {
+      fx._gradEl.innerHTML = `<stop offset="0%" stop-color="${fx.color}" stop-opacity="${fx.glowIntensity}"/>
+        <stop offset="60%" stop-color="${fx.color}" stop-opacity="${fx.glowIntensity * 0.4}"/>
+        <stop offset="100%" stop-color="${fx.color}" stop-opacity="0"/>`;
+    }
     if (fx._glowEl) {
       fx._glowEl.setAttribute('cx', fx.x); fx._glowEl.setAttribute('cy', fx.y);
       fx._glowEl.setAttribute('r', fx.glowRadius);
-      fx._glowEl.setAttribute('fill', fx.color);
-      if (fx._glowBlur) fx._glowBlur.setAttribute('stdDeviation', String(fx.glowRadius * 0.6));
       fx._glowEl.style.display = fx.glowRadius > 0 ? '' : 'none';
+    }
+    if (fx._hitArea) {
+      fx._hitArea.setAttribute('cx', fx.x); fx._hitArea.setAttribute('cy', fx.y);
+      fx._hitArea.setAttribute('r', Math.max(fx.glowRadius, fx.maxHeight));
+    }
+    if (fx._centerDot) {
+      fx._centerDot.setAttribute('cx', fx.x); fx._centerDot.setAttribute('cy', fx.y);
     }
     if (fx._coreEls) {
       const colors = [fx.color, '#ffaa00', '#ffdd44', '#ff4400'];
@@ -159,7 +220,7 @@ Editor.Fire = {
     this._buildSparks(fx);
     if (fx.selRing) {
       fx.selRing.setAttribute('cx', fx.x); fx.selRing.setAttribute('cy', fx.y);
-      fx.selRing.setAttribute('r', fx.decayDist);
+      fx.selRing.setAttribute('r', fx.maxHeight);
     }
   },
 
@@ -174,10 +235,15 @@ Editor.Fire = {
         c.setAttribute('cy', fx.y + (Math.random() - 0.5) * 3);
       }
     }
-    // Pulse glow
+    // Pulse glow intensity
     if (fx._glowEl) {
-      const pulse = 0.04 + 0.04 * Math.sin(t * 0.003 + idx * 1.3);
-      fx._glowEl.setAttribute('opacity', pulse.toFixed(3));
+      const baseInt = fx.glowIntensity || 0.2;
+      const pulse = baseInt * (0.7 + 0.3 * Math.sin(t * 0.004 + idx * 1.3));
+      if (fx._gradEl) {
+        fx._gradEl.innerHTML = `<stop offset="0%" stop-color="${fx.color}" stop-opacity="${pulse.toFixed(3)}"/>
+          <stop offset="60%" stop-color="${fx.color}" stop-opacity="${(pulse * 0.4).toFixed(3)}"/>
+          <stop offset="100%" stop-color="${fx.color}" stop-opacity="0"/>`;
+      }
     }
   }
 };
