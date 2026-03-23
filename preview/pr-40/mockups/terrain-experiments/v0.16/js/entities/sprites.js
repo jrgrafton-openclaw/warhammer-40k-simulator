@@ -316,13 +316,22 @@ Editor.Sprites = {
             break;
         }
       } else {
-        // ── CORNER handle: existing local-space behavior ──
-        const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
-        const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
-        if (corner.includes('e')) sp.w = Math.max(20, o.w + dx);
-        if (corner.includes('w')) { sp.x = o.x + dx; sp.w = Math.max(20, o.w - dx); }
-        if (corner.includes('s')) sp.h = Math.max(20, o.h + dy);
-        if (corner.includes('n')) { sp.y = o.y + dy; sp.h = Math.max(20, o.h - dy); }
+        // ── CORNER handle: visual-space resize for both dimensions ──
+        // Project drag onto each edge's visual outward normal
+        const dE =  gdx * cosR + gdy * sinR;  // east outward
+        const dS = -gdx * sinR + gdy * cosR;  // south outward
+        if (corner.includes('e')) sp.w = Math.max(20, o.w + dE);
+        if (corner.includes('w')) sp.w = Math.max(20, o.w - dE);
+        if (corner.includes('s')) sp.h = Math.max(20, o.h + dS);
+        if (corner.includes('n')) sp.h = Math.max(20, o.h - dS);
+        // Anchor the opposite corner: combine edge anchor formulas
+        const ddW = sp.w - o.w, ddH = sp.h - o.h;
+        let ax = 0, ay = 0;
+        if (corner.includes('s')) { ax -= ddH/2 * sinR; ay -= ddH/2 * (1 - cosR); }
+        if (corner.includes('n')) { ax += ddH/2 * sinR; ay += -ddH + ddH/2 * (1 - cosR); }
+        if (corner.includes('e')) { ax -= ddW/2 * (1 - cosR); ay += ddW/2 * sinR; }
+        if (corner.includes('w')) { ax += -ddW + ddW/2 * (1 - cosR); ay -= ddW/2 * sinR; }
+        sp.x = o.x + ax; sp.y = o.y + ay;
       }
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
