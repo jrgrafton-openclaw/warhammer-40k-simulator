@@ -239,13 +239,7 @@ Editor.Selection = {
     const up = () => {
       document.removeEventListener('mousemove', mv);
       document.removeEventListener('mouseup', up);
-      if (ent.type === 'sprite') {
-        Editor.Undo.record(Editor.Commands.Move.create(ent.id, _bx, _by, ent.x, ent.y));
-      } else if (ent.type === 'smoke' || ent.type === 'fire') {
-        Editor.Undo.record(Editor.Commands.MoveFx.create(ent.id, _bx, _by, ent.x, ent.y));
-      } else if (ent.type === 'light') {
-        Editor.Undo.record(Editor.Commands.MoveLight.create(ent.id, _bx, _by, ent.x, ent.y));
-      }
+      Editor.Undo.record(Editor.Commands.MoveEntity.create(ent.id, ent.type, _bx, _by, ent.x, ent.y));
       Editor.State.dispatch({ type: 'SET_PROPERTY' });
     };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
@@ -271,17 +265,8 @@ Editor.Selection = {
         document.removeEventListener('mousemove', mv);
         document.removeEventListener('mouseup', up);
         const cmds = befores.map(b => {
-          if (b.type === 'sprite') {
-            const s = Editor.Commands._findSprite(b.id);
-            return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null;
-          } else if (b.type === 'smoke' || b.type === 'fire') {
-            const fx = C.allSmokeFx.find(f => f.id === b.id);
-            return fx ? Editor.Commands.MoveFx.create(b.id, b.x, b.y, fx.x, fx.y) : null;
-          } else if (b.type === 'light') {
-            const l = C.allLights.find(x => x.id === b.id);
-            return l ? Editor.Commands.MoveLight.create(b.id, b.x, b.y, l.x, l.y) : null;
-          }
-          return null;
+          const ent = Editor.Entity.find(b.id);
+          return ent ? Editor.Commands.MoveEntity.create(b.id, b.type, b.x, b.y, ent.x, ent.y) : null;
         }).filter(Boolean);
         Editor.Undo.record(Editor.Commands.Batch.create(cmds, 'Multi-move'));
         Editor.State.dispatch({ type: 'SET_PROPERTY' });
@@ -437,13 +422,8 @@ Editor.Selection = {
           if (!ent) return;
           newSel.push(ent);
           // Record undo for each created entity
-          if (ent.type === 'sprite') {
-            cmds.push(Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(ent)));
-          } else if (ent.type === 'smoke' || ent.type === 'fire') {
-            if (Editor.Commands._captureFx) cmds.push(Editor.Commands.AddFx.create(Editor.Commands._captureFx(ent)));
-          } else if (ent.type === 'light') {
-            cmds.push(Editor.Commands.AddLight.create(Editor.Commands._captureLight(ent)));
-          }
+          var entData = Editor.Commands._captureEntity(ent);
+          if (entData) cmds.push(Editor.Commands.AddEntity.create(entData, ent.type));
         });
         if (newSel.length) {
           C.multiSel = newSel;
@@ -521,20 +501,18 @@ Editor.Selection = {
         const toDelete = C.multiSel.length > 1 ? [...C.multiSel] : [C.selected];
         const cmds = [];
         toDelete.forEach(ent => {
+          var entData = Editor.Commands._captureEntity(ent);
+          if (entData) cmds.push(Editor.Commands.RemoveEntity.create(entData, ent.type));
+          // Type-specific cleanup
           if (ent.type === 'sprite') {
-            cmds.push(Editor.Commands.DeleteSprite.create(Editor.Commands._captureSprite(ent)));
             if (ent._clipId || ent._clipWrap) Editor.Crop._removeClip(ent);
             ent.el.remove();
             C.allSprites = C.allSprites.filter(x => x !== ent);
             Editor.Entity.unregister(ent.id);
             Editor.State.removeFromZOrder(ent.id);
           } else if (ent.type === 'smoke' || ent.type === 'fire') {
-            const fxData = Editor.Commands._captureFx(ent);
-            cmds.push(Editor.Commands.RemoveFx.create(fxData));
             Editor.Commands._removeFx(ent.id);
           } else if (ent.type === 'light') {
-            const lData = Editor.Commands._captureLight(ent);
-            cmds.push(Editor.Commands.DeleteLight.create(lData));
             Editor.Commands._removeLight(ent.id);
           }
         });
@@ -653,17 +631,8 @@ Editor.Selection = {
           else if (ent.type === 'sprite') Editor.Sprites.apply(ent);
         });
         const cmds = befores.map(b => {
-          if (b.type === 'sprite') {
-            const s = Editor.Commands._findSprite(b.id);
-            return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null;
-          } else if (b.type === 'smoke' || b.type === 'fire') {
-            const fx = Editor.Core.allSmokeFx.find(f => f.id === b.id);
-            return fx ? Editor.Commands.MoveFx.create(b.id, b.x, b.y, fx.x, fx.y) : null;
-          } else if (b.type === 'light') {
-            const l = Editor.Core.allLights.find(x => x.id === b.id);
-            return l ? Editor.Commands.MoveLight.create(b.id, b.x, b.y, l.x, l.y) : null;
-          }
-          return null;
+          const ent = Editor.Entity.find(b.id);
+          return ent ? Editor.Commands.MoveEntity.create(b.id, b.type, b.x, b.y, ent.x, ent.y) : null;
         }).filter(Boolean);
         if (cmds.length) Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Arrow move'));
         this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
