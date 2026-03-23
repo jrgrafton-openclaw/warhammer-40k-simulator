@@ -505,19 +505,21 @@ Editor.Layers = {
       const isSpriteDrag = !this.draggedId.startsWith('group-') && !this.draggedId.startsWith('model') && !this.draggedId.startsWith('light') && !this.draggedId.startsWith('objective') && !this.draggedId.startsWith('svg') && !this.draggedId.startsWith('deploy');
       if (isSpriteDrag) {
         const sp = C.allSprites.find(s => s.id === this.draggedId);
-        if (!sp) return;
+        const fx = !sp ? C.allSmokeFx.find(f => f.id === this.draggedId) : null;
+        if (!sp && !fx) return;
+        const elToMove = sp ? sp.rootEl : fx.el;
+        const itemGroupId = sp ? sp.groupId : fx.groupId;
         if (dropAbove) {
           // Drop above group row = insert BEFORE the group <g> in SVG (between items, not into group)
           const svg = document.getElementById('battlefield');
           const gEl = document.getElementById(gId);
           if (!gEl) return;
           var beforeOrder = Editor.Commands.captureDOMOrder();
-          const elToMove = sp.rootEl;
           // Remove from current group if needed
-          if (sp.groupId) {
-            const oldGroupEl = document.getElementById(sp.groupId);
+          if (itemGroupId) {
+            const oldGroupEl = document.getElementById(itemGroupId);
             if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
-            delete sp.groupId;
+            if (sp) delete sp.groupId; else delete fx.groupId;
           }
           // "Drop above" in layer panel = in front = after in DOM
           svg.insertBefore(elToMove, gEl.nextElementSibling);
@@ -529,9 +531,29 @@ Editor.Layers = {
           var afterOrder = Editor.Commands.captureDOMOrder();
           Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
           Editor.State.dispatch({ type: 'REORDER' }); this.rebuild();
-        } else if (sp.groupId !== gId) {
-          // Drop below/on group = add sprite into group
-          Editor.Groups.addToGroup(gId, sp);
+        } else if (itemGroupId !== gId) {
+          if (sp) {
+            // Drop below/on group = add sprite into group
+            Editor.Groups.addToGroup(gId, sp);
+          } else {
+            // Drop below/on group = add FX into group
+            const svg = document.getElementById('battlefield');
+            const gEl = document.getElementById(gId);
+            if (!gEl) return;
+            var beforeOrder = Editor.Commands.captureDOMOrder();
+            const oldGroupId = fx.groupId || null;
+            if (fx.groupId) {
+              const oldGroupEl = document.getElementById(fx.groupId);
+              if (oldGroupEl && elToMove.parentNode === oldGroupEl) oldGroupEl.removeChild(elToMove);
+            }
+            if (elToMove.parentNode) elToMove.parentNode.removeChild(elToMove);
+            gEl.appendChild(elToMove);
+            fx.groupId = gId;
+            Editor.State.syncZOrderFromDOM();
+            var afterOrder = Editor.Commands.captureDOMOrder();
+            Editor.Undo.record(Editor.Commands.Reorder.create(beforeOrder, afterOrder));
+            Editor.State.dispatch({ type: 'ADD_TO_GROUP', id: gId }); this.rebuild();
+          }
         }
       } else if (zItems) {
         this._handleDrop(this.draggedId, gId, zItems, dropAbove);
@@ -617,16 +639,18 @@ Editor.Layers = {
     const targetItem = zItems.find(z => this._itemId(z) === targetId);
     if (!targetItem) return;
 
-    // Handle sprites being dragged out of a group (not in zItems as direct SVG children)
+    // Handle sprites/fx being dragged out of a group (not in zItems as direct SVG children)
     if (!dragItem) {
       const sp = C.allSprites.find(s => s.id === draggedId);
-      if (!sp || !sp.groupId) return;
+      const fx = !sp ? C.allSmokeFx.find(f => f.id === draggedId) : null;
+      const item = sp || fx;
+      if (!item || !item.groupId) return;
       // Remove from current group
       var beforeOrder = Editor.Commands.captureDOMOrder();
-      const oldGroupEl = document.getElementById(sp.groupId);
-      let elToMove = sp.rootEl;
+      const oldGroupEl = document.getElementById(item.groupId);
+      let elToMove = sp ? sp.rootEl : fx.el;
       if (oldGroupEl) oldGroupEl.removeChild(elToMove);
-      delete sp.groupId;
+      delete item.groupId;
       // Guard: ensure target is a current direct child of svg
       let targetEl = targetItem.svgEl;
       if (targetEl.parentNode !== svg) {
