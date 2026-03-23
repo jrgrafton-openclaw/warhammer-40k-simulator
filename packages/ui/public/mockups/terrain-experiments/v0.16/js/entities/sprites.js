@@ -62,6 +62,18 @@ Editor.Sprites = {
       get() { return this._clipWrap || this.el; },
       enumerable: false, configurable: true
     });
+
+    // Entity interface (Phase 1)
+    sp.type = 'sprite';
+    sp.getBounds = function() { return { x: this.x, y: this.y, w: this.w, h: this.h }; };
+    sp.apply = function() { Editor.Sprites.apply(this); };
+    sp.drawSelection = function(selUI) { Editor.Selection._drawSpriteSelection(this, selUI); };
+    sp.serialize = function() { return Editor.Sprites.serializeOne(this); };
+    sp.clone = function(dx, dy) {
+      return Editor.Sprites.addSprite(this.file, this.x + dx, this.y + dy, this.w, this.h, this.rot, this.layerType, true);
+    };
+    Editor.Entity.register(sp);
+
     C.allSprites.push(sp);
 
     img.onmousedown = e => {
@@ -240,6 +252,19 @@ Editor.Sprites = {
         }
       });
     });
+  },
+
+  // ── Serialize a single sprite to JSON ──
+  serializeOne(sp) {
+    return {
+      type: 'sprite',
+      file: sp.file, x: sp.x, y: sp.y, w: sp.w, h: sp.h, rot: sp.rot,
+      layerType: sp.layerType || 'floor', hidden: sp.hidden || false,
+      flipX: sp.flipX || false, flipY: sp.flipY || false,
+      shadowMul: sp.shadowMul != null ? sp.shadowMul : 1,
+      cropL: sp.cropL || 0, cropT: sp.cropT || 0,
+      cropR: sp.cropR || 0, cropB: sp.cropB || 0
+    };
   },
 
   // ── Apply position/size/rotation/flip to SVG element ──

@@ -115,7 +115,7 @@ export function loadEditor() {
 
   const modules = [
     'js/core/state.js',
-    'js/core/bus.js', 'js/entities/core.js', 'js/core/undo.js', 'js/core/commands.js', 'js/entities/models.js', 'js/entities/sprites.js',
+    'js/core/bus.js', 'js/core/entity.js', 'js/entities/core.js', 'js/core/undo.js', 'js/core/commands.js', 'js/entities/models.js', 'js/entities/sprites.js',
     'js/entities/objectives.js', 'js/entities/lights.js', 'js/entities/fire.js', 'js/entities/smoke.js',
     'js/tools/groups.js', 'js/tools/crop.js',
     'js/ui/zoom.js', 'js/ui/shortcuts.js', 'js/tools/selection.js', 'js/ui/layers.js',

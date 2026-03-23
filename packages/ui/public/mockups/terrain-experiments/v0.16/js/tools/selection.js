@@ -197,6 +197,69 @@ Editor.Selection = {
     C.selUI.appendChild(rh);
   },
 
+  // ── Draw sprite-specific selection (extracted for Entity interface) ──
+  _drawSpriteSelection(s, selUI) {
+    const C = Editor.Core, NS = C.NS;
+    const cx = s.x + s.w/2, cy = s.y + s.h/2;
+
+    // Bounding rect
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', s.x-2); r.setAttribute('y', s.y-2); r.setAttribute('width', s.w+4); r.setAttribute('height', s.h+4);
+    r.setAttribute('fill', 'none'); r.setAttribute('stroke', '#00d4ff'); r.setAttribute('stroke-dasharray', '4,3'); r.setAttribute('stroke-width', '1.5');
+    if (s.rot) r.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
+    selUI.appendChild(r);
+
+    // Cursor rotation helper
+    const cursorDirs = ['n','ne','e','se','s','sw','w','nw'];
+    const compoundToDir = { 'ns':'n', 'ew':'e', 'nesw':'ne', 'nwse':'nw' };
+    const dirToCompound = { 'n':'ns','s':'ns','e':'ew','w':'ew','ne':'nesw','sw':'nesw','nw':'nwse','se':'nwse' };
+    const rotateCursor = (baseCursor, rot) => {
+      const raw = baseCursor.replace('-resize','');
+      const dir = compoundToDir[raw] || raw;
+      const idx = cursorDirs.indexOf(dir);
+      if (idx < 0) return baseCursor;
+      const steps = Math.round((rot || 0) / 45) % 8;
+      const rotated = cursorDirs[(idx + steps + 8) % 8];
+      return (dirToCompound[rotated] || rotated) + '-resize';
+    };
+
+    // Corner handles
+    [[s.x, s.y, 'nw'], [s.x+s.w, s.y, 'ne'], [s.x, s.y+s.h, 'sw'], [s.x+s.w, s.y+s.h, 'se']].forEach(([hx, hy, pos]) => {
+      const h = document.createElementNS(NS, 'rect');
+      h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(pos + '-resize', s.rot);
+      if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
+      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
+      selUI.appendChild(h);
+    });
+
+    // Edge-midpoint handles
+    const edgeHandleSize = 8;
+    [
+      [s.x + s.w/2, s.y,       'n', edgeHandleSize, 4, 'ns-resize'],
+      [s.x + s.w/2, s.y + s.h, 's', edgeHandleSize, 4, 'ns-resize'],
+      [s.x,         s.y + s.h/2,'w', 4, edgeHandleSize, 'ew-resize'],
+      [s.x + s.w,   s.y + s.h/2,'e', 4, edgeHandleSize, 'ew-resize'],
+    ].forEach(([hx, hy, pos, hw, hh, cursor]) => {
+      const h = document.createElementNS(NS, 'rect');
+      h.setAttribute('x', hx - hw/2); h.setAttribute('y', hy - hh/2);
+      h.setAttribute('width', hw); h.setAttribute('height', hh);
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(cursor, s.rot);
+      h.classList.add('sel-handle');
+      if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
+      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
+      selUI.appendChild(h);
+    });
+
+    // Rotate handle
+    const rh = document.createElementNS(NS, 'circle');
+    rh.setAttribute('cx', cx); rh.setAttribute('cy', s.y - 16); rh.setAttribute('r', 4);
+    rh.setAttribute('fill', '#00d4ff'); rh.style.cursor = 'grab';
+    if (s.rot) rh.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
+    rh.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startRotate(e, s); };
+    selUI.appendChild(rh);
+  },
+
   // ── Move (single sprite) ──
   startMove(e, sp) {
     const C = Editor.Core;
