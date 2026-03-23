@@ -40,7 +40,13 @@ Editor.Selection = {
             const rx = Math.min(this.dragStart.x, p.x), ry = Math.min(this.dragStart.y, p.y);
             const rw = Math.abs(p.x - this.dragStart.x), rh = Math.abs(p.y - this.dragStart.y);
             if (rw < 5 && rh < 5) return;
-            C.multiSel = C.allSprites.filter(sp => !sp.hidden && sp.x+sp.w > rx && sp.x < rx+rw && sp.y+sp.h > ry && sp.y < ry+rh);
+            // Hit-test ALL entities (sprites + fx + lights) via getBounds
+            C.multiSel = (C.allEntities || C.allSprites).filter(e => {
+              if (e.hidden) return false;
+              if (e.el && e.el.style && e.el.style.display === 'none') return false;
+              const b = e.getBounds ? e.getBounds() : { x: e.x, y: e.y, w: e.w || 0, h: e.h || 0 };
+              return b.x + b.w > rx && b.x < rx + rw && b.y + b.h > ry && b.y < ry + rh;
+            });
             if (C.multiSel.length > 0) { C.selected = C.multiSel[0]; this.drawMultiSel(); Editor.Layers.rebuild(); }
           };
           document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
@@ -52,12 +58,16 @@ Editor.Selection = {
     document.addEventListener('keydown', e => this.onKey(e));
   },
 
-  select(sp) {
+  select(entity) {
     const C = Editor.Core;
-    C.selected = sp; C.multiSel = [sp];
+    C.selected = entity; C.multiSel = [entity];
     Editor.Lights.deselectLight();
     Editor.Models.deselectModel();
     Editor.Smoke.deselectEffect();
+    // Show type-specific sidebar controls
+    if (entity.type === 'smoke' || entity.type === 'fire') {
+      Editor.Smoke._showControls(entity);
+    }
     this.drawSelectionUI(); Editor.Layers.rebuild();
   },
 
@@ -75,69 +85,14 @@ Editor.Selection = {
   },
 
   drawSel() {
-    const C = Editor.Core, NS = C.NS, s = C.selected;
+    const C = Editor.Core, s = C.selected;
     if (!s || (Editor.Crop && Editor.Crop.active)) { C.selUI.style.display = 'none'; return; }
     C.selUI.style.display = ''; C.selUI.innerHTML = '';
-    const cx = s.x + s.w/2, cy = s.y + s.h/2;
 
-    // Bounding rect
-    const r = document.createElementNS(NS, 'rect');
-    r.setAttribute('x', s.x-2); r.setAttribute('y', s.y-2); r.setAttribute('width', s.w+4); r.setAttribute('height', s.h+4);
-    r.setAttribute('fill', 'none'); r.setAttribute('stroke', '#00d4ff'); r.setAttribute('stroke-dasharray', '4,3'); r.setAttribute('stroke-width', '1.5');
-    if (s.rot) r.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
-    C.selUI.appendChild(r);
-
-    // Helper: rotate cursor icon based on sprite rotation
-    // CSS cursors cycle: n→ne→e→se→s→sw→w→nw in 45° steps
-    const cursorDirs = ['n','ne','e','se','s','sw','w','nw'];
-    // Map compound cursors to a primary direction for rotation
-    const compoundToDir = { 'ns':'n', 'ew':'e', 'nesw':'ne', 'nwse':'nw' };
-    const dirToCompound = { 'n':'ns','s':'ns','e':'ew','w':'ew','ne':'nesw','sw':'nesw','nw':'nwse','se':'nwse' };
-    const rotateCursor = (baseCursor, rot) => {
-      const raw = baseCursor.replace('-resize','');
-      const dir = compoundToDir[raw] || raw;
-      const idx = cursorDirs.indexOf(dir);
-      if (idx < 0) return baseCursor;
-      const steps = Math.round((rot || 0) / 45) % 8;
-      const rotated = cursorDirs[(idx + steps + 8) % 8];
-      return (dirToCompound[rotated] || rotated) + '-resize';
-    };
-
-    // Corner handles — no label remap needed; resize code handles rotation
-    [[s.x, s.y, 'nw'], [s.x+s.w, s.y, 'ne'], [s.x, s.y+s.h, 'sw'], [s.x+s.w, s.y+s.h, 'se']].forEach(([hx, hy, pos]) => {
-      const h = document.createElementNS(NS, 'rect');
-      h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(pos + '-resize', s.rot);
-      if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
-      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
-      C.selUI.appendChild(h);
-    });
-
-    // Edge-midpoint handles
-    const edgeHandleSize = 8;
-    [
-      [s.x + s.w/2, s.y,       'n', edgeHandleSize, 4, 'ns-resize'],
-      [s.x + s.w/2, s.y + s.h, 's', edgeHandleSize, 4, 'ns-resize'],
-      [s.x,         s.y + s.h/2,'w', 4, edgeHandleSize, 'ew-resize'],
-      [s.x + s.w,   s.y + s.h/2,'e', 4, edgeHandleSize, 'ew-resize'],
-    ].forEach(([hx, hy, pos, hw, hh, cursor]) => {
-      const h = document.createElementNS(NS, 'rect');
-      h.setAttribute('x', hx - hw/2); h.setAttribute('y', hy - hh/2);
-      h.setAttribute('width', hw); h.setAttribute('height', hh);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(cursor, s.rot);
-      h.classList.add('sel-handle');
-      if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
-      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
-      C.selUI.appendChild(h);
-    });
-
-    // Rotate handle
-    const rh = document.createElementNS(NS, 'circle');
-    rh.setAttribute('cx', cx); rh.setAttribute('cy', s.y - 16); rh.setAttribute('r', 4);
-    rh.setAttribute('fill', '#00d4ff'); rh.style.cursor = 'grab';
-    if (s.rot) rh.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
-    rh.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startRotate(e, s); };
-    C.selUI.appendChild(rh);
+    // Delegate to entity's drawSelection if available
+    if (s.drawSelection) {
+      s.drawSelection(C.selUI);
+    }
   },
 
   drawMultiSel() {
@@ -146,55 +101,64 @@ Editor.Selection = {
     C.selUI.style.display = ''; C.selUI.innerHTML = '';
 
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    C.multiSel.forEach(s => { minX = Math.min(minX, s.x); minY = Math.min(minY, s.y); maxX = Math.max(maxX, s.x+s.w); maxY = Math.max(maxY, s.y+s.h); });
+    C.multiSel.forEach(e => {
+      const b = e.getBounds ? e.getBounds() : { x: e.x, y: e.y, w: e.w || 0, h: e.h || 0 };
+      minX = Math.min(minX, b.x); minY = Math.min(minY, b.y);
+      maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h);
+    });
 
     const r = document.createElementNS(NS, 'rect');
     r.setAttribute('x', minX-3); r.setAttribute('y', minY-3); r.setAttribute('width', maxX-minX+6); r.setAttribute('height', maxY-minY+6);
     r.setAttribute('fill', 'none'); r.setAttribute('stroke', '#00d4ff'); r.setAttribute('stroke-dasharray', '6,3'); r.setAttribute('stroke-width', '1.5');
-    r.style.pointerEvents = 'none'; // Let clicks pass through to sprites
+    r.style.pointerEvents = 'none';
     C.selUI.appendChild(r);
 
-    C.multiSel.forEach(s => {
+    C.multiSel.forEach(e => {
+      const b = e.getBounds ? e.getBounds() : { x: e.x, y: e.y, w: e.w || 0, h: e.h || 0 };
       const h = document.createElementNS(NS, 'rect');
-      h.setAttribute('x', s.x); h.setAttribute('y', s.y); h.setAttribute('width', s.w); h.setAttribute('height', s.h);
+      h.setAttribute('x', b.x); h.setAttribute('y', b.y); h.setAttribute('width', b.w); h.setAttribute('height', b.h);
       h.setAttribute('fill', 'rgba(0,212,255,0.05)'); h.setAttribute('stroke', '#00d4ff'); h.setAttribute('stroke-width', '0.5'); h.setAttribute('stroke-dasharray', '3,2');
-      h.style.pointerEvents = 'none'; // Let clicks pass through to actual sprites
-      if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${s.x+s.w/2},${s.y+s.h/2})`);
+      h.style.pointerEvents = 'none';
+      if (e.rot) h.setAttribute('transform', `rotate(${e.rot},${b.x+b.w/2},${b.y+b.h/2})`);
       C.selUI.appendChild(h);
     });
 
-    // Corner resize handles for multi-select
-    [[minX, minY, 'nw'], [maxX, minY, 'ne'], [minX, maxY, 'sw'], [maxX, maxY, 'se']].forEach(([hx, hy, pos]) => {
-      const h = document.createElementNS(NS, 'rect');
-      h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = pos + '-resize';
-      h.onmousedown = e => { e.stopPropagation(); this.startResizeMulti(e, pos, minX, minY, maxX, maxY); };
-      C.selUI.appendChild(h);
-    });
+    // Only show resize/rotate handles if all entities are sprites (type-specific ops)
+    const allSprites = C.multiSel.every(e => e.type === 'sprite');
+    if (allSprites) {
+      // Corner resize handles for multi-select
+      [[minX, minY, 'nw'], [maxX, minY, 'ne'], [minX, maxY, 'sw'], [maxX, maxY, 'se']].forEach(([hx, hy, pos]) => {
+        const h = document.createElementNS(NS, 'rect');
+        h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
+        h.setAttribute('fill', '#00d4ff'); h.style.cursor = pos + '-resize';
+        h.onmousedown = e => { e.stopPropagation(); this.startResizeMulti(e, pos, minX, minY, maxX, maxY); };
+        C.selUI.appendChild(h);
+      });
 
-    // Edge midpoint resize handles for multi-select
-    const midHandles = [
-      [(minX+maxX)/2, minY, 'n', 10, 4, 'ns-resize'],
-      [(minX+maxX)/2, maxY, 's', 10, 4, 'ns-resize'],
-      [minX, (minY+maxY)/2, 'w', 4, 10, 'ew-resize'],
-      [maxX, (minY+maxY)/2, 'e', 4, 10, 'ew-resize'],
-    ];
-    midHandles.forEach(([hx, hy, pos, hw, hh, cursor]) => {
-      const h = document.createElementNS(NS, 'rect');
-      h.setAttribute('x', hx-hw/2); h.setAttribute('y', hy-hh/2);
-      h.setAttribute('width', hw); h.setAttribute('height', hh);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = cursor;
-      h.onmousedown = e => { e.stopPropagation(); this.startResizeMulti(e, pos, minX, minY, maxX, maxY); };
-      C.selUI.appendChild(h);
-    });
+      // Edge midpoint resize handles for multi-select
+      const midHandles = [
+        [(minX+maxX)/2, minY, 'n', 10, 4, 'ns-resize'],
+        [(minX+maxX)/2, maxY, 's', 10, 4, 'ns-resize'],
+        [minX, (minY+maxY)/2, 'w', 4, 10, 'ew-resize'],
+        [maxX, (minY+maxY)/2, 'e', 4, 10, 'ew-resize'],
+      ];
+      midHandles.forEach(([hx, hy, pos, hw, hh, cursor]) => {
+        const h = document.createElementNS(NS, 'rect');
+        h.setAttribute('x', hx-hw/2); h.setAttribute('y', hy-hh/2);
+        h.setAttribute('width', hw); h.setAttribute('height', hh);
+        h.setAttribute('fill', '#00d4ff'); h.style.cursor = cursor;
+        h.onmousedown = e => { e.stopPropagation(); this.startResizeMulti(e, pos, minX, minY, maxX, maxY); };
+        C.selUI.appendChild(h);
+      });
 
-    // Multi-rotate handle
-    const cx = (minX+maxX)/2;
-    const rh = document.createElementNS(NS, 'circle');
-    rh.setAttribute('cx', cx); rh.setAttribute('cy', minY-18); rh.setAttribute('r', 4);
-    rh.setAttribute('fill', '#00d4ff'); rh.style.cursor = 'grab';
-    rh.onmousedown = e => { e.stopPropagation(); this.startRotateMulti(e); };
-    C.selUI.appendChild(rh);
+      // Multi-rotate handle
+      const cx = (minX+maxX)/2;
+      const rh = document.createElementNS(NS, 'circle');
+      rh.setAttribute('cx', cx); rh.setAttribute('cy', minY-18); rh.setAttribute('r', 4);
+      rh.setAttribute('fill', '#00d4ff'); rh.style.cursor = 'grab';
+      rh.onmousedown = e => { e.stopPropagation(); this.startRotateMulti(e); };
+      C.selUI.appendChild(rh);
+    }
   },
 
   // ── Draw sprite-specific selection (extracted for Entity interface) ──
@@ -260,28 +224,71 @@ Editor.Selection = {
     selUI.appendChild(rh);
   },
 
-  // ── Move (single sprite) ──
-  startMove(e, sp) {
+  // ── Move (single entity) ──
+  startMove(e, ent) {
     const C = Editor.Core;
-    const _bx = sp.x, _by = sp.y;
-    const pt = C.svgPt(e.clientX, e.clientY), ox = pt.x - sp.x, oy = pt.y - sp.y;
-    const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); sp.x = p.x-ox; sp.y = p.y-oy; Editor.Sprites.apply(sp); this.drawSelectionUI(); C.updateDebug(); };
-    const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); Editor.Undo.record(Editor.Commands.Move.create(sp.id, _bx, _by, sp.x, sp.y)); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
+    const _bx = ent.x, _by = ent.y;
+    const pt = C.svgPt(e.clientX, e.clientY), ox = pt.x - ent.x, oy = pt.y - ent.y;
+    const mv = e2 => {
+      const p = C.svgPt(e2.clientX, e2.clientY);
+      ent.x = p.x - ox; ent.y = p.y - oy;
+      if (ent.apply) ent.apply();
+      else if (ent.type === 'sprite') Editor.Sprites.apply(ent);
+      this.drawSelectionUI(); C.updateDebug();
+    };
+    const up = () => {
+      document.removeEventListener('mousemove', mv);
+      document.removeEventListener('mouseup', up);
+      if (ent.type === 'sprite') {
+        Editor.Undo.record(Editor.Commands.Move.create(ent.id, _bx, _by, ent.x, ent.y));
+      } else if (ent.type === 'smoke' || ent.type === 'fire') {
+        Editor.Undo.record(Editor.Commands.MoveFx.create(ent.id, _bx, _by, ent.x, ent.y));
+      } else if (ent.type === 'light') {
+        Editor.Undo.record(Editor.Commands.MoveLight.create(ent.id, _bx, _by, ent.x, ent.y));
+      }
+      Editor.State.dispatch({ type: 'SET_PROPERTY' });
+    };
     document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
   },
 
   // ── Move multi-select or single ──
-  startMoveMulti(e, sp) {
+  startMoveMulti(e, ent) {
     const C = Editor.Core;
-    if (C.multiSel.length > 1 && C.multiSel.includes(sp)) {
-      const befores = C.multiSel.map(s => ({ id: s.id, x: s.x, y: s.y }));
+    if (C.multiSel.length > 1 && C.multiSel.includes(ent)) {
+      const befores = C.multiSel.map(s => ({ id: s.id, type: s.type, x: s.x, y: s.y }));
       const pt = C.svgPt(e.clientX, e.clientY);
       const offsets = C.multiSel.map(s => ({ s, ox: pt.x - s.x, oy: pt.y - s.y }));
-      const mv = e2 => { const p = C.svgPt(e2.clientX, e2.clientY); offsets.forEach(({s, ox, oy}) => { s.x = p.x-ox; s.y = p.y-oy; Editor.Sprites.apply(s); }); this.drawSelectionUI(); C.updateDebug(); };
-      const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); const cmds = befores.map(b => { const s = Editor.Commands._findSprite(b.id); return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null; }).filter(Boolean); Editor.Undo.record(Editor.Commands.Batch.create(cmds, 'Multi-move')); Editor.State.dispatch({ type: 'SET_PROPERTY' }); };
+      const mv = e2 => {
+        const p = C.svgPt(e2.clientX, e2.clientY);
+        offsets.forEach(({s, ox, oy}) => {
+          s.x = p.x - ox; s.y = p.y - oy;
+          if (s.apply) s.apply();
+          else if (s.type === 'sprite') Editor.Sprites.apply(s);
+        });
+        this.drawSelectionUI(); C.updateDebug();
+      };
+      const up = () => {
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+        const cmds = befores.map(b => {
+          if (b.type === 'sprite') {
+            const s = Editor.Commands._findSprite(b.id);
+            return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null;
+          } else if (b.type === 'smoke' || b.type === 'fire') {
+            const fx = C.allSmokeFx.find(f => f.id === b.id);
+            return fx ? Editor.Commands.MoveFx.create(b.id, b.x, b.y, fx.x, fx.y) : null;
+          } else if (b.type === 'light') {
+            const l = C.allLights.find(x => x.id === b.id);
+            return l ? Editor.Commands.MoveLight.create(b.id, b.x, b.y, l.x, l.y) : null;
+          }
+          return null;
+        }).filter(Boolean);
+        Editor.Undo.record(Editor.Commands.Batch.create(cmds, 'Multi-move'));
+        Editor.State.dispatch({ type: 'SET_PROPERTY' });
+      };
       document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
     } else {
-      C.multiSel = [sp]; this.startMove(e, sp);
+      C.multiSel = [ent]; this.startMove(e, ent);
     }
   },
 
@@ -456,15 +463,17 @@ Editor.Selection = {
     // Toggle shortcuts help
     if (e.key === '?') { Editor.Shortcuts.toggle(); return; }
 
-    // Delete (sprites or selected light)
+    // Delete — any entity type
     if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (Editor.Lights.selectedLight) {
+      // Legacy: selected light (not yet unified)
+      if (Editor.Lights.selectedLight && !C.selected) {
         const lData = Editor.Commands._captureLight(Editor.Lights.selectedLight);
         Editor.Commands._removeLight(Editor.Lights.selectedLight.id);
         Editor.Undo.record(Editor.Commands.DeleteLight.create(lData));
         Editor.State.dispatch({ type: 'DELETE_LIGHT' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
+      // Legacy: selected model
       if (!C.selected && Editor.Models.selectedModel) {
         const data = Editor.Commands._captureModel(Editor.Models.selectedModel);
         Editor.Commands._removeModel(Editor.Models.selectedModel.id);
@@ -474,9 +483,26 @@ Editor.Selection = {
       }
       if (C.selected) {
         const toDelete = C.multiSel.length > 1 ? [...C.multiSel] : [C.selected];
-        const cmds = toDelete.map(s => Editor.Commands.DeleteSprite.create(Editor.Commands._captureSprite(s)));
-        toDelete.forEach(s => { if (s._clipId || s._clipWrap) Editor.Crop._removeClip(s); s.el.remove(); C.allSprites = C.allSprites.filter(x => x !== s); Editor.State.removeFromZOrder(s.id); });
-        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Delete sprites'));
+        const cmds = [];
+        toDelete.forEach(ent => {
+          if (ent.type === 'sprite') {
+            cmds.push(Editor.Commands.DeleteSprite.create(Editor.Commands._captureSprite(ent)));
+            if (ent._clipId || ent._clipWrap) Editor.Crop._removeClip(ent);
+            ent.el.remove();
+            C.allSprites = C.allSprites.filter(x => x !== ent);
+            Editor.Entity.unregister(ent.id);
+            Editor.State.removeFromZOrder(ent.id);
+          } else if (ent.type === 'smoke' || ent.type === 'fire') {
+            const fxData = Editor.Commands._captureFx(ent);
+            cmds.push(Editor.Commands.RemoveFx.create(fxData));
+            Editor.Commands._removeFx(ent.id);
+          } else if (ent.type === 'light') {
+            const lData = Editor.Commands._captureLight(ent);
+            cmds.push(Editor.Commands.DeleteLight.create(lData));
+            Editor.Commands._removeLight(ent.id);
+          }
+        });
+        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Delete'));
         this.deselect(); C.updateDebug(); Editor.State.dispatch({ type: 'DELETE_SPRITE' }); Editor.Layers.rebuild();
         e.preventDefault(); return;
       }
@@ -500,8 +526,11 @@ Editor.Selection = {
 
     if (!C.selected) return;
 
+    // ── Sprite-only operations guard ──
+    const isSprite = C.selected.type === 'sprite';
+
     // Duplicate
-    if (e.key === 'd') {
+    if (e.key === 'd' && isSprite) {
       C.multiSel = (C.multiSel.length ? C.multiSel : [C.selected]).map(s => Editor.Sprites.addSprite(s.file, s.x+15, s.y+15, s.w, s.h, s.rot, s.layerType || "floor", true));
       C.selected = C.multiSel[0];
       const cmds = C.multiSel.map(s => Editor.Commands.AddSprite.create(Editor.Commands._captureSprite(s)));
@@ -509,14 +538,14 @@ Editor.Selection = {
       this.drawSelectionUI(); Editor.Layers.rebuild();
     }
 
-    // Crop
-    if (e.key === 'c' && !e.metaKey && !e.ctrlKey) {
+    // Crop (sprites only)
+    if (e.key === 'c' && !e.metaKey && !e.ctrlKey && isSprite) {
       if (C.selected && C.multiSel.length <= 1) { Editor.Crop.enter(C.selected); }
       return;
     }
 
-    // Flip
-    if (e.key === 'f' || e.key === 'F') {
+    // Flip (sprites only)
+    if ((e.key === 'f' || e.key === 'F') && isSprite) {
       const targets = C.multiSel.length > 1 ? C.multiSel : [C.selected];
       const prop = e.shiftKey ? 'flipY' : 'flipX';
       const cmds = targets.map(s => {
@@ -533,8 +562,8 @@ Editor.Selection = {
       this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
-    // Rotate (skip if Cmd/Ctrl held — e.g. Cmd+R = refresh, not rotate)
-    if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey) {
+    // Rotate (sprites only; skip if Cmd/Ctrl held)
+    if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey && isSprite) {
       const step = e.shiftKey ? 45 : 15;
       const targets = C.multiSel.length > 1 ? C.multiSel : [C.selected];
       const cmds = targets.map(s => {
@@ -546,8 +575,8 @@ Editor.Selection = {
       this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
     }
 
-    // Z-order (sprites are direct SVG children, may be inside crop wrapper)
-    if (e.key === '=' || e.key === '+') {
+    // Z-order (sprites only — sprites are direct SVG children)
+    if ((e.key === '=' || e.key === '+') && isSprite) {
       const beforeDOM = Editor.Commands.captureDOMOrder();
       const el = C.selected.rootEl;
       const parent = el.parentNode;
@@ -559,7 +588,7 @@ Editor.Selection = {
       }
       Editor.State.dispatch({ type: 'REORDER' }); Editor.Layers.rebuild();
     }
-    if (e.key === '-') {
+    if (e.key === '-' && isSprite) {
       const beforeDOM = Editor.Commands.captureDOMOrder();
       const el = C.selected.rootEl;
       const parent = el.parentNode;
@@ -572,22 +601,35 @@ Editor.Selection = {
       Editor.State.dispatch({ type: 'REORDER' }); Editor.Layers.rebuild();
     }
 
-    // Arrow keys — move selected sprites
+    // Arrow keys — move any selected entities
     if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
       e.preventDefault();
       const step = e.shiftKey ? 10 : 1;
       const targets = C.multiSel.length > 0 ? C.multiSel : [C.selected];
       if (targets[0]) {
-        const befores = targets.map(s => ({ id: s.id, x: s.x, y: s.y }));
-        targets.forEach(s => {
-          if (e.key === 'ArrowUp') s.y -= step;
-          if (e.key === 'ArrowDown') s.y += step;
-          if (e.key === 'ArrowLeft') s.x -= step;
-          if (e.key === 'ArrowRight') s.x += step;
-          Editor.Sprites.apply(s);
+        const befores = targets.map(s => ({ id: s.id, type: s.type, x: s.x, y: s.y }));
+        targets.forEach(ent => {
+          if (e.key === 'ArrowUp') ent.y -= step;
+          if (e.key === 'ArrowDown') ent.y += step;
+          if (e.key === 'ArrowLeft') ent.x -= step;
+          if (e.key === 'ArrowRight') ent.x += step;
+          if (ent.apply) ent.apply();
+          else if (ent.type === 'sprite') Editor.Sprites.apply(ent);
         });
-        const cmds = befores.map(b => { const s = Editor.Commands._findSprite(b.id); return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null; }).filter(Boolean);
-        Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Arrow move'));
+        const cmds = befores.map(b => {
+          if (b.type === 'sprite') {
+            const s = Editor.Commands._findSprite(b.id);
+            return s ? Editor.Commands.Move.create(b.id, b.x, b.y, s.x, s.y) : null;
+          } else if (b.type === 'smoke' || b.type === 'fire') {
+            const fx = Editor.Core.allSmokeFx.find(f => f.id === b.id);
+            return fx ? Editor.Commands.MoveFx.create(b.id, b.x, b.y, fx.x, fx.y) : null;
+          } else if (b.type === 'light') {
+            const l = Editor.Core.allLights.find(x => x.id === b.id);
+            return l ? Editor.Commands.MoveLight.create(b.id, b.x, b.y, l.x, l.y) : null;
+          }
+          return null;
+        }).filter(Boolean);
+        if (cmds.length) Editor.Undo.record(cmds.length === 1 ? cmds[0] : Editor.Commands.Batch.create(cmds, 'Arrow move'));
         this.drawSelectionUI(); C.updateDebug(); Editor.State.dispatch({ type: 'SET_PROPERTY' });
       }
     }

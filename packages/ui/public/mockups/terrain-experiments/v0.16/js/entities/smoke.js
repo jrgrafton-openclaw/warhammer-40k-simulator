@@ -55,6 +55,14 @@ Editor.Smoke = {
     document.getElementById('scCenters').onchange = e => { this.showCenters = e.target.checked; this.updateAllCenters(); };
   },
 
+  /** Show sidebar controls for an FX entity (called by unified selection) */
+  _showControls(fx) {
+    this.selectedFx = fx;
+    this.refreshControls();
+    document.getElementById('smokeCtrl').style.display = fx.type === 'smoke' ? '' : 'none';
+    document.getElementById('fireCtrl').style.display = fx.type === 'fire' ? '' : 'none';
+  },
+
   updateSelected(prop, val) {
     if (!this.selectedFx) return;
     this.selectedFx[prop] = val;
