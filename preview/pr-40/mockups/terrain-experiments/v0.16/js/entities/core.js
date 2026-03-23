@@ -14,6 +14,7 @@ Editor.Core = {
   allSprites: [],
   allModels: [],
   allLights: [],
+  allSmokeFx: [],
   allObjectives: [],
   selected: null,
   multiSel: [],
@@ -38,6 +39,7 @@ Editor.Core = {
     Editor.Models.init();
     Editor.Objectives.init();
     Editor.Selection.init();
+    Editor.Smoke.init();
     Editor.Sprites.initFileDrop();
     Editor.Persistence.load();
     Editor.Layers._loadUIState();
@@ -108,7 +110,7 @@ Editor.Core = {
 
   // ── Layer name → z-index mapping ──
   layerIndex(layerName) {
-    const order = ['lightLayer','spriteFloor','spriteTop','svgRuins','svgScatter','objectiveRings','objectiveHexes','modelLayer'];
+    const order = ['lightLayer','spriteFloor','spriteTop','svgRuins','svgScatter','objectiveRings','objectiveHexes','modelLayer','smokeLayer'];
     const idx = order.indexOf(layerName);
     return idx >= 0 ? idx : -1;
   },
@@ -132,6 +134,10 @@ Editor.Core = {
       lights: this.allLights.map(l => ({
         id: l.id, x: Math.round(l.x), y: Math.round(l.y),
         color: l.color, radius: l.radius, intensity: l.intensity
+      })),
+      smokeFx: this.allSmokeFx.map(fx => ({
+        id: fx.id, type: fx.type, x: Math.round(fx.x), y: Math.round(fx.y),
+        radius: fx.radius, color: fx.color, style: fx.style
       })),
       groups: (this.groups || []).map(g => ({
         id: g.id, name: g.name, opacity: g.opacity,
