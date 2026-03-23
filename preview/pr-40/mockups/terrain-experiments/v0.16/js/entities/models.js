@@ -29,13 +29,25 @@ Editor.Models = {
   },
 
   applyModel(m) {
+    // Dedicated model shadow settings
+    const ms = Editor.Effects.modelShadow;
+    const sdx = ms.dx;
+    const sdy = ms.dy;
     if (m.kind === 'circle') {
       m.base.setAttribute('cx', m.x); m.base.setAttribute('cy', m.y);
       m.icon.setAttribute('color', m.s === '#0088aa' ? '#006688' : '#882010');
       m.icon.innerHTML = this.mkIcon(m.x, m.y, m.iconType);
+      if (m.shadowEl) {
+        m.shadowEl.setAttribute('cx', m.x + sdx);
+        m.shadowEl.setAttribute('cy', m.y + sdy);
+      }
     } else {
       m.base.setAttribute('x', m.x); m.base.setAttribute('y', m.y);
       m.icon.innerHTML = `<rect x="${m.x+m.w/2-6}" y="${m.y+m.h/2-4}" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.9" fill="none"/><line x1="${m.x+m.w/2-6}" y1="${m.y+m.h/2}" x2="${m.x+m.w/2+6}" y2="${m.y+m.h/2}" stroke="currentColor" stroke-width="1.2"/>`;
+      if (m.shadowEl) {
+        m.shadowEl.setAttribute('x', m.x + sdx);
+        m.shadowEl.setAttribute('y', m.y + sdy);
+      }
     }
   },
 
@@ -48,7 +60,7 @@ Editor.Models = {
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
     const id = restoreId || ('m' + (this.mid++));
-    const m = { id, kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig };
+    const m = { id, kind:'circle', x:cx, y:cy, r, s, f, iconType, el:g, base:c, icon:ig, shadowEl: null };
     C.allModels.push(m);
     this.applyModel(m);
     g.onmousedown = e => this.startMove(e, m);
@@ -65,7 +77,7 @@ Editor.Models = {
     const ig = document.createElementNS(NS, 'g'); ig.setAttribute('color', '#006688'); ig.setAttribute('fill', 'none'); g.appendChild(ig);
     document.getElementById('modelLayer').appendChild(g);
     const id = restoreId || ('m' + (this.mid++));
-    const m = { id, kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig };
+    const m = { id, kind:'rect', x, y, w, h, s, f, el:g, base:r, icon:ig, shadowEl: null };
     C.allModels.push(m);
     this.applyModel(m);
     g.onmousedown = e => this.startMove(e, m);

@@ -84,6 +84,15 @@ export function loadEditor() {
   global.window = window;
   global.document = document;
   try { global.navigator = window.navigator; } catch (_) {}
+  // Polyfill requestAnimationFrame/cancelAnimationFrame for jsdom
+  if (!window.requestAnimationFrame) {
+    var _rafId = 0;
+    window.requestAnimationFrame = function() { return ++_rafId; };
+    window.cancelAnimationFrame = function() {};
+  }
+  global.requestAnimationFrame = window.requestAnimationFrame;
+  global.cancelAnimationFrame = window.cancelAnimationFrame;
+
   global.localStorage = {
     _store: {},
     getItem(k) { return this._store[k] || null; },
@@ -194,7 +203,10 @@ export function loadScene(fixtureJson) {
 
   // Lights
   if (data.lights && data.lights.length) {
-    data.lights.forEach(l => Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true));
+    data.lights.forEach(l => Editor.Lights.addLight(l.x, l.y, l.color, l.radius, l.intensity, true, undefined, {
+      pulseType: l.pulseType, pulseSpeed: l.pulseSpeed,
+      pulseIntensityAmp: l.pulseIntensityAmp, pulseRadiusAmp: l.pulseRadiusAmp
+    }));
   }
 
   // Objectives
@@ -260,7 +272,12 @@ export function exportScene(Editor) {
     models: C.allModels.map(m => m.kind === 'circle'
       ? { kind: 'circle', x: m.x, y: m.y, r: m.r, stroke: m.s, icon: m.iconType }
       : { kind: 'rect', x: m.x, y: m.y, w: m.w, h: m.h, stroke: m.s }),
-    lights: C.allLights.map(l => ({ x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity })),
+    lights: C.allLights.map(l => ({
+      x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity,
+      pulseType: l.pulseType || 'none', pulseSpeed: l.pulseSpeed != null ? l.pulseSpeed : 1.0,
+      pulseIntensityAmp: l.pulseIntensityAmp != null ? l.pulseIntensityAmp : 0.15,
+      pulseRadiusAmp: l.pulseRadiusAmp != null ? l.pulseRadiusAmp : 10
+    })),
     objectives: C.allObjectives.map(o => ({ idx: o.idx, leftPct: o.leftPct, topPct: o.topPct })),
     groups: (C.groups || []).map(g => ({ id: g.id, name: g.name, opacity: g.opacity })),
     settings: {
