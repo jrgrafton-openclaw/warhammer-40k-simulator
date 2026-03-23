@@ -192,17 +192,30 @@ Editor.Smoke = {
     C.allSmokeFx.push(fx);
     g.onmousedown = e => {
       e.stopPropagation();
-      if (e.shiftKey && this.selectedFx) {
+      if (e.shiftKey) {
         // Shift-click: toggle in multi-select
-        if (!this.multiSelFx.includes(fx)) this.multiSelFx.push(fx);
-        else this.multiSelFx = this.multiSelFx.filter(f => f !== fx);
-        if (!this.multiSelFx.includes(this.selectedFx)) this.multiSelFx.push(this.selectedFx);
-        this.applySelectionRing(fx);
-        Editor.Layers.rebuild();
+        if (!this.multiSelFx.includes(fx)) {
+          this.multiSelFx.push(fx);
+          this.applySelectionRing(fx);
+        } else {
+          this.removeSelectionRing(fx);
+          this.multiSelFx = this.multiSelFx.filter(f => f !== fx);
+        }
+        // Ensure current selected is also in the set
+        if (this.selectedFx && !this.multiSelFx.includes(this.selectedFx)) {
+          this.multiSelFx.push(this.selectedFx);
+        }
+        // Set primary selection to clicked item (for controls display)
+        if (!this.selectedFx) { this.selectedFx = fx; this.refreshControls(); }
+        document.getElementById('smokeCtrl').style.display = this.selectedFx?.type === 'smoke' ? '' : 'none';
+        document.getElementById('fireCtrl').style.display = this.selectedFx?.type === 'fire' ? '' : 'none';
+        if (Editor.Layers) Editor.Layers.rebuild();
+        // Start drag for multi-move
+        this.startDrag(e, fx);
       } else {
         this.selectEffect(fx);
+        this.startDrag(e, fx);
       }
-      this.startDrag(e, fx);
     };
     if (!skipSelect) this.selectEffect(fx);
     Editor.State.syncZOrderFromDOM();
