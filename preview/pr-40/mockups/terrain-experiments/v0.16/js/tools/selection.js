@@ -87,13 +87,18 @@ Editor.Selection = {
 
     // Helper: rotate cursor icon based on sprite rotation
     // CSS cursors cycle: n→ne→e→se→s→sw→w→nw in 45° steps
-    const cursorMap = ['n','ne','e','se','s','sw','w','nw'];
+    const cursorDirs = ['n','ne','e','se','s','sw','w','nw'];
+    // Map compound cursors to a primary direction for rotation
+    const compoundToDir = { 'ns':'n', 'ew':'e', 'nesw':'ne', 'nwse':'nw' };
+    const dirToCompound = { 'n':'ns','s':'ns','e':'ew','w':'ew','ne':'nesw','sw':'nesw','nw':'nwse','se':'nwse' };
     const rotateCursor = (baseCursor, rot) => {
-      const base = baseCursor.replace('-resize','');
-      const idx = cursorMap.indexOf(base);
+      const raw = baseCursor.replace('-resize','');
+      const dir = compoundToDir[raw] || raw;
+      const idx = cursorDirs.indexOf(dir);
       if (idx < 0) return baseCursor;
       const steps = Math.round((rot || 0) / 45) % 8;
-      return cursorMap[(idx + steps + 8) % 8] + '-resize';
+      const rotated = cursorDirs[(idx + steps + 8) % 8];
+      return (dirToCompound[rotated] || rotated) + '-resize';
     };
 
     // Corner handles — no label remap needed; resize code handles rotation
