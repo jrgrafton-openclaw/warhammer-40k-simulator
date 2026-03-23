@@ -49,7 +49,7 @@ Editor.Sprites = {
     const isDataUrl = file.startsWith('data:');
     img.setAttribute('href', isDataUrl ? file : C.spriteBasePath + file);
     img.setAttribute('x', x); img.setAttribute('y', y); img.setAttribute('width', w); img.setAttribute('height', h);
-    img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+    img.setAttribute('preserveAspectRatio', 'none');
     if (rot) img.setAttribute('transform', `rotate(${rot},${x+w/2},${y+h/2})`);
     img.dataset.id = id; img.id = id; img.style.cursor = 'pointer';
     // Insert directly into SVG before selUI for true z-order independence

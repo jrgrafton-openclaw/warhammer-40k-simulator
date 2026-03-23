@@ -176,7 +176,43 @@ Editor.Persistence = {
   _restoreSprites(data) {
     if (!data.sprites) return;
     var C = Editor.Core;
+    // Migration: fix sprite dimensions to match actual image aspect ratio
+    var migrationPromises = [];
     data.sprites.forEach(function(s) {
+      // Probe actual image to correct aspect ratio if needed
+      if (s.file && !s.file.startsWith('data:')) {
+        var probe = new Image();
+        probe.src = C.spriteBasePath + s.file;
+        migrationPromises.push(new Promise(function(resolve) {
+          probe.onload = function() {
+            var imgRatio = probe.naturalWidth / probe.naturalHeight;
+            var sprRatio = s.w / s.h;
+            // If aspect ratios differ significantly, correct the height
+            if (Math.abs(imgRatio - sprRatio) > 0.15) {
+              s.h = Math.round(s.w / imgRatio);
+            }
+            resolve();
+          };
+          probe.onerror = function() { resolve(); };
+          // Timeout fallback
+          setTimeout(resolve, 2000);
+        }));
+      }
+    });
+    // Apply sprites after migration probes complete
+    Promise.all(migrationPromises).then(function() {
+      data.sprites.forEach(function(s) {
+        Editor.Persistence._restoreSingleSprite(s, C);
+      });
+      // Restore z-order after sprites are placed
+      if (data.zOrder) Editor.Persistence._restoreZOrderFromExplicit(data.zOrder, C);
+      else if (data.layerOrder) Editor.Persistence._restoreZOrderFromLayerOrder(data.layerOrder, C);
+      // Rebuild layers after async restore
+      if (Editor.Layers) Editor.Layers.rebuild();
+    });
+  },
+
+  _restoreSingleSprite(s, C) {
       var sp = Editor.Sprites.addSprite(s.file, s.x, s.y, s.w, s.h, s.rot, s.layerType, true, s.id || undefined);
       sp.hidden = !!s.hidden; sp.el.style.display = sp.hidden ? 'none' : '';
       sp.flipX = !!s.flipX; sp.flipY = !!s.flipY;
@@ -187,7 +223,7 @@ Editor.Persistence = {
       }
       sp.shadowMul = s.shadowMul;
       if (s._fileName) sp._fileName = s._fileName;
-    });
+  },
     // Update sid counter to avoid ID collisions with future sprites
     var maxSid = 0;
     C.allSprites.forEach(function(sp) {
