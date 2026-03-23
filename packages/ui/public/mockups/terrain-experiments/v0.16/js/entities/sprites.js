@@ -283,12 +283,15 @@ Editor.Sprites = {
       } else if (corner.length === 1) {
         // EDGE handle: project drag onto the edge's visual outward normal
         // This ensures dragging the visual bottom only changes height, etc.
+        // SVG rotate(θ) transforms local vector (x,y) → (x·cos(θ)-y·sin(θ), x·sin(θ)+y·cos(θ))
+        // East local normal (1,0) → global (cosR, sinR)
+        // South local normal (0,1) → global (-sinR, cosR)
         let d;
         switch (corner) {
-          case 's': d =  gdx * sinR + gdy * cosR; break;  // south outward normal
-          case 'n': d = -gdx * sinR - gdy * cosR; break;  // north outward normal
-          case 'e': d =  gdx * cosR - gdy * sinR; break;  // east outward normal (note: SVG y-axis is down)
-          case 'w': d = -gdx * cosR + gdy * sinR; break;  // west outward normal
+          case 's': d = -gdx * sinR + gdy * cosR; break;  // south outward: project onto (-sinR, cosR)
+          case 'n': d =  gdx * sinR - gdy * cosR; break;  // north outward: negate south
+          case 'e': d =  gdx * cosR + gdy * sinR; break;  // east outward: project onto (cosR, sinR)
+          case 'w': d = -gdx * cosR - gdy * sinR; break;  // west outward: negate east
         }
         // Compute old center and new dimensions
         const oCx = o.x + o.w/2, oCy = o.y + o.h/2;
