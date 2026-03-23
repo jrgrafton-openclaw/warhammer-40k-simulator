@@ -166,7 +166,19 @@ Editor.Fire = {
     fx.el = g;
     C.allSmokeFx.push(fx);
 
-    g.onmousedown = e => { e.stopPropagation(); SM.selectEffect(fx); SM.startDrag(e, fx); };
+    g.onmousedown = e => {
+      e.stopPropagation();
+      if (e.shiftKey && SM.selectedFx) {
+        if (!SM.multiSelFx.includes(fx)) SM.multiSelFx.push(fx);
+        else SM.multiSelFx = SM.multiSelFx.filter(f => f !== fx);
+        if (!SM.multiSelFx.includes(SM.selectedFx)) SM.multiSelFx.push(SM.selectedFx);
+        SM.applySelectionRing(fx);
+        Editor.Layers.rebuild();
+      } else {
+        SM.selectEffect(fx);
+      }
+      SM.startDrag(e, fx);
+    };
     if (!skipSelect) SM.selectEffect(fx);
     Editor.State.syncZOrderFromDOM();
     SM.startAnimation();
