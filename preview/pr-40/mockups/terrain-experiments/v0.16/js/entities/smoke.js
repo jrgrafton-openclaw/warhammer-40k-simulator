@@ -7,6 +7,7 @@
 Editor.Smoke = {
   fxId: 0,
   selectedFx: null,
+  multiSelFx: [],  // shift-click multi-select
   _animFrame: null,
 
   injectSidebarControls() {
@@ -63,7 +64,10 @@ Editor.Smoke = {
   },
 
   selectEffect(fx) {
-    if (this.selectedFx) this.removeSelectionRing(this.selectedFx);
+    // Clear old multi-select rings
+    this.multiSelFx.forEach(f => this.removeSelectionRing(f));
+    this.multiSelFx = [fx];
+    if (this.selectedFx && this.selectedFx !== fx) this.removeSelectionRing(this.selectedFx);
     this.selectedFx = fx;
     this.applySelectionRing(fx);
     this.refreshControls();
@@ -73,6 +77,8 @@ Editor.Smoke = {
   },
 
   deselectEffect() {
+    this.multiSelFx.forEach(f => this.removeSelectionRing(f));
+    this.multiSelFx = [];
     if (this.selectedFx) this.removeSelectionRing(this.selectedFx);
     this.selectedFx = null;
     document.getElementById('smokeCtrl').style.display = 'none';
@@ -81,7 +87,7 @@ Editor.Smoke = {
   },
 
   applySelectionRing(fx) {
-    if (fx !== this.selectedFx) return;
+    if (fx !== this.selectedFx && !this.multiSelFx.includes(fx)) return;
     this.removeSelectionRing(fx);
     const NS = Editor.Core.NS;
     const ring = document.createElementNS(NS, 'circle');
@@ -184,7 +190,20 @@ Editor.Smoke = {
     C.svg.insertBefore(g, selUI);
     fx.el = g;
     C.allSmokeFx.push(fx);
-    g.onmousedown = e => { e.stopPropagation(); this.selectEffect(fx); this.startDrag(e, fx); };
+    g.onmousedown = e => {
+      e.stopPropagation();
+      if (e.shiftKey && this.selectedFx) {
+        // Shift-click: toggle in multi-select
+        if (!this.multiSelFx.includes(fx)) this.multiSelFx.push(fx);
+        else this.multiSelFx = this.multiSelFx.filter(f => f !== fx);
+        if (!this.multiSelFx.includes(this.selectedFx)) this.multiSelFx.push(this.selectedFx);
+        this.applySelectionRing(fx);
+        Editor.Layers.rebuild();
+      } else {
+        this.selectEffect(fx);
+      }
+      this.startDrag(e, fx);
+    };
     if (!skipSelect) this.selectEffect(fx);
     Editor.State.syncZOrderFromDOM();
     this.startAnimation();
@@ -237,18 +256,24 @@ Editor.Smoke = {
   startDrag(e, fx) {
     e.preventDefault();
     const C = Editor.Core;
-    const startX = fx.x, startY = fx.y;
-    const p0 = C.svgPt(e.clientX, e.clientY), ox = p0.x - fx.x, oy = p0.y - fx.y;
+    // Multi-select: move all selected FX together
+    const toMove = this.multiSelFx.length > 1 && this.multiSelFx.includes(fx) ? this.multiSelFx : [fx];
+    const starts = toMove.map(f => ({ f, x0: f.x, y0: f.y }));
+    const p0 = C.svgPt(e.clientX, e.clientY);
+    const offsets = toMove.map(f => ({ f, ox: p0.x - f.x, oy: p0.y - f.y }));
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY);
-      fx.x = p.x - ox; fx.y = p.y - oy;
-      this.applyEffect(fx);
+      offsets.forEach(({ f, ox, oy }) => { f.x = p.x - ox; f.y = p.y - oy; this.applyEffect(f); });
     };
     const up = () => {
       document.removeEventListener('mousemove', mv);
       document.removeEventListener('mouseup', up);
-      if ((fx.x !== startX || fx.y !== startY) && Editor.Undo && Editor.Commands) {
-        Editor.Undo.record(Editor.Commands.MoveFx.create(fx.id, startX, startY, fx.x, fx.y));
+      if (Editor.Undo && Editor.Commands) {
+        starts.forEach(({ f, x0, y0 }) => {
+          if (f.x !== x0 || f.y !== y0) {
+            Editor.Undo.record(Editor.Commands.MoveFx.create(f.id, x0, y0, f.x, f.y));
+          }
+        });
       }
       Editor.State.dispatch({ type: 'MOVE_FX' });
     };
@@ -363,16 +388,19 @@ Editor.Smoke = {
       const fx = this.selectedFx;
       // Delete
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSelected(); return; }
-      // Arrow keys to move
+      // Arrow keys to move (all multi-selected)
       const step = e.shiftKey ? 10 : 1;
+      const toMove = this.multiSelFx.length > 1 ? this.multiSelFx : [fx];
       const _arrowMove = (dx, dy) => {
         e.preventDefault();
-        const oldX = fx.x, oldY = fx.y;
-        fx.x += dx; fx.y += dy;
-        this.applyEffect(fx);
-        if (Editor.Undo && Editor.Commands) {
-          Editor.Undo.record(Editor.Commands.MoveFx.create(fx.id, oldX, oldY, fx.x, fx.y));
-        }
+        toMove.forEach(f => {
+          const oldX = f.x, oldY = f.y;
+          f.x += dx; f.y += dy;
+          this.applyEffect(f);
+          if (Editor.Undo && Editor.Commands) {
+            Editor.Undo.record(Editor.Commands.MoveFx.create(f.id, oldX, oldY, f.x, f.y));
+          }
+        });
         Editor.State.dispatch({ type: 'MOVE_FX' });
       };
       if (e.key === 'ArrowLeft')  _arrowMove(-step, 0);
