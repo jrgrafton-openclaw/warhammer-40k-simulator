@@ -6,7 +6,7 @@
 .sidebar h3:first-child{margin-top:0}
 
 .thumb-grid{display:flex;flex-wrap:wrap;gap:4px}
-.thumb{width:72px;height:72px;border:1px solid #1a2a3a;border-radius:3px;cursor:grab;object-fit:cover;background:#0a0e18}
+.thumb{width:72px;height:72px;border:1px solid #1a2a3a;border-radius:3px;cursor:grab;object-fit:contain;background:#0a0e18}
 .thumb:hover{border-color:#00d4ff}
 
 .bg-row{display:flex;gap:4px;align-items:center;margin-bottom:4px;flex-wrap:wrap}
