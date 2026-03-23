@@ -148,7 +148,7 @@ Editor.Lights = {
     light.apply = function() { Editor.Lights.applyLight(this); };
     light.drawSelection = function(selUIEl) { Editor.Lights._drawLightSelection(this, selUIEl); };
     light.serialize = function() {
-      return { type: 'light', x: this.x, y: this.y, color: this.color, radius: this.radius, intensity: this.intensity };
+      return { type: 'light', x: this.x, y: this.y, color: this.color, radius: this.radius, intensity: this.intensity, groupId: this.groupId || null };
     };
     light.clone = function(dx, dy) {
       return Editor.Lights.addLight(this.x + dx, this.y + dy, this.color, this.radius, this.intensity, true);
@@ -289,7 +289,7 @@ Editor.Lights = {
   },
 
   serialize() {
-    return Editor.Core.allLights.map(l => ({ id: l.id, x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity }));
+    return Editor.Core.allLights.map(l => ({ id: l.id, x: l.x, y: l.y, color: l.color, radius: l.radius, intensity: l.intensity, groupId: l.groupId || null }));
   }
 };
 
