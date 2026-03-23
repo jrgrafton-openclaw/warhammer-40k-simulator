@@ -96,41 +96,31 @@ Editor.Selection = {
       return cursorMap[(idx + steps + 8) % 8] + '-resize';
     };
 
-    // Corner handles — remap corner labels so resize behavior matches VISUAL position
-    // After rotation, the logical SE corner moves to a different visual position.
-    // We pass the VISUAL corner name to startResize so the resize direction is intuitive.
-    const cornerLabels = ['nw','ne','se','sw'];
-    const rotSteps = Math.round((s.rot || 0) / 90) % 4;
-    [[s.x, s.y, 'nw'], [s.x+s.w, s.y, 'ne'], [s.x, s.y+s.h, 'sw'], [s.x+s.w, s.y+s.h, 'se']].forEach(([hx, hy, logicalPos]) => {
-      // Remap: logical corner → visual corner (the label that makes resize intuitive)
-      const logIdx = cornerLabels.indexOf(logicalPos);
-      const visualPos = cornerLabels[(logIdx + rotSteps + 4) % 4];
+    // Corner handles — no label remap needed; resize code handles rotation
+    [[s.x, s.y, 'nw'], [s.x+s.w, s.y, 'ne'], [s.x, s.y+s.h, 'sw'], [s.x+s.w, s.y+s.h, 'se']].forEach(([hx, hy, pos]) => {
       const h = document.createElementNS(NS, 'rect');
       h.setAttribute('x', hx-3); h.setAttribute('y', hy-3); h.setAttribute('width', 6); h.setAttribute('height', 6);
-      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(logicalPos + '-resize', s.rot);
+      h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(pos + '-resize', s.rot);
       if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
-      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, visualPos); };
+      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
       C.selUI.appendChild(h);
     });
 
-    // Edge-midpoint handles — also remap labels for rotation
-    const edgeLabels = ['n','e','s','w'];
+    // Edge-midpoint handles
     const edgeHandleSize = 8;
     [
       [s.x + s.w/2, s.y,       'n', edgeHandleSize, 4, 'ns-resize'],
       [s.x + s.w/2, s.y + s.h, 's', edgeHandleSize, 4, 'ns-resize'],
       [s.x,         s.y + s.h/2,'w', 4, edgeHandleSize, 'ew-resize'],
       [s.x + s.w,   s.y + s.h/2,'e', 4, edgeHandleSize, 'ew-resize'],
-    ].forEach(([hx, hy, logicalPos, hw, hh, cursor]) => {
-      const logIdx = edgeLabels.indexOf(logicalPos);
-      const visualPos = edgeLabels[(logIdx + rotSteps + 4) % 4];
+    ].forEach(([hx, hy, pos, hw, hh, cursor]) => {
       const h = document.createElementNS(NS, 'rect');
       h.setAttribute('x', hx - hw/2); h.setAttribute('y', hy - hh/2);
       h.setAttribute('width', hw); h.setAttribute('height', hh);
       h.setAttribute('fill', '#00d4ff'); h.style.cursor = rotateCursor(cursor, s.rot);
       h.classList.add('sel-handle');
       if (s.rot) h.setAttribute('transform', `rotate(${s.rot},${cx},${cy})`);
-      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, visualPos); };
+      h.onmousedown = e => { e.stopPropagation(); Editor.Sprites.startResize(e, s, pos); };
       C.selUI.appendChild(h);
     });
 
