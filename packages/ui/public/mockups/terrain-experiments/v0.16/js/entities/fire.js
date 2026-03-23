@@ -164,30 +164,47 @@ Editor.Fire = {
     const selUI = document.getElementById('selUI');
     C.svg.insertBefore(g, selUI);
     fx.el = g;
+
+    // Entity interface (Phase 4)
+    fx.getBounds = function() {
+      var r = Math.max(this.glowRadius || 0, this.maxHeight || 40);
+      return { x: this.x - r, y: this.y - r, w: r * 2, h: r * 2 };
+    };
+    fx.apply = function() { Editor.Fire.applyEffect(this); };
+    fx.drawSelection = function(selUIEl) { Editor.Smoke._drawFxSelection(this, selUIEl); };
+    fx.serialize = function() { return Editor.Smoke.serializeOne(this); };
+    fx.clone = function(dx, dy) {
+      var opts = {};
+      var d = this.serialize();
+      Object.keys(d).forEach(function(k) { if (k !== 'id' && k !== 'type' && k !== 'x' && k !== 'y') opts[k] = d[k]; });
+      return Editor.Fire.addFire(this.x + dx, this.y + dy, opts, true);
+    };
+    Editor.Entity.register(fx);
+
     C.allSmokeFx.push(fx);
 
+    // Unified mousedown: use Editor.Selection
     g.onmousedown = e => {
       e.stopPropagation();
       if (e.shiftKey) {
-        if (!SM.multiSelFx.includes(fx)) {
-          SM.multiSelFx.push(fx);
-          SM.applySelectionRing(fx);
+        const C2 = Editor.Core;
+        if (C2.multiSel.includes(fx)) {
+          C2.multiSel = C2.multiSel.filter(s => s !== fx);
+          C2.selected = C2.multiSel[0] || null;
         } else {
-          SM.removeSelectionRing(fx);
-          SM.multiSelFx = SM.multiSelFx.filter(f => f !== fx);
+          C2.multiSel.push(fx);
+          C2.selected = fx;
         }
-        if (SM.selectedFx && !SM.multiSelFx.includes(SM.selectedFx)) SM.multiSelFx.push(SM.selectedFx);
-        if (!SM.selectedFx) { SM.selectedFx = fx; SM.refreshControls(); }
-        document.getElementById('smokeCtrl').style.display = SM.selectedFx?.type === 'smoke' ? '' : 'none';
-        document.getElementById('fireCtrl').style.display = SM.selectedFx?.type === 'fire' ? '' : 'none';
-        if (Editor.Layers) Editor.Layers.rebuild();
-        SM.startDrag(e, fx);
+        Editor.Smoke._showControls(fx);
+        Editor.Selection.drawSelectionUI();
+        Editor.Layers.rebuild();
+        Editor.Selection.startMoveMulti(e, fx);
       } else {
-        SM.selectEffect(fx);
-        SM.startDrag(e, fx);
+        Editor.Selection.select(fx);
+        Editor.Selection.startMoveMulti(e, fx);
       }
     };
-    if (!skipSelect) SM.selectEffect(fx);
+    if (!skipSelect) Editor.Selection.select(fx);
     Editor.State.syncZOrderFromDOM();
     SM.startAnimation();
     if (!restoreId && Editor.Undo && Editor.Commands && Editor.Commands._captureFx) {

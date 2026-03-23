@@ -139,11 +139,50 @@ Editor.Lights = {
     document.getElementById('lightLayer').appendChild(g);
 
     const light = { id, x, y, color, radius, intensity, el: g, circle, grad, gradId, centerG };
+
+    // Entity interface (Phase 4)
+    light.type = 'light';
+    light.getBounds = function() {
+      return { x: this.x - this.radius, y: this.y - this.radius, w: this.radius * 2, h: this.radius * 2 };
+    };
+    light.apply = function() { Editor.Lights.applyLight(this); };
+    light.drawSelection = function(selUIEl) { Editor.Lights._drawLightSelection(this, selUIEl); };
+    light.serialize = function() {
+      return { type: 'light', x: this.x, y: this.y, color: this.color, radius: this.radius, intensity: this.intensity };
+    };
+    light.clone = function(dx, dy) {
+      return Editor.Lights.addLight(this.x + dx, this.y + dy, this.color, this.radius, this.intensity, true);
+    };
+    Editor.Entity.register(light);
+
     C.allLights.push(light);
 
-    g.onmousedown = e => { e.stopPropagation(); this.selectLight(light); this.startDrag(e, light); };
+    g.onmousedown = e => {
+      e.stopPropagation();
+      if (e.shiftKey) {
+        const C2 = Editor.Core;
+        if (C2.multiSel.includes(light)) {
+          C2.multiSel = C2.multiSel.filter(s => s !== light);
+          C2.selected = C2.multiSel[0] || null;
+        } else {
+          C2.multiSel.push(light);
+          C2.selected = light;
+        }
+        this._showLightControls(light);
+        Editor.Selection.drawSelectionUI();
+        Editor.Layers.rebuild();
+        Editor.Selection.startMoveMulti(e, light);
+      } else {
+        Editor.Selection.select(light);
+        this._showLightControls(light);
+        Editor.Selection.startMoveMulti(e, light);
+      }
+    };
 
-    if (!skipSelect) this.selectLight(light);
+    if (!skipSelect) {
+      Editor.Selection.select(light);
+      this._showLightControls(light);
+    }
     return light;
   },
 
@@ -214,6 +253,39 @@ Editor.Lights = {
     Editor.Core.allLights.forEach(l => {
       if (l.centerG) l.centerG.style.display = this.showCenters ? '' : 'none';
     });
+  },
+
+  /** Draw light selection ring into selUI */
+  _drawLightSelection(light, selUI) {
+    const NS = Editor.Core.NS;
+    // Dashed circle at radius
+    const ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('cx', light.x); ring.setAttribute('cy', light.y);
+    ring.setAttribute('r', light.radius);
+    ring.setAttribute('fill', 'none');
+    ring.setAttribute('stroke', '#00d4ff');
+    ring.setAttribute('stroke-width', '1.5');
+    ring.setAttribute('stroke-dasharray', '4,3');
+    ring.style.pointerEvents = 'none';
+    selUI.appendChild(ring);
+    // Center crosshair
+    const ch1 = document.createElementNS(NS, 'line');
+    ch1.setAttribute('x1', light.x - 10); ch1.setAttribute('y1', light.y);
+    ch1.setAttribute('x2', light.x + 10); ch1.setAttribute('y2', light.y);
+    ch1.setAttribute('stroke', '#00d4ff'); ch1.setAttribute('stroke-width', '1'); ch1.setAttribute('opacity', '0.7');
+    selUI.appendChild(ch1);
+    const ch2 = document.createElementNS(NS, 'line');
+    ch2.setAttribute('x1', light.x); ch2.setAttribute('y1', light.y - 10);
+    ch2.setAttribute('x2', light.x); ch2.setAttribute('y2', light.y + 10);
+    ch2.setAttribute('stroke', '#00d4ff'); ch2.setAttribute('stroke-width', '1'); ch2.setAttribute('opacity', '0.7');
+    selUI.appendChild(ch2);
+  },
+
+  /** Show sidebar controls for a light (unified selection helper) */
+  _showLightControls(light) {
+    this.selectedLight = light;
+    this.refreshControls();
+    document.getElementById('lightCtrl').style.display = '';
   },
 
   serialize() {

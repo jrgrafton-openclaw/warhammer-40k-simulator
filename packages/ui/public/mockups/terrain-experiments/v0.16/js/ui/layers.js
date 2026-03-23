@@ -378,7 +378,7 @@ Editor.Layers = {
   /* ── Individual light child row ── */
   _createLightChildRow(l, C) {
     const row = document.createElement('div');
-    const isSelected = Editor.Lights.selectedLight === l;
+    const isSelected = Editor.Core.selected === l || Editor.Core.multiSel.includes(l);
     row.className = 'layer-row child-row' + (isSelected ? ' sel' : '');
     const hidden = l.el.style.display === 'none';
     row.innerHTML = `<div class="child-icon" style="color:${l.color}">💡</div>
@@ -387,8 +387,8 @@ Editor.Layers = {
       <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Lights.removeLight('${l.id}')">🗑</button>`;
     row.onclick = e => {
       if (e.target.closest('.lbtn')) return;
-      Editor.Lights.selectLight(l);
-      Editor.Layers.rebuild();
+      Editor.Selection.select(l);
+      Editor.Lights._showLightControls(l);
     };
     return row;
   },
@@ -398,7 +398,7 @@ Editor.Layers = {
   _createSmokeFxRow(item, C) {
     const fx = item.ref;
     const row = document.createElement('div');
-    const isSelected = Editor.Smoke.selectedFx === fx;
+    const isSelected = Editor.Core.selected === fx || Editor.Core.multiSel.includes(fx);
     const hidden = fx.el.style.display === 'none';
     const icon = fx.type === 'fire' ? '🔥' : '💨';
     const color = fx.type === 'fire' ? '#ff8844' : '#88aacc';
@@ -412,8 +412,7 @@ Editor.Layers = {
       <span class="drag-hint" title="Drag to reorder z-level">⠿</span>`;
     row.onclick = e => {
       if (e.target.closest('.lbtn') || e.target.closest('.drag-hint')) return;
-      Editor.Smoke.selectEffect(fx);
-      Editor.Layers.rebuild();
+      Editor.Selection.select(fx);
     };
     return row;
   },

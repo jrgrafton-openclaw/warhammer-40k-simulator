@@ -71,6 +71,7 @@ Editor.Commands = {
     if (sp._clipId || sp._clipWrap) Editor.Crop._removeClip(sp);
     sp.el.remove();
     Editor.Core.allSprites = Editor.Core.allSprites.filter(function(s) { return s.id !== id; });
+    if (Editor.Entity) Editor.Entity.unregister(id);
     Editor.State.removeFromZOrder(id);
   },
 
@@ -157,6 +158,7 @@ Editor.Commands = {
     light.el.remove();
     light.grad.remove();
     C.allLights.splice(idx, 1);
+    if (Editor.Entity) Editor.Entity.unregister(id);
     if (Editor.Lights.selectedLight === light) Editor.Lights.deselectLight();
   },
 
@@ -198,6 +200,7 @@ Editor.Commands = {
     if (fx._glowFiltEl) fx._glowFiltEl.remove();
     if (fx._gradEl) fx._gradEl.remove();
     C.allSmokeFx.splice(idx, 1);
+    if (Editor.Entity) Editor.Entity.unregister(id);
     if (Editor.Smoke.selectedFx === fx) Editor.Smoke.deselectEffect();
     if (C.allSmokeFx.length === 0) Editor.Smoke.stopAnimation();
     Editor.State.syncZOrderFromDOM();
