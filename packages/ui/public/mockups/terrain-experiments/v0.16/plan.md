@@ -187,7 +187,7 @@ Editor.Core = {
 
 **Acceptance:** FX entities participate fully in sprite selection system. All parallel selection code removed. ~150 lines deleted from smoke.js.
 
-### Phase 5: Unified Groups + Layers
+### Phase 5: Unified Groups + Layers ✅ COMPLETE
 **Files:** `js/tools/groups.js`, `js/ui/layers.js`
 
 1. Groups: `addToGroup(groupId, entity)` — works for any entity type
@@ -204,7 +204,7 @@ Editor.Core = {
 
 **Acceptance:** Any entity type can be dragged into/out of groups. Layers panel shows all entity types uniformly.
 
-### Phase 6: Unified Undo Commands
+### Phase 6: Unified Undo Commands ✅ COMPLETE
 **Files:** `js/core/commands.js`
 
 1. Replace separate `AddSprite/AddLight/AddFx`, `RemoveSprite/RemoveLight/RemoveFx`, `MoveSprite/MoveLight/MoveFx` with:
@@ -216,7 +216,7 @@ Editor.Core = {
 
 **Acceptance:** Ctrl+Z works uniformly for all entity types.
 
-### Phase 7: Persistence Update
+### Phase 7: Persistence Update ✅ COMPLETE
 **Files:** `js/persistence.js`
 
 1. Save: serialize `allEntities` with type tags (can keep backwards-compat format initially)
@@ -225,7 +225,7 @@ Editor.Core = {
 
 **Acceptance:** Save/load round-trip works for all entity types including mixed groups.
 
-### Phase 8: Tests
+### Phase 8: Tests ✅ COMPLETE
 **Files:** `__tests__/entity.test.js` (NEW), updates to existing tests
 
 **Unit tests:**
