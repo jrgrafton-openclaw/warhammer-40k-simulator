@@ -1,0 +1,4 @@
+/* Base reset + layout */
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#ccc;font-family:Inter,sans-serif;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.main{display:flex;flex:1;overflow:hidden}
