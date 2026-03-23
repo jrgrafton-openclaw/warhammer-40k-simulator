@@ -17,10 +17,10 @@ Editor.Smoke = {
     const row = document.createElement('div'); row.className = 'toggle-row';
     const btnS = document.createElement('button'); btnS.className = 'tbtn';
     btnS.textContent = '+ Add Smoke';
-    btnS.onclick = () => { this.addSmoke(360, 264); Editor.State.dispatch({ type: 'ADD_FX' }); Editor.Layers.rebuild(); };
+    btnS.onclick = () => { this.addSmoke(360, 264); Editor.State.dispatch({ type: 'ADD_FX' }); };
     const btnF = document.createElement('button'); btnF.className = 'tbtn';
     btnF.textContent = '+ Add Fire';
-    btnF.onclick = () => { Editor.Fire.addFire(360, 264); Editor.State.dispatch({ type: 'ADD_FX' }); Editor.Layers.rebuild(); };
+    btnF.onclick = () => { Editor.Fire.addFire(360, 264); Editor.State.dispatch({ type: 'ADD_FX' }); };
     row.appendChild(btnS); row.appendChild(btnF);
     sidebar.appendChild(row);
 
@@ -69,6 +69,7 @@ Editor.Smoke = {
     this.refreshControls();
     document.getElementById('smokeCtrl').style.display = fx.type === 'smoke' ? '' : 'none';
     document.getElementById('fireCtrl').style.display = fx.type === 'fire' ? '' : 'none';
+    if (Editor.Layers) Editor.Layers.rebuild();
   },
 
   deselectEffect() {
@@ -76,6 +77,7 @@ Editor.Smoke = {
     this.selectedFx = null;
     document.getElementById('smokeCtrl').style.display = 'none';
     document.getElementById('fireCtrl').style.display = 'none';
+    if (Editor.Layers) Editor.Layers.rebuild();
   },
 
   applySelectionRing(fx) {
@@ -186,6 +188,10 @@ Editor.Smoke = {
     if (!skipSelect) this.selectEffect(fx);
     Editor.State.syncZOrderFromDOM();
     this.startAnimation();
+    // Record undo for user-initiated adds (not restores)
+    if (!restoreId && Editor.Undo && Editor.Commands) {
+      Editor.Undo.record(Editor.Commands.AddFx.create(Editor.Commands._captureFx(fx)));
+    }
     return fx;
   },
 
@@ -231,6 +237,7 @@ Editor.Smoke = {
   startDrag(e, fx) {
     e.preventDefault();
     const C = Editor.Core;
+    const startX = fx.x, startY = fx.y;
     const p0 = C.svgPt(e.clientX, e.clientY), ox = p0.x - fx.x, oy = p0.y - fx.y;
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY);
@@ -240,6 +247,9 @@ Editor.Smoke = {
     const up = () => {
       document.removeEventListener('mousemove', mv);
       document.removeEventListener('mouseup', up);
+      if ((fx.x !== startX || fx.y !== startY) && Editor.Undo && Editor.Commands) {
+        Editor.Undo.record(Editor.Commands.MoveFx.create(fx.id, startX, startY, fx.x, fx.y));
+      }
       Editor.State.dispatch({ type: 'MOVE_FX' });
     };
     document.addEventListener('mousemove', mv);
@@ -251,13 +261,12 @@ Editor.Smoke = {
     const idx = C.allSmokeFx.findIndex(f => f.id === id);
     if (idx === -1) return;
     const fx = C.allSmokeFx[idx];
-    fx.el.remove();
-    if (fx._filtEl) fx._filtEl.remove();
-    if (fx._glowFiltEl) fx._glowFiltEl.remove();
-    C.allSmokeFx.splice(idx, 1);
-    if (this.selectedFx === fx) this.deselectEffect();
-    if (C.allSmokeFx.length === 0) this.stopAnimation();
-    Editor.State.syncZOrderFromDOM();
+    // Capture for undo before removing
+    if (Editor.Undo && Editor.Commands) {
+      const fxData = Editor.Commands._captureFx(fx);
+      Editor.Undo.record(Editor.Commands.RemoveFx.create(fxData));
+    }
+    Editor.Commands._removeFx(id);
     Editor.State.dispatch({ type: 'DELETE_FX' });
     Editor.Layers.rebuild();
   },
@@ -353,10 +362,20 @@ Editor.Smoke = {
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); this.deleteSelected(); return; }
       // Arrow keys to move
       const step = e.shiftKey ? 10 : 1;
-      if (e.key === 'ArrowLeft')  { e.preventDefault(); fx.x -= step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
-      if (e.key === 'ArrowRight') { e.preventDefault(); fx.x += step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
-      if (e.key === 'ArrowUp')    { e.preventDefault(); fx.y -= step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
-      if (e.key === 'ArrowDown')  { e.preventDefault(); fx.y += step; this.applyEffect(fx); Editor.State.dispatch({ type: 'MOVE_FX' }); }
+      const _arrowMove = (dx, dy) => {
+        e.preventDefault();
+        const oldX = fx.x, oldY = fx.y;
+        fx.x += dx; fx.y += dy;
+        this.applyEffect(fx);
+        if (Editor.Undo && Editor.Commands) {
+          Editor.Undo.record(Editor.Commands.MoveFx.create(fx.id, oldX, oldY, fx.x, fx.y));
+        }
+        Editor.State.dispatch({ type: 'MOVE_FX' });
+      };
+      if (e.key === 'ArrowLeft')  _arrowMove(-step, 0);
+      if (e.key === 'ArrowRight') _arrowMove(step, 0);
+      if (e.key === 'ArrowUp')    _arrowMove(0, -step);
+      if (e.key === 'ArrowDown')  _arrowMove(0, step);
     });
   }
 };
