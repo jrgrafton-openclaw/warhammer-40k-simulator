@@ -11,13 +11,14 @@ Editor.Fire = {
     fCtrl.innerHTML = `
       <div style="font-size:10px;color:#ff8844;margin-bottom:4px;font-weight:600">🔥 Fire</div>
       <label><span class="fx-lbl">Sparks</span><input type="range" id="fcSparks" min="3" max="30" value="10"><span class="fx-val" id="fcSparksVal">10</span></label>
-      <label><span class="fx-lbl">Spark speed</span><input type="range" id="fcSpeed" min="1" max="10" value="5"><span class="fx-val" id="fcSpeedVal">5</span></label>
+      <label><span class="fx-lbl">Spark speed</span><input type="range" id="fcSpeed" min="0" max="20" step="1" value="5"><span class="fx-val" id="fcSpeedVal">0.5</span></label>
       <label><span class="fx-lbl">Spark size</span><input type="range" id="fcSize" min="1" max="5" value="2"><span class="fx-val" id="fcSizeVal">2</span></label>
       <label><span class="fx-lbl">Max height</span><input type="range" id="fcMaxH" min="10" max="150" value="40"><span class="fx-val" id="fcMaxHVal">40</span></label>
       <label><span class="fx-lbl">Core size</span><input type="range" id="fcCore" min="0" max="10" value="4"><span class="fx-val" id="fcCoreVal">4</span></label>
       <label><span class="fx-lbl">Direction</span><select id="fcDir"><option value="all">All</option><option value="up">Up</option><option value="angled">Angled</option></select></label>
       <label id="fcAngleRow" style="display:none"><span class="fx-lbl">Angle °</span><input type="range" id="fcAngle" min="0" max="360" value="45"><span class="fx-val" id="fcAngleVal">45°</span></label>
       <label><span class="fx-lbl">Color</span><input type="color" id="fcColor" value="#ff6600"><span class="fx-val" id="fcColorVal">#ff6600</span></label>
+      <label><span class="fx-lbl">Glow style</span><select id="fcGlowStyle"><option value="radial">Radial</option><option value="per-spark">Per-spark</option><option value="centroid">Centroid</option><option value="multi">Multi-glow</option></select></label>
       <label><span class="fx-lbl">Glow radius</span><input type="range" id="fcGlow" min="0" max="100" value="30"><span class="fx-val" id="fcGlowVal">30</span></label>
       <label><span class="fx-lbl">Glow intensity</span><input type="range" id="fcGlowInt" min="5" max="100" value="20"><span class="fx-val" id="fcGlowIntVal">0.20</span></label>
       <label><span class="fx-lbl">Centers</span><input type="checkbox" id="fcCenters" checked><span class="fx-val">show</span></label>
@@ -29,6 +30,7 @@ Editor.Fire = {
     sw('fcSparks','sparkCount'); sw('fcSpeed','sparkSpeed'); sw('fcSize','sparkSize');
     sw('fcMaxH','maxHeight'); sw('fcGlow','glowRadius'); sw('fcAngle','angle'); sw('fcCore','coreSize');
     document.getElementById('fcGlowInt').oninput = e => S.updateSelected('glowIntensity', +e.target.value / 100);
+    document.getElementById('fcGlowStyle').onchange = e => S.updateSelected('glowStyle', e.target.value);
     document.getElementById('fcColor').oninput = e => S.updateSelected('color', e.target.value);
     document.getElementById('fcDir').onchange = e => {
       S.updateSelected('direction', e.target.value);
@@ -49,7 +51,7 @@ Editor.Fire = {
     document.getElementById('fcSparks').value = fx.sparkCount;
     document.getElementById('fcSparksVal').textContent = fx.sparkCount;
     document.getElementById('fcSpeed').value = fx.sparkSpeed;
-    document.getElementById('fcSpeedVal').textContent = fx.sparkSpeed;
+    document.getElementById('fcSpeedVal').textContent = (fx.sparkSpeed * 0.1).toFixed(1);
     document.getElementById('fcSize').value = fx.sparkSize;
     document.getElementById('fcSizeVal').textContent = fx.sparkSize;
     document.getElementById('fcMaxH').value = fx.maxHeight;
@@ -62,6 +64,7 @@ Editor.Fire = {
     document.getElementById('fcAngleVal').textContent = (fx.angle || 45) + '°';
     document.getElementById('fcColor').value = fx.color;
     document.getElementById('fcColorVal').textContent = fx.color;
+    document.getElementById('fcGlowStyle').value = fx.glowStyle || 'radial';
     document.getElementById('fcGlow').value = fx.glowRadius;
     document.getElementById('fcGlowVal').textContent = fx.glowRadius;
     document.getElementById('fcGlowInt').value = Math.round(fx.glowIntensity * 100);
@@ -76,7 +79,7 @@ Editor.Fire = {
       id, type: 'fire', x, y,
       sparkCount: 10, sparkSpeed: 5, sparkSize: 2,
       direction: 'all', angle: 45, maxHeight: 40, coreSize: 4,
-      color: '#ff6600', glowRadius: 30, glowIntensity: 0.2
+      color: '#ff6600', glowStyle: 'radial', glowRadius: 30, glowIntensity: 0.2
     }, opts || {});
 
     const g = document.createElementNS(NS, 'g');
@@ -240,32 +243,27 @@ Editor.Fire = {
 
   // Called from the shared rAF loop in smoke.js
   tickFire(fx, t, idx) {
-    const speed = fx.sparkSpeed * 0.3;
+    const speed = fx.sparkSpeed * 0.1;  // finer control (0.0-2.0)
     const maxH = fx.maxHeight || 40;
 
-    // Animate sparks via cx/cy attributes (NOT CSS transform)
+    // Animate sparks via cx/cy attributes
     for (let j = 0; j < fx.sparks.length; j++) {
       const s = fx.sparks[j];
       s.progress += speed * s.speed * 0.012;
       if (s.progress >= 1) {
-        // Respawn
         s.progress = 0;
         const dirAngle = this._getSparkDirection(fx);
-        s.dirX = Math.cos(dirAngle);
-        s.dirY = Math.sin(dirAngle);
+        s.dirX = Math.cos(dirAngle); s.dirY = Math.sin(dirAngle);
         s.speed = 0.5 + Math.random() * 1.5;
         s.r = 0.5 + Math.random() * fx.sparkSize;
         s.el.setAttribute('r', s.r);
       }
-      // Position: move along direction vector, scaled by maxHeight
       const dist = s.progress * maxH;
-      s.el.setAttribute('cx', fx.x + s.dirX * dist);
-      s.el.setAttribute('cy', fx.y + s.dirY * dist);
-      // Fade + shrink as they travel
-      let alpha;
-      if (s.progress < 0.1) alpha = s.progress / 0.1;
-      else alpha = 1 - ((s.progress - 0.1) / 0.9);
-      s.el.setAttribute('opacity', (alpha * 0.8).toFixed(3));
+      const sx = fx.x + s.dirX * dist;
+      const sy = fx.y + s.dirY * dist;
+      s.el.setAttribute('cx', sx); s.el.setAttribute('cy', sy);
+      let alpha = s.progress < 0.1 ? s.progress / 0.1 : 1 - ((s.progress - 0.1) / 0.9);
+      s.el.setAttribute('opacity', (Math.max(0, alpha) * 0.8).toFixed(3));
     }
 
     // Flicker core circles
@@ -279,15 +277,83 @@ Editor.Fire = {
       }
     }
 
-    // Pulse glow
-    if (fx._glowEl && fx.glowRadius > 0) {
-      const baseInt = fx.glowIntensity || 0.2;
-      const pulse = baseInt * (0.7 + 0.3 * Math.sin(t * 0.004 + idx * 1.3));
-      if (fx._gradEl) {
+    // Glow — 4 modes
+    const style = fx.glowStyle || 'radial';
+    const baseInt = fx.glowIntensity || 0.2;
+    const pulse = baseInt * (0.7 + 0.3 * Math.sin(t * 0.004 + idx * 1.3));
+
+    if (style === 'radial' && fx._glowEl) {
+      // Mode 1: Static radial gradient centered on source
+      fx._glowEl.style.display = fx.glowRadius > 0 ? '' : 'none';
+      if (fx._gradEl && fx.glowRadius > 0) {
         fx._gradEl.innerHTML = `<stop offset="0%" stop-color="${fx.color}" stop-opacity="${pulse.toFixed(3)}"/>
           <stop offset="60%" stop-color="${fx.color}" stop-opacity="${(pulse * 0.4).toFixed(3)}"/>
           <stop offset="100%" stop-color="${fx.color}" stop-opacity="0"/>`;
       }
+    } else if (style === 'per-spark') {
+      // Mode 2: Each spark IS its own glow (larger radius + screen blend)
+      fx._glowEl.style.display = 'none';
+      for (let j = 0; j < fx.sparks.length; j++) {
+        const s = fx.sparks[j];
+        const glowR = fx.glowRadius * 0.3 * (1 - s.progress);
+        s.el.setAttribute('r', Math.max(s.r, glowR).toFixed(1));
+        s.el.style.mixBlendMode = 'screen';
+      }
+    } else if (style === 'centroid') {
+      // Mode 3: Single glow follows weighted centroid of active sparks
+      let cx = 0, cy = 0, wt = 0;
+      for (let j = 0; j < fx.sparks.length; j++) {
+        const s = fx.sparks[j];
+        const w = 1 - s.progress; // younger sparks weigh more
+        cx += parseFloat(s.el.getAttribute('cx')) * w;
+        cy += parseFloat(s.el.getAttribute('cy')) * w;
+        wt += w;
+      }
+      if (wt > 0 && fx._glowEl) {
+        fx._glowEl.style.display = '';
+        fx._glowEl.setAttribute('cx', (cx / wt).toFixed(1));
+        fx._glowEl.setAttribute('cy', (cy / wt).toFixed(1));
+        if (fx._gradEl) {
+          fx._gradEl.innerHTML = `<stop offset="0%" stop-color="${fx.color}" stop-opacity="${pulse.toFixed(3)}"/>
+            <stop offset="60%" stop-color="${fx.color}" stop-opacity="${(pulse * 0.4).toFixed(3)}"/>
+            <stop offset="100%" stop-color="${fx.color}" stop-opacity="0"/>`;
+        }
+      }
+    } else if (style === 'multi') {
+      // Mode 4: 3 sub-glows tracking spark clusters (additive)
+      fx._glowEl.style.display = 'none';
+      if (!fx._multiGlows) this._initMultiGlows(fx);
+      const third = Math.ceil(fx.sparks.length / 3);
+      for (let g = 0; g < 3; g++) {
+        let cx = 0, cy = 0, wt = 0;
+        for (let j = g * third; j < Math.min((g + 1) * third, fx.sparks.length); j++) {
+          const s = fx.sparks[j];
+          const w = 1 - s.progress;
+          cx += parseFloat(s.el.getAttribute('cx')) * w;
+          cy += parseFloat(s.el.getAttribute('cy')) * w;
+          wt += w;
+        }
+        if (wt > 0 && fx._multiGlows[g]) {
+          fx._multiGlows[g].setAttribute('cx', (cx / wt).toFixed(1));
+          fx._multiGlows[g].setAttribute('cy', (cy / wt).toFixed(1));
+          fx._multiGlows[g].setAttribute('r', fx.glowRadius * 0.6);
+          fx._multiGlows[g].setAttribute('opacity', (pulse * 0.5).toFixed(3));
+        }
+      }
+    }
+  },
+
+  _initMultiGlows(fx) {
+    const NS = Editor.Core.NS;
+    fx._multiGlows = [];
+    for (let i = 0; i < 3; i++) {
+      const c = document.createElementNS(NS, 'circle');
+      c.setAttribute('r', fx.glowRadius * 0.6);
+      c.setAttribute('fill', fx.color); c.setAttribute('opacity', '0.05');
+      c.style.mixBlendMode = 'screen';
+      // Insert before sparks
+      fx.el.insertBefore(c, fx._sparksEl || fx.el.firstChild);
+      fx._multiGlows.push(c);
     }
   }
 };

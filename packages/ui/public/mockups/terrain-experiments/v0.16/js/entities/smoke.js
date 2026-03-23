@@ -85,7 +85,7 @@ Editor.Smoke = {
     this.removeSelectionRing(fx);
     const NS = Editor.Core.NS;
     const ring = document.createElementNS(NS, 'circle');
-    const r = fx.type === 'smoke' ? fx.spread : fx.decayDist;
+    const r = fx.type === 'smoke' ? fx.spread : (fx.maxHeight || 40);
     ring.setAttribute('cx', fx.x); ring.setAttribute('cy', fx.y); ring.setAttribute('r', r);
     ring.setAttribute('fill', 'none');
     ring.setAttribute('stroke', fx.type === 'fire' ? '#ff8844' : '#88aacc');
@@ -347,7 +347,8 @@ Editor.Smoke = {
       }
       return Object.assign(b, {
         sparkCount: fx.sparkCount, sparkSpeed: fx.sparkSpeed, sparkSize: fx.sparkSize,
-        direction: fx.direction, angle: fx.angle || 0, maxHeight: fx.maxHeight,
+        direction: fx.direction, angle: fx.angle || 45, maxHeight: fx.maxHeight,
+        coreSize: fx.coreSize, glowStyle: fx.glowStyle || 'radial',
         glowRadius: fx.glowRadius, glowIntensity: fx.glowIntensity
       });
     });
