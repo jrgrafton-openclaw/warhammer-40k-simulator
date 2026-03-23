@@ -85,7 +85,7 @@ Editor.Core = {
 
 ## Implementation Phases
 
-### Phase 1: Entity Protocol + Sprite Adapter (foundation)
+### Phase 1: Entity Protocol + Sprite Adapter (foundation) ✅ COMPLETE
 **Files:** `js/core/entity.js` (NEW), `js/entities/core.js`, `js/entities/sprites.js`
 
 1. Create `js/core/entity.js` with:
@@ -112,7 +112,7 @@ Editor.Core = {
 
 **Acceptance:** All existing sprite behavior unchanged. Entity registry populated alongside allSprites. Existing tests still pass.
 
-### Phase 2: Unified Selection System
+### Phase 2: Unified Selection System ✅ COMPLETE
 **Files:** `js/tools/selection.js`
 
 1. Refactor `select(sp)` → `select(entity)`:
@@ -143,7 +143,7 @@ Editor.Core = {
 
 **Acceptance:** Can select any entity type. Shift-click works across types (select sprite + fire together). Arrow keys move any selected entity. Delete removes any selected entity.
 
-### Phase 3: Unified Clipboard
+### Phase 3: Unified Clipboard ✅ COMPLETE
 **Files:** `js/tools/selection.js` (keyboard handler section)
 
 1. ⌘C: `C.clipboard = C.multiSel.map(e => e.serialize())`
@@ -156,7 +156,7 @@ Editor.Core = {
 
 **Acceptance:** ⌘C/⌘V works for any entity type. Can copy a mix of sprites + FX and paste them all.
 
-### Phase 4: Smoke/Fire/Light Entity Adapters
+### Phase 4: Smoke/Fire/Light Entity Adapters ✅ COMPLETE
 **Files:** `js/entities/smoke.js`, `js/entities/fire.js`, `js/entities/lights.js`
 
 1. Remove from smoke.js:
