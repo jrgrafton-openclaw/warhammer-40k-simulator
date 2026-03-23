@@ -14,6 +14,7 @@ Editor.Core = {
   allSprites: [],
   allModels: [],
   allLights: [],
+  allSmokeFx: [],
   allObjectives: [],
   selected: null,
   multiSel: [],
@@ -38,6 +39,7 @@ Editor.Core = {
     Editor.Models.init();
     Editor.Objectives.init();
     Editor.Selection.init();
+    Editor.Smoke.init();
     Editor.Sprites.initFileDrop();
     Editor.Persistence.load();
     Editor.Layers._loadUIState();
@@ -90,9 +92,9 @@ Editor.Core = {
   // ── Thumbnail grid population ──
   populateThumbs() {
     const thumbs = {
-      tRuinsFloor: ['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','layer-bottom-v6.png','layer-bottom-v7.png','t10-layer-bottom.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],
-      tRuinsTop: ['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','layer-top-v4.png','layer-top-v5.png','layer-top-v6.png','layer-top-v7.png','t10-layer-top.png'],
-      tScatter: ['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png','rubble-edge-1.png','rubble-edge-2.png','rubble-edge-3.png','rubble-edge-4.png']
+      tRuinsFloor: ['layer-bottom-aligned.png','layer-bottom-v2.png','layer-bottom-v3.png','layer-bottom-v4.png','layer-bottom-v5.png','t10-layer-bottom.png','layer-bottom-aligned-2x1.png','layer-bottom-aligned-4x3.png','layer-bottom-v2-2x1.png','layer-bottom-v2-4x3.png','layer-bottom-v3-2x1.png','layer-bottom-v3-4x3.png','t10-layer-bottom-2x1.png','t10-layer-bottom-4x3.png','openai-ruin-2.png','openai-ruin-1.png','openai-ruin-ushape.png'],
+      tRuinsTop: ['layer-top-aligned.png','layer-top-v2.png','layer-top-v3.png','layer-top-v4.png','layer-top-v5.png','t10-layer-top.png','wall-l-wall-large.png','wall-l-wall-small.png','wall-u-wall.png'],
+      tScatter: ['scatter-layer.png','scatter-v2.png','scatter-v3.png','scatter-v4.png','scatter-v5.png','scatter-v6.png','openai-scatter.png','rubble-edge-1.png','rubble-edge-2.png','rubble-edge-3.png','rubble-edge-4.png','scatter-vehicle-leman-russ.png','scatter-vehicle-rhino.png','scatter-vehicle-dreadnought.png','scatter-vehicle-chimera.png','scatter-vehicle-predator.png','scatter-ork-trukk.png','scatter-tau-devilfish.png','scatter-eldar-wave-serpent.png','scatter-necron-ghost-ark.png','scatter-chaos-rhino.png','scatter-dead-marine.png','scatter-dead-marine-2.png','scatter-dead-marine-3.png','scatter-dead-marine-4.png','scatter-dead-ork-pile.png','scatter-dead-tau-firewarrior.png','scatter-dead-tyranid.png','scatter-dead-guardsmen-pile.png']
     };
     const base = this.spriteBasePath;
     Object.entries(thumbs).forEach(([id, files]) => {
@@ -132,6 +134,10 @@ Editor.Core = {
       lights: this.allLights.map(l => ({
         id: l.id, x: Math.round(l.x), y: Math.round(l.y),
         color: l.color, radius: l.radius, intensity: l.intensity
+      })),
+      smokeFx: this.allSmokeFx.map(fx => ({
+        id: fx.id, type: fx.type, x: Math.round(fx.x), y: Math.round(fx.y),
+        radius: fx.radius, color: fx.color, style: fx.style
       })),
       groups: (this.groups || []).map(g => ({
         id: g.id, name: g.name, opacity: g.opacity,

@@ -16,12 +16,18 @@ Editor.Sprites = {
     ghostEl.style.left = e.clientX - 36 + 'px'; ghostEl.style.top = e.clientY - 36 + 'px';
 
     const mv = e2 => { ghostEl.style.left = e2.clientX - 36 + 'px'; ghostEl.style.top = e2.clientY - 36 + 'px'; };
+    // Probe actual image dimensions for correct aspect ratio
+    const probe = new Image();
+    probe.src = C.spriteBasePath + file;
     const up = e2 => {
       document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up);
       ghostEl.remove(); ghostEl = null;
       const pt = C.svgPt(e2.clientX, e2.clientY);
       if (pt.x >= 0 && pt.x <= 720 && pt.y >= 0 && pt.y <= 528) {
-        const sp = this.addSprite(file, pt.x - 50, pt.y - 40, 100, 80, 0, this.getLayerType(file, cat));
+        const pw = probe.naturalWidth || 1024, ph = probe.naturalHeight || 1024;
+        const scale = Math.min(100 / pw, 100 / ph);
+        const w = Math.round(pw * scale), h = Math.round(ph * scale);
+        const sp = this.addSprite(file, pt.x - w/2, pt.y - h/2, w, h, 0, this.getLayerType(file, cat));
         // Scatter terrain defaults to no drop shadow
         if (cat === 'tScatter' && sp) {
           sp.shadowMul = 0;
@@ -261,23 +267,76 @@ Editor.Sprites = {
     const _before = { x: sp.x, y: sp.y, w: sp.w, h: sp.h };
     const o = { x: sp.x, y: sp.y, w: sp.w, h: sp.h }, ar = o.w / o.h;
     const p0 = C.svgPt(e.clientX, e.clientY);
-    const rad = -(sp.rot || 0) * Math.PI / 180;
+    const rotRad = (sp.rot || 0) * Math.PI / 180;
+    const cosR = Math.cos(rotRad), sinR = Math.sin(rotRad);
+    const rad = -rotRad; // for local-space conversion
     const mv = e2 => {
       const p = C.svgPt(e2.clientX, e2.clientY), gdx = p.x - p0.x, gdy = p.y - p0.y;
-      // Rotate global deltas into sprite-local space
-      // Note: flip doesn't affect resize — it mirrors content within the same bbox
-      const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
-      const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
       if (e2.shiftKey) {
+        // Shift-constrained: proportional resize in local space
+        const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
+        const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         const d = Math.abs(dx) > Math.abs(dy) ? dx : dy * ar;
         if (corner.includes('e')) sp.w = Math.max(20, o.w + d);
         if (corner.includes('w')) { sp.x = o.x + d; sp.w = Math.max(20, o.w - d); }
         sp.h = sp.w / ar; if (corner.includes('n')) sp.y = o.y + o.h - sp.h;
+      } else if (corner.length === 1) {
+        // ── EDGE handle: single-axis resize in visual space ──
+        // Project drag onto the edge's visual outward normal
+        // SVG rotate(θ): local (x,y) → (x·cosθ - y·sinθ, x·sinθ + y·cosθ)
+        // East normal (1,0) → (cosR, sinR), South normal (0,1) → (-sinR, cosR)
+        let d;
+        switch (corner) {
+          case 's': d = -gdx * sinR + gdy * cosR; break;
+          case 'n': d =  gdx * sinR - gdy * cosR; break;
+          case 'e': d =  gdx * cosR + gdy * sinR; break;
+          case 'w': d = -gdx * cosR - gdy * sinR; break;
+        }
+        // Resize the appropriate dimension
+        if (corner === 's' || corner === 'n') sp.h = Math.max(20, o.h + d);
+        else sp.w = Math.max(20, o.w + d);
+        // Anchor the opposite edge by adjusting x,y (closed-form for rotated center shift)
+        const dd = (corner === 's' || corner === 'n') ? (sp.h - o.h) : (sp.w - o.w);
+        switch (corner) {
+          case 's': // anchor north edge
+            sp.x = o.x - dd/2 * sinR;
+            sp.y = o.y - dd/2 * (1 - cosR);
+            break;
+          case 'n': // anchor south edge
+            sp.x = o.x + dd/2 * sinR;
+            sp.y = o.y - dd + dd/2 * (1 - cosR);
+            break;
+          case 'e': // anchor west edge
+            sp.x = o.x - dd/2 * (1 - cosR);
+            sp.y = o.y + dd/2 * sinR;
+            break;
+          case 'w': // anchor east edge
+            sp.x = o.x - dd + dd/2 * (1 - cosR);
+            sp.y = o.y - dd/2 * sinR;
+            break;
+        }
       } else {
+        // ── CORNER handle: local-space resize + absolute anchor positioning ──
+        // Compute new w, h from local-space deltas
+        const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
+        const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         if (corner.includes('e')) sp.w = Math.max(20, o.w + dx);
-        if (corner.includes('w')) { sp.x = o.x + dx; sp.w = Math.max(20, o.w - dx); }
+        if (corner.includes('w')) sp.w = Math.max(20, o.w - dx);
         if (corner.includes('s')) sp.h = Math.max(20, o.h + dy);
-        if (corner.includes('n')) { sp.y = o.y + dy; sp.h = Math.max(20, o.h - dy); }
+        if (corner.includes('n')) sp.h = Math.max(20, o.h - dy);
+        // Set x, y to anchor the OPPOSITE corner in global space
+        // These are closed-form solutions derived from: anchor_global_before = anchor_global_after
+        const dw = sp.w - o.w, dh = sp.h - o.h;
+        const hasS = corner.includes('s'), hasN = corner.includes('n');
+        const hasE = corner.includes('e'), hasW = corner.includes('w');
+        // Width anchor factor: +1 if anchoring the east side, -1 if anchoring the west side
+        const wf = hasE ? (1 - cosR) : (1 + cosR);
+        // Height anchor factor:
+        const hfx = hasS ? sinR : -sinR;        // height's x contribution
+        const hfy = hasS ? (1 - cosR) : (1 + cosR);  // height's y contribution
+        const wfy = hasE ? -sinR : sinR;         // width's y contribution
+        sp.x = o.x - dw/2 * wf - dh/2 * hfx;
+        sp.y = o.y - dh/2 * hfy - dw/2 * wfy;
       }
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };

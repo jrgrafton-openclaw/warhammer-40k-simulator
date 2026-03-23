@@ -66,6 +66,9 @@ Editor.Layers = {
       } else if (entry.type === 'group') {
         var el = document.getElementById(entry.id);
         if (el) items.push({ type: 'custom-group', groupId: entry.id, svgEl: el });
+      } else if (entry.type === 'smokefx') {
+        var fx = Editor.Core.allSmokeFx.find(function(f) { return f.id === entry.id; });
+        if (fx) items.push({ type: 'smokefx', ref: fx, svgEl: fx.el });
       } else if (entry.type === 'builtin') {
         var el2 = document.getElementById(entry.id);
         if (el2 && groupMeta[entry.id]) {
@@ -110,6 +113,9 @@ Editor.Layers = {
         items.push({ type: 'group', groupId: el.id, svgEl: el, meta: groupMeta[el.id] });
       } else if (el.id && el.id.startsWith('group-')) {
         items.push({ type: 'custom-group', groupId: el.id, svgEl: el });
+      } else if (el.classList && el.classList.contains('smokefx-entity')) {
+        const fx = C.allSmokeFx.find(f => f.id === el.id);
+        if (fx) items.push({ type: 'smokefx', ref: fx, svgEl: el });
       } else {
         let sp = C.allSprites.find(s => s.el === el);
         if (sp) {
@@ -234,6 +240,10 @@ Editor.Layers = {
             list.appendChild(child);
           });
         }
+      } else if (item.type === 'smokefx') {
+        row = this._createSmokeFxRow(item, C);
+        list.appendChild(row);
+        this._setupDrag(row, this._itemId(item), zItems);
       } else {
         // Ungrouped sprite
         if (!item.ref.groupId) {
@@ -272,6 +282,7 @@ Editor.Layers = {
   _itemId(item) {
     if (item.type === 'group') return item.groupId;
     if (item.type === 'custom-group') return item.groupId;
+    if (item.type === 'smokefx') return item.ref.id;
     return item.ref.id;
   },
 
@@ -374,6 +385,38 @@ Editor.Layers = {
   },
 
   /* ── Individual deploy zone child row ── */
+  /* ── Individual smoke/fire FX row ── */
+  _createSmokeFxRow(item, C) {
+    const fx = item.ref;
+    const row = document.createElement('div');
+    const isSelected = Editor.Smoke.selectedFx === fx;
+    const hidden = fx.el.style.display === 'none';
+    const icon = fx.type === 'fire' ? '🔥' : '💨';
+    const color = fx.type === 'fire' ? '#ff8844' : '#88aacc';
+    const label = fx.type === 'fire' ? 'Fire' : 'Smoke';
+    const num = fx.id.replace('fx', '');
+    row.className = 'layer-row' + (isSelected ? ' sel' : '');
+    row.innerHTML = `<div class="child-icon" style="color:${color};font-size:12px">${icon}</div>
+      <div style="flex:1;min-width:0"><div class="lname"${hidden ? ' style="opacity:0.4"' : ''}>${label} #${num}</div><div class="lmeta">${Math.round(fx.x)},${Math.round(fx.y)}</div></div>
+      <button class="lbtn" title="Toggle visibility" onclick="event.stopPropagation();Editor.Layers.toggleSmokeFxVis('${fx.id}')">${hidden ? '🔇' : '👁'}</button>
+      <button class="lbtn" title="Delete" onclick="event.stopPropagation();Editor.Smoke.removeEffect('${fx.id}')">🗑</button>
+      <span class="drag-hint" title="Drag to reorder z-level">⠿</span>`;
+    row.onclick = e => {
+      if (e.target.closest('.lbtn') || e.target.closest('.drag-hint')) return;
+      Editor.Smoke.selectEffect(fx);
+      Editor.Layers.rebuild();
+    };
+    return row;
+  },
+
+  toggleSmokeFxVis(id) {
+    const fx = Editor.Core.allSmokeFx.find(f => f.id === id); if (!fx) return;
+    const wasHidden = fx.el.style.display === 'none';
+    fx.el.style.display = wasHidden ? '' : 'none';
+    Editor.State.dispatch({ type: 'TOGGLE_FX_VIS' });
+    this.rebuild();
+  },
+
   _createDeployZoneChildRow(zoneEl) {
     const row = document.createElement('div');
     const hidden = zoneEl.style.display === 'none';

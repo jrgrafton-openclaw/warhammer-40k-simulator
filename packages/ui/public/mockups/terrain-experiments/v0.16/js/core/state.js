@@ -129,6 +129,9 @@ Editor.State = {
         // Group children are tracked implicitly — their order within the
         // group <g> is preserved by the DOM, and we don't need separate
         // zOrder entries for grouped sprites.
+      } else if (el.classList && el.classList.contains('smokefx-entity')) {
+        // Per-entity smoke/fire FX group
+        newOrder.push({ type: 'smokefx', id: el.id });
       } else {
         // Direct sprite (image element or crop wrapper <g>)
         let sp = this.sprites.find(s => s.el === el);

@@ -5,7 +5,7 @@
 ══════════════════════════════════════════════════════════════ */
 
 Editor.Persistence = {
-  STORAGE_KEY: 'wh40k-editor-v016-layout',
+  STORAGE_KEY: 'wh40k-editor-v016-pr40-layout',
 
   save() {
     const C = Editor.Core;
@@ -62,7 +62,7 @@ Editor.Persistence = {
           ? { kind: m.kind, x: m.x, y: m.y, r: m.r, s: m.s, f: m.f, iconType: m.iconType }
           : { kind: m.kind, x: m.x, y: m.y, w: m.w, h: m.h, s: m.s, f: m.f };
       }),
-      lights: Editor.Lights.serialize(),
+      lights: Editor.Lights.serialize(), smokeFx: Editor.Smoke.serialize(),
       objectives: Editor.Objectives.serialize(),
       groups: S.groups.map(function(g) { return { id: g.id, name: g.name, opacity: g.opacity }; }),
       effects: {
@@ -87,6 +87,7 @@ Editor.Persistence = {
         modelLayer: document.getElementById('modelLayer')?.style.display !== 'none',
         objectives: document.getElementById('objectiveRings')?.style.display !== 'none',
         lightLayer: document.getElementById('lightLayer')?.style.display !== 'none',
+        smokeFxVisible: true,
       }
     };
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
@@ -127,6 +128,7 @@ Editor.Persistence = {
       this._restoreSprites(data);
       this._restoreModels(data);
       this._restoreLights(data);
+      if (data.smokeFx&&data.smokeFx.length){Editor.Smoke.removeAll();data.smokeFx.forEach(function(fx){if(fx.type==='fire')Editor.Fire.addFire(fx.x,fx.y,fx,true,fx.id);else Editor.Smoke.addSmoke(fx.x,fx.y,fx,true,fx.id);});var mxId=0;Editor.Core.allSmokeFx.forEach(function(fx){var n=parseInt((fx.id||'').replace('fx',''));if(!isNaN(n)&&n>=mxId)mxId=n+1;});Editor.Smoke.fxId=mxId;}
       this._restoreGroups(data);
       Editor.Crop.reapplyAll();
       this._restoreZOrder(data);
@@ -281,6 +283,12 @@ Editor.Persistence = {
       var objBtn = document.querySelector('button[onclick*="objectiveRings"]');
       if (objBtn) objBtn.classList.remove('on');
     }
+    // Restore smoke/fire FX visibility (per-entity toggle)
+    if (data.toggles.smokeFxVisible === false) {
+      Editor.Core.allSmokeFx.forEach(function(fx) { fx.el.style.display = 'none'; });
+      var sfBtn = document.querySelector('button[onclick*="toggleAll"]');
+      if (sfBtn) sfBtn.classList.remove('on');
+    }
   },
 
   /** Normalize any JSON format (output or internal) to the internal format used by load(). */
@@ -403,7 +411,6 @@ Editor.Persistence = {
     if (_dragRect) svg.appendChild(_dragRect);
   },
 
-  /** Restore z-order from legacy layerOrder (flat ID list). */
   _restoreZOrderFromLayerOrder(layerOrder, C) {
     var svg = document.getElementById('battlefield');
     layerOrder.forEach(function(id) {

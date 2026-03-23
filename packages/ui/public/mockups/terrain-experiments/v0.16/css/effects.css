@@ -1,3 +1,19 @@
+/* Spark particle animation — uses --spark-dist custom property */
+@keyframes sparkFloat {
+  0%   { transform: translate(0, 0) scale(1); opacity: 0.9; }
+  60%  { opacity: 0.6; }
+  100% { transform: translate(var(--spark-x, 0px), var(--spark-dist, -24px)) scale(0.3); opacity: 0; }
+}
+
+/* Smoke & Fire controls */
+.smoke-controls { margin-top: 2px; }
+.smoke-controls select {
+  flex: 1; background: #0a1020; color: #8090a0; border: 1px solid #1a2a3a;
+  border-radius: 2px; font-size: 9px; padding: 1px 2px;
+}
+.smoke-sel-ring { pointer-events: none; }
+.smokefx-entity { pointer-events: all; }
+
 /* Effects controls (shadow, feather, grade sliders) */
 .fx-section{margin:4px 0 8px}
 .fx-controls{margin:6px 0 2px;padding:6px;background:#0a0e18;border:1px solid #1a2a3a;border-radius:4px}
