@@ -316,14 +316,23 @@ Editor.Sprites = {
             break;
         }
       } else {
-        // ── CORNER handle: local-space resize ──
-        // Labels are already remapped by selection UI so they match visual position
+        // ── CORNER handle: local-space resize + rotation anchor compensation ──
         const dx = gdx * Math.cos(rad) - gdy * Math.sin(rad);
         const dy = gdx * Math.sin(rad) + gdy * Math.cos(rad);
         if (corner.includes('e')) sp.w = Math.max(20, o.w + dx);
         if (corner.includes('w')) { sp.x = o.x + dx; sp.w = Math.max(20, o.w - dx); }
         if (corner.includes('s')) sp.h = Math.max(20, o.h + dy);
         if (corner.includes('n')) { sp.y = o.y + dy; sp.h = Math.max(20, o.h - dy); }
+        // Compensate for rotation center drift so the OPPOSITE corner stays visually fixed
+        const ddW = sp.w - o.w, ddH = sp.h - o.h;
+        let ax = 0, ay = 0;
+        // Height change shifts center: compensate based on which vertical edge is anchored
+        if (corner.includes('s')) { ax -= ddH/2 * sinR; ay -= ddH/2 * (1 - cosR); }
+        if (corner.includes('n')) { ax += ddH/2 * sinR; ay += ddH/2 * (1 - cosR); }
+        // Width change shifts center: compensate based on which horizontal edge is anchored
+        if (corner.includes('e')) { ax -= ddW/2 * (1 - cosR); ay += ddW/2 * sinR; }
+        if (corner.includes('w')) { ax += ddW/2 * (1 - cosR); ay -= ddW/2 * sinR; }
+        sp.x += ax; sp.y += ay;
       }
       this.apply(sp); Editor.Selection.drawSelectionUI(); C.updateDebug();
     };
